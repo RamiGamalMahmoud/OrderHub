@@ -16,7 +16,7 @@
         BorderBrush="LightGray"
         BorderThickness="1"
         CornerRadius="5">
-        <StackPanel Orientation="Vertical">
+        <StackPanel Orientation="Horizontal">
             <!--  Client Selection  -->
             <StackPanel Margin="0,5" Orientation="Horizontal">
                 <StackPanel Orientation="Vertical">
@@ -62,20 +62,6 @@
             </StackPanel>
 
             <StackPanel Margin="0,5" Orientation="Horizontal">
-                <StackPanel Margin="5,0" Orientation="Vertical">
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        FontSize="16"
-                        FontWeight="Bold"
-                        Foreground="{StaticResource BlueBrush}"
-                        Text="اسم العميل" />
-                    <Label
-                        Width="250"
-                        Margin="0,5,0,0"
-                        HorizontalContentAlignment="Left"
-                        Content="{Binding ClientName}"
-                        FontWeight="Bold" />
-                </StackPanel>
 
                 <StackPanel Margin="5,0" Orientation="Vertical">
                     <TextBlock
@@ -88,8 +74,15 @@
                         Width="150"
                         Margin="0,5,0,0"
                         HorizontalContentAlignment="Left"
-                        Content="{Binding ClientPhone}"
-                        FontWeight="Bold" />
+                        FontWeight="Bold">
+                        <StackPanel Orientation="Horizontal">
+                            <icons:MaterialIcon Kind="Phone" />
+                            <TextBlock
+                                Margin="10,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="0123456789" />
+                        </StackPanel>
+                    </Label>
                 </StackPanel>
 
                 <StackPanel Margin="5,0" Orientation="Vertical">
@@ -103,8 +96,15 @@
                         Width="200"
                         Margin="0,5,0,0"
                         HorizontalContentAlignment="Left"
-                        Content="{Binding ClientAddress}"
-                        FontWeight="Bold" />
+                        FontWeight="Bold">
+                        <StackPanel Orientation="Horizontal">
+                            <icons:MaterialIcon Kind="Location" />
+                            <TextBlock
+                                Margin="10,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="القاهرة" />
+                        </StackPanel>
+                    </Label>
                 </StackPanel>
             </StackPanel>
 
