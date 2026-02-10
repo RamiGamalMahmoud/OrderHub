@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using static OrderHub.Application.DTOs.ClientDtos;
 using static OrderHub.Application.DTOs.CommonDtos;
 
 namespace OrderHub.UI.Features.Orders.Editor;
@@ -28,6 +29,7 @@ internal partial class ViewModel : EditorViewModelBase
     internal async Task LoadAsync()
     {
         RootCategories = await _mediator.Send(new Application.Queries.CommonQueries.GetRootCategoriesQuery());
+        Clients = await _mediator.Send(new Application.Queries.ClientQueries.GetAllClientsQuery());
     }
 
     protected override Task Save()
@@ -84,10 +86,10 @@ internal partial class ViewModel : EditorViewModelBase
     private CategoryInfoDto _selectedCategory;
 
     [ObservableProperty]
-    private IEnumerable<ClientInfoDto> _clients;
+    private IEnumerable<ClientListDto> _clients;
 
     [ObservableProperty]
-    private ClientInfoDto _selectedClient;
+    private ClientListDto _selectedClient;
 
     [ObservableProperty]
     private IEnumerable<ProductInfoDto> _products;
