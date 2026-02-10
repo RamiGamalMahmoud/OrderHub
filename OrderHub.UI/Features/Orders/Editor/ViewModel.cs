@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using static OrderHub.Application.DTOs.CategoryDtos;
 using static OrderHub.Application.DTOs.CommonDtos;
 
 namespace OrderHub.UI.Features.Orders.Editor;
@@ -13,10 +12,6 @@ namespace OrderHub.UI.Features.Orders.Editor;
 internal partial class ViewModel : EditorViewModelBase
 {
     private readonly IMediator _mediator;
-    [ObservableProperty]
-    private IEnumerable<CategoryTreeDto> _categories;
-    [ObservableProperty]
-    private CategoryTreeDto _selectedCategoryTree;
     private ObservableCollection<KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>> _subCategories;
     public ObservableCollection<KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>> SubCategories
     {
@@ -33,7 +28,6 @@ internal partial class ViewModel : EditorViewModelBase
     internal async Task LoadAsync()
     {
         RootCategories = await _mediator.Send(new Application.Queries.CommonQueries.GetRootCategoriesQuery());
-        Categories = await _mediator.Send(new Application.Queries.CategoryQueries.GetCategoryTreeQuery());
     }
 
     protected override Task Save()
@@ -43,18 +37,43 @@ internal partial class ViewModel : EditorViewModelBase
 
     async partial void OnSelectedCategoryChanged(CategoryInfoDto oldValue, CategoryInfoDto newValue)
     {
-        IEnumerable<CategoryInfoDto> subCategories = await _mediator.Send(new Application.Queries.CommonQueries.GetSubCategoriesQuery(newValue.Id));
+        if (newValue is null)
+        {
+            SubCategories.Clear();
+            return;
+        }
 
-        KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>> existing = _subCategories.Where(s => s.Key.Id == newValue.Id).FirstOrDefault();
-
-        if(newValue.ParentId is null)
+        if (newValue.ParentId is null)
         {
             SubCategories.Clear();
         }
+        else
+        {
+            RemoveSubCategoriesAfterParent((int) newValue.ParentId);
+        }
 
-        if (subCategories.Any() && existing.Key is null)
+        IEnumerable<CategoryInfoDto> subCategories = await _mediator.Send(new Application.Queries.CommonQueries.GetSubCategoriesQuery(newValue.Id));
+
+        bool exists = _subCategories.Any(s => s.Key.Id == newValue.Id);
+
+        if (subCategories.Any() && !exists)
         {
             SubCategories.Add(new KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>(newValue, subCategories));
+        }
+    }
+
+    private void RemoveSubCategoriesAfterParent(int parentId)
+    {
+        List<int> ids = SubCategories.Select(c => c.Key.Id).ToList();
+
+        int parentIndex = ids.IndexOf(parentId);
+
+        if (parentIndex + 1 < ids.Count)
+        {
+            for (int i = parentIndex + 1; i < ids.Count; i++)
+            {
+                SubCategories.RemoveAt(i);
+            }
         }
     }
 
