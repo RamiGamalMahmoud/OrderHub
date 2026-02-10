@@ -19,7 +19,7 @@ internal class GetCategoriesInfoQueryHandler(AppDbContextFactory appDbContextFac
 
         return await dbContext
             .Categories
-            .Select(c => new CategoryInfoDto(c.Id, c.Name.Value, c.FullPath, c.ParentCategoryId))
+            .Select(c => new CategoryInfoDto(c.Id, c.Name.Value, c.FullPath, c.SubCategories.Count < 0, c.ParentCategoryId))
             .ToListAsync(cancellationToken: cancellationToken);
     }
 }

@@ -18,7 +18,7 @@ internal class GetSubCategoriesQueryHandler(AppDbContextFactory appDbContextFact
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
         return await appDbContext.Categories
             .Where(c => c.ParentCategoryId == request.ParentCategoryId)
-            .Select(c => new CategoryInfoDto(c.Id, c.Name.Value, c.FullPath, c.ParentCategoryId))
+            .Select(c => new CategoryInfoDto(c.Id, c.Name.Value, c.FullPath, c.SubCategories.Count < 0, c.ParentCategoryId))
             .ToListAsync();
     }
 }
