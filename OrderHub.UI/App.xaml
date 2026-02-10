@@ -1,0 +1,46 @@
+﻿<Application
+    x:Class="OrderHub.UI.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
+    xmlns:local="clr-namespace:OrderHub.UI"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+    ShutdownMode="OnMainWindowClose">
+
+    <Application.Resources>
+
+        <ResourceDictionary>
+
+            <FontFamily x:Key="FontFamily">Arial</FontFamily>
+            <sys:Double x:Key="FontSize">14</sys:Double>
+            <sys:Boolean x:Key="True">True</sys:Boolean>
+            <sys:Boolean x:Key="False">False</sys:Boolean>
+            <FontFamily x:Key="Tajawal">/Fonts/Tajawal-Regular.ttf#Tajawal</FontFamily>
+
+            <ResourceDictionary.MergedDictionaries>
+
+                <ResourceDictionary Source="/Resources/Colors.xaml" />
+                <hc:ThemeResources RequestedTheme="Light">
+                    <hc:ThemeResources.ThemeDictionaries>
+
+                        <ResourceDictionary x:Key="Light" hc:ThemeDictionary.Key="Light">
+                            <ResourceDictionary.MergedDictionaries>
+                                <hc:ColorPaletteResources
+                                    PrimaryBrush="{StaticResource BlueBrush}"
+                                    PrimaryColor="{StaticResource BlackColor}"
+                                    PrimaryTextBrush="{StaticResource BlackBrush}"
+                                    TargetTheme="Light" />
+                            </ResourceDictionary.MergedDictionaries>
+                        </ResourceDictionary>
+
+                    </hc:ThemeResources.ThemeDictionaries>
+                </hc:ThemeResources>
+                <hc:Theme />
+                <ResourceDictionary Source="/Resources/Styles/DataGridStyle.xaml" />
+
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+
+    </Application.Resources>
+
+</Application>

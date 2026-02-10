@@ -1,0 +1,153 @@
+﻿<Window
+    x:Class="OrderHub.UI.Features.Products.Editor.View"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:OrderHub.UI.Features.Products.Editor"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="{Binding Title}"
+    d:DataContext="{d:DesignInstance Type=local:ViewModel}"
+    FontFamily="Arial"
+    FontSize="14"
+    ResizeMode="NoResize"
+    SizeToContent="WidthAndHeight"
+    WindowStartupLocation="CenterScreen"
+    mc:Ignorable="d">
+
+    <Border
+        Width="400"
+        Margin="12"
+        Padding="12"
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        BorderBrush="LightGray"
+        BorderThickness="1"
+        CornerRadius="12"
+        FlowDirection="RightToLeft">
+        <Grid>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*" />
+                <RowDefinition Height="1*" />
+                <RowDefinition Height="1*" />
+                <RowDefinition Height="1*" />
+                <RowDefinition Height="auto" />
+            </Grid.RowDefinitions>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel
+                Grid.Row="0"
+                Grid.ColumnSpan="2"
+                Orientation="Vertical">
+                <TextBlock
+                    Margin="0,12,0,4"
+                    FontWeight="Bold"
+                    Text="اسم المنتج" />
+                <TextBox Height="32" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+
+            <StackPanel
+                Grid.Row="1"
+                Grid.ColumnSpan="2"
+                Orientation="Vertical">
+                <TextBlock
+                    Margin="0,12,0,4"
+                    FontWeight="Bold"
+                    Text="القسم" />
+
+                <ComboBox
+                    Height="32"
+                    DisplayMemberPath="FullPath"
+                    IsEditable="False"
+                    ItemsSource="{Binding Categories}"
+                    SelectedItem="{Binding SelectedCategory}" />
+            </StackPanel>
+
+            <StackPanel
+                Grid.Row="2"
+                Grid.Column="0"
+                Margin="0,0,5,0"
+                Orientation="Vertical">
+                <TextBlock
+                    Margin="0,12,0,4"
+                    FontWeight="Bold"
+                    Text="السعر" />
+                <TextBox Height="32" Text="{Binding PriceText, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+
+            <StackPanel
+                Grid.Row="2"
+                Grid.Column="1"
+                Margin="5,0,0,0"
+                Orientation="Vertical">
+                <TextBlock
+                    Margin="0,12,0,4"
+                    FontWeight="Bold"
+                    Text="الكود" />
+                <TextBox Height="32" Text="{Binding Code, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+
+            <StackPanel
+                Grid.Row="3"
+                Grid.ColumnSpan="2"
+                Orientation="Vertical">
+                <TextBlock
+                    Margin="0,12,0,4"
+                    FontWeight="Bold"
+                    Text="الموردون" />
+                <ItemsControl ItemsSource="{Binding Suppliers}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border
+                                Margin="5"
+                                Padding="10,0"
+                                Background="{StaticResource WhiteBrush}"
+                                CornerRadius="5">
+                                <CheckBox
+                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Path=DataContext.SelectSupplierCommand}"
+                                    Content="{Binding Value.Name}"
+                                    IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" />
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <StackPanel
+                Grid.Row="4"
+                Grid.ColumnSpan="2"
+                Margin="0,8,0,0"
+                HorizontalAlignment="Center"
+                Orientation="Horizontal">
+                <Button
+                    Width="80"
+                    Margin="0,0,12,0"
+                    Padding="16,6"
+                    Command="{Binding SaveCommand}"
+                    Content="حفظ"
+                    FontFamily="Arial"
+                    FontWeight="Bold" />
+                <Button
+                    Width="80"
+                    Padding="16,6"
+                    BorderBrush="{StaticResource DangerBrush}"
+                    Command="{Binding CloseEditorCommand}"
+                    Content="إلغاء"
+                    FontFamily="Arial"
+                    FontWeight="Bold"
+                    Foreground="{StaticResource DangerBrush}" />
+            </StackPanel>
+
+        </Grid>
+    </Border>
+
+</Window>

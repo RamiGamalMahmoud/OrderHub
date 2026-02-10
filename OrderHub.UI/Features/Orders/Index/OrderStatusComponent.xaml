@@ -1,0 +1,60 @@
+﻿<UserControl
+    x:Class="OrderHub.UI.Features.Orders.Index.OrderStatusComponent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:OrderHub.UI.Features.Orders.Index"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <Style TargetType="ComboBoxItem" />
+    </UserControl.Resources>
+
+    <ComboBox
+        Cursor="Hand"
+        DisplayMemberPath="DisplayName"
+        ItemsSource="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorLevel=2, AncestorType=UserControl}, Path=DataContext.OrderStatuses}"
+        SelectedItem="{Binding OrderStatus, UpdateSourceTrigger=PropertyChanged}">
+        <ComboBox.Style>
+            <Style BasedOn="{StaticResource ComboBoxExtendBaseStyle}" TargetType="ComboBox">
+
+                <Setter Property="BorderThickness" Value="0" />
+                <Style.Triggers>
+
+                    <DataTrigger Binding="{Binding OrderStatus.Status}" Value="Pending">
+                        <Setter Property="Foreground" Value="#616161" />
+                        <Setter Property="Background" Value="#eceff1" />
+                        <Setter Property="BorderBrush" Value="#616161" />
+                    </DataTrigger>
+
+                    <DataTrigger Binding="{Binding OrderStatus.Status}" Value="Processing">
+                        <Setter Property="Foreground" Value="#512da8" />
+                        <Setter Property="Background" Value="#ede7f6" />
+                        <Setter Property="BorderBrush" Value="#512da8" />
+                    </DataTrigger>
+
+                    <DataTrigger Binding="{Binding OrderStatus.Status}" Value="Cancelled">
+                        <Setter Property="Foreground" Value="#b71c1c" />
+                        <Setter Property="Background" Value="#fce4ec" />
+                        <Setter Property="BorderBrush" Value="DarkRed" />
+                    </DataTrigger>
+
+                    <DataTrigger Binding="{Binding OrderStatus.Status}" Value="Delivered">
+                        <Setter Property="Foreground" Value="#0d47a1" />
+                        <Setter Property="Background" Value="#bbdefb" />
+                        <Setter Property="BorderBrush" Value="#0d47a1" />
+                    </DataTrigger>
+
+                    <DataTrigger Binding="{Binding OrderStatus.Status}" Value="Shipped">
+                        <Setter Property="Foreground" Value="#1b5e20" />
+                        <Setter Property="Background" Value="#e8f5e9" />
+                        <Setter Property="BorderBrush" Value="#1b5e20" />
+                    </DataTrigger>
+
+                </Style.Triggers>
+            </Style>
+        </ComboBox.Style>
+    </ComboBox>
+
+</UserControl>

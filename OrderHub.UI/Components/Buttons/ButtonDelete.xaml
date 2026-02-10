@@ -1,0 +1,31 @@
+﻿<UserControl
+    x:Class="OrderHub.UI.Components.Buttons.ButtonDelete"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:Hoax.WpfConverters;assembly=Hoax.WpfConverters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
+    xmlns:local="clr-namespace:OrderHub.UI.Components.Buttons"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Button
+        Margin="5,0"
+        Padding="5"
+        Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl, Mode=FindAncestor, AncestorLevel=2}, Path=DataContext.DeleteCommand}"
+        CommandParameter="{Binding}"
+        Cursor="Hand"
+        Style="{StaticResource ButtonDanger}"
+        FontFamily="Arial"
+        Visibility="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsEnabled, Converter={converters:BoolToVisibilityConverter}}">
+        <StackPanel Orientation="Horizontal">
+            <icons:MaterialIcon Margin="0,0,5,0" Kind="Delete" />
+            <TextBlock
+                Foreground="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}, Path=Foreground}"
+                VerticalAlignment="Center"
+                FontWeight="Bold"
+                Text="حذف" />
+        </StackPanel>
+    </Button>
+
+</UserControl>

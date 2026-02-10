@@ -1,0 +1,84 @@
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using MediatR;
+using OrderHub.UI.Common;
+using OrderHub.UI.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
+using static OrderHub.Application.DTOs.CommonDtos;
+
+namespace OrderHub.UI.Features.Suppliers.Editor;
+
+public abstract partial class EditSupplierViewModelBase : EditorViewModelBase
+{
+    protected readonly IMediator _mediator;
+    private readonly IDialogService _dialogService;
+
+    public EditSupplierViewModelBase(IMediator mediator, IDialogService dialogService)
+    {
+        _notifyPropertiesNames = [nameof(Name), nameof(OpenAt), nameof(CloseAt), nameof(Number), nameof(CountryCode), nameof(City), nameof(Street)];
+        _mediator = mediator;
+        _dialogService = dialogService;
+        ValidateAllProperties();
+    }
+
+    [ObservableProperty]
+    [Required(ErrorMessage = "اسم المورد مطلوب")]
+    [NotifyDataErrorInfo]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    private string _name = string.Empty;
+
+    [ObservableProperty]
+    [Required(ErrorMessage = "وقت الافتتاح مطلوب")]
+    [NotifyDataErrorInfo]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    private DateTime? _openAt;
+
+    [ObservableProperty]
+    [Required(ErrorMessage = "وقت الاغلاق مطلوب")]
+    [NotifyDataErrorInfo]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    private DateTime? _closeAt;
+
+    [ObservableProperty]
+    [Required(ErrorMessage = "الشارع مطلوب")]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    [NotifyDataErrorInfo]
+    private string _street;
+
+    [ObservableProperty]
+    [Required(ErrorMessage = "المدينة مطلوبة")]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    [NotifyDataErrorInfo]
+    private CityInfoDto _city;
+
+    [ObservableProperty]
+    [NotifyDataErrorInfo]
+    [Required(ErrorMessage = "رقم الهاتف مطلوب")]
+    [Length(10, 14, ErrorMessage = "رقم الهاتف يجب ان يكون على الاقل 10 رقم وعلى الاكثر 14 رقم")]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    private string _number;
+
+    [ObservableProperty]
+    [NotifyDataErrorInfo]
+    [Required(ErrorMessage = "مفتاح الدولة مطلوب")]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    [MinLength(2, ErrorMessage = "مفتاح الدولة يجب ان يكون على الاقل 2 رقم")]
+    private string _countryCode = "+966";
+
+    [ObservableProperty]
+    private IEnumerable<CityInfoDto> _cities;
+
+    [RelayCommand]
+    private void ShowCreateCity() => _dialogService.ShowDialog<Cities.Create.CreateCityView>();
+
+    public virtual async Task LoadAsync()
+    {
+        Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
+    }
+
+
+    public override string Title => "انشاء مورد جديد";
+}

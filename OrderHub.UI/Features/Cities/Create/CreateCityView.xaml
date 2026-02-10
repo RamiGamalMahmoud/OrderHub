@@ -1,0 +1,51 @@
+﻿<Window
+    x:Class="OrderHub.UI.Features.Cities.Create.CreateCityView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:OrderHub.UI.Features.Cities.Create"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="إضافة مدينة"
+    d:DataContext="{d:DesignInstance Type=local:CreateCityViewModel}"
+    ResizeMode="NoResize"
+    SizeToContent="WidthAndHeight"
+    WindowStartupLocation="CenterScreen"
+    WindowStyle="SingleBorderWindow"
+    mc:Ignorable="d">
+
+    <Border Padding="20">
+        <Grid Width="210" FlowDirection="RightToLeft">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*" />
+                <RowDefinition Height="1*" />
+            </Grid.RowDefinitions>
+
+            <TextBox Grid.Row="0" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+
+            <StackPanel
+                Grid.Row="1"
+                Margin="0,20,0,0"
+                HorizontalAlignment="Center"
+                Orientation="Horizontal">
+
+                <Button
+                    Grid.Row="1"
+                    Width="100"
+                    Command="{Binding SaveCommand}"
+                    Content="إضافة"
+                    IsDefault="True" />
+
+                <Button
+                    Grid.Row="1"
+                    Width="100"
+                    Margin="10,0,0,0"
+                    BorderBrush="{StaticResource DangerBrush}"
+                    Click="Button_Click"
+                    Content="إلغاء"
+                    Foreground="{StaticResource DangerBrush}" />
+
+            </StackPanel>
+        </Grid>
+    </Border>
+
+</Window>

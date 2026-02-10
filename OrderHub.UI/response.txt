@@ -1,0 +1,164 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login Successful</title>
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --card:#ffffff;
+      --accent:#22c55e;
+      --muted:#6b7280;
+      --glass: rgba(255,255,255,0.6);
+      --shadow: 0 8px 30px rgba(23,23,23,0.08);
+      --radius:16px;
+      --mono: "Segoe UI Mono", "Roboto Mono", monospace;
+      --ui: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--ui);
+      background:
+        radial-gradient(1200px 600px at 10% 10%, rgba(34,197,94,0.06), transparent 8%),
+        radial-gradient(800px 400px at 90% 90%, rgba(34,197,94,0.03), transparent 10%),
+        var(--bg);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+      color:#0f172a;
+    }
+
+    .card{
+      width:100%;
+      max-width:720px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.98), var(--card));
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:28px;
+      display:flex;
+      gap:20px;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .left {
+      display:flex;
+      gap:18px;
+      align-items:center;
+      flex:1;
+    }
+
+    .badge{
+      min-width:96px;
+      min-height:96px;
+      border-radius:14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:linear-gradient(135deg, rgba(34,197,94,0.14), rgba(34,197,94,0.06));
+      box-shadow: 0 6px 18px rgba(34,197,94,0.08), inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+
+    .badge svg{width:56px;height:56px;display:block}
+
+    .content h1{
+      margin:0 0 6px 0;
+      font-size:20px;
+      letter-spacing:-0.2px;
+    }
+
+    .content p{
+      margin:0;
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    .right {
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-self:flex-end;
+    }
+
+    .codeBox{
+      background:var(--glass);
+      border-radius:10px;
+      padding:10px 12px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      box-shadow: inset 0 -1px 0 rgba(0,0,0,0.02);
+      border:1px solid rgba(15,23,42,0.04);
+      min-width:260px;
+      font-family:var(--mono);
+      font-size:13px;
+      color:#063;
+    }
+
+    .small {
+      font-size:12px;
+      color:var(--muted);
+      margin-top:10px;
+    }
+
+    button {
+      background:var(--accent);
+      color:#fff;
+      border:0;
+      padding:10px 14px;
+      border-radius:10px;
+      font-weight:600;
+      cursor:pointer;
+      box-shadow: 0 6px 16px rgba(34,197,94,0.18);
+    }
+
+    button.ghost{
+      background:transparent;
+      color:#0f172a;
+      border:1px solid rgba(15,23,42,0.06);
+      box-shadow:none;
+      font-weight:600;
+    }
+
+    .actions{display:flex; gap:8px; align-items:center; flex-direction:column;}
+
+    .hint{font-size:12px; color:var(--muted); margin-top:6px; text-align:center;}
+    .close-note{font-size:12px; color:var(--muted); margin-top:8px;}
+    @media (max-width:640px){
+      .card{flex-direction:column; align-items:stretch}
+      .right{flex-direction:row; justify-content:space-between}
+      .actions{flex-direction:row}
+    }
+  </style>
+</head>
+<body>
+  <main class="card" role="main" aria-labelledby="title">
+    <section class="left" aria-hidden="false">
+      <div class="badge" aria-hidden="true">
+        <!-- Success SVG -->
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="11" stroke="none" fill="url(#g)"/>
+          <path d="M7.5 12.5l2.7 2.7L16.5 9" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <defs>
+            <linearGradient id="g" x1="0" x2="1">
+              <stop offset="0" stop-color="#10b981"/>
+              <stop offset="1" stop-color="#34d399"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+
+      <div class="content" id="title">
+        <h1>Login successful</h1>
+        <p>You've signed in. You can close this window and return to the application.</p>
+        <div class="small" id="smallInfo"></div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
