@@ -16,36 +16,41 @@
         BorderThickness="1"
         CornerRadius="5">
         <StackPanel Orientation="Vertical">
+            <StackPanel Orientation="Vertical">
+                <TextBlock
+                    FontSize="16"
+                    FontWeight="Bold"
+                    Foreground="{StaticResource BlueBrush}"
+                    Text="القسم" />
+                <StackPanel Margin="0,5" Orientation="Horizontal">
+                    <ComboBox
+                        Width="200"
+                        DisplayMemberPath="Name"
+                        ItemsSource="{Binding RootCategories}"
+                        SelectedItem="{Binding SelectedCategory}" />
 
-            <StackPanel Margin="0,5" Orientation="Horizontal">
-                <ComboBox
-                    Width="200"
-                    DisplayMemberPath="Name"
-                    ItemsSource="{Binding RootCategories}"
-                    SelectedItem="{Binding SelectedCategory}" />
+                    <ItemsControl ItemsSource="{Binding SubCategories}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="5,0" Orientation="Horizontal">
+                                    <icons:MaterialIcon Foreground="{StaticResource BlueBrush}" Kind="ArrowLeftBoldCircleOutline" />
+                                    <ComboBox
+                                        Width="200"
+                                        DisplayMemberPath="Name"
+                                        ItemsSource="{Binding Value}"
+                                        SelectedItem="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.SelectedCategory}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-                <ItemsControl ItemsSource="{Binding SubCategories}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Margin="5,0" Orientation="Horizontal">
-                                <icons:MaterialIcon Foreground="{StaticResource BlueBrush}" Kind="ArrowLeftBoldCircleOutline" />
-                                <ComboBox
-                                    Width="200"
-                                    DisplayMemberPath="Name"
-                                    ItemsSource="{Binding Value}"
-                                    SelectedItem="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.SelectedCategory}" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
+                </StackPanel>
             </StackPanel>
-
             <StackPanel Margin="0,5" Orientation="Horizontal">
 
                 <StackPanel Orientation="Vertical">
@@ -87,6 +92,23 @@
                         Margin="0,5,0,0"
                         Text="{Binding Quantity}" />
                 </StackPanel>
+
+                <Button
+                    Margin="5,0"
+                    VerticalAlignment="Bottom"
+                    Command="{Binding AddProductCommand}"
+                    Cursor="Hand"
+                    Style="{StaticResource ButtonPrimary}">
+                    <StackPanel Orientation="Horizontal">
+                        <icons:MaterialIcon Kind="PlusCircle" />
+                        <TextBlock
+                            Margin="5,0,0,0"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            FontWeight="Bold"
+                            Text="اضافة" />
+                    </StackPanel>
+                </Button>
 
             </StackPanel>
 
