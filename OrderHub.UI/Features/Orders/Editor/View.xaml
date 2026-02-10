@@ -48,8 +48,9 @@
 
             <DataGrid
                 Grid.Row="1"
-                Margin="0,5"
+                Margin="0,5,0,0"
                 d:ItemsSource="{d:SampleData}"
+                hc:BorderElement.CornerRadius="5 5 0 0"
                 AutoGenerateColumns="False"
                 Background="White"
                 GridLinesVisibility="Vertical"
@@ -88,18 +89,94 @@
 
             <Border
                 Grid.Row="2"
-                Margin="0,5"
+                Height="50"
                 Padding="5"
+                Background="#F3F4F8"
                 BorderBrush="LightGray"
-                BorderThickness="1"
-                CornerRadius="5">
+                BorderThickness="1,0,1,1"
+                CornerRadius="0 0 5 5">
 
-                <StackPanel Orientation="Horizontal">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock VerticalAlignment="Center" Text="السعر الكلي" />
-                        <Label />
-                    </StackPanel>
-                </StackPanel>
+                <Grid>
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="1*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border
+                        Grid.Column="0"
+                        Padding="5"
+                        HorizontalAlignment="Left"
+                        Background="White"
+                        BorderBrush="LightGray"
+                        BorderThickness="1"
+                        CornerRadius="5">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontWeight="Bold"
+                                    Foreground="Gray"
+                                    Text="عدد المنتجات" />
+                                <TextBlock
+                                    Width="100"
+                                    Margin="5,0"
+                                    VerticalAlignment="Center"
+                                    Foreground="{StaticResource BlueBrush}"
+                                    Text="200.50"
+                                    TextAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border
+                        Grid.Column="1"
+                        Margin="5,0,0,0"
+                        Padding="5"
+                        HorizontalAlignment="Left"
+                        Background="White"
+                        BorderBrush="LightGray"
+                        BorderThickness="1"
+                        CornerRadius="5">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontWeight="Bold"
+                                    Foreground="Gray"
+                                    Text="السعر الكلي" />
+                                <TextBlock
+                                    Width="100"
+                                    Margin="5,0"
+                                    VerticalAlignment="Center"
+                                    Foreground="{StaticResource BlueBrush}"
+                                    Text="200.50"
+                                    TextAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Button
+                        Grid.Column="2"
+                        Width="100"
+                        Margin="5,0"
+                        HorizontalAlignment="Right"
+                        Command="{Binding CreateOrderCommand}"
+                        Cursor="Hand"
+                        FontSize="14"
+                        FontWeight="Bold"
+                        Style="{StaticResource ButtonPrimary}">
+                        <StackPanel Orientation="Horizontal">
+                            <icons:MaterialIcon Kind="ContentSaveOutline" />
+                            <TextBlock
+                                Margin="5,0"
+                                VerticalAlignment="Center"
+                                Text="حفظ" />
+                        </StackPanel>
+                    </Button>
+
+                </Grid>
 
             </Border>
 
