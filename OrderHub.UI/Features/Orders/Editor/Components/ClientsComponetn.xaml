@@ -28,7 +28,9 @@
                         Text="العملاء" />
                     <ComboBox
                         Width="250"
+                        Margin="0,5,0,0"
                         VerticalAlignment="Center"
+                        DisplayMemberPath="Name"
                         ItemsSource="{Binding Clients}"
                         SelectedItem="{Binding SelectedClient}" />
                 </StackPanel>
@@ -71,7 +73,7 @@
                         Foreground="{StaticResource BlueBrush}"
                         Text="رقم الهاتف" />
                     <Label
-                        Width="150"
+                        Width="200"
                         Margin="0,5,0,0"
                         HorizontalContentAlignment="Left"
                         FontWeight="Bold">
@@ -80,7 +82,8 @@
                             <TextBlock
                                 Margin="10,0,0,0"
                                 VerticalAlignment="Center"
-                                Text="0123456789" />
+                                FlowDirection="LeftToRight"
+                                Text="{Binding SelectedClient.PhoneNumber}" />
                         </StackPanel>
                     </Label>
                 </StackPanel>
@@ -93,7 +96,7 @@
                         Foreground="{StaticResource BlueBrush}"
                         Text="العنوان" />
                     <Label
-                        Width="200"
+                        Width="250"
                         Margin="0,5,0,0"
                         HorizontalContentAlignment="Left"
                         FontWeight="Bold">
@@ -102,7 +105,7 @@
                             <TextBlock
                                 Margin="10,0,0,0"
                                 VerticalAlignment="Center"
-                                Text="القاهرة" />
+                                Text="{Binding SelectedClient.Address}" />
                         </StackPanel>
                     </Label>
                 </StackPanel>
