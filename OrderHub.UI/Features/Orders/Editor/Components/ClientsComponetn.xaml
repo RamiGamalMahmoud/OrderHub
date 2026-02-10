@@ -21,9 +21,10 @@
             <StackPanel Margin="0,5" Orientation="Horizontal">
                 <StackPanel Orientation="Vertical">
                     <TextBlock
-                        HorizontalAlignment="Center"
                         VerticalAlignment="Center"
+                        FontSize="16"
                         FontWeight="Bold"
+                        Foreground="{StaticResource BlueBrush}"
                         Text="العملاء" />
                     <ComboBox
                         Width="250"
@@ -62,7 +63,12 @@
 
             <StackPanel Margin="0,5" Orientation="Horizontal">
                 <StackPanel Margin="5,0" Orientation="Vertical">
-                    <TextBlock VerticalAlignment="Center" Text="اسم العميل" />
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontSize="16"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource BlueBrush}"
+                        Text="اسم العميل" />
                     <Label
                         Width="250"
                         Margin="0,5,0,0"
@@ -72,7 +78,12 @@
                 </StackPanel>
 
                 <StackPanel Margin="5,0" Orientation="Vertical">
-                    <TextBlock VerticalAlignment="Center" Text="رقم الهاتف" />
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontSize="16"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource BlueBrush}"
+                        Text="رقم الهاتف" />
                     <Label
                         Width="150"
                         Margin="0,5,0,0"
@@ -82,7 +93,12 @@
                 </StackPanel>
 
                 <StackPanel Margin="5,0" Orientation="Vertical">
-                    <TextBlock VerticalAlignment="Center" Text="العنوان" />
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontSize="16"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource BlueBrush}"
+                        Text="العنوان" />
                     <Label
                         Width="200"
                         Margin="0,5,0,0"

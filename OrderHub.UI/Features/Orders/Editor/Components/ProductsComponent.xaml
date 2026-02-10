@@ -49,7 +49,12 @@
             <StackPanel Margin="0,5" Orientation="Horizontal">
 
                 <StackPanel Orientation="Vertical">
-                    <TextBlock VerticalAlignment="Center" Text="المنتج" />
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontSize="16"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource BlueBrush}"
+                        Text="المنتج" />
                     <ComboBox
                         Width="200"
                         Margin="0,5,0,0"
@@ -58,7 +63,12 @@
                 </StackPanel>
 
                 <StackPanel Margin="5,0" Orientation="Vertical">
-                    <TextBlock VerticalAlignment="Center" Text="السعر" />
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontSize="16"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource BlueBrush}"
+                        Text="السعر" />
                     <TextBox
                         Width="100"
                         Margin="0,5,0,0"
@@ -66,7 +76,12 @@
                 </StackPanel>
 
                 <StackPanel Margin="5,0" Orientation="Vertical">
-                    <TextBlock VerticalAlignment="Center" Text="الكمية" />
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontSize="16"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource BlueBrush}"
+                        Text="الكمية" />
                     <TextBox
                         Width="50"
                         Margin="0,5,0,0"
