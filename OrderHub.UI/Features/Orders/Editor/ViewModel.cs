@@ -25,6 +25,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
         _mediator = mediator;
         _subCategories = [];
         OrderBuilder = new OrderBuilder();
+        OrderBuilder.ItemsChanged += (s, e) => SaveCommand.NotifyCanExecuteChanged();
         ValidateAllProperties();
     }
 
