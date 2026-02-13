@@ -16,7 +16,7 @@ namespace OrderHub.Tests.Domain
             OrderItem orderItem = orderItemCreatResult.Value;
 
             orderItemCreatResult.IsSuccess.Should().BeTrue();
-            orderItem.TotalPrice.Value.Should().Be(40.0M);
+            orderItem.SubTotal.Value.Should().Be(40.0M);
         }
 
         [Fact]
@@ -29,7 +29,7 @@ namespace OrderHub.Tests.Domain
             OrderItem orderItem = orderItemCreatResult.Value;
 
             orderItem.IncreaseQuantity(2);
-            orderItem.TotalPrice.Value.Should().Be(80);
+            orderItem.SubTotal.Value.Should().Be(80);
         }
 
         [Fact]
@@ -42,7 +42,7 @@ namespace OrderHub.Tests.Domain
             OrderItem orderItem = orderItemCreatResult.Value;
 
             orderItem.DecreaseQuantity(1);
-            orderItem.TotalPrice.Value.Should().Be(20);
+            orderItem.SubTotal.Value.Should().Be(20);
         }
 
         [Fact]
@@ -55,7 +55,7 @@ namespace OrderHub.Tests.Domain
             OrderItem orderItem = orderItemCreatResult.Value;
 
             orderItem.UpdateQuantity(5);
-            orderItem.TotalPrice.Value.Should().Be(100);
+            orderItem.SubTotal.Value.Should().Be(100);
         }
 
         [Theory]
@@ -69,9 +69,9 @@ namespace OrderHub.Tests.Domain
 
             Result<OrderItem> orderItemCreatResult = OrderItem.Create(product, quantity);
             OrderItem orderItem = orderItemCreatResult.Value;
-            orderItem.TotalPrice.Value.Should().Be(totalPrice);
+            orderItem.SubTotal.Value.Should().Be(totalPrice);
             orderItem.UpdateQuantity(5);
-            orderItem.TotalPrice.Value.Should().Be(unitPrice * 5);
+            orderItem.SubTotal.Value.Should().Be(unitPrice * 5);
         }
     }
 }

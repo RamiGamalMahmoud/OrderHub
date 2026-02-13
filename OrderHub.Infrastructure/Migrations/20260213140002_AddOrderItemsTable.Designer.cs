@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OrderHub.Infrastructure;
 
@@ -10,9 +11,11 @@ using OrderHub.Infrastructure;
 namespace OrderHub.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260213140002_AddOrderItemsTable")]
+    partial class AddOrderItemsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
@@ -606,8 +609,7 @@ namespace OrderHub.Infrastructure.Migrations
                                 .HasConstraintName("fk_order_items_order_items_id");
                         });
 
-                    b.Navigation("UnitPrice")
-                        .IsRequired();
+                    b.Navigation("UnitPrice");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Phone", b =>

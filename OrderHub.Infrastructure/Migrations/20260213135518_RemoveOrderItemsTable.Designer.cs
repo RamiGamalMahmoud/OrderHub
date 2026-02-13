@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OrderHub.Infrastructure;
 
@@ -10,9 +11,11 @@ using OrderHub.Infrastructure;
 namespace OrderHub.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260213135518_RemoveOrderItemsTable")]
+    partial class RemoveOrderItemsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
@@ -167,44 +170,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasDatabaseName("ix_deliverymen_deliveryman_city_id");
 
                     b.ToTable("deliverymen", (string)null);
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.OrderItem", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("modified_at");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("product_id");
-
-                    b.Property<string>("ProductName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("VARCHAR(100)")
-                        .HasColumnName("product_name");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("DECIMAL(18,2)")
-                        .HasColumnName("quantity");
-
-                    b.HasKey("Id")
-                        .HasName("pk_order_items");
-
-                    b.HasIndex("ProductId")
-                        .HasDatabaseName("ix_order_items_product_id");
-
-                    b.ToTable("order_items", (string)null);
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.OrderStatus", b =>
@@ -575,38 +540,6 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("City");
 
                     b.Navigation("Name")
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.OrderItem", b =>
-                {
-                    b.HasOne("OrderHub.Domain.Models.Product", null)
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_order_items_products_product_id");
-
-                    b.OwnsOne("OrderHub.Domain.ValueObjects.Money", "UnitPrice", b1 =>
-                        {
-                            b1.Property<int>("OrderItemId")
-                                .HasColumnType("INTEGER")
-                                .HasColumnName("id");
-
-                            b1.Property<decimal>("Value")
-                                .HasColumnType("DECIMAL(18,2)")
-                                .HasColumnName("unit_price");
-
-                            b1.HasKey("OrderItemId");
-
-                            b1.ToTable("order_items");
-
-                            b1.WithOwner()
-                                .HasForeignKey("OrderItemId")
-                                .HasConstraintName("fk_order_items_order_items_id");
-                        });
-
-                    b.Navigation("UnitPrice")
                         .IsRequired();
                 });
 

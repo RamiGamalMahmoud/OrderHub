@@ -11,18 +11,18 @@ public class OrderItem : ModelBase
     private OrderItem(int productId, string productName, int orderId, decimal unitPrice, int quantity)
     {
         ProductId = productId;
-        OrderId = orderId;
+        //OrderId = orderId;
         ProductName = productName;
         UnitPrice = new Money(unitPrice);
         Quantity = quantity;
     }
     public int ProductId { get; private set; }
 
-    public int OrderId { get; private set; }
+    //public int OrderId { get; private set; }
     public string ProductName { get; private set; }
 
     public Money UnitPrice { get; private set; }
-    public Money TotalPrice => UnitPrice * Quantity;
+    public Money SubTotal => UnitPrice * Quantity;
 
     public int Quantity { get; private set; }
 
