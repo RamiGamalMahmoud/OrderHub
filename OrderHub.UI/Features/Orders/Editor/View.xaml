@@ -198,7 +198,7 @@
                         FontWeight="Bold"
                         Style="{StaticResource ButtonPrimary}">
                         <StackPanel Orientation="Horizontal">
-                            <icons:MaterialIcon Kind="ContentSaveOutline" />
+                            <icons:MaterialIcon Kind="AddBox" />
                             <TextBlock
                                 Margin="5,0"
                                 VerticalAlignment="Center"
