@@ -16,15 +16,9 @@ namespace OrderHub.UI.Features.Orders.Editor;
 
 internal partial class ViewModel : EditorViewModelBase
 {
-    #region Fields
-
     private readonly IMediator _mediator;
     private ObservableCollection<KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>> _subCategories;
     private ObservableCollection<OrderItem> _orderItems = new();
-
-    #endregion
-
-    #region Constructor
 
     public ViewModel(IMediator mediator)
     {
@@ -34,15 +28,7 @@ internal partial class ViewModel : EditorViewModelBase
         ValidateAllProperties();
     }
 
-    #endregion
-
-    #region Services
-
     public OrderBuilder OrderBuilder { get; }
-
-    #endregion
-
-    #region Properties - Categories
 
     [ObservableProperty]
     private IEnumerable<CategoryInfoDto> _rootCategories;
@@ -56,10 +42,6 @@ internal partial class ViewModel : EditorViewModelBase
         set => SetProperty(ref _subCategories, value);
     }
 
-    #endregion
-
-    #region Properties - Clients
-
     [ObservableProperty]
     private IEnumerable<ClientListDto> _clients;
 
@@ -68,10 +50,6 @@ internal partial class ViewModel : EditorViewModelBase
     [NotifyDataErrorInfo]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     private ClientListDto _selectedClient;
-
-    #endregion
-
-    #region Properties - Products Selection
 
     [ObservableProperty]
     private IEnumerable<ProductListDto> _products;
@@ -101,37 +79,21 @@ internal partial class ViewModel : EditorViewModelBase
 
     public bool HasProductSelected => SelectedProduct is not null;
 
-    #endregion
-
-    #region Properties - Order Items
-
     public IEnumerable<OrderItem> OrderItems
     {
         get => _orderItems;
         private set => SetProperty(ref _orderItems, new ObservableCollection<OrderItem>(value));
     }
 
-    #endregion
-
-    #region Properties - EditorViewModelBase
-
     public override string Title { get; }
 
     public override bool CanSave => !HasErrors;
-
-    #endregion
-
-    #region Initialization
 
     internal async Task LoadAsync()
     {
         RootCategories = await _mediator.Send(new Application.Queries.CommonQueries.GetRootCategoriesQuery());
         Clients = await _mediator.Send(new Application.Queries.ClientQueries.GetAllClientsQuery());
     }
-
-    #endregion
-
-    #region Commands
 
     [RelayCommand(CanExecute = nameof(HasProductSelected))]
     private void ResetProductPrice()
@@ -160,10 +122,6 @@ internal partial class ViewModel : EditorViewModelBase
     {
         throw new System.NotImplementedException();
     }
-
-    #endregion
-
-    #region Partial Methods - Change Handlers
 
     async partial void OnSelectedCategoryChanging(CategoryInfoDto oldValue, CategoryInfoDto newValue)
     {
@@ -212,10 +170,6 @@ internal partial class ViewModel : EditorViewModelBase
         SubTotal = Price * Quantity;
     }
 
-    #endregion
-
-    #region Private Methods
-
     private void RemoveSubCategoriesAfterParent(int parentId)
     {
         List<int> ids = SubCategories.Select(c => c.Key.Id).ToList();
@@ -234,6 +188,4 @@ internal partial class ViewModel : EditorViewModelBase
     private void ClearSelectedProduct() => SelectedProduct = null;
 
     private bool CanAddProduct() => SelectedProduct is not null && SubTotal > 0;
-
-    #endregion
 }
