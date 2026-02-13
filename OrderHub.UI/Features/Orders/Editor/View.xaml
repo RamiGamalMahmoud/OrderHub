@@ -95,12 +95,12 @@
                                     <Button
                                         Margin="5,0"
                                         Padding="5"
-                                        Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl, Mode=FindAncestor, AncestorLevel=2}, Path=DataContext.DeleteCommand}"
+                                        BorderThickness="0"
+                                        Command="{Binding RelativeSource={RelativeSource AncestorType=Window, Mode=FindAncestor, AncestorLevel=1}, Path=DataContext.RemoveOrderItemCommand}"
                                         CommandParameter="{Binding}"
                                         Cursor="Hand"
                                         FontFamily="Arial"
                                         Foreground="{StaticResource DangerBrush}"
-                                        BorderThickness="0"
                                         Visibility="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsEnabled, Converter={converters:BoolToVisibilityConverter}}">
                                         <StackPanel Orientation="Horizontal">
                                             <icons:MaterialIcon Margin="0,0,0,0" Kind="Delete" />
