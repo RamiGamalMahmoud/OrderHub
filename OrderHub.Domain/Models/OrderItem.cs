@@ -8,25 +8,30 @@ namespace OrderHub.Domain.Models;
 public class OrderItem : ModelBase
 {
     private OrderItem() { }
-    private OrderItem(Product product, int quantity)
+    private OrderItem(int productId, string productName, int orderId, decimal unitPrice, int quantity)
     {
-        Product = product;
-        UnitPrice = product.Price;
+        ProductId = productId;
+        OrderId = orderId;
+        ProductName = productName;
+        UnitPrice = new Money(unitPrice);
         Quantity = quantity;
     }
+    public int ProductId { get; private set; }
 
-    public Product Product { get; private set; }
-    public Order Order { get; private set; }
+    public int OrderId { get; private set; }
+    public string ProductName { get; private set; }
+
     public Money UnitPrice { get; private set; }
-    public int Quantity { get; private set; }
     public Money TotalPrice => UnitPrice * Quantity;
 
-    public static Result<OrderItem> Create(Product product, int quantity)
+    public int Quantity { get; private set; }
+
+    public static Result<OrderItem> Create(int productId, string productName, int orderId, decimal unitPrice, int quantity)
     {
         var errors = new List<string>();
 
-        if (product is null)
-            errors.Add("Product is required");
+        if (unitPrice <= 0)
+            errors.Add("Unit price must be greater than zero");
 
         if (quantity <= 0)
             errors.Add("Quantity must be greater than zero");
@@ -34,7 +39,7 @@ public class OrderItem : ModelBase
         if (errors.Any())
             return Result<OrderItem>.Failure(string.Join(", ", errors));
 
-        return Result<OrderItem>.Success(new OrderItem(product, quantity));
+        return Result<OrderItem>.Success(new OrderItem(productId, productName, orderId, unitPrice, quantity));
     }
 
     public Result IncreaseQuantity(int quantity)
