@@ -1,6 +1,6 @@
-﻿using OrderHub.Domain.Enums;
-using OrderHub.Domain.ValueObjects;
+﻿using OrderHub.Domain.ValueObjects;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace OrderHub.Domain.Models;
 
@@ -10,13 +10,24 @@ public class Order : ModelBase
     private Order() { }
 
     public int ClientId { get; private set; }
-    public Client Client { get; private set; }
 
-    public Money Subtotal { get; private set; }
-    public Money Tax { get; private set; }
-    public Money ShippingCost { get; private set; }
-    public Money Discount { get; private set; }
-    public Money Total { get; private set; }
-    public OrderStatus Status { get; private set; }
-    public Address BillingAddress { get; private set; }
+    public IReadOnlyCollection<OrderItem> OrderItems => _orderItems.AsReadOnly();
+
+    public Money Total => new Money(_orderItems.Sum(i => i.SubTotal.Value));
+    public int OrderStatusId { get; private set; }
+    public OrderStatus OrderStatus { get; private set; }
+
+    public void AddOrderItem(OrderItem orderItem) => _orderItems.Add(orderItem);
+
+    public void RemoveOrderItem(OrderItem orderItem)
+    {
+        OrderItem item = _orderItems.FirstOrDefault(i => i == orderItem);
+        if (item is not null)
+        {
+            _orderItems.Remove(item);
+        }
+        _orderItems.Remove(orderItem);
+    }
+
+    public void ChangeOrderStatus(OrderStatus orderStatus) => OrderStatus = orderStatus;
 }
