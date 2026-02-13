@@ -1,30 +1,127 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MediatR;
 using OrderHub.UI.Common;
+using OrderHub.UI.Features.Orders.Editor.Services;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.ClientDtos;
 using static OrderHub.Application.DTOs.CommonDtos;
+using static OrderHub.Application.DTOs.ProductDtos;
 
 namespace OrderHub.UI.Features.Orders.Editor;
 
 internal partial class ViewModel : EditorViewModelBase
 {
+    #region Fields
+
     private readonly IMediator _mediator;
     private ObservableCollection<KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>> _subCategories;
+    private ObservableCollection<OrderItem> _orderItems = new();
+
+    #endregion
+
+    #region Constructor
+
+    public ViewModel(IMediator mediator)
+    {
+        _mediator = mediator;
+        _subCategories = [];
+        OrderBuilder = new OrderBuilder();
+        ValidateAllProperties();
+    }
+
+    #endregion
+
+    #region Services
+
+    public OrderBuilder OrderBuilder { get; }
+
+    #endregion
+
+    #region Properties - Categories
+
+    [ObservableProperty]
+    private IEnumerable<CategoryInfoDto> _rootCategories;
+
+    [ObservableProperty]
+    private CategoryInfoDto _selectedCategory;
+
     public ObservableCollection<KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>> SubCategories
     {
         get => _subCategories;
         set => SetProperty(ref _subCategories, value);
     }
 
-    public ViewModel(IMediator mediator)
+    #endregion
+
+    #region Properties - Clients
+
+    [ObservableProperty]
+    private IEnumerable<ClientListDto> _clients;
+
+    [ObservableProperty]
+    [Required(ErrorMessage = "العميل مطلوب")]
+    [NotifyDataErrorInfo]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    private ClientListDto _selectedClient;
+
+    #endregion
+
+    #region Properties - Products Selection
+
+    [ObservableProperty]
+    private IEnumerable<ProductListDto> _products;
+
+    [ObservableProperty]
+    [Required(ErrorMessage = "المنتج مطلوب")]
+    [NotifyDataErrorInfo]
+    [NotifyCanExecuteChangedFor(nameof(AddProductCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ResetProductPriceCommand))]
+    [NotifyPropertyChangedFor(nameof(HasProductSelected))]
+    private ProductListDto _selectedProduct;
+
+    [ObservableProperty]
+    [Required(ErrorMessage = "السعر مطلوب")]
+    [NotifyDataErrorInfo]
+    [NotifyCanExecuteChangedFor(nameof(AddProductCommand))]
+    private decimal _price;
+
+    [ObservableProperty]
+    [Required(ErrorMessage = "الكمية مطلوبة")]
+    [NotifyDataErrorInfo]
+    [NotifyCanExecuteChangedFor(nameof(AddProductCommand))]
+    private decimal _quantity = 1;
+
+    [ObservableProperty]
+    private decimal _subTotal;
+
+    public bool HasProductSelected => SelectedProduct is not null;
+
+    #endregion
+
+    #region Properties - Order Items
+
+    public IEnumerable<OrderItem> OrderItems
     {
-        _mediator = mediator;
-        _subCategories = [];
+        get => _orderItems;
+        private set => SetProperty(ref _orderItems, new ObservableCollection<OrderItem>(value));
     }
+
+    #endregion
+
+    #region Properties - EditorViewModelBase
+
+    public override string Title { get; }
+
+    public override bool CanSave => !HasErrors;
+
+    #endregion
+
+    #region Initialization
 
     internal async Task LoadAsync()
     {
@@ -32,12 +129,43 @@ internal partial class ViewModel : EditorViewModelBase
         Clients = await _mediator.Send(new Application.Queries.ClientQueries.GetAllClientsQuery());
     }
 
+    #endregion
+
+    #region Commands
+
+    [RelayCommand(CanExecute = nameof(HasProductSelected))]
+    private void ResetProductPrice()
+    {
+        Price = SelectedProduct.Price;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanAddProduct))]
+    private void AddProduct(ProductListDto product)
+    {
+        OrderItem item = new()
+        {
+            ProductName = product.Name,
+            Price = Price,
+            Quantity = Quantity,
+            CategoryName = product.CategoryName
+        };
+        OrderBuilder.AddItem(item);
+        ClearSelectedProduct();
+    }
+
+    [RelayCommand]
+    private void RemoveOrderItem(OrderItem item) => OrderBuilder.RemoveItem(item);
+
     protected override Task Save()
     {
         throw new System.NotImplementedException();
     }
 
-    async partial void OnSelectedCategoryChanged(CategoryInfoDto oldValue, CategoryInfoDto newValue)
+    #endregion
+
+    #region Partial Methods - Change Handlers
+
+    async partial void OnSelectedCategoryChanging(CategoryInfoDto oldValue, CategoryInfoDto newValue)
     {
         if (newValue is null)
         {
@@ -51,7 +179,7 @@ internal partial class ViewModel : EditorViewModelBase
         }
         else
         {
-            RemoveSubCategoriesAfterParent((int) newValue.ParentId);
+            RemoveSubCategoriesAfterParent((int)newValue.ParentId);
         }
 
         IEnumerable<CategoryInfoDto> subCategories = await _mediator.Send(new Application.Queries.CommonQueries.GetSubCategoriesQuery(newValue.Id));
@@ -63,6 +191,30 @@ internal partial class ViewModel : EditorViewModelBase
             SubCategories.Add(new KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>(newValue, subCategories));
         }
     }
+
+    async partial void OnSelectedCategoryChanged(CategoryInfoDto oldValue, CategoryInfoDto newValue)
+    {
+        Products = await _mediator.Send(new Application.Queries.ProductQueries.GetProductsByCategoryQuery(newValue.Id));
+    }
+
+    partial void OnSelectedProductChanged(ProductListDto oldValue, ProductListDto newValue)
+    {
+        Price = newValue is null ? 0 : newValue.Price;
+    }
+
+    partial void OnPriceChanged(decimal oldValue, decimal newValue)
+    {
+        SubTotal = Price * Quantity;
+    }
+
+    partial void OnQuantityChanged(decimal oldValue, decimal newValue)
+    {
+        SubTotal = Price * Quantity;
+    }
+
+    #endregion
+
+    #region Private Methods
 
     private void RemoveSubCategoriesAfterParent(int parentId)
     {
@@ -79,20 +231,9 @@ internal partial class ViewModel : EditorViewModelBase
         }
     }
 
-    [ObservableProperty]
-    private IEnumerable<CategoryInfoDto> _rootCategories;
+    private void ClearSelectedProduct() => SelectedProduct = null;
 
-    [ObservableProperty]
-    private CategoryInfoDto _selectedCategory;
+    private bool CanAddProduct() => SelectedProduct is not null && SubTotal > 0;
 
-    [ObservableProperty]
-    private IEnumerable<ClientListDto> _clients;
-
-    [ObservableProperty]
-    private ClientListDto _selectedClient;
-
-    [ObservableProperty]
-    private IEnumerable<ProductInfoDto> _products;
-
-    public override string Title { get; }
+    #endregion
 }

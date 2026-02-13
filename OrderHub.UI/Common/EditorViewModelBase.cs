@@ -34,7 +34,10 @@ namespace OrderHub.UI.Common
         [RelayCommand]
         private void CloseEditor() => OnRequestClose();
 
-        protected void OnRequestClose() => RequestClose?.Invoke();
+        protected void OnRequestClose()
+        {
+            //RequestClose?.Invoke();
+        }
 
     }
 }

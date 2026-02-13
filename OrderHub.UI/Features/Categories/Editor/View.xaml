@@ -54,7 +54,8 @@
                         Command="{Binding SaveCommand}"
                         Content="حفظ"
                         FontFamily="Arial"
-                        FontWeight="Bold" />
+                        FontWeight="Bold"
+                        IsDefault="True" />
                     <Button
                         Width="80"
                         Padding="16,6"

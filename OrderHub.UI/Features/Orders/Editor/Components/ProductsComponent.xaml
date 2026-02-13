@@ -65,6 +65,7 @@
                         Width="250"
                         Height="40"
                         Margin="0,5,0,0"
+                        DisplayMemberPath="Name"
                         ItemsSource="{Binding Products}"
                         SelectedItem="{Binding SelectedProduct}" />
                 </StackPanel>
@@ -76,13 +77,26 @@
                         FontWeight="Bold"
                         Foreground="{StaticResource BlueBrush}"
                         Text="السعر" />
-                    <hc:NumericUpDown
-                        Width="150"
-                        Height="40"
-                        Margin="0,5,0,0"
-                        FontSize="30"
-                        Minimum="0"
-                        Value="{Binding Price}" />
+                    <StackPanel Orientation="Horizontal">
+                        <hc:NumericUpDown
+                            Width="150"
+                            Height="40"
+                            Margin="0,5,0,0"
+                            FontSize="30"
+                            Minimum="0"
+                            Value="{Binding Price, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button
+                            Margin="5,0"
+                            Padding="5"
+                            VerticalAlignment="Bottom"
+                            Command="{Binding ResetProductPriceCommand}"
+                            Cursor="Hand"
+                            Style="{StaticResource ButtonDanger}">
+                            <StackPanel Orientation="Horizontal">
+                                <icons:MaterialIcon Kind="Refresh" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </StackPanel>
 
                 <StackPanel Margin="5,0" Orientation="Vertical">
@@ -97,16 +111,37 @@
                         Height="40"
                         Margin="0,5,0,0"
                         FontSize="30"
-                        Minimum="0"
-                        Value="{Binding Quantity}" />
+                        Minimum="1"
+                        Value="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+
+                <StackPanel Margin="5,0" Orientation="Vertical">
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontSize="16"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource BlueBrush}"
+                        Text="المجموع" />
+                    <Label
+                        Width="100"
+                        Height="40"
+                        Margin="0,5,0,0"
+                        HorizontalContentAlignment="Left"
+                        Background="{StaticResource WhiteBrush}"
+                        BorderThickness="0"
+                        Content="{Binding SubTotal, UpdateSourceTrigger=PropertyChanged}"
+                        FontSize="30"
+                        Foreground="{StaticResource BlueBrush}" />
                 </StackPanel>
 
                 <Button
                     Margin="5,0"
                     VerticalAlignment="Bottom"
                     Command="{Binding AddProductCommand}"
+                    CommandParameter="{Binding SelectedProduct}"
                     Cursor="Hand"
-                    Style="{StaticResource ButtonPrimary}">
+                    Style="{StaticResource ButtonPrimary}"
+                    Validation.ErrorTemplate="{x:Null}">
                     <StackPanel Orientation="Horizontal">
                         <icons:MaterialIcon Kind="PlusCircle" />
                         <TextBlock

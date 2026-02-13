@@ -25,7 +25,7 @@ public class ViewModel : Editor.ViewModel
         if(result.IsSuccess)
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification("تمت إضافة القسم "));
-            OnRequestClose();
+            //OnRequestClose();
             _messenger.Send(new Application.Messages.Categories.CategoryCreatedMessage());
         }
 
