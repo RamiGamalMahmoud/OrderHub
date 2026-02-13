@@ -56,22 +56,16 @@ internal abstract partial class ViewModel : EditorViewModelBase
     private IEnumerable<ProductListDto> _products;
 
     [ObservableProperty]
-    [Required(ErrorMessage = "المنتج مطلوب")]
-    [NotifyDataErrorInfo]
     [NotifyCanExecuteChangedFor(nameof(AddProductCommand))]
     [NotifyCanExecuteChangedFor(nameof(ResetProductPriceCommand))]
     [NotifyPropertyChangedFor(nameof(HasProductSelected))]
     private ProductListDto _selectedProduct;
 
     [ObservableProperty]
-    [Required(ErrorMessage = "السعر مطلوب")]
-    [NotifyDataErrorInfo]
     [NotifyCanExecuteChangedFor(nameof(AddProductCommand))]
     private decimal _price;
 
     [ObservableProperty]
-    [Required(ErrorMessage = "الكمية مطلوبة")]
-    [NotifyDataErrorInfo]
     [NotifyCanExecuteChangedFor(nameof(AddProductCommand))]
     private decimal _quantity = 1;
 
