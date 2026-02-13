@@ -14,7 +14,7 @@ using static OrderHub.Application.DTOs.ProductDtos;
 
 namespace OrderHub.UI.Features.Orders.Editor;
 
-internal partial class ViewModel : EditorViewModelBase
+internal abstract partial class ViewModel : EditorViewModelBase
 {
     private readonly IMediator _mediator;
     private ObservableCollection<KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>> _subCategories;
@@ -85,10 +85,6 @@ internal partial class ViewModel : EditorViewModelBase
         private set => SetProperty(ref _orderItems, new ObservableCollection<OrderItem>(value));
     }
 
-    public override string Title { get; }
-
-    public override bool CanSave => !HasErrors;
-
     internal async Task LoadAsync()
     {
         RootCategories = await _mediator.Send(new Application.Queries.CommonQueries.GetRootCategoriesQuery());
@@ -117,11 +113,6 @@ internal partial class ViewModel : EditorViewModelBase
 
     [RelayCommand]
     private void RemoveOrderItem(OrderItem item) => OrderBuilder.RemoveItem(item);
-
-    protected override Task Save()
-    {
-        throw new System.NotImplementedException();
-    }
 
     async partial void OnSelectedCategoryChanging(CategoryInfoDto oldValue, CategoryInfoDto newValue)
     {
