@@ -11,6 +11,8 @@ internal class ViewModel : Editor.ViewModel
 
     public override string Title => "إنشاء طلب جديد";
 
+    public override bool CanSave => !HasErrors && OrderBuilder.Count > 0;
+
     protected override Task Save()
     {
         throw new System.NotImplementedException();
