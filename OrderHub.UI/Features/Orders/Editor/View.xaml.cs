@@ -11,5 +11,6 @@ internal partial class View : Window, IDialog
         DataContext = viewModel;
 
         Loaded += async (_, _) => await viewModel.LoadAsync();
+        viewModel.RequestClose += () => Close();
     }
 }

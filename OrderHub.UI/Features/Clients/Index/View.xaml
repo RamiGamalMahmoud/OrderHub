@@ -4,6 +4,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:buttons="clr-namespace:OrderHub.UI.Components.Buttons"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
+    xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:local="clr-namespace:OrderHub.UI.Features.Clients.Index"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
@@ -16,10 +18,71 @@
             <RowDefinition Height="1*" />
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal">
-            <buttons:ButtonAdd />
-            <buttons:ButtonRefresh Margin="5,0" />
-        </StackPanel>
+
+        <Grid>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock
+                Grid.Column="0"
+                VerticalAlignment="Center"
+                FontSize="16"
+                FontWeight="DemiBold"
+                Text="إدارة العملاء" />
+
+            <StackPanel
+                Grid.Column="1"
+                HorizontalAlignment="Center"
+                Orientation="Horizontal">
+                <hc:SearchBar
+                    Width="300"
+                    VerticalAlignment="Center"
+                    hc:InfoElement.Placeholder="ابحث عن عميل ..."
+                    hc:InfoElement.ShowClearButton="True"
+                    Style="{StaticResource SearchBarPlus}"
+                    Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}" />
+
+                <Button
+                    Margin="5,0"
+                    VerticalAlignment="Center"
+                    Cursor="Hand">
+                    <StackPanel Orientation="Horizontal">
+                        <icons:MaterialIcon Width="20" Kind="FilterVariant" />
+                        <TextBlock
+                            Margin="5,0,0,0"
+                            VerticalAlignment="Center"
+                            Text="تصفية" />
+                    </StackPanel>
+                </Button>
+
+            </StackPanel>
+
+            <Button
+                Grid.Column="2"
+                Height="40"
+                hc:BorderElement.CornerRadius="7"
+                Background="#facc15"
+                Command="{Binding ShowCreateCommand}"
+                Cursor="Hand"
+                Foreground="Black">
+                <StackPanel Orientation="Horizontal">
+                    <icons:MaterialIcon
+                        Width="20"
+                        Margin="5,0"
+                        Kind="Plus" />
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontFamily="{StaticResource Tajawal}"
+                        FontSize="12"
+                        FontWeight="DemiBold"
+                        Text="إضافة عميل" />
+                </StackPanel>
+            </Button>
+        </Grid>
 
         <DataGrid
             Grid.Row="1"
@@ -32,7 +95,7 @@
 
                 <DataGridTextColumn Binding="{Binding Address}" Header="العنوان" />
 
-                <DataGridTextColumn Binding="{Binding Phone}" Header="رقم الهاتف" />
+                <DataGridTextColumn Binding="{Binding PhoneNumber}" Header="رقم الهاتف" />
 
                 <DataGridTemplateColumn Header="خيارات">
                     <DataGridTemplateColumn.CellTemplate>

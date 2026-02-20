@@ -42,7 +42,7 @@
                     FontFamily="arial"
                     FontSize="20"
                     FontWeight="Bold"
-                    Foreground="{StaticResource MaterialDesign.Brush.Primary}"
+                    Foreground="{StaticResource Primary}"
                     Text="رسالة تأكيد"
                     TextAlignment="Center" />
             </Border>
@@ -71,26 +71,29 @@
                 Orientation="Horizontal">
                 <Button
                     Width="100"
+                    Height="auto"
                     Margin="5,0"
                     Background="{StaticResource SuccessBrush}"
                     Command="{Binding ConfirmCommand}"
                     Content="موافق"
+                    Cursor="Hand"
                     FontFamily="Arial"
                     FontSize="16"
                     FontWeight="Bold"
                     IsDefault="True" />
                 <Button
                     Width="100"
+                    Height="auto"
                     Margin="5,0"
                     BorderBrush="{StaticResource WarningBrush}"
                     Command="{Binding CancelCommand}"
                     Content="الغاء"
+                    Cursor="Hand"
                     FontFamily="Arial"
                     FontSize="16"
                     FontWeight="Bold"
                     Foreground="{StaticResource WarningBrush}"
-                    IsCancel="True"
-                    Style="{StaticResource MaterialDesignOutlinedButton}" />
+                    IsCancel="True" />
             </StackPanel>
 
         </Grid>

@@ -79,6 +79,9 @@ public abstract partial class EditSupplierViewModelBase : EditorViewModelBase
         Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
     }
 
+    [RelayCommand]
+    private void CloseEdit() => OnRequestClose();
+
 
     public override string Title => "انشاء مورد جديد";
 }

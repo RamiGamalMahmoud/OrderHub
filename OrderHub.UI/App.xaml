@@ -15,7 +15,8 @@
             <sys:Double x:Key="FontSize">14</sys:Double>
             <sys:Boolean x:Key="True">True</sys:Boolean>
             <sys:Boolean x:Key="False">False</sys:Boolean>
-            <FontFamily x:Key="Tajawal">/Fonts/Tajawal-Regular.ttf#Tajawal</FontFamily>
+            <FontFamily x:Key="Tajawal">/Fonts/Tajawal/Tajawal-Regular.ttf#Tajawal</FontFamily>
+            <FontFamily x:Key="Cairo">/Fonts/Cairo.ttf#Cairo</FontFamily>
 
             <ResourceDictionary.MergedDictionaries>
 

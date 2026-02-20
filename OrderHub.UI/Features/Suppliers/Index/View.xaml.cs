@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 
-namespace OrderHub.UI.Features.Suppliers;
+namespace OrderHub.UI.Features.Suppliers.Index;
 
 internal partial class View : UserControl
 {

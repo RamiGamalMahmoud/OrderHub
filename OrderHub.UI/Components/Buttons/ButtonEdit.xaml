@@ -11,20 +11,18 @@
 
     <Button
         Margin="5,0"
-        Padding="5"
+        Padding="0"
+        BorderThickness="0"
         Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl, Mode=FindAncestor, AncestorLevel=2}, Path=DataContext.ShowEditCommand}"
         CommandParameter="{Binding}"
         Cursor="Hand"
         FontFamily="Arial"
-        Style="{StaticResource ButtonInfo}"
         Visibility="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsEnabled, Converter={converters:BoolToVisibilityConverter}}">
         <StackPanel Orientation="Horizontal">
-            <icons:MaterialIcon Margin="0,0,5,0" Kind="Pencil" />
-            <TextBlock
-                VerticalAlignment="Center"
-                FontWeight="Bold"
-                Foreground="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}, Path=Foreground}"
-                Text="تعديل" />
+            <icons:MaterialIcon
+                Width="20"
+                Foreground="{StaticResource Primary}"
+                Kind="Edit" />
         </StackPanel>
     </Button>
 

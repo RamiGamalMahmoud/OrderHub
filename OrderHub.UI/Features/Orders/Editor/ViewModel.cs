@@ -1,8 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.UI.Common;
-using OrderHub.UI.Features.Orders.Editor.Services;
+using OrderHub.UI.Interfaces;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
@@ -16,13 +17,21 @@ namespace OrderHub.UI.Features.Orders.Editor;
 
 internal abstract partial class ViewModel : EditorViewModelBase
 {
-    private readonly IMediator _mediator;
+    private protected IMediator _mediator;
+    private readonly IDialogService _dialogService;
+    private readonly IMessenger _messenger;
     private ObservableCollection<KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>> _subCategories;
-    private ObservableCollection<OrderItem> _orderItems = new();
+    private ObservableCollection<OrderItemViewModel> _orderItems = new();
 
-    public ViewModel(IMediator mediator)
+    public ViewModel(IMediator mediator, IDialogService dialogService, IMessenger messenger)
     {
         _mediator = mediator;
+        _dialogService = dialogService;
+        _messenger = messenger;
+        _messenger.Register<Application.Messages.Clients.ClientCreatedMessage>(this, async (r, m) =>
+        {
+            Clients = await _mediator.Send(new Application.Queries.ClientQueries.GetAllClientsQuery());
+        });
         _subCategories = [];
         OrderBuilder = new OrderBuilder();
         OrderBuilder.ItemsChanged += (s, e) => SaveCommand.NotifyCanExecuteChanged();
@@ -33,6 +42,9 @@ internal abstract partial class ViewModel : EditorViewModelBase
 
     [ObservableProperty]
     private IEnumerable<CategoryInfoDto> _rootCategories;
+
+    [ObservableProperty]
+    private string _searchTerm;
 
     [ObservableProperty]
     private CategoryInfoDto _selectedCategory;
@@ -74,10 +86,10 @@ internal abstract partial class ViewModel : EditorViewModelBase
 
     public bool HasProductSelected => SelectedProduct is not null;
 
-    public IEnumerable<OrderItem> OrderItems
+    public IEnumerable<OrderItemViewModel> OrderItems
     {
         get => _orderItems;
-        private set => SetProperty(ref _orderItems, new ObservableCollection<OrderItem>(value));
+        private set => SetProperty(ref _orderItems, new ObservableCollection<OrderItemViewModel>(value));
     }
 
     internal async Task LoadAsync()
@@ -95,9 +107,10 @@ internal abstract partial class ViewModel : EditorViewModelBase
     [RelayCommand(CanExecute = nameof(CanAddProduct))]
     private void AddProduct(ProductListDto product)
     {
-        OrderItem item = new()
+        OrderItemViewModel item = new()
         {
             ProductName = product.Name,
+            ProductId = product.Id,
             Price = Price,
             Quantity = Quantity,
             CategoryName = product.CategoryName
@@ -107,7 +120,10 @@ internal abstract partial class ViewModel : EditorViewModelBase
     }
 
     [RelayCommand]
-    private void RemoveOrderItem(OrderItem item) => OrderBuilder.RemoveItem(item);
+    private void ShowCreateClient() => _dialogService.ShowDialog<Features.Clients.Create.View>();
+
+    [RelayCommand]
+    private void RemoveOrderItem(OrderItemViewModel item) => OrderBuilder.RemoveItem(item);
 
     async partial void OnSelectedCategoryChanging(CategoryInfoDto oldValue, CategoryInfoDto newValue)
     {
@@ -139,6 +155,11 @@ internal abstract partial class ViewModel : EditorViewModelBase
     async partial void OnSelectedCategoryChanged(CategoryInfoDto oldValue, CategoryInfoDto newValue)
     {
         Products = await _mediator.Send(new Application.Queries.ProductQueries.GetProductsByCategoryQuery(newValue.Id));
+    }
+
+    async partial void OnSearchTermChanged(string oldValue, string newValue)
+    {
+        Products = await _mediator.Send(new Application.Queries.ProductQueries.GetProductsByNameQuery(newValue));
     }
 
     partial void OnSelectedProductChanged(ProductListDto oldValue, ProductListDto newValue)

@@ -11,20 +11,18 @@
 
     <Button
         Margin="5,0"
-        Padding="5"
+        Padding="0"
+        BorderThickness="0"
         Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl, Mode=FindAncestor, AncestorLevel=2}, Path=DataContext.DeleteCommand}"
         CommandParameter="{Binding}"
         Cursor="Hand"
-        Style="{StaticResource ButtonDanger}"
         FontFamily="Arial"
         Visibility="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsEnabled, Converter={converters:BoolToVisibilityConverter}}">
         <StackPanel Orientation="Horizontal">
-            <icons:MaterialIcon Margin="0,0,5,0" Kind="Delete" />
-            <TextBlock
-                Foreground="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}, Path=Foreground}"
-                VerticalAlignment="Center"
-                FontWeight="Bold"
-                Text="حذف" />
+            <icons:MaterialIcon
+                Width="20"
+                Foreground="{StaticResource DangerBrush}"
+                Kind="TrashCanOutline" />
         </StackPanel>
     </Button>
 

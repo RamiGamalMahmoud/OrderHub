@@ -15,4 +15,6 @@ public partial class View : Window, IDialog
     }
 
     private void Button_Click(object sender, RoutedEventArgs e) => Close();
+
+    public new void Show() => ShowDialog();
 }

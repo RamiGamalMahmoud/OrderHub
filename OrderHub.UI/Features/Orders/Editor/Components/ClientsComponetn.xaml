@@ -12,106 +12,101 @@
 
     <!--  Client Informations  -->
     <Border
-        Padding="5"
+        Margin="12"
+        Padding="12,12,12,24"
+        Background="White"
         BorderBrush="LightGray"
         BorderThickness="1"
-        CornerRadius="5">
-        <StackPanel Orientation="Horizontal">
+        CornerRadius="12">
+        <StackPanel Orientation="Vertical">
+
+            <DockPanel Height="40">
+                <icons:MaterialIcon
+                    Width="20"
+                    Foreground="{StaticResource BlueBrush}"
+                    Kind="AccountOutline" />
+                <TextBlock
+                    Margin="10,0,0,0"
+                    VerticalAlignment="Center"
+                    FontSize="16"
+                    FontWeight="DemiBold"
+                    Text="بيانات العميل" />
+
+                <Button
+                    HorizontalAlignment="Right"
+                    BorderThickness="0"
+                    Command="{Binding ShowCreateClientCommand}"
+                    Cursor="Hand">
+                    <icons:MaterialIcon
+                        Width="20"
+                        Foreground="{StaticResource Primary}"
+                        Kind="PlusCircle" />
+                </Button>
+            </DockPanel>
+
             <!--  Client Selection  -->
-            <StackPanel Margin="0,5" Orientation="Horizontal">
+            <StackPanel Margin="0,5" Orientation="Vertical">
                 <StackPanel Orientation="Vertical">
                     <TextBlock
-                        VerticalAlignment="Center"
-                        FontSize="16"
-                        FontWeight="Bold"
-                        Foreground="{StaticResource BlueBrush}"
-                        Text="العملاء" />
+                        FontSize="12"
+                        FontWeight="SemiBold"
+                        Foreground="Gray"
+                        Text="اسم العميل" />
                     <ComboBox
-                        Width="250"
+                        Height="40"
                         Margin="0,5,0,0"
-                        VerticalAlignment="Center"
                         DisplayMemberPath="Name"
                         ItemsSource="{Binding Clients}"
                         SelectedItem="{Binding SelectedClient}" />
                 </StackPanel>
 
-                <Button
-                    Margin="5,0"
-                    Padding="5"
-                    VerticalAlignment="Bottom"
-                    Command="{Binding SearchClientCommand}"
-                    Cursor="Hand"
-                    FontFamily="Arial"
-                    Foreground="{StaticResource BlueBrush}">
-                    <StackPanel Orientation="Horizontal">
-                        <icons:MaterialIcon Kind="Search" />
-                    </StackPanel>
-                </Button>
-
-                <Button
-                    Margin="5,0"
-                    Padding="5"
-                    VerticalAlignment="Bottom"
-                    Command="{Binding AddClientCommand}"
-                    Cursor="Hand"
-                    FontFamily="Arial"
-                    Foreground="{StaticResource BlueBrush}">
-                    <StackPanel Orientation="Horizontal">
-                        <icons:MaterialIcon Kind="AddBox" />
-                    </StackPanel>
-                </Button>
-
             </StackPanel>
 
-            <StackPanel Margin="0,5" Orientation="Horizontal">
+            <StackPanel Margin="0,10" Orientation="Vertical">
+                <TextBlock
+                    FontSize="12"
+                    FontWeight="SemiBold"
+                    Foreground="Gray"
+                    Text="رقم الهاتف" />
+                <Label
+                    Height="40"
+                    Margin="0,5,0,0"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch">
+                    <StackPanel Orientation="Horizontal">
+                        <icons:MaterialIcon Width="20" Kind="PhoneOutline" />
+                        <TextBlock
+                            Margin="10,0,0,0"
+                            VerticalAlignment="Center"
+                            FlowDirection="LeftToRight"
+                            Text="{Binding SelectedClient.PhoneNumber}" />
+                    </StackPanel>
+                </Label>
+            </StackPanel>
 
-                <StackPanel Margin="5,0" Orientation="Vertical">
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        FontSize="16"
-                        FontWeight="Bold"
-                        Foreground="{StaticResource BlueBrush}"
-                        Text="رقم الهاتف" />
-                    <Label
-                        Width="200"
-                        Margin="0,5,0,0"
-                        HorizontalContentAlignment="Left"
-                        FontWeight="Bold">
-                        <StackPanel Orientation="Horizontal">
-                            <icons:MaterialIcon Kind="Phone" />
-                            <TextBlock
-                                Margin="10,0,0,0"
-                                VerticalAlignment="Center"
-                                FlowDirection="LeftToRight"
-                                Text="{Binding SelectedClient.PhoneNumber}" />
-                        </StackPanel>
-                    </Label>
-                </StackPanel>
-
-                <StackPanel Margin="5,0" Orientation="Vertical">
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        FontSize="16"
-                        FontWeight="Bold"
-                        Foreground="{StaticResource BlueBrush}"
-                        Text="العنوان" />
-                    <Label
-                        Width="250"
-                        Margin="0,5,0,0"
-                        HorizontalContentAlignment="Left"
-                        FontWeight="Bold">
-                        <StackPanel Orientation="Horizontal">
-                            <icons:MaterialIcon Kind="Location" />
-                            <TextBlock
-                                Margin="10,0,0,0"
-                                VerticalAlignment="Center"
-                                Text="{Binding SelectedClient.Address}" />
-                        </StackPanel>
-                    </Label>
-                </StackPanel>
+            <StackPanel Margin="0,10" Orientation="Vertical">
+                <TextBlock
+                    FontSize="12"
+                    FontWeight="SemiBold"
+                    Foreground="Gray"
+                    Text="العنوان" />
+                <Label
+                    Height="40"
+                    Margin="0,5,0,0"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch">
+                    <StackPanel Orientation="Horizontal">
+                        <icons:MaterialIcon Width="20" Kind="LocationOutline" />
+                        <TextBlock
+                            Margin="10,0,0,0"
+                            VerticalAlignment="Center"
+                            Text="{Binding SelectedClient.Address}" />
+                    </StackPanel>
+                </Label>
             </StackPanel>
 
         </StackPanel>
+
     </Border>
 
 </UserControl>

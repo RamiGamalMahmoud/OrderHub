@@ -33,7 +33,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<Features.MainWindow.MainWindowViewModel>();
         services.AddSingleton<Features.Home.HomeViewModel>();
         services.AddTransient<Features.Settings.ClientCredentialsSettings.ClientCredentialsSettingsViewModel>();
-        services.AddSingleton<Features.Suppliers.SuppliersViewModel>();
+        services.AddSingleton<Features.Suppliers.Index.SuppliersViewModel>();
         services.AddTransient<Features.Cities.Create.CreateCityViewModel>();
 
         services.AddTransient<Features.Suppliers.Create.ViewModel>();
@@ -80,7 +80,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<Features.Splash>();
 
         // Suppliers
-        services.AddSingleton<Features.Suppliers.View>();
+        services.AddSingleton<Features.Suppliers.Index.View>();
 
         // ❌ To be removed
         services.AddTransient<Features.Suppliers.Create.View>();

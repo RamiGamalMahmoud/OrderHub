@@ -11,6 +11,7 @@ namespace OrderHub.UI.Common
     {
         public event Action RequestClose;
         public virtual bool CanSave => HasChanges && !HasErrors;
+        private bool _closeOnSave = true;
         public abstract string Title { get; }
 
         protected List<string> _notifyPropertiesNames = new List<string>();
@@ -36,7 +37,10 @@ namespace OrderHub.UI.Common
 
         protected void OnRequestClose()
         {
-            //RequestClose?.Invoke();
+            if(_closeOnSave)
+            {
+                RequestClose?.Invoke();
+            }
         }
 
     }

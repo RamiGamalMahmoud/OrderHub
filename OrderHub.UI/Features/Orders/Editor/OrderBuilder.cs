@@ -1,34 +1,40 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text;
+using static OrderHub.Application.DTOs.ClientDtos;
+using static OrderHub.Application.DTOs.OrderDtos;
+using static OrderHub.Application.DTOs.OrderItemDtos;
 
-namespace OrderHub.UI.Features.Orders.Editor.Services;
+namespace OrderHub.UI.Features.Orders.Editor;
 
 public interface IOrderBuilder
 {
-    ObservableCollection<OrderItem> Items { get; }
+    ObservableCollection<OrderItemViewModel> Items { get; }
     decimal TotalPrice { get; }
     int Count { get; }
 
     event EventHandler ItemsChanged;
 
-    void AddItem(OrderItem item);
-    void RemoveItem(OrderItem item);
-    void UpdateItemPrice(OrderItem item, decimal newPrice);
-    void UpdateItemQuantity(OrderItem item, decimal newQuantity);
+    void AddItem(OrderItemViewModel item);
+    void RemoveItem(OrderItemViewModel item);
+    void UpdateItemPrice(OrderItemViewModel item, decimal newPrice);
+    void UpdateItemQuantity(OrderItemViewModel item, decimal newQuantity);
     void Clear();
 }
 
 public partial class OrderBuilder : ObservableObject, IOrderBuilder
 {
+    private static int _orderNumber = 1;
     [ObservableProperty]
     private decimal _totalPrice;
 
     [ObservableProperty]
     private int _count;
 
-    public ObservableCollection<OrderItem> Items { get; } = new();
+    public ObservableCollection<OrderItemViewModel> Items { get; } = new();
 
     public event EventHandler ItemsChanged;
 
@@ -41,7 +47,7 @@ public partial class OrderBuilder : ObservableObject, IOrderBuilder
         };
     }
 
-    public void AddItem(OrderItem item)
+    public void AddItem(OrderItemViewModel item)
     {
         // Check for existing product to merge quantities
         var existing = Items.FirstOrDefault(i =>
@@ -58,7 +64,7 @@ public partial class OrderBuilder : ObservableObject, IOrderBuilder
             // Hook up property changes for recalculation
             item.PropertyChanged += (s, e) =>
             {
-                if (e.PropertyName == nameof(OrderItem.SubTotal))
+                if (e.PropertyName == nameof(OrderItemViewModel.SubTotal))
                     RecalculateTotals();
             };
 
@@ -66,19 +72,19 @@ public partial class OrderBuilder : ObservableObject, IOrderBuilder
         }
     }
 
-    public void RemoveItem(OrderItem item)
+    public void RemoveItem(OrderItemViewModel item)
     {
         Items.Remove(item);
         item.SubTotalChanged -= (s, e) => RecalculateTotals();
     }
 
-    public void UpdateItemPrice(OrderItem item, decimal newPrice)
+    public void UpdateItemPrice(OrderItemViewModel item, decimal newPrice)
     {
         if (Items.Contains(item))
             item.Price = newPrice;
     }
 
-    public void UpdateItemQuantity(OrderItem item, decimal newQuantity)
+    public void UpdateItemQuantity(OrderItemViewModel item, decimal newQuantity)
     {
         if (Items.Contains(item))
             item.Quantity = newQuantity;
@@ -93,5 +99,22 @@ public partial class OrderBuilder : ObservableObject, IOrderBuilder
     {
         TotalPrice = Items.Sum(i => i.SubTotal);
         Count = Items.Count;
+    }
+
+    public OrderCreateDto Build(ClientListDto client)
+    {
+        IEnumerable<OrderItemDto> orderItems = Items.Select(item => new OrderItemDto(item.ProductId, item.ProductName, (int) item.Quantity, item.Price));
+        OrderCreateDto orderCreateDto = new OrderCreateDto(client.Id, 1, CreateOrderNumber(), orderItems);
+        return orderCreateDto;
+    }
+
+    private static string CreateOrderNumber()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.Append("ORD-");
+        sb.Append(DateTime.Now.ToString("yyyyMMdd"));
+        sb.Append('-');
+        sb.Append(_orderNumber++.ToString().PadLeft(4, '0'));
+        return sb.ToString();
     }
 }

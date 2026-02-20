@@ -67,28 +67,29 @@
             </StackPanel>
 
             <StackPanel
-                Grid.Row="2"
+                Grid.Row="4"
                 Grid.ColumnSpan="2"
-                Margin="0,8,0,0"
+                Margin="0,16,0,0"
                 HorizontalAlignment="Center"
                 Orientation="Horizontal">
+
                 <Button
-                    Width="80"
-                    Margin="0,0,12,0"
-                    Padding="16,6"
+                    Width="100"
+                    Margin="5,0"
+                    HorizontalAlignment="Left"
                     Command="{Binding SaveCommand}"
                     Content="حفظ"
-                    FontFamily="Arial"
-                    FontWeight="Bold" />
+                    Cursor="Hand"
+                    IsDefault="True"
+                    Style="{StaticResource ButtonPrimary}" />
                 <Button
-                    Width="80"
-                    Padding="16,6"
-                    BorderBrush="{StaticResource DangerBrush}"
+                    Width="100"
+                    Margin="5,0"
+                    HorizontalAlignment="Right"
                     Command="{Binding CloseEditorCommand}"
                     Content="إلغاء"
-                    FontFamily="Arial"
-                    FontWeight="Bold"
-                    Foreground="{StaticResource DangerBrush}" />
+                    Cursor="Hand"
+                    IsCancel="True" />
             </StackPanel>
 
         </Grid>

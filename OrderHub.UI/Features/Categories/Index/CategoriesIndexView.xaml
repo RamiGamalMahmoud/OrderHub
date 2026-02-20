@@ -1,0 +1,17 @@
+﻿<UserControl
+    x:Class="OrderHub.UI.Features.Categories.Index.CategoriesIndexView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:Hoax.WpfConverters;assembly=Hoax.WpfConverters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
+    xmlns:local="clr-namespace:OrderHub.UI.Features.Categories.Index"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    d:DataContext="{d:DesignInstance Type=local:ViewModel}"
+    mc:Ignorable="d">
+
+    <StackPanel Orientation="Vertical">
+        
+    </StackPanel>
+    
+</UserControl>

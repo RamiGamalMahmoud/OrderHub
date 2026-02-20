@@ -78,12 +78,12 @@ public partial class App : System.Windows.Application
             await GetService<IMediator>().Publish(new Application.Notifications.ErrorNotification("خطاء في الاتصال بقاعدة البيانات"));
             return;
         }
-#if DEBUG
         if (await databaseService.HasPendingMigrationsAsync())
         {
             await databaseService.MigrateAsync();
             await GetService<IMediator>().Publish(new Application.Notifications.SuccessNotification("تم تحديث قاعدة البيانات."));
         }
+#if DEBUG
 
         if (!await HasSaveClientCredentials())
         {

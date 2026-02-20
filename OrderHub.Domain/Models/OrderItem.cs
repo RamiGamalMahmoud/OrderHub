@@ -8,7 +8,7 @@ namespace OrderHub.Domain.Models;
 public class OrderItem : ModelBase
 {
     private OrderItem() { }
-    private OrderItem(int productId, string productName, int orderId, decimal unitPrice, int quantity)
+    public OrderItem(int productId, string productName, int orderId, decimal unitPrice, int quantity)
     {
         ProductId = productId;
         OrderId = orderId;

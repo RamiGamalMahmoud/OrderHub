@@ -2,6 +2,7 @@
     x:Class="OrderHub.UI.Features.Orders.Editor.Components.ProductsComponent"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:Hoax.WpfConverters;assembly=Hoax.WpfConverters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:hc="https://handyorg.github.io/handycontrol"
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
@@ -11,151 +12,209 @@
     d:DataContext="{d:DesignInstance Type=vm:ViewModel}"
     mc:Ignorable="d">
 
+    <UserControl.Resources>
+        <Style
+            x:Key="MyStye"
+            BasedOn="{StaticResource ListViewItemBaseStyle}"
+            TargetType="ListViewItem">
+            <Setter Property="Background" Value="#f1f5f9" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+    </UserControl.Resources>
+
     <Border
-        Padding="5"
+        Margin="12"
+        Padding="12"
+        Background="White"
         BorderBrush="LightGray"
         BorderThickness="1"
-        CornerRadius="5">
-        <StackPanel Orientation="Vertical">
+        CornerRadius="12">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="4*" />
+                <RowDefinition Height="auto" />
+            </Grid.RowDefinitions>
+
             <StackPanel Orientation="Vertical">
-                <TextBlock
-                    FontSize="16"
-                    FontWeight="Bold"
-                    Foreground="{StaticResource BlueBrush}"
-                    Text="القسم" />
-                <StackPanel Margin="0,5" Orientation="Horizontal">
+
+                <StackPanel Height="40" Orientation="Horizontal">
+                    <icons:MaterialIcon
+                        Width="20"
+                        Foreground="{StaticResource BlueBrush}"
+                        Kind="InvoiceLineItems" />
+                    <TextBlock
+                        Margin="10,0,0,0"
+                        VerticalAlignment="Center"
+                        FontSize="16"
+                        FontWeight="DemiBold"
+                        Text="المنتجات" />
+                </StackPanel>
+
+                <hc:SearchBar
+                    Height="40"
+                    VerticalAlignment="Top"
+                    hc:InfoElement.Placeholder="ابحث عن منتج"
+                    FontSize="14"
+                    FontWeight="SemiBold"
+                    Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}" />
+
+                <StackPanel Orientation="Vertical">
                     <ComboBox
-                        Width="200"
+                        Height="40"
+                        Margin="0,5"
                         DisplayMemberPath="Name"
+                        FontSize="16"
+                        FontWeight="DemiBold"
                         ItemsSource="{Binding RootCategories}"
                         SelectedItem="{Binding SelectedCategory}" />
 
                     <ItemsControl ItemsSource="{Binding SubCategories}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal" />
+                                <StackPanel Orientation="Vertical" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <StackPanel Margin="5,0" Orientation="Horizontal">
-                                    <icons:MaterialIcon Foreground="{StaticResource BlueBrush}" Kind="ArrowLeftBoldCircleOutline" />
-                                    <ComboBox
-                                        Width="200"
-                                        DisplayMemberPath="Name"
-                                        ItemsSource="{Binding Value}"
-                                        SelectedItem="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.SelectedCategory}" />
-                                </StackPanel>
+                                <ComboBox
+                                    Height="40"
+                                    Margin="0,5"
+                                    DisplayMemberPath="Name"
+                                    FontSize="16"
+                                    FontWeight="DemiBold"
+                                    ItemsSource="{Binding Value}"
+                                    SelectedItem="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.SelectedCategory}" />
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-
                 </StackPanel>
+
             </StackPanel>
-            <StackPanel Margin="0,5" Orientation="Horizontal">
 
-                <StackPanel Orientation="Vertical">
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        FontSize="16"
-                        FontWeight="Bold"
-                        Foreground="{StaticResource BlueBrush}"
-                        Text="المنتج" />
-                    <ComboBox
-                        Width="250"
-                        Height="40"
-                        Margin="0,5,0,0"
-                        DisplayMemberPath="Name"
-                        ItemsSource="{Binding Products}"
-                        SelectedItem="{Binding SelectedProduct}" />
-                </StackPanel>
-
-                <StackPanel Margin="5,0" Orientation="Vertical">
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        FontSize="16"
-                        FontWeight="Bold"
-                        Foreground="{StaticResource BlueBrush}"
-                        Text="السعر" />
-                    <StackPanel Orientation="Horizontal">
-                        <hc:NumericUpDown
-                            Width="150"
-                            Height="40"
-                            Margin="0,5,0,0"
-                            FontSize="30"
-                            Minimum="0"
-                            Value="{Binding Price, UpdateSourceTrigger=PropertyChanged}" />
-                        <Button
-                            Margin="5,0"
-                            Padding="5"
-                            VerticalAlignment="Bottom"
-                            Command="{Binding ResetProductPriceCommand}"
-                            Cursor="Hand"
-                            Style="{StaticResource ButtonDanger}">
-                            <StackPanel Orientation="Horizontal">
-                                <icons:MaterialIcon Kind="Refresh" />
+            <ListView
+                Grid.Row="1"
+                Padding="10"
+                Background="White"
+                BorderThickness="1"
+                ItemContainerStyle="{StaticResource MyStye}"
+                ItemsSource="{Binding Products}"
+                SelectedItem="{Binding SelectedProduct}">
+                <ListView.Resources />
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Grid.Column="1" Orientation="Vertical">
+                            <TextBlock
+                                FontSize="14"
+                                FontWeight="Bold"
+                                Text="{Binding Name}" />
+                            <TextBlock
+                                Margin="0,3"
+                                FontSize="10"
+                                FontWeight="Bold"
+                                Text="{Binding CategoryName}" />
+                            <StackPanel
+                                Margin="0,10,0,0"
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal">
+                                <TextBlock Margin="0,0,5,0" Text="السعر" />
+                                <TextBlock FontWeight="SemiBold" Text="{Binding Price}" />
                             </StackPanel>
-                        </Button>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <StackPanel Grid.Row="2" Margin="0,10,0,0">
+
+                <Grid>
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="1*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel
+                        Grid.Column="0"
+                        Margin="10,0"
+                        Orientation="Vertical">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            FontWeight="SemiBold"
+                            Text="السعر" />
+                        <hc:NumericUpDown
+                            Height="50"
+                            Margin="0,5,0,0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            FontSize="20"
+                            FontWeight="DemiBold"
+                            Minimum="0.0"
+                            Value="{Binding Price}" />
                     </StackPanel>
-                </StackPanel>
 
-                <StackPanel Margin="5,0" Orientation="Vertical">
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        FontSize="16"
-                        FontWeight="Bold"
-                        Foreground="{StaticResource BlueBrush}"
-                        Text="الكمية" />
-                    <hc:NumericUpDown
-                        Width="100"
-                        Height="40"
-                        Margin="0,5,0,0"
-                        FontSize="30"
-                        Minimum="1"
-                        Value="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}" />
-                </StackPanel>
+                    <StackPanel
+                        Grid.Column="1"
+                        Margin="10,0"
+                        Orientation="Vertical">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            FontWeight="SemiBold"
+                            Text="الكمية" />
+                        <hc:NumericUpDown
+                            Height="50"
+                            Margin="0,5,0,0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            FontSize="20"
+                            FontWeight="DemiBold"
+                            Minimum="1"
+                            Value="{Binding Quantity}" />
+                    </StackPanel>
 
-                <StackPanel Margin="5,0" Orientation="Vertical">
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        FontSize="16"
-                        FontWeight="Bold"
-                        Foreground="{StaticResource BlueBrush}"
-                        Text="المجموع" />
-                    <Label
-                        Width="100"
-                        Height="40"
-                        Margin="0,5,0,0"
-                        HorizontalContentAlignment="Left"
-                        Background="{StaticResource WhiteBrush}"
-                        BorderThickness="0"
-                        Content="{Binding SubTotal, UpdateSourceTrigger=PropertyChanged}"
-                        FontSize="30"
-                        Foreground="{StaticResource BlueBrush}" />
-                </StackPanel>
+                    <StackPanel
+                        Grid.Column="2"
+                        Margin="10,0"
+                        Orientation="Vertical">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            FontWeight="SemiBold"
+                            Text="الإجمالي الفرعي" />
+                        <Label
+                            Height="50"
+                            Margin="0,5,0,0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Content="{Binding SubTotal}"
+                            FontSize="20"
+                            FontWeight="DemiBold" />
+                    </StackPanel>
+
+                </Grid>
+
 
                 <Button
-                    Margin="5,0"
-                    VerticalAlignment="Bottom"
+                    Height="40"
+                    Margin="0,10,0,0"
+                    HorizontalAlignment="Stretch"
                     Command="{Binding AddProductCommand}"
                     CommandParameter="{Binding SelectedProduct}"
                     Cursor="Hand"
-                    Style="{StaticResource ButtonPrimary}"
-                    Validation.ErrorTemplate="{x:Null}">
+                    FontFamily="{StaticResource Tajawal}"
+                    FontSize="16"
+                    Style="{StaticResource ButtonPrimary}">
                     <StackPanel Orientation="Horizontal">
-                        <icons:MaterialIcon Kind="PlusCircle" />
+                        <icons:MaterialIcon VerticalAlignment="Center" Kind="PlusCircle" />
                         <TextBlock
-                            Margin="5,0,0,0"
+                            Margin="10,0,0,0"
                             VerticalAlignment="Center"
-                            FontSize="12"
-                            FontWeight="Bold"
-                            Text="اضافة" />
+                            Text="إضافة منتج" />
                     </StackPanel>
                 </Button>
-
             </StackPanel>
 
-        </StackPanel>
+        </Grid>
     </Border>
 
 </UserControl>

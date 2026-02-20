@@ -1,6 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
+using OrderHub.UI.Interfaces;
+using OrderHub.UI.Stores.Markers;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.CategoryDtos;
 
@@ -10,7 +12,7 @@ public class ViewModel : Editor.ViewModel
 {
     private readonly IMessenger _messenger;
 
-    public ViewModel(IMediator mediator, IMessenger messenger) : base(mediator)
+    public ViewModel(IMediator mediator, ISelectionStore<ICategoryMarker, int> selectionStore, IMessenger messenger) : base(mediator, selectionStore)
     {
         _messenger = messenger;
     }

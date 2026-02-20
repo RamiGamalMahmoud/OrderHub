@@ -6,6 +6,7 @@
     xmlns:converters="clr-namespace:Hoax.WpfConverters;assembly=Hoax.WpfConverters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:hc="https://handyorg.github.io/handycontrol"
+    xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:local="clr-namespace:OrderHub.UI.Features.Orders.Index"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
@@ -19,11 +20,70 @@
             <RowDefinition Height="1*" />
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal">
-            <buttons:ButtonAdd />
-            <buttons:ButtonRefresh Margin="5,0" />
-            <Button Command="{Binding LoadCommand}" />
-        </StackPanel>
+        <Grid>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock
+                Grid.Column="0"
+                VerticalAlignment="Center"
+                FontSize="16"
+                FontWeight="DemiBold"
+                Text="إدارة الطلبات" />
+
+            <StackPanel
+                Grid.Column="1"
+                HorizontalAlignment="Center"
+                Orientation="Horizontal">
+                <hc:SearchBar
+                    Width="300"
+                    VerticalAlignment="Center"
+                    hc:InfoElement.Placeholder="ابحث عن طلب باسم العميل ..."
+                    hc:InfoElement.ShowClearButton="True"
+                    Style="{StaticResource SearchBarPlus}"
+                    Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}" />
+
+                <Button
+                    Margin="5,0"
+                    VerticalAlignment="Center"
+                    Cursor="Hand">
+                    <StackPanel Orientation="Horizontal">
+                        <icons:MaterialIcon Width="20" Kind="FilterVariant" />
+                        <TextBlock
+                            Margin="5,0,0,0"
+                            VerticalAlignment="Center"
+                            Text="تصفية" />
+                    </StackPanel>
+                </Button>
+
+            </StackPanel>
+
+            <Button
+                Grid.Column="2"
+                Height="40"
+                hc:BorderElement.CornerRadius="7"
+                Background="#facc15"
+                Command="{Binding ShowCreateCommand}"
+                Cursor="Hand"
+                Foreground="Black">
+                <StackPanel Orientation="Horizontal">
+                    <icons:MaterialIcon
+                        Width="20"
+                        Margin="5,0"
+                        Kind="Plus" />
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontFamily="{StaticResource Tajawal}"
+                        FontSize="12"
+                        FontWeight="DemiBold"
+                        Text="إنشاء طلب جديد" />
+                </StackPanel>
+            </Button>
+        </Grid>
 
 
         <DataGrid
@@ -39,33 +99,46 @@
 
                 <DataGridTextColumn
                     Binding="{Binding OrderNumber}"
+                    FontWeight="DemiBold"
                     Header="رقم الطلب"
+                    IsReadOnly="False" />
+
+                <DataGridTextColumn
+                    Binding="{Binding ClientName}"
+                    Header="اسم العميل"
                     IsReadOnly="True" />
-
-                <DataGridTextColumn Binding="{Binding ClientName}" Header="اسم العميل" />
-
-                <DataGridTextColumn Binding="{Binding ContactWay}" Header="طريقة التواصل" />
 
                 <DataGridTemplateColumn Header="حالة الطلب" SortMemberPath="OrderStatus.DisplayName">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <local:OrderStatusComponent />
+                            <local:OrderStatusComponent IsEnabled="{Binding CanEdit}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
                 <DataGridTextColumn Binding="{Binding TotalPrice}" Header="إجمالي الطلب" />
 
-                <DataGridTextColumn Binding="{Binding PhoneNumber}" Header="رقم الهاتف" />
+                <DataGridTemplateColumn Header="رقم الهاتف">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FlowDirection="LeftToRight"
+                                Text="{Binding ClientPhoneNumber}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
 
-                <DataGridTextColumn Binding="{Binding CreatedAt}" Header="التاريخ" />
+                <DataGridTextColumn
+                    Binding="{Binding CreatedAt}"
+                    Header="التاريخ"
+                    IsReadOnly="True" />
 
                 <DataGridTemplateColumn Header="خيارات">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
                                 <buttons:ButtonEdit />
-                                <buttons:ButtonDelete Margin="5,0" />
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>

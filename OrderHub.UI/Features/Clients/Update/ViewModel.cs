@@ -30,6 +30,7 @@ namespace OrderHub.UI.Features.Clients.Update
             SelectedCity = Cities.FirstOrDefault(c => c.Id == clientEditDto.CityId);
             Number = clientEditDto.PhoneNumber;
             CountryCode = clientEditDto.CountryCode;
+            HasChanges = false;
         }
 
         protected override async Task Save()

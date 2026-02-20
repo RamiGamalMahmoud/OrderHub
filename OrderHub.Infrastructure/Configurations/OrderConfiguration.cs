@@ -12,11 +12,15 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
 
         builder.ToTable("orders");
 
-        builder.HasOne<Client>()
+        builder.HasOne(o => o.Client)
             .WithMany()
             .HasForeignKey(o => o.ClientId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(o => o.OrderNumber)
+            .HasColumnType("VARCHAR(20)")
+            .IsRequired();
 
         builder.Ignore(o => o.Total);
 

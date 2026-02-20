@@ -21,6 +21,7 @@ public class Category : ModelBase
     public Category ParentCategory { get; private set; }
 
     public IReadOnlyCollection<Category> SubCategories => _subCategories.AsReadOnly();
+    public ICollection<Product> Products {  get; private set; }
 
     public bool IsRootCategory => ParentCategoryId == null;
     public bool IsLeafCategory => _subCategories.Count == 0;

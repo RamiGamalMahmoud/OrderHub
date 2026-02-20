@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.SupplierDtos;
 
-namespace OrderHub.UI.Features.Suppliers;
+namespace OrderHub.UI.Features.Suppliers.Index;
 
 internal partial class SuppliersViewModel : IndexViewModelBase<SupplierListDto>
 {

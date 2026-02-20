@@ -5,6 +5,7 @@
     xmlns:buttons="clr-namespace:OrderHub.UI.Components.Buttons"
     xmlns:converters="clr-namespace:Hoax.WpfConverters;assembly=Hoax.WpfConverters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:local="clr-namespace:OrderHub.UI.Features.Categories.Index"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -17,36 +18,267 @@
             <RowDefinition Height="1*" />
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal">
-            <buttons:ButtonAdd />
-            <buttons:ButtonRefresh Margin="5,0" />
-        </StackPanel>
+        <Grid>
 
-        <TreeView Grid.Row="1" ItemsSource="{Binding Categories}">
-            <TreeView.ItemTemplate>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock
+                Grid.Column="0"
+                VerticalAlignment="Center"
+                FontSize="16"
+                FontWeight="DemiBold"
+                Text="إدارة الأقسام" />
+
+            <StackPanel
+                Grid.Column="1"
+                HorizontalAlignment="Center"
+                Orientation="Horizontal">
+                <hc:SearchBar
+                    Width="300"
+                    VerticalAlignment="Center"
+                    hc:InfoElement.Placeholder="ابحث عن قسم ..."
+                    hc:InfoElement.ShowClearButton="True"
+                    Style="{StaticResource SearchBarPlus}"
+                    Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}" />
+
+                <Button
+                    Margin="5,0"
+                    VerticalAlignment="Center"
+                    Cursor="Hand">
+                    <StackPanel Orientation="Horizontal">
+                        <icons:MaterialIcon Width="20" Kind="FilterVariant" />
+                        <TextBlock
+                            Margin="5,0,0,0"
+                            VerticalAlignment="Center"
+                            Text="تصفية" />
+                    </StackPanel>
+                </Button>
+
+            </StackPanel>
+
+            <Button
+                Grid.Column="2"
+                Height="40"
+                hc:BorderElement.CornerRadius="7"
+                Background="#facc15"
+                Command="{Binding ShowCreateCommand}"
+                Cursor="Hand"
+                Foreground="Black">
+                <StackPanel Orientation="Horizontal">
+                    <icons:MaterialIcon
+                        Width="20"
+                        Margin="5,0"
+                        Kind="Plus" />
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontFamily="{StaticResource Tajawal}"
+                        FontSize="12"
+                        FontWeight="DemiBold"
+                        Text="إضافة قسم جديد" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <Border
+            Grid.Row="1"
+            Padding="10"
+            Background="{StaticResource WhiteBrush}"
+            CornerRadius="12">
+            <Grid Grid.Row="1">
+                <!--<TreeView ItemsSource="{Binding Categories}">
+                <TreeView.ItemTemplate>
                 <HierarchicalDataTemplate ItemsSource="{Binding SubCategories}">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="1*" />
-                            <ColumnDefinition Width="1*" />
-                        </Grid.ColumnDefinitions>
+                <Grid>
+                <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="0" Orientation="Horizontal">
-                            <icons:MaterialIcon
-                                VerticalAlignment="Center"
-                                Foreground="Gray"
-                                Kind="Folder"
-                                Visibility="{Binding IsRootCategory, Converter={converters:BoolToVisibilityConverter}}" />
-                            <TextBlock
-                                Margin="10,0,0,0"
-                                VerticalAlignment="Center"
-                                Text="{Binding Name}" />
-                        </StackPanel>
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <icons:MaterialIcon
+                VerticalAlignment="Center"
+                Foreground="Gray"
+                Kind="Folder"
+                Visibility="{Binding IsRootCategory, Converter={converters:BoolToVisibilityConverter}}" />
+                <TextBlock
+                Margin="10,0,0,0"
+                VerticalAlignment="Center"
+                Text="{Binding Name}" />
+                </StackPanel>
 
-                    </Grid>
+                </Grid>
                 </HierarchicalDataTemplate>
-            </TreeView.ItemTemplate>
-        </TreeView>
+                </TreeView.ItemTemplate>
+                </TreeView>-->
+
+                <Grid>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="1*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Orientation="Horizontal">
+
+                        <TextBlock>
+                            <Hyperlink Command="{Binding NavigateToHomeCommand}" Style="{StaticResource Hyperlink}">
+                                <icons:MaterialIcon
+                                    Width="20"
+                                    Margin="0"
+                                    Kind="HomeOutline" />
+                                <Run BaselineAlignment="Center" Text="الرئيسية" />
+                            </Hyperlink>
+                        </TextBlock>
+
+                        <ItemsControl ItemsSource="{Binding SelectedCategoriesList}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock>
+                                            <icons:MaterialIcon
+                                                Width="20"
+                                                Height="20"
+                                                Margin="5,0"
+                                                Kind="ChevronLeft" />
+                                            <Hyperlink
+                                                Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.NavigateToCategoryCommand}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource Hyperlink}">
+                                                <Run BaselineAlignment="Center" Text="{Binding Name}" />
+                                            </Hyperlink>
+                                        </TextBlock>
+
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="1">
+                        <ItemsControl ItemsSource="{Binding CategoriesList}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border
+                                        Width="300"
+                                        Margin="10"
+                                        Padding="10"
+                                        Background="White"
+                                        BorderBrush="LightGray"
+                                        BorderThickness="1"
+                                        CornerRadius="5">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="1*" />
+                                                <RowDefinition Height="1*" />
+                                                <RowDefinition Height="1*" />
+                                            </Grid.RowDefinitions>
+
+                                            <Border
+                                                Grid.Row="0"
+                                                Padding="5"
+                                                HorizontalAlignment="Left"
+                                                Background="{StaticResource LightBlueBrush}"
+                                                CornerRadius="2">
+
+                                                <icons:MaterialIcon
+                                                    Width="20"
+                                                    VerticalAlignment="Center"
+                                                    Foreground="{StaticResource Primary}"
+                                                    Kind="CategoryOutline" />
+                                            </Border>
+
+                                            <StackPanel
+                                                Grid.Row="0"
+                                                HorizontalAlignment="Right"
+                                                Orientation="Horizontal">
+                                                <Button
+                                                    Margin="0,0,5,0"
+                                                    BorderThickness="0"
+                                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.EditCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Cursor="Hand">
+                                                    <icons:MaterialIcon
+                                                        Width="20"
+                                                        Foreground="Gray"
+                                                        Kind="EditOutline" />
+                                                </Button>
+
+                                                <Button
+                                                    Margin="0,0,5,0"
+                                                    BorderThickness="0"
+                                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.RemoveCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Cursor="Hand">
+                                                    <icons:MaterialIcon
+                                                        Width="20"
+                                                        Margin="5,0,0,0"
+                                                        Foreground="Gray"
+                                                        Kind="TrashCanOutline" />
+                                                </Button>
+                                            </StackPanel>
+
+                                            <TextBlock
+                                                Grid.Row="1"
+                                                Margin="0,5"
+                                                VerticalAlignment="Center"
+                                                FontWeight="DemiBold"
+                                                Text="{Binding Name}" />
+
+                                            <TextBlock
+                                                Grid.Row="2"
+                                                Margin="0,5"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Center"
+                                                FontSize="10"
+                                                Foreground="Gray">
+                                                <Run Text="{Binding SubCategoriesCount, Mode=OneWay}" />
+                                                <Run Text="قسم فرعي" />
+                                                <Run Text="{Binding ProductsCount, Mode=OneWay, FallbackValue=0}" />
+                                                <Run Text=" منتج" />
+                                            </TextBlock>
+
+                                            <TextBlock
+                                                Grid.Row="2"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Center"
+                                                FontSize="10"
+                                                Foreground="{StaticResource Primary}"
+                                                Visibility="{Binding IsRootCategory, Converter={converters:BoolToVisibilityConverter}}">
+                                                <Hyperlink
+                                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.NavigateToCategoryCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    FontWeight="DemiBold"
+                                                    TextDecorations="None">
+                                                    <Run BaselineAlignment="Center" Text="الأقسام الفرعية" />
+                                                    <icons:MaterialIcon Width="10" Kind="ArrowLeft" />
+                                                </Hyperlink>
+                                            </TextBlock>
+
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                </Grid>
+
+            </Grid>
+        </Border>
 
     </Grid>
 

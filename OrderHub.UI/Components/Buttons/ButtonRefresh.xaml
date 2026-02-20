@@ -11,11 +11,11 @@
 
     <Button
         Background="Transparent"
-        BorderBrush="{StaticResource MaterialDesign.Brush.Primary}"
+        BorderBrush="{StaticResource Primary}"
         Command="{Binding ReloadCommand}"
         Cursor="Hand"
         FontFamily="Arial"
-        Foreground="{StaticResource MaterialDesign.Brush.Primary}"
+        Foreground="{StaticResource Primary}"
         Visibility="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsEnabled, Converter={converters:BoolToVisibilityConverter}}">
         <StackPanel Orientation="Horizontal">
             <icons:MaterialIcon

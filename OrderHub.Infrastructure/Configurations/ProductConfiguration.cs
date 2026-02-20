@@ -36,7 +36,7 @@ internal class ProductConfiguration : ModelConfigurationBase<Product>
             .IsRequired();
 
         builder.HasOne(product => product.Category)
-            .WithMany()
+            .WithMany(c => c.Products)
             .HasForeignKey("category_id")
             .IsRequired()
             .OnDelete(DeleteBehavior.Restrict);

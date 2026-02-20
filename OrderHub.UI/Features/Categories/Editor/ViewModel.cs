@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using MediatR;
+using OrderHub.UI.Interfaces;
+using OrderHub.UI.Stores.Markers;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
@@ -10,15 +12,17 @@ namespace OrderHub.UI.Features.Categories.Editor;
 public abstract partial class ViewModel : Common.EditorViewModelBase
 {
     protected readonly IMediator _mediator;
+    protected readonly ISelectionStore<ICategoryMarker, int> _selectionStore;
 
-    protected ViewModel(IMediator mediator)
+    protected ViewModel(IMediator mediator, ISelectionStore<ICategoryMarker, int> selectionStore)
     {
         _mediator = mediator;
+        _selectionStore = selectionStore;
         ValidateAllProperties();
         _notifyPropertiesNames = [nameof(Name), nameof(SelectedParent)];
     }
 
-    public async Task LoadDataAsync()
+    public virtual async Task LoadDataAsync()
     {
         Categories = await _mediator.Send(new Application.Queries.CommonQueries.GetCategoriesInfoQuery());
     }

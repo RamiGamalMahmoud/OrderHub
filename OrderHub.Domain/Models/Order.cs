@@ -10,6 +10,16 @@ public class Order : ModelBase
     private Order() { }
 
     public int ClientId { get; private set; }
+    public Client Client { get; private set; }
+
+    public Order(int clientId, string orderNumber, int orderStatusId)
+    {
+        ClientId = clientId;
+        OrderNumber = orderNumber;
+        OrderStatusId = orderStatusId;
+    }
+
+    public string OrderNumber { get; private set; }
 
     public IReadOnlyCollection<OrderItem> OrderItems => _orderItems.AsReadOnly();
 

@@ -11,6 +11,7 @@ internal partial class EditSupplierView : Window, IDialog
         DataContext = viewModel;
 
         Loaded += CreateView_Loaded;
+        viewModel.RequestClose += () => Close();
     }
 
     private async void CreateView_Loaded(object sender, RoutedEventArgs e)
@@ -21,8 +22,5 @@ internal partial class EditSupplierView : Window, IDialog
         }
     }
 
-    public new void Show()
-    {
-        ShowDialog();
-    }
+    public new void Show() => ShowDialog();
 }

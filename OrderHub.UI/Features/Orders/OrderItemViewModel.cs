@@ -2,12 +2,13 @@
 using System;
 using System.ComponentModel;
 
-namespace OrderHub.UI.Features.Orders.Editor;
+namespace OrderHub.UI.Features.Orders;
 
-public partial class OrderItem : ObservableObject
+public partial class OrderItemViewModel : ObservableObject
 {
     public required string ProductName { get; init; }
     public required string CategoryName { get; init; }
+    public int ProductId { get; init; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SubTotal))]
