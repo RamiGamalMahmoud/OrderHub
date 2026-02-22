@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
@@ -28,6 +29,10 @@ public abstract partial class ViewModel : EditorViewModelBase
             nameof(CountryCode),
             nameof(PhoneNumber)
         ];
+        WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityCreatedMessage>(this, async (r, m) =>
+        {
+            Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
+        });
         ValidateAllProperties();
     }
 

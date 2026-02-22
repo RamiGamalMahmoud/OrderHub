@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
@@ -21,6 +22,10 @@ public abstract partial class ViewModel : EditorViewModelBase, IDisposable
         _mediator = mediator;
         _dialogService = dialogService;
         _notifyPropertiesNames = [nameof(Name), nameof(SelectedCity)];
+        WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityCreatedMessage>(this, async (r, m) =>
+        {
+            Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
+        });
         ValidateAllProperties();
     }
 
