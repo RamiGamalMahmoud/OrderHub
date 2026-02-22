@@ -15,7 +15,7 @@ public class ViewModel : Editor.ViewModel
     private readonly IMessenger _messenger;
     private readonly ISelectionStore<IShippingCarrierMarker, int> _selectionStore;
 
-    public ViewModel(IMediator mediator, IMessenger messenger, ISelectionStore<IShippingCarrierMarker, int> selectionStore) : base(mediator)
+    public ViewModel(IMediator mediator, IMessenger messenger, ISelectionStore<IShippingCarrierMarker, int> selectionStore, IDialogService dialogService) : base(mediator, dialogService)
     {
         _mediator = mediator;
         _messenger = messenger;

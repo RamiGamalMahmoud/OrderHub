@@ -1,6 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MediatR;
 using OrderHub.UI.Common;
+using OrderHub.UI.Interfaces;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
@@ -11,10 +13,12 @@ namespace OrderHub.UI.Features.ShippingCarriers.Editor;
 public abstract partial class ViewModel : EditorViewModelBase
 {
     protected IMediator _mediator;
+    protected readonly IDialogService _dialogService;
 
-    protected ViewModel(IMediator mediator)
+    protected ViewModel(IMediator mediator, IDialogService dialogService)
     {
         _mediator = mediator;
+        _dialogService = dialogService;
         _notifyPropertiesNames =
         [
             nameof(Name),
@@ -72,4 +76,7 @@ public abstract partial class ViewModel : EditorViewModelBase
     {
         Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
     }
+
+    [RelayCommand]
+    private void ShowCreateCity() => _dialogService.ShowDialog<Features.Cities.Create.CreateCityView>();
 }

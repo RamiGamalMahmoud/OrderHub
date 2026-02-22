@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
+using OrderHub.UI.Interfaces;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.DeliverymanDtos;
 
@@ -10,7 +11,7 @@ internal class ViewModel : Editor.ViewModel
 {
     private readonly IMessenger _messenger;
 
-    public ViewModel(IMediator mediator, IMessenger messenger) : base(mediator)
+    public ViewModel(IMediator mediator, IMessenger messenger, IDialogService dialogService) : base(mediator, dialogService)
     {
         _messenger = messenger;
     }

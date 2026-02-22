@@ -126,14 +126,31 @@
                     FontWeight="DemiBold"
                     Text="العنوان" />
 
-                <hc:ComboBox
-                    MinWidth="200"
-                    Margin="0,10"
-                    hc:InfoElement.Placeholder="اختر المدينة"
-                    hc:InfoElement.ShowClearButton="True"
-                    DisplayMemberPath="Name"
-                    ItemsSource="{Binding Cities}"
-                    SelectedItem="{Binding City}" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="auto" />
+                    </Grid.ColumnDefinitions>
+                    <hc:ComboBox
+                        MinWidth="200"
+                        Margin="0,10"
+                        hc:InfoElement.Placeholder="اختر المدينة"
+                        hc:InfoElement.ShowClearButton="True"
+                        DisplayMemberPath="Name"
+                        ItemsSource="{Binding Cities}"
+                        SelectedItem="{Binding City}" />
+                    <Button
+                        Grid.Column="2"
+                        HorizontalAlignment="Right"
+                        BorderThickness="0"
+                        Command="{Binding ShowCreateCityCommand}"
+                        Cursor="Hand">
+                        <icons:MaterialIcon
+                            Width="20"
+                            Foreground="{StaticResource Primary}"
+                            Kind="PlusCircle" />
+                    </Button>
+                </Grid>
 
                 <hc:TextBox
                     Margin="0,10"

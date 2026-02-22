@@ -14,7 +14,7 @@ internal class ViewModel : Editor.ViewModel
     private readonly IMessenger _messenger;
     private readonly ISelectionStore<IDeliverymanMarker, int> _selectionStore;
 
-    public ViewModel(IMediator mediator, IMessenger messenger, ISelectionStore<IDeliverymanMarker, int> selectionStore) : base(mediator)
+    public ViewModel(IMediator mediator, IMessenger messenger, ISelectionStore<IDeliverymanMarker, int> selectionStore, IDialogService dialogService) : base(mediator, dialogService)
     {
         _messenger = messenger;
         _selectionStore = selectionStore;

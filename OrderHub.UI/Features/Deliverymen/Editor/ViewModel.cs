@@ -1,6 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MediatR;
 using OrderHub.UI.Common;
+using OrderHub.UI.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -12,10 +14,12 @@ namespace OrderHub.UI.Features.Deliverymen.Editor;
 public abstract partial class ViewModel : EditorViewModelBase, IDisposable
 {
     protected readonly IMediator _mediator;
+    protected readonly IDialogService _dialogService;
 
-    protected ViewModel(IMediator mediator)
+    protected ViewModel(IMediator mediator, IDialogService dialogService)
     {
         _mediator = mediator;
+        _dialogService = dialogService;
         _notifyPropertiesNames = [nameof(Name), nameof(SelectedCity)];
         ValidateAllProperties();
     }
@@ -43,5 +47,7 @@ public abstract partial class ViewModel : EditorViewModelBase, IDisposable
 
     private IEnumerable<CityInfoDto> _cities;
     public IEnumerable<CityInfoDto> Cities { get => _cities; set => SetProperty(ref _cities, value); }
+    [RelayCommand]
+    private void ShowCreateCity() => _dialogService.ShowDialog<Features.Cities.Create.CreateCityView>();
 
 }
