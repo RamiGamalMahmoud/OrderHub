@@ -10,11 +10,8 @@ namespace OrderHub.UI.Features.Categories.Create;
 
 public class ViewModel : Editor.ViewModel
 {
-    private readonly IMessenger _messenger;
-
-    public ViewModel(IMediator mediator, ISelectionStore<ICategoryMarker, int> selectionStore, IMessenger messenger) : base(mediator, selectionStore)
+    public ViewModel(IMediator mediator, ISelectionStore<ICategoryMarker, int> selectionStore, IMessenger messenger) : base(mediator, selectionStore, messenger)
     {
-        _messenger = messenger;
     }
 
     public override string Title { get; }
@@ -27,13 +24,13 @@ public class ViewModel : Editor.ViewModel
         if(result.IsSuccess)
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification("تمت إضافة القسم "));
-            //OnRequestClose();
+            OnRequestClose();
             _messenger.Send(new Application.Messages.Categories.CategoryCreatedMessage());
         }
 
         else
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification("فشل إضافة القسم"));
+            await _mediator.Publish(new Application.Notifications.ErrorNotification(result.ErrorMessage));
         }
     }
 }

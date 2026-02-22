@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.UI.Interfaces;
 using OrderHub.UI.Stores.Markers;
@@ -13,11 +14,13 @@ public abstract partial class ViewModel : Common.EditorViewModelBase
 {
     protected readonly IMediator _mediator;
     protected readonly ISelectionStore<ICategoryMarker, int> _selectionStore;
+    protected readonly IMessenger _messenger;
 
-    protected ViewModel(IMediator mediator, ISelectionStore<ICategoryMarker, int> selectionStore)
+    protected ViewModel(IMediator mediator, ISelectionStore<ICategoryMarker, int> selectionStore, IMessenger messenger)
     {
         _mediator = mediator;
         _selectionStore = selectionStore;
+        _messenger = messenger;
         ValidateAllProperties();
         _notifyPropertiesNames = [nameof(Name), nameof(SelectedParent)];
     }
