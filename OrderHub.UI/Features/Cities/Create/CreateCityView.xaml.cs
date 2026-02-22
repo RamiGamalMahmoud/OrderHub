@@ -9,6 +9,7 @@ public partial class CreateCityView : Window, IDialog
     {
         InitializeComponent();
         DataContext = viewModel;
+        viewModel.CloseEditorRequest += () => Close();
     }
 
     public new void Show() => ShowDialog();
