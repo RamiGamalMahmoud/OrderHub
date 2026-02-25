@@ -11,7 +11,7 @@
     Title="{Binding Title}"
     d:DataContext="{d:DesignInstance Type=local:EditSupplierViewModelBase}"
     x:ClassModifier="internal"
-    FontFamily="{StaticResource Tajawal}"
+    FontFamily="{StaticResource FontFamily}"
     FontSize="14"
     ResizeMode="NoResize"
     SizeToContent="WidthAndHeight"
@@ -171,6 +171,7 @@
 
                 <Button
                     Width="100"
+                    Height="auto"
                     Margin="5,0"
                     HorizontalAlignment="Left"
                     Command="{Binding SaveCommand}"
@@ -180,6 +181,7 @@
                     Style="{StaticResource ButtonPrimary}" />
                 <Button
                     Width="100"
+                    Height="auto"
                     Margin="5,0"
                     HorizontalAlignment="Right"
                     Command="{Binding CloseEditorCommand}"

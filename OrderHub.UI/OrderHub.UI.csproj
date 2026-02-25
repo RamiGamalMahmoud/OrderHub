@@ -33,6 +33,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Remove="Resources\Fonts\Cairo.ttf" />
+		<None Remove="Resources\Fonts\Tajawal\Tajawal-Regular.ttf" />
 		<None Remove="Resources\Images\order-hub-banner.png" />
 		<None Remove="Resources\Images\OrderHub.png" />
 	</ItemGroup>
@@ -77,6 +79,16 @@
 	<ItemGroup>
 	  <Folder Include="Features\Cities\Edit\" />
 	  <Folder Include="Features\Cities\Index\" />
+	  <Folder Include="Resources\Fonts\Tajawal\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="Resources\Fonts\Cairo.ttf">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
+	  <Resource Include="Resources\Fonts\Tajawal-Regular.ttf">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
 	</ItemGroup>
 
 	<ItemGroup>

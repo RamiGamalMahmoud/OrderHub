@@ -36,11 +36,12 @@ public partial class App : System.Windows.Application
 
     private void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
     {
-        Debug.WriteLine(e.Exception.Message);
+        _host.Services.GetRequiredService<IMediator>().Publish(new Application.Notifications.ErrorNotification(e.Exception.Message));
     }
 
     private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
+        _host.Services.GetRequiredService<IMediator>().Publish(new Application.Notifications.ErrorNotification(e.Exception.Message));
     }
 
     private void ShowSplashScreen()

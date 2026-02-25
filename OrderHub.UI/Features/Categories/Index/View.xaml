@@ -10,6 +10,7 @@
     xmlns:local="clr-namespace:OrderHub.UI.Features.Categories.Index"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     d:DataContext="{d:DesignInstance Type=local:ViewModel}"
+    FontFamily="{StaticResource FontFamily}"
     mc:Ignorable="d">
 
     <Grid>
@@ -75,7 +76,6 @@
                         Kind="Plus" />
                     <TextBlock
                         VerticalAlignment="Center"
-                        FontFamily="{StaticResource Tajawal}"
                         FontSize="12"
                         FontWeight="DemiBold"
                         Text="إضافة قسم جديد" />

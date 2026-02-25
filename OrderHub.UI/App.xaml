@@ -11,12 +11,20 @@
 
         <ResourceDictionary>
 
-            <FontFamily x:Key="FontFamily">Arial</FontFamily>
+            <FontFamily x:Key="Tajawal">./Resources/Fonts/Tajawal-Regular.ttf#Tajawal</FontFamily>
+            <FontFamily x:Key="Cairo">./Resources/Fonts/Cairo.ttf#Cairo</FontFamily>
+            <FontFamily x:Key="FontFamily">./Resources/Fonts/Cairo.ttf#Cairo</FontFamily>
             <sys:Double x:Key="FontSize">14</sys:Double>
             <sys:Boolean x:Key="True">True</sys:Boolean>
             <sys:Boolean x:Key="False">False</sys:Boolean>
-            <FontFamily x:Key="Tajawal">/Fonts/Tajawal/Tajawal-Regular.ttf#Tajawal</FontFamily>
-            <FontFamily x:Key="Cairo">/Fonts/Cairo.ttf#Cairo</FontFamily>
+
+            <Style TargetType="Window">
+                <Setter Property="FontFamily" Value="{StaticResource FontFamily}" />
+            </Style>
+
+            <Style TargetType="UserControl">
+                <Setter Property="FontFamily" Value="{StaticResource FontFamily}" />
+            </Style>
 
             <ResourceDictionary.MergedDictionaries>
 

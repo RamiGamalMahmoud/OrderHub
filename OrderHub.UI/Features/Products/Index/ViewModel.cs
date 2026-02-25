@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Application.Common;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;

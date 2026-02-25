@@ -16,6 +16,7 @@ namespace OrderHub.Infrastructure.QueryHandlers.Products
         {
             using (AppDbContext dbContext = appDbContextFactory.CreateDbContext())
             {
+                int productsCount = await dbContext.Products.CountAsync();
                 return await dbContext
                     .Products
                     .AsNoTracking()

@@ -9,6 +9,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="clr-namespace:OrderHub.UI.Features.MainWindow"
     d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
+    FontFamily="{StaticResource FontFamily}"
     mc:Ignorable="d">
 
     <ListBox

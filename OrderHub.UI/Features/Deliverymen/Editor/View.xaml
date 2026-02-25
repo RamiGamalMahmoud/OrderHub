@@ -8,7 +8,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Title="{Binding Title}"
     d:DataContext="{d:DesignInstance Type=local:ViewModel}"
-    FontFamily="Arial"
+    FontFamily="{StaticResource FontFamily}"
     FontSize="14"
     ResizeMode="NoResize"
     SizeToContent="WidthAndHeight"
@@ -75,7 +75,6 @@
                 <ComboBox
                     Height="32"
                     DisplayMemberPath="Name"
-                    FontWeight="Bold"
                     IsEditable="False"
                     ItemsSource="{Binding Cities}"
                     SelectedItem="{Binding SelectedCity}" />
@@ -90,6 +89,7 @@
 
                 <Button
                     Width="100"
+                    Height="auto"
                     Margin="5,0"
                     HorizontalAlignment="Left"
                     Command="{Binding SaveCommand}"
@@ -99,6 +99,7 @@
                     Style="{StaticResource ButtonPrimary}" />
                 <Button
                     Width="100"
+                    Height="auto"
                     Margin="5,0"
                     HorizontalAlignment="Right"
                     Command="{Binding CloseEditorCommand}"

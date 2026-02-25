@@ -201,7 +201,6 @@
                     Command="{Binding AddProductCommand}"
                     CommandParameter="{Binding SelectedProduct}"
                     Cursor="Hand"
-                    FontFamily="{StaticResource Tajawal}"
                     FontSize="16"
                     Style="{StaticResource ButtonPrimary}">
                     <StackPanel Orientation="Horizontal">

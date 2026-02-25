@@ -14,6 +14,7 @@
     Title="{Binding Title}"
     d:DataContext="{d:DesignInstance Type=local:ViewModel}"
     x:ClassModifier="internal"
+    FontFamily="{StaticResource FontFamily}"
     FontSize="14"
     WindowStartupLocation="CenterScreen"
     WindowState="Maximized"
@@ -157,7 +158,6 @@
                         HorizontalAlignment="Stretch"
                         Command="{Binding SaveCommand}"
                         Cursor="Hand"
-                        FontFamily="{StaticResource Tajawal}"
                         FontSize="16"
                         Style="{StaticResource ButtonPrimary}">
                         <StackPanel Orientation="Horizontal">

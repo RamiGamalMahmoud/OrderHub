@@ -12,6 +12,7 @@
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
     d:DataContext="{d:DesignInstance Type=local:ViewModel}"
     x:ClassModifier="internal"
+    FontFamily="{StaticResource FontFamily}"
     mc:Ignorable="d">
 
     <Grid>
@@ -77,7 +78,6 @@
                         Kind="Plus" />
                     <TextBlock
                         VerticalAlignment="Center"
-                        FontFamily="{StaticResource Tajawal}"
                         FontSize="12"
                         FontWeight="DemiBold"
                         Text="إنشاء طلب جديد" />

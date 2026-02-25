@@ -9,6 +9,7 @@ using OrderHub.UI.Stores.Markers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.CategoryDtos;
 
@@ -26,7 +27,17 @@ namespace OrderHub.UI.Features.Categories.Index
 
             _messenger.Register<Application.Messages.Categories.CategoryCreatedMessage>(this, async (m, r) =>
             {
-                await LoadAsync();
+                await NavigateToCategory(SelectedCategory);
+            });
+
+            _messenger.Register<Application.Messages.Categories.CategoryUpdatedMessage>(this, async (m, r) =>
+            {
+                await NavigateToCategory(SelectedCategory);
+            });
+
+            _messenger.Register<Application.Messages.Categories.CategoryDeletedMessage>(this, async (m, r) =>
+            {
+                await NavigateToCategory(SelectedCategory);
             });
         }
 
@@ -47,13 +58,13 @@ namespace OrderHub.UI.Features.Categories.Index
 
         protected override async Task LoadAsync()
         {
-            Categories = await _mediator.Send(new Application.Queries.CategoryQueries.GetCategoryTreeQuery());
             CategoriesList = await _mediator.Send(new Application.Queries.CategoryQueries.GetCategoryListQuery(null));
+            _selectedCategoriesList.Clear();
         }
 
         protected override async Task ReloadAsync()
         {
-            Categories = await _mediator.Send(new Application.Queries.CategoryQueries.GetCategoryTreeQuery());
+            CategoriesList = await _mediator.Send(new Application.Queries.CategoryQueries.GetCategoryListQuery(null));
         }
 
         protected override Task ShowCreateAsync()
@@ -72,6 +83,13 @@ namespace OrderHub.UI.Features.Categories.Index
         [RelayCommand]
         private async Task NavigateToCategory(CategoryListDto dto)
         {
+            SelectedCategory = dto;
+            if(SelectedCategory is null)
+            {
+                await LoadAsync();
+                _selectedCategoriesList.Clear();
+                return;
+            }
             if(dto.ParentId is null)
             {
                 _selectedCategoriesList.Clear();
@@ -79,15 +97,10 @@ namespace OrderHub.UI.Features.Categories.Index
             _selectedCategoriesList.Add(dto);
 
             CategoriesList = await _mediator.Send(new Application.Queries.CategoryQueries.GetCategoryListQuery(dto.Id));
-            OnPropertyChanged(nameof(SelectedPath));
         }
 
         [RelayCommand]
-        private async Task NavigateToHome()
-        {
-            await LoadAsync();
-            _selectedCategoriesList.Clear();
-        }
+        private async Task NavigateToHome() => await NavigateToCategory(null);
 
         [RelayCommand]
         private void Edit(CategoryListDto dto)
@@ -99,22 +112,44 @@ namespace OrderHub.UI.Features.Categories.Index
         [RelayCommand]
         private async Task RemoveAsync(CategoryListDto dto)
         {
-            await _mediator.Send(new Application.Commands.CategoryCommands.DeleteCategoryCommand(dto.Id));
-        }
+            StringBuilder stringBuilder = new StringBuilder();
 
-        [ObservableProperty]
-        private IEnumerable<CategoryTreeDto> _categories;
+            if(dto.SubCategoriesCount > 0)
+            {
+                stringBuilder.AppendLine($"القسم يحتوي على {dto.SubCategoriesCount} قسم فرعي");
+            }
+
+            if(dto.ProductsCount > 0)
+            {
+                stringBuilder.AppendLine($"القسم يحتوي على {dto.ProductsCount} منتج");
+            }
+            stringBuilder.AppendLine("سوف يتم حذف القسم الذي تم اختياره؟");
+            stringBuilder.AppendLine("و جميع الأقسام التابعة له و كذلك المنتجات المرتبطة به");
+            stringBuilder.AppendLine("و كذلك عمليات الشراء");
+
+            if (!_dialogService.Confirm(stringBuilder.ToString()))
+                return;
+            Result result =await _mediator.Send(new Application.Commands.CategoryCommands.DeleteCategoryCommand(dto.Id));
+            if(result.IsSuccess)
+            {
+                await _mediator.Publish(new Application.Notifications.SuccessNotification("تم حذف القسم"));
+                await LoadAsync();
+            }
+            else
+            {
+                await _mediator.Publish(new Application.Notifications.ErrorNotification(result.ErrorMessage));
+            }
+        }
 
         [ObservableProperty]
         private IEnumerable<CategoryListDto> _categoriesList;
 
         [ObservableProperty]
-        private string _selectedPath = string.Empty;
-
-        [ObservableProperty]
         private string _searchTirm;
 
-        private ObservableCollection<CategoryListDto> _selectedCategoriesList = new ObservableCollection<CategoryListDto>();
+        private readonly ObservableCollection<CategoryListDto> _selectedCategoriesList = [];
         public IEnumerable<CategoryListDto> SelectedCategoriesList => _selectedCategoriesList;
+        [ObservableProperty]
+        private CategoryListDto _selectedCategory;
     }
 }

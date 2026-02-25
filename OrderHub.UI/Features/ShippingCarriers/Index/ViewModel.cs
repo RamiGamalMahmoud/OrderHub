@@ -24,6 +24,7 @@ public partial class ViewModel : IndexViewModelBase<ShippingCarrierListDto>
 
     protected override async Task DeleteAsync(ShippingCarrierListDto model)
     {
+        if(!_dialogService.Confirm("هل تريد حذف شركة الشحن؟")) return;
         Result result = await _mediator.Send(new Application.Commands.ShippingCarriersCommands.DeleteShippingCarrierCommand(model.Id));
 
         if(result.IsSuccess)
@@ -31,6 +32,7 @@ public partial class ViewModel : IndexViewModelBase<ShippingCarrierListDto>
             string message = MessageBuilder.Build(MessageBuilder.OperationType.Delete, true, "شركة شحن");
             await _mediator.Publish(new Application.Notifications.SuccessNotification(message));
             _messenger.Send(new Application.Messages.ShippingCarriers.ShippingCarrierDeletedMessage());
+            await ReloadAsync();
         }
 
         else
