@@ -13,7 +13,7 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
         builder.ToTable("orders");
 
         builder.HasOne(o => o.Client)
-            .WithMany()
+            .WithMany(c => c.Orders)
             .HasForeignKey(o => o.ClientId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Restrict);

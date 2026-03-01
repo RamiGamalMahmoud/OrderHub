@@ -1,4 +1,5 @@
 ﻿using OrderHub.Domain.ValueObjects;
+using System.Collections.Generic;
 
 namespace OrderHub.Domain.Models
 {
@@ -18,6 +19,9 @@ namespace OrderHub.Domain.Models
         {
             Name = new EntityName(name);
         }
+
+        private List<Order> _orders = new List<Order>();
+        public IReadOnlyCollection<Order> Orders => _orders.AsReadOnly();
 
         public Phone Phone { get; private set; }
 
