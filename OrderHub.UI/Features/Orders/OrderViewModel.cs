@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using MediatR;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using static OrderHub.Application.DTOs.CommonDtos;
@@ -26,6 +27,9 @@ public partial class OrderViewModel : ObservableObject
 
     public int ItemsCount { get; init; }
     public decimal TotalPrice { get; init; }
+
+    [ObservableProperty]
+    private IEnumerable<SupplierInfoDto> _suppliers;
 
     public DateTime CreatedAt { get; init; }
 

@@ -17,6 +17,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<Application.Interfaces.Services.ICredentialsService, Services.FileCredentialsService>();
         services.AddSingleton<Application.Interfaces.Services.ITokenStorageService, Services.FieTokenStorageService>();
         services.AddTransient<Application.Interfaces.Services.IAuthService, Services.SalaAuthService>();
+        services.AddSingleton<Application.Interfaces.Services.ICacheService, Services.CacheService>();
         return services;
     }
 }

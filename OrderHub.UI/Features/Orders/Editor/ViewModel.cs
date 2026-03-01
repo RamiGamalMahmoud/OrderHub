@@ -4,8 +4,10 @@ using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,9 +19,9 @@ namespace OrderHub.UI.Features.Orders.Editor;
 
 internal abstract partial class ViewModel : EditorViewModelBase
 {
-    private protected IMediator _mediator;
-    private readonly IDialogService _dialogService;
-    private readonly IMessenger _messenger;
+    protected IMediator _mediator;
+    protected readonly IDialogService _dialogService;
+    protected readonly IMessenger _messenger;
     private ObservableCollection<KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>> _subCategories;
     private ObservableCollection<OrderItemViewModel> _orderItems = new();
 
@@ -34,11 +36,22 @@ internal abstract partial class ViewModel : EditorViewModelBase
         });
         _subCategories = [];
         OrderBuilder = new OrderBuilder();
+        SuppliersViewModel = new SuppliersViewModel();
         OrderBuilder.ItemsChanged += (s, e) => SaveCommand.NotifyCanExecuteChanged();
+        DeliveryMethodsViewModel = new DeliveryMethodsViewModel();
+        DeliveryMethodsViewModel.ErrorsChanged += DeliveryMethodsViewModel_ErrorsChanged;
         ValidateAllProperties();
     }
 
+    private void DeliveryMethodsViewModel_ErrorsChanged(object sender, DataErrorsChangedEventArgs e)
+    {
+        SaveCommand.NotifyCanExecuteChanged();
+    }
+
     public OrderBuilder OrderBuilder { get; }
+    public SuppliersViewModel SuppliersViewModel { get; }
+
+    public DeliveryMethodsViewModel DeliveryMethodsViewModel { get; }
 
     [ObservableProperty]
     private IEnumerable<CategoryInfoDto> _rootCategories;
@@ -94,9 +107,15 @@ internal abstract partial class ViewModel : EditorViewModelBase
 
     internal async Task LoadAsync()
     {
+        DeliveryMethodsViewModel.Deliverymen = await _mediator.Send(new Application.Queries.CommonQueries.GetAllDeliverymenInfoQuery());
+        DeliveryMethodsViewModel.ShippingCarriers = await _mediator.Send(new Application.Queries.CommonQueries.GetAllShippingCarriersInfoQuery());
+
         RootCategories = await _mediator.Send(new Application.Queries.CommonQueries.GetRootCategoriesQuery());
+        SuppliersViewModel.Suppliers = await _mediator.Send(new Application.Queries.CommonQueries.GetSuppliersInfoQuery());
         Clients = await _mediator.Send(new Application.Queries.ClientQueries.GetAllClientsQuery());
     }
+
+    public override bool CanSave => base.CanSave && !DeliveryMethodsViewModel.HasErrors;
 
     [RelayCommand(CanExecute = nameof(HasProductSelected))]
     private void ResetProductPrice()
@@ -164,6 +183,12 @@ internal abstract partial class ViewModel : EditorViewModelBase
 
     partial void OnSelectedProductChanged(ProductListDto oldValue, ProductListDto newValue)
     {
+        if (newValue is null)
+        {
+            SuppliersViewModel.ProductSuppliers = Enumerable.Empty<SupplierInfoDto>();
+            return;
+        }
+        SuppliersViewModel.ProductSuppliers = SuppliersViewModel.Suppliers.Where(s => newValue.SupplierIds.Contains(s.Id));
         Price = newValue is null ? 0 : newValue.Price;
     }
 

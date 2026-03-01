@@ -35,5 +35,9 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
             .HasForeignKey(o => o.OrderStatusId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(o => o.DeliveryMethod)
+            .HasConversion<string>()
+            .IsRequired(false);
     }
 }

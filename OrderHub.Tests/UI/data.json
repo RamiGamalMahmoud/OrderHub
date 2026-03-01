@@ -1,0 +1,12 @@
+{
+  "DeliverymanInfoDto": [
+    [ 1, "Deliveryman 1" ],
+    [ 2, "Deliveryman 2" ],
+    [ 3, "Deliveryman 3" ]
+  ],
+  "ShippingCarrierInfoDto": [
+    [ 1, "ShippingCarrier 1" ],
+    [ 2, "ShippingCarrier 2" ],
+    [ 3, "ShippingCarrier 3" ]
+  ]
+}

@@ -1,38 +1,26 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using OrderHub.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using static OrderHub.Application.DTOs.ClientDtos;
 using static OrderHub.Application.DTOs.OrderDtos;
 using static OrderHub.Application.DTOs.OrderItemDtos;
 
 namespace OrderHub.UI.Features.Orders.Editor;
 
-public interface IOrderBuilder
+public partial class OrderBuilder : ObservableObject
 {
-    ObservableCollection<OrderItemViewModel> Items { get; }
-    decimal TotalPrice { get; }
-    int Count { get; }
 
-    event EventHandler ItemsChanged;
+    private int _clientId;
+    private int? _deliverymanId;
+    private int? _shippingCarrierId;
 
-    void AddItem(OrderItemViewModel item);
-    void RemoveItem(OrderItemViewModel item);
-    void UpdateItemPrice(OrderItemViewModel item, decimal newPrice);
-    void UpdateItemQuantity(OrderItemViewModel item, decimal newQuantity);
-    void Clear();
-}
-
-public partial class OrderBuilder : ObservableObject, IOrderBuilder
-{
-    private static int _orderNumber = 1;
     [ObservableProperty]
     private decimal _totalPrice;
 
-    [ObservableProperty]
-    private int _count;
+    public int ItemsCount => Items.Count;
+    private DeliveryMethod _deliveryMethod;
 
     public ObservableCollection<OrderItemViewModel> Items { get; } = new();
 
@@ -44,6 +32,7 @@ public partial class OrderBuilder : ObservableObject, IOrderBuilder
         {
             RecalculateTotals();
             ItemsChanged?.Invoke(this, EventArgs.Empty);
+            OnPropertyChanged(nameof(ItemsCount));
         };
     }
 
@@ -98,23 +87,46 @@ public partial class OrderBuilder : ObservableObject, IOrderBuilder
     private void RecalculateTotals()
     {
         TotalPrice = Items.Sum(i => i.SubTotal);
-        Count = Items.Count;
     }
 
-    public OrderCreateDto Build(ClientListDto client)
+    public OrderCreateDto Build()
     {
-        IEnumerable<OrderItemDto> orderItems = Items.Select(item => new OrderItemDto(item.ProductId, item.ProductName, (int) item.Quantity, item.Price));
-        OrderCreateDto orderCreateDto = new OrderCreateDto(client.Id, 1, CreateOrderNumber(), orderItems);
+        if (_deliveryMethod is DeliveryMethod.DeliveryMan && _deliverymanId is null)
+        {
+            throw new Exception("Deliveryman is required");
+        }
+
+        if (_deliveryMethod is DeliveryMethod.ShippingCompany && _shippingCarrierId is null)
+        {
+            throw new Exception("Shipping carrier is required");
+        }
+
+        IEnumerable<OrderItemDto> orderItems = Items.Select(item => new OrderItemDto(item.ProductId, item.ProductName, (int)item.Quantity, item.Price));
+        OrderCreateDto orderCreateDto = new OrderCreateDto(_clientId, 1, _deliveryMethod, _deliverymanId, _shippingCarrierId, orderItems);
         return orderCreateDto;
     }
 
-    private static string CreateOrderNumber()
+    public OrderBuilder WithDeliveryMethod(DeliveryMethod deliveryMethod)
     {
-        StringBuilder sb = new StringBuilder();
-        sb.Append("ORD-");
-        sb.Append(DateTime.Now.ToString("yyyyMMdd"));
-        sb.Append('-');
-        sb.Append(_orderNumber++.ToString().PadLeft(4, '0'));
-        return sb.ToString();
+        _deliveryMethod = deliveryMethod;
+        return this;
+    }
+
+    public OrderBuilder WithShippingCarrier(int? shippingCarrierId)
+    {
+        _shippingCarrierId = shippingCarrierId;
+        return this;
+    }
+
+    public OrderBuilder WithDeliveryman(int? deliverymanId)
+    {
+        _deliverymanId = deliverymanId;
+        return this;
+    }
+
+    public OrderBuilder ForClient(int clientId)
+    {
+        _clientId = clientId;
+        return this;
     }
 }

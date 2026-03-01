@@ -1,5 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using OrderHub.Application.Common;
+using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using System.Threading;
@@ -8,9 +10,10 @@ using static OrderHub.Application.Commands.CategoryCommands;
 
 namespace OrderHub.Infrastructure.CommandHandlers.Categories;
 
-internal class CreateCategoryCommandHandler(AppDbContextFactory appDbContextFactory) : IRequestHandler<CreateCategoryCommand, Result>
+internal class CreateCategoryCommandHandler(AppDbContextFactory appDbContextFactory, ICacheService cacheService) : IRequestHandler<CreateCategoryCommand, Result>
 {
     private readonly AppDbContextFactory _appDbContextFactory = appDbContextFactory;
+    private readonly ICacheService _cacheService = cacheService;
 
     public async Task<Result> Handle(CreateCategoryCommand request, CancellationToken cancellationToken)
     {
@@ -22,6 +25,10 @@ internal class CreateCategoryCommandHandler(AppDbContextFactory appDbContextFact
         try
         {
             await appDbContext.SaveChangesAsync();
+            
+            // Invalidate category cache
+            _cacheService.Remove(CacheKeys.AllCategories);
+            
             return Result.Success();
         }
         catch (DbUpdateException)

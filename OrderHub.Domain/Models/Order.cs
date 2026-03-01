@@ -1,4 +1,5 @@
-﻿using OrderHub.Domain.ValueObjects;
+﻿using OrderHub.Domain.Enums;
+using OrderHub.Domain.ValueObjects;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -26,6 +27,11 @@ public class Order : ModelBase
     public Money Total => new Money(_orderItems.Sum(i => i.SubTotal.Value));
     public int OrderStatusId { get; private set; }
     public OrderStatus OrderStatus { get; private set; }
+    public DeliveryMethod? DeliveryMethod { get; set; }
+
+    //public ShippingCarrier ShippingCompany { get; set; }
+
+    //public Deliveryman DeliveryMan { get; set; }
 
     public void AddOrderItem(OrderItem orderItem) => _orderItems.Add(orderItem);
 

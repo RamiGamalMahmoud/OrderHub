@@ -22,6 +22,7 @@ internal class CreateOrderCommandHandler(AppDbContextFactory appDbContextFactory
         string orderNumber = GenerateOrderNumber(await GetNextOrderNumber(appDbContext));
 
         Order order = new Order(request.CreateDto.ClientId, orderNumber, request.CreateDto.OrderStatusId);
+        order.DeliveryMethod = request.CreateDto.DeliveryMethod;
 
         foreach(OrderItemDto orderItemDto in request.CreateDto.OrderItems)
         {
