@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OrderHub.Infrastructure;
 
@@ -10,9 +11,11 @@ using OrderHub.Infrastructure;
 namespace OrderHub.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260301170920_AddShippingCarrierToOrder")]
+    partial class AddShippingCarrierToOrder
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
@@ -188,10 +191,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("delivery_method");
 
-                    b.Property<int?>("DeliverymanId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("deliveryman_id");
-
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("modified_at");
@@ -214,9 +213,6 @@ namespace OrderHub.Infrastructure.Migrations
 
                     b.HasIndex("ClientId")
                         .HasDatabaseName("ix_orders_client_id");
-
-                    b.HasIndex("DeliverymanId")
-                        .HasDatabaseName("ix_orders_deliveryman_id");
 
                     b.HasIndex("OrderStatusId")
                         .HasDatabaseName("ix_orders_order_status_id");
@@ -652,12 +648,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_orders_clients_client_id");
 
-                    b.HasOne("OrderHub.Domain.Models.Deliveryman", "Deliveryman")
-                        .WithMany()
-                        .HasForeignKey("DeliverymanId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_orders_deliverymen_deliveryman_id");
-
                     b.HasOne("OrderHub.Domain.Models.OrderStatus", "OrderStatus")
                         .WithMany()
                         .HasForeignKey("OrderStatusId")
@@ -672,8 +662,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasConstraintName("fk_orders_shipping_carriers_shipping_carrier_id");
 
                     b.Navigation("Client");
-
-                    b.Navigation("Deliveryman");
 
                     b.Navigation("OrderStatus");
 

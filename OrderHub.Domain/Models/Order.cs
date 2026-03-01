@@ -28,10 +28,10 @@ public class Order : ModelBase
     public int OrderStatusId { get; private set; }
     public OrderStatus OrderStatus { get; private set; }
     public DeliveryMethod? DeliveryMethod { get; set; }
-
-    //public ShippingCarrier ShippingCompany { get; set; }
-
-    //public Deliveryman DeliveryMan { get; set; }
+    public int? ShippingCarrierId { get; set; }
+    public ShippingCarrier ShippingCarrier { get; set; }
+    public int? DeliverymanId { get; set; }
+    public Deliveryman Deliveryman { get; set; }
 
     public void AddOrderItem(OrderItem orderItem) => _orderItems.Add(orderItem);
 

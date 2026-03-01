@@ -39,5 +39,17 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
         builder.Property(o => o.DeliveryMethod)
             .HasConversion<string>()
             .IsRequired(false);
+
+        builder.HasOne(o => o.ShippingCarrier)
+            .WithMany()
+            .HasForeignKey(o=> o.ShippingCarrierId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        builder.HasOne(o => o.Deliveryman)
+            .WithMany()
+            .HasForeignKey(o => o.DeliverymanId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
     }
 }
