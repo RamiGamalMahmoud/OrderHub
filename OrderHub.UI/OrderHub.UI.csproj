@@ -43,6 +43,7 @@
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<PackageReference Include="HandyControls" Version="3.6.0" />
 		<PackageReference Include="Hoax.WpfConverters" Version="1.0.0" />
+		<PackageReference Include="InputSimulatorCore" Version="1.0.5" />
 		<PackageReference Include="Material.Icons.WPF" Version="2.4.1" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
 		<PackageReference Include="Notification.Wpf" Version="8.0.0" />

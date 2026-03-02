@@ -16,6 +16,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<Interfaces.IDialogService, Services.DialogService>();
         services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
         services.AddSingleton<Application.Interfaces.Services.INotificationService, Services.NotificationService>();
+        services.AddSingleton<Application.Interfaces.Services.IWhatsappService, Services.WhatsappService>();
 
         services.AddSingleton<INotificationManager, NotificationManager>();
 
