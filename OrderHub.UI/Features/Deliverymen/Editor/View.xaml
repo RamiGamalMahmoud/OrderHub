@@ -30,6 +30,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="1*" />
                 <RowDefinition Height="1*" />
+                <RowDefinition Height="1*" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
 
@@ -51,6 +52,17 @@
 
             <StackPanel
                 Grid.Row="1"
+                Grid.ColumnSpan="2"
+                Orientation="Vertical">
+                <TextBlock
+                    Margin="0,12,0,4"
+                    FontWeight="Bold"
+                    Text="رقم الهاتف" />
+                <TextBox Height="32" Text="{Binding PhoneNumber, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+
+            <StackPanel
+                Grid.Row="2"
                 Grid.ColumnSpan="2"
                 Margin="0,10"
                 Orientation="Vertical">

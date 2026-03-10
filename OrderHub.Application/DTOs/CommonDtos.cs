@@ -10,6 +10,5 @@ public static class CommonDtos
     public record DeliverymanInfoDto(int Id, string Name);
     public record ShippingCarrierInfoDto(int Id, string Name);
     public record ProductInfoDto(int Id, string Name);
-    public record OrderStatusInfoDto(int Id, string Status, string DisplayName);
     public record DeliveryMethodInfoDto(int Id, string MethodName);
 }

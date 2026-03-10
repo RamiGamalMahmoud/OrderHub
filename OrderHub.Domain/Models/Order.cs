@@ -13,11 +13,10 @@ public class Order : ModelBase
     public int ClientId { get; private set; }
     public Client Client { get; private set; }
 
-    public Order(int clientId, string orderNumber, int orderStatusId)
+    public Order(int clientId, string orderNumber)
     {
         ClientId = clientId;
         OrderNumber = orderNumber;
-        OrderStatusId = orderStatusId;
     }
 
     public string OrderNumber { get; private set; }
@@ -25,9 +24,8 @@ public class Order : ModelBase
     public IReadOnlyCollection<OrderItem> OrderItems => _orderItems.AsReadOnly();
 
     public Money Total => new Money(_orderItems.Sum(i => i.SubTotal.Value));
-    public int OrderStatusId { get; private set; }
-    public OrderStatus OrderStatus { get; private set; }
     public DeliveryMethod? DeliveryMethod { get; set; }
+    public OrderStatus OrderStatus { get; private set; }
     public int? ShippingCarrierId { get; set; }
     public ShippingCarrier ShippingCarrier { get; set; }
     public int? DeliverymanId { get; set; }

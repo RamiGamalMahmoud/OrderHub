@@ -6,12 +6,14 @@ namespace OrderHub.Domain.Models
     {
         private Deliveryman() { }
 
-        public Deliveryman(string name, City city)
+        public Deliveryman(string name, City city, string phoneNumber)
         {
             Rename(name);
             ChangeCity(city);
+            PhoneNumber = phoneNumber;
         }
 
+        public string PhoneNumber { get; set; } 
         public EntityName Name { get; private set; }
         public City City { get; private set; }
         public void Rename(string name)

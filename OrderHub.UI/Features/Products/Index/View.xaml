@@ -100,7 +100,6 @@
             <DataGrid
                 Grid.Row="0"
                 d:ItemsSource="{d:SampleData}"
-                hc:ThemeManager.RequestedAccentColor="LightGray"
                 AutoGenerateColumns="False"
                 IsReadOnly="True"
                 ItemsSource="{Binding Products, IsAsync=True}">

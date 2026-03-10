@@ -14,15 +14,17 @@ internal partial class MainWindowViewModel : ObservableObject
     private readonly ISessionManager _sessionManager;
     private readonly IMediator _mediator;
     private readonly IDialogService _dialogService;
+    private readonly IWhatsappService _whatsappService;
     [ObservableProperty]
     private NavigationCommand _navigationCommand;
 
-    public MainWindowViewModel(INavigationService navigationService, ISessionManager sessionManager, IMediator mediator, IDialogService dialogService)
+    public MainWindowViewModel(INavigationService navigationService, ISessionManager sessionManager, IMediator mediator, IDialogService dialogService, IWhatsappService whatsappService)
     {
         _navigationService = navigationService;
         _sessionManager = sessionManager;
         _mediator = mediator;
         _dialogService = dialogService;
+        _whatsappService = whatsappService;
         InitializeNavigationCommands();
     }
 
@@ -66,6 +68,12 @@ internal partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LoginSallaCommand))]
     private bool _isAuthenticated = false;
+
+    [RelayCommand]
+    private async Task OpenWhatapp()
+    {
+        await _whatsappService.StartWhatsApp();
+    }
 
     public bool IsAppInDebug { get; private set; } = false;
 

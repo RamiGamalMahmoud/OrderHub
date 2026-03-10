@@ -1,6 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace OrderHub.UI.Features.Orders;
 
@@ -32,4 +34,21 @@ public partial class OrderItemViewModel : ObservableObject
 
     public decimal SubTotal => Price * Quantity;
 
+    [Required]
+    public string SupplierName { get; set; }
+    [Required]
+    public int? SupplierId { get; set; }
+
+    [ObservableProperty]
+    private OrderItemSupplier _supplier;
+
+    partial void OnSupplierChanged(OrderItemSupplier oldValue, OrderItemSupplier newValue)
+    {
+        SupplierName = newValue?.Name;
+        SupplierId = newValue?.Id;
+    }
+
+    public IEnumerable<OrderItemSupplier> Suppliers { get; set; } = [];
 }
+
+public record OrderItemSupplier(int Id, string Name);

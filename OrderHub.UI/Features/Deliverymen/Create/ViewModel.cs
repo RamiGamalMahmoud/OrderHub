@@ -20,7 +20,7 @@ internal class ViewModel : Editor.ViewModel
 
     protected override async Task Save()
     {
-        DeliverymanCreateDto deliverymanCreateDto = new DeliverymanCreateDto(Name, SelectedCity.Id);
+        DeliverymanCreateDto deliverymanCreateDto = new DeliverymanCreateDto(Name, SelectedCity.Id, PhoneNumber);
         Result result = await _mediator.Send(new Application.Commands.DeliverymanCommands.CreateDeliverymanCommand(deliverymanCreateDto));
         if (result.IsSuccess)
         {

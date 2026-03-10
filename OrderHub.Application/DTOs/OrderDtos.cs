@@ -10,11 +10,12 @@ public static class OrderDtos
     public record OrderListDto(
         int Id,
         string OrderNumber,
-        OrderStatusInfoDto OrderStatusInfoDto,
         string ClientName,
         string ClientPhoneNumber,
         int ItemsCount,
         decimal Total,
+        OrderStatus OrderStatus,
+        EnumItem<OrderStatus> EnumItem,
         DateTime CreatedAt);
 
     public record OrderCreateDto(
@@ -28,5 +29,5 @@ public static class OrderDtos
 
 public static class OrderItemDtos
 {
-    public record OrderItemDto(int ProductId, string ProductName, int Quantity, decimal UnitPrice);
+    public record OrderItemDto(int ProductId, string ProductName, int Quantity, decimal UnitPrice, string SupplierName, int? SupplierId);
 }

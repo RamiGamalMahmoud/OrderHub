@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OrderHub.Infrastructure;
 
@@ -10,9 +11,11 @@ using OrderHub.Infrastructure;
 namespace OrderHub.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260308191124_RemoveOrderStatusesTable")]
+    partial class RemoveOrderStatusesTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
@@ -156,11 +159,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("modified_at");
 
-                    b.Property<string>("PhoneNumber")
-                        .HasMaxLength(15)
-                        .HasColumnType("varchar(15)")
-                        .HasColumnName("phone_number");
-
                     b.Property<int>("deliveryman_city_id")
                         .HasColumnType("INTEGER")
                         .HasColumnName("deliveryman_city_id");
@@ -205,13 +203,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("VARCHAR(20)")
                         .HasColumnName("order_number");
-
-                    b.Property<string>("OrderStatus")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue("Pending")
-                        .HasColumnName("order_status");
 
                     b.Property<int?>("ShippingCarrierId")
                         .HasColumnType("INTEGER")

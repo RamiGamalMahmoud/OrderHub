@@ -4,5 +4,6 @@ namespace OrderHub.Application.Interfaces.Services;
 
 public interface IWhatsappService
 {
-    Task Send(string contact, string message);
+    Task<bool> Send(string contact, string message);
+    Task<bool> StartWhatsApp(string url = "https://web.whatsapp.com/");
 }

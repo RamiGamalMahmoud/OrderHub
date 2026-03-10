@@ -63,32 +63,37 @@
 
             </StackPanel>
 
-            <Button
-                Grid.Column="2"
-                Height="40"
-                hc:BorderElement.CornerRadius="7"
-                Background="#facc15"
-                Command="{Binding ShowCreateCommand}"
-                Cursor="Hand"
-                Foreground="Black">
-                <StackPanel Orientation="Horizontal">
-                    <icons:MaterialIcon
-                        Width="20"
-                        Margin="5,0"
-                        Kind="Plus" />
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        FontSize="12"
-                        FontWeight="DemiBold"
-                        Text="إنشاء طلب جديد" />
-                </StackPanel>
-            </Button>
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Button
+                    Grid.Column="2"
+                    Height="40"
+                    hc:BorderElement.CornerRadius="7"
+                    Background="#facc15"
+                    Command="{Binding ShowCreateCommand}"
+                    Cursor="Hand"
+                    Foreground="Black">
+                    <StackPanel Orientation="Horizontal">
+                        <icons:MaterialIcon
+                            Width="20"
+                            Margin="5,0"
+                            Kind="Plus" />
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            FontWeight="DemiBold"
+                            Text="إنشاء طلب جديد" />
+                    </StackPanel>
+                </Button>
+                <Button
+                    Margin="5,0"
+                    Command="{Binding BrodcastAllOrdersCommand}"
+                    Content="ارسال الكل" />
+            </StackPanel>
         </Grid>
 
 
         <DataGrid
             Grid.Row="1"
-            d:ItemsSource="{d:SampleData}"
             AutoGenerateColumns="False"
             GridLinesVisibility="Vertical"
             IsReadOnly="True"
@@ -108,7 +113,7 @@
                     Header="اسم العميل"
                     IsReadOnly="True" />
 
-                <DataGridTemplateColumn Header="حالة الطلب" SortMemberPath="OrderStatus.DisplayName">
+                <DataGridTemplateColumn Header="حالة الطلب" SortMemberPath="DisplayName">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <local:OrderStatusComponent IsEnabled="{Binding CanEdit}" />
@@ -139,6 +144,17 @@
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
                                 <buttons:ButtonEdit />
+                                <Button
+                                    Height="auto"
+                                    Padding="0"
+                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastOrderStatusCommand}"
+                                    CommandParameter="{Binding}"
+                                    Cursor="Hand"
+                                    Foreground="{StaticResource SuccessBrush}">
+                                    <StackPanel>
+                                        <icons:MaterialIcon Width="20" Kind="Whatsapp" />
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>

@@ -29,7 +29,9 @@ internal class GetAllProductsPagedQueryHandler(AppDbContextFactory appDbContextF
                 p.Price.Value,
                 p.Code,
                 p.Category.Name.Value,
-                p.Suppliers.Select(s => s.Id).ToImmutableList()));
+                p.Suppliers.Select(s => s.Id).ToImmutableList(),
+                p.Suppliers.Select(s => new Application.DTOs.CommonDtos.SupplierInfoDto(s.Id, s.Name.Value)).ToImmutableList()
+                ));
 
         return await query.ToPagedResultAsync(request.PageNumber, request.PageSize, cancellationToken);
     }

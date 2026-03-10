@@ -101,7 +101,7 @@ public partial class OrderBuilder : ObservableObject
             throw new Exception("Shipping carrier is required");
         }
 
-        IEnumerable<OrderItemDto> orderItems = Items.Select(item => new OrderItemDto(item.ProductId, item.ProductName, (int)item.Quantity, item.Price));
+        IEnumerable<OrderItemDto> orderItems = Items.Select(item => new OrderItemDto(item.ProductId, item.ProductName, (int)item.Quantity, item.Price, item.SupplierName, item.SupplierId));
         OrderCreateDto orderCreateDto = new OrderCreateDto(_clientId, 1, _deliveryMethod, _deliverymanId, _shippingCarrierId, orderItems);
         return orderCreateDto;
     }

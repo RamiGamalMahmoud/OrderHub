@@ -26,6 +26,11 @@ namespace OrderHub.Infrastructure.Configurations
                 .HasForeignKey("deliveryman_city_id")
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Property(d => d.PhoneNumber)
+                .HasColumnType("varchar(15)")
+                .HasMaxLength(15)
+                .IsRequired(false);
         }
     }
 }

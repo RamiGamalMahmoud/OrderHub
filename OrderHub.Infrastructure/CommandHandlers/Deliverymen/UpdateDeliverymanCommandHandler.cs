@@ -25,6 +25,7 @@ internal class UpdateDeliverymanCommandHandler(AppDbContextFactory appDbContextF
         }
 
         deliveryman.Rename(request.DeliverymanUpdateDto.Name);
+        deliveryman.PhoneNumber = request.DeliverymanUpdateDto.PhoneNumber;
         deliveryman.ChangeCity(city);
 
         try

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using OrderHub.Domain.Models;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 
@@ -28,9 +30,4 @@ public static class EnumExtensions
         return attribute?.Description ?? value.ToString();
     }
 }
-
-public class EnumItem<T>
-{
-    public T Value { get; set; }
-    public string DisplayName { get; set; }
-}
+public record EnumItem<T>(T Value, string DisplayName);

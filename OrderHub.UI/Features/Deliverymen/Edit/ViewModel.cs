@@ -34,11 +34,12 @@ internal class ViewModel : Editor.ViewModel
 
         Name = deliverymanEditDto.Name;
         SelectedCity = Cities.Where(c => c.Id == deliverymanEditDto.Id).FirstOrDefault();
+        PhoneNumber = deliverymanEditDto.PhoneNumber;
     }
 
     protected override async Task Save()
     {
-        DeliverymanUpdateDto updateDto = new DeliverymanUpdateDto(_selectionStore.Id, Name, SelectedCity.Id);
+        DeliverymanUpdateDto updateDto = new DeliverymanUpdateDto(_selectionStore.Id, Name, SelectedCity.Id, PhoneNumber);
         Result result = await _mediator.Send(new Application.Commands.DeliverymanCommands.UpdateDeliverymanCommand(updateDto));
         if(result.IsSuccess)
         {

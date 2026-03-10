@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OrderHub.Infrastructure;
 
@@ -10,9 +11,11 @@ using OrderHub.Infrastructure;
 namespace OrderHub.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260303000106_AddSupplierInfoToOrderItems")]
+    partial class AddSupplierInfoToOrderItems
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
@@ -156,11 +159,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("modified_at");
 
-                    b.Property<string>("PhoneNumber")
-                        .HasMaxLength(15)
-                        .HasColumnType("varchar(15)")
-                        .HasColumnName("phone_number");
-
                     b.Property<int>("deliveryman_city_id")
                         .HasColumnType("INTEGER")
                         .HasColumnName("deliveryman_city_id");
@@ -206,12 +204,9 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("VARCHAR(20)")
                         .HasColumnName("order_number");
 
-                    b.Property<string>("OrderStatus")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue("Pending")
-                        .HasColumnName("order_status");
+                    b.Property<int>("OrderStatusId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("order_status_id");
 
                     b.Property<int?>("ShippingCarrierId")
                         .HasColumnType("INTEGER")
@@ -225,6 +220,9 @@ namespace OrderHub.Infrastructure.Migrations
 
                     b.HasIndex("DeliverymanId")
                         .HasDatabaseName("ix_orders_deliveryman_id");
+
+                    b.HasIndex("OrderStatusId")
+                        .HasDatabaseName("ix_orders_order_status_id");
 
                     b.HasIndex("ShippingCarrierId")
                         .HasDatabaseName("ix_orders_shipping_carrier_id");
@@ -287,6 +285,74 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasDatabaseName("ix_order_items_supplier_id");
 
                     b.ToTable("order_items", (string)null);
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.OrderStatus", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("VARCHAR(50)")
+                        .HasColumnName("display_name");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("modified_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("VARCHAR(40)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_order_statuses");
+
+                    b.ToTable("order_statuses", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 2, 8, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            DisplayName = "تحت المراجعة",
+                            Status = "Pending"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(2026, 2, 8, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            DisplayName = "قيد التنفيذ",
+                            Status = "Processing"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(2026, 2, 8, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            DisplayName = "تم الشحن",
+                            Status = "Shipped"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CreatedAt = new DateTime(2026, 2, 8, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            DisplayName = "تم التوصيل",
+                            Status = "Delivered"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            CreatedAt = new DateTime(2026, 2, 8, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            DisplayName = "ملغي",
+                            Status = "Cancelled"
+                        });
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Phone", b =>
@@ -607,6 +673,13 @@ namespace OrderHub.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_orders_deliverymen_deliveryman_id");
 
+                    b.HasOne("OrderHub.Domain.Models.OrderStatus", "OrderStatus")
+                        .WithMany()
+                        .HasForeignKey("OrderStatusId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_orders_order_statuses_order_status_id");
+
                     b.HasOne("OrderHub.Domain.Models.ShippingCarrier", "ShippingCarrier")
                         .WithMany()
                         .HasForeignKey("ShippingCarrierId")
@@ -616,6 +689,8 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Client");
 
                     b.Navigation("Deliveryman");
+
+                    b.Navigation("OrderStatus");
 
                     b.Navigation("ShippingCarrier");
                 });
@@ -636,7 +711,7 @@ namespace OrderHub.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_order_items_products_product_id");
 
-                    b.HasOne("OrderHub.Domain.Models.Supplier", "Supplier")
+                    b.HasOne("OrderHub.Domain.Models.Supplier", null)
                         .WithMany()
                         .HasForeignKey("SupplierId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -660,8 +735,6 @@ namespace OrderHub.Infrastructure.Migrations
                                 .HasForeignKey("OrderItemId")
                                 .HasConstraintName("fk_order_items_order_items_id");
                         });
-
-                    b.Navigation("Supplier");
 
                     b.Navigation("UnitPrice")
                         .IsRequired();

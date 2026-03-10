@@ -16,14 +16,10 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
     }
 
     public static IEnumerable<EnumItem<DeliveryMethod>> DeliveryMethods =>
-    Enum.GetValues<DeliveryMethod>()
-        .Cast<DeliveryMethod>()
-        .Select(e => new EnumItem<DeliveryMethod>
-        {
-            Value = e,
-            DisplayName = e.GetDescription()
-        })
-        .OrderBy(e => e.DisplayName);
+        Enum.GetValues<DeliveryMethod>()
+            .Cast<DeliveryMethod>()
+            .Select(e => new EnumItem<DeliveryMethod>(e, e.GetDescription()))
+            .OrderBy(e => e.DisplayName);
 
     [ObservableProperty]
     [Required(ErrorMessage = "Delivery method is required")]

@@ -16,7 +16,7 @@ internal class CreateDeliverymanCommandHandler(AppDbContextFactory appDbContextF
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
         City city = await appDbContext.Cities.FindAsync(request.DeliverymanCreateDto.CityId);
-        Deliveryman deliveryman = new Deliveryman(request.DeliverymanCreateDto.Name, city);
+        Deliveryman deliveryman = new Deliveryman(request.DeliverymanCreateDto.Name, city, request.DeliverymanCreateDto.PhoneNumber);
 
         appDbContext.Deliverymen.Add(deliveryman);
         try

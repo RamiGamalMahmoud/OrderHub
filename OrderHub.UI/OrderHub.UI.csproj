@@ -41,12 +41,16 @@
 
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="DotNetSeleniumExtras.WaitHelpers" Version="3.11.0" />
 		<PackageReference Include="HandyControls" Version="3.6.0" />
 		<PackageReference Include="Hoax.WpfConverters" Version="1.0.0" />
 		<PackageReference Include="InputSimulatorCore" Version="1.0.5" />
 		<PackageReference Include="Material.Icons.WPF" Version="2.4.1" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
 		<PackageReference Include="Notification.Wpf" Version="8.0.0" />
+		<PackageReference Include="Selenium.Support" Version="4.41.0" />
+		<PackageReference Include="Selenium.WebDriver" Version="4.41.0" />
+		<PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="145.0.7632.11700" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -96,6 +100,14 @@
 	  <Compile Update="Features\Suppliers\Editor\EditSupplierView.xaml.cs">
 	    <SubType>Code</SubType>
 	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Page Include="Properties\DesignTimeResources.xaml" Condition="'$(DesignTime)'=='true' OR ('$(SolutionPath)'!='' AND Exists('$(SolutionPath)') AND '$(BuildingInsideVisualStudio)'!='true' AND '$(BuildingInsideExpressionBlend)'!='true')">
+			<Generator>MSBuild:Compile</Generator>
+			<SubType>Designer</SubType>
+			<ContainsDesignTimeResources>true</ContainsDesignTimeResources>
+		</Page>
 	</ItemGroup>
 
 </Project>

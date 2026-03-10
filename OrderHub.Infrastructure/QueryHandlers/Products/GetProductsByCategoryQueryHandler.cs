@@ -52,7 +52,8 @@ internal class GetProductsByCategoryQueryHandler(AppDbContextFactory appDbContex
                 p.Code, 
                 p.Category.Name.Value, 
                 p.Suppliers.Select(s => s.Id)
-                    .ToImmutableList()
+                    .ToImmutableList(),
+                p.Suppliers.Select(s => new Application.DTOs.CommonDtos.SupplierInfoDto(s.Id, s.Name.Value)).ToImmutableList()
                 ))
             .ToListAsync(cancellationToken: cancellationToken);
     }

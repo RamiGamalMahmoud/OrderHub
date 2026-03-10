@@ -60,7 +60,7 @@ namespace OrderHub.UI.Features.Clients.Edit
         [ObservableProperty]
         [NotifyDataErrorInfo]
         [Required(ErrorMessage = "رقم الهاتف مطلوب")]
-        [Length(10, 14, ErrorMessage = "رقم الهاتف يجب ان يكون على الاقل 10 رقم وعلى الاكثر 14 رقم")]
+        [Length(7, 14, ErrorMessage = "رقم الهاتف يجب ان يكون على الاقل 7 رقم وعلى الاكثر 14 رقم")]
         [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
         private string _number;
 

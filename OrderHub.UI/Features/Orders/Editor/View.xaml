@@ -17,6 +17,7 @@
     x:ClassModifier="internal"
     FontFamily="{StaticResource FontFamily}"
     FontSize="14"
+    IsEnabled="{Binding OrderCreated, Converter={converters:BoolConverter Operand=False}}"
     WindowStartupLocation="CenterScreen"
     WindowState="Maximized"
     mc:Ignorable="d">
@@ -65,8 +66,10 @@
                     hc:BorderElement.CornerRadius="0 0 5 5"
                     AutoGenerateColumns="False"
                     BorderThickness="1,0,1,1"
+                    GridLinesVisibility="Vertical"
                     ItemsSource="{Binding OrderBuilder.Items}"
-                    VerticalGridLinesBrush="LightGray">
+                    RowHeight="70"
+                    VerticalGridLinesBrush="{StaticResource WhiteBrush}">
                     <DataGrid.Columns>
                         <DataGridTextColumn
                             Width="200"
@@ -74,7 +77,6 @@
                             Header="المنتج"
                             IsReadOnly="True" />
                         <DataGridTextColumn
-                            Width="200"
                             Binding="{Binding CategoryName}"
                             Header="القسم"
                             IsReadOnly="True" />
@@ -83,21 +85,36 @@
                             Binding="{Binding Quantity}"
                             Header="الكمية"
                             IsReadOnly="False" />
-                        <DataGridTextColumn
-                            Width="100"
-                            Binding="{Binding Price}"
-                            Header="السعر"
-                            IsReadOnly="True" />
-                        <DataGridTextColumn
-                            Width="100"
-                            Binding="{Binding SubTotal}"
-                            Header="الاجمالي"
-                            IsReadOnly="True" />
 
-                        <DataGridComboBoxColumn
-                            DisplayMemberPath="Name"
-                            Header="المورد"
-                            ItemsSource="{Binding Suppliers}" />
+                        <DataGridTemplateColumn Header="تفاصيل">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Vertical">
+                                        <TextBlock>
+                                            <Run Text="السعر : " />
+                                            <Run Text="{Binding Price}" />
+                                        </TextBlock>
+                                        <TextBlock>
+                                            <Run Text="الاجمالي : " />
+                                            <Run Text="{Binding SubTotal, Mode=OneWay}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Width="200" Header="المورد">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <hc:ComboBox
+                                        hc:InfoElement.ShowClearButton="True"
+                                        Cursor="Hand"
+                                        DisplayMemberPath="Name"
+                                        ItemsSource="{Binding Suppliers}"
+                                        SelectedItem="{Binding Supplier, UpdateSourceTrigger=PropertyChanged}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
 
                         <DataGridTemplateColumn Header="إجراءات">
                             <DataGridTemplateColumn.CellTemplate>
@@ -133,7 +150,6 @@
                     <StackPanel Grid.Row="0">
 
                         <editorComponents:ClientsComponetn Margin="12" />
-                        <editorComponents:SuppliersComponent Margin="12" />
                         <editorComponents:DeliveryMethodComponent Margin="12" />
 
                     </StackPanel>

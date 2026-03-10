@@ -1,9 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using MediatR;
+using OrderHub.Domain.Enums;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using System.Windows.Threading;
 using static OrderHub.Application.DTOs.CommonDtos;
 
 namespace OrderHub.UI.Features.Orders;
@@ -33,36 +34,23 @@ public partial class OrderViewModel : ObservableObject
 
     public DateTime CreatedAt { get; init; }
 
-    private OrderStatusInfoDto _orderStatus;
-    public OrderStatusInfoDto OrderStatus
+    [ObservableProperty]
+    private EnumItem<OrderStatus> _orderStatus;
+    async partial void OnOrderStatusChanged(EnumItem<OrderStatus> oldValue, EnumItem<OrderStatus> newValue)
     {
-        get => _orderStatus;
-        set
-        {
-            if (value is not null && value != _orderStatus)
-            {
-                SetProperty(ref _orderStatus, value);
-                Dispatcher.CurrentDispatcher.Invoke(() => ChangeOrderStatus(value));
-            }
-
-            if (_orderStatus.Status == "Cancelled")
-                CanEdit = false;
-        }
+        await ChangeOrderStatus(newValue.Value);
     }
+
+    public IEnumerable<EnumItem<OrderStatus>> OrderStatuses =>
+        Enum.GetValues<OrderStatus>()
+        .Cast<OrderStatus>()
+        .Select(e => new EnumItem<OrderStatus>(e, e.GetDescription()));
 
     private bool _canEdit = true;
     public bool CanEdit { get => _canEdit; private set => SetProperty(ref _canEdit, value); }
 
-    //async partial void OnOrderStatusChanged(OrderStatusInfoDto oldValue, OrderStatusInfoDto newValue)
-    //{
-    //    if (oldValue is not null && oldValue != newValue)
-    //    {
-    //        await ChangeOrderStatus(newValue);
-    //    }
-    //}
-
-    private async Task ChangeOrderStatus(OrderStatusInfoDto orderStatusInfoDto)
+    private async Task ChangeOrderStatus(OrderStatus orderStatus)
     {
-        await _mediator.Send(new Application.Commands.OrderCommands.ChangeOrderStatusCommand(Id, orderStatusInfoDto.Id));
+        await _mediator.Send(new Application.Commands.OrderCommands.ChangeOrderStatusCommand(Id, orderStatus));
     }
 }

@@ -13,7 +13,6 @@ public static class CommonQueries
     public record GetSuppliersInfoQuery: IRequest<IEnumerable<SupplierInfoDto>>;
     public record GetClientsInfoQuery : IRequest<IEnumerable<ClientInfoDto>>;
     public record GetProductsIfoQuery : IRequest<IEnumerable<ProductInfoDto>>;
-    public record GetOrderStautsesInfoQuery : IRequest<IEnumerable<OrderStatusInfoDto>>;
     public record GetAllDeliverymenInfoQuery : IRequest<IEnumerable<DeliverymanInfoDto>>;
     public record GetAllShippingCarriersInfoQuery : IRequest<IEnumerable<ShippingCarrierInfoDto>>;
 }

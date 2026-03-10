@@ -17,7 +17,7 @@ internal class GetAllDeliverymenListQueryHandler(AppDbContextFactory appDbContex
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
         return await appDbContext.Deliverymen
-            .Select(d => new DeliverymanListDto(d.Id, d.Name.Value, d.City.Name.Value))
+            .Select(d => new DeliverymanListDto(d.Id, d.Name.Value, d.City.Name.Value, d.PhoneNumber))
             .AsNoTracking()
             .ToListAsync();
     }

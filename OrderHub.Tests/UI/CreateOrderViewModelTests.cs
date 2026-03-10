@@ -2,6 +2,7 @@
 using FluentAssertions;
 using MediatR;
 using Moq;
+using OrderHub.Domain.Enums;
 using OrderHub.UI.Interfaces;
 using CreateOrderViewModel = OrderHub.UI.Features.Orders.Create.ViewModel;
 
@@ -43,10 +44,7 @@ public class CreateOrderViewModelTests
     public void CreateViewModelSaveCommand_ShouldBeDisabled_WhenDeliveryMethodIsShippingAndNoShippingCarrierIsSelected()
     {
         CreateOrderViewModel viewModel = CreateOrderViewModel;
-        viewModel.DeliveryMethodsViewModel.SelecteddDeliveryMethod = new Domain.Enums.EnumItem<Domain.Enums.DeliveryMethod>()
-        {
-            Value = Domain.Enums.DeliveryMethod.ShippingCompany
-        };
+        viewModel.DeliveryMethodsViewModel.SelecteddDeliveryMethod = new EnumItem<DeliveryMethod>(Domain.Enums.DeliveryMethod.Pickup, "");
         viewModel.DeliveryMethodsViewModel.HasErrors.Should().BeTrue();
 
         viewModel.SelectedClient = new Application.DTOs.ClientDtos.ClientListDto(1, "Client 1", "Address 1", "+966 123456789");
@@ -67,10 +65,7 @@ public class CreateOrderViewModelTests
     public void CreateViewModelSaveCommand_ShouldBeEnabled_WhenDeliveryMethodIsShippingAndShippingCarrierIsSelected()
     {
         CreateOrderViewModel viewModel = CreateOrderViewModel;
-        viewModel.DeliveryMethodsViewModel.SelecteddDeliveryMethod = new Domain.Enums.EnumItem<Domain.Enums.DeliveryMethod>()
-        {
-            Value = Domain.Enums.DeliveryMethod.ShippingCompany
-        };
+        viewModel.DeliveryMethodsViewModel.SelecteddDeliveryMethod = new EnumItem<DeliveryMethod>(Domain.Enums.DeliveryMethod.Pickup, "");
 
         viewModel.DeliveryMethodsViewModel.SelectedShippingCarrier = new Application.DTOs.CommonDtos.ShippingCarrierInfoDto(1, "Shipping Company 1");
         viewModel.DeliveryMethodsViewModel.HasErrors.Should().BeFalse();
@@ -93,10 +88,7 @@ public class CreateOrderViewModelTests
     public void CreateViewModelSaveCommand_ShouldBeEnabled_WhenOrderIsValid()
     {
         CreateOrderViewModel viewModel = CreateOrderViewModel;
-        viewModel.DeliveryMethodsViewModel.SelecteddDeliveryMethod = new Domain.Enums.EnumItem<Domain.Enums.DeliveryMethod>()
-        {
-            Value = Domain.Enums.DeliveryMethod.Pickup
-        };
+        viewModel.DeliveryMethodsViewModel.SelecteddDeliveryMethod = new EnumItem<DeliveryMethod>(Domain.Enums.DeliveryMethod.Pickup, "");
         viewModel.SelectedClient = new Application.DTOs.ClientDtos.ClientListDto(1, "Client 1", "Address 1", "+966 123456789");
         viewModel.OrderBuilder.AddItem(new OrderHub.UI.Features.Orders.OrderItemViewModel()
         {
@@ -115,18 +107,12 @@ public class CreateOrderViewModelTests
     public void CreateViewModelDeliveryMethods_ShouldFireEvent_WhenDeliveryMethodIsChanged()
     {
         CreateOrderViewModel viewModel = CreateOrderViewModel;
-        viewModel.DeliveryMethodsViewModel.SelecteddDeliveryMethod = new Domain.Enums.EnumItem<Domain.Enums.DeliveryMethod>()
-        {
-            Value = Domain.Enums.DeliveryMethod.Pickup
-        };
+        viewModel.DeliveryMethodsViewModel.SelecteddDeliveryMethod = new EnumItem<DeliveryMethod>(Domain.Enums.DeliveryMethod.Pickup, "");
         viewModel.DeliveryMethodsViewModel.SelecteddDeliveryMethod.Should().NotBeNull();
 
         bool isEventFired = false;
         viewModel.DeliveryMethodsViewModel.ErrorsChanged += (sender, e) => { isEventFired = true; };
-        viewModel.DeliveryMethodsViewModel.SelecteddDeliveryMethod = new Domain.Enums.EnumItem<Domain.Enums.DeliveryMethod>()
-        {
-            Value = Domain.Enums.DeliveryMethod.DeliveryMan
-        };
+        viewModel.DeliveryMethodsViewModel.SelecteddDeliveryMethod = new EnumItem<DeliveryMethod>(Domain.Enums.DeliveryMethod.Pickup, "");
         isEventFired.Should().BeTrue();
     }
 

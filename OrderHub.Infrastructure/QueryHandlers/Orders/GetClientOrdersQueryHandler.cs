@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +23,6 @@ internal class GetClientOrdersQueryHandler(AppDbContextFactory appDbContextFacto
             IEnumerable<Order> orders = await appDbContext.Orders
                 .Include(o => o.Client)
                     .ThenInclude(c => c.Phone)
-                .Include(o => o.OrderStatus)
                 .Include(o => o.OrderItems)
                 .Where(o => o.Client.Name.Value.Contains(request.ClientName))
                 .ToListAsync(cancellationToken: cancellationToken);
@@ -30,11 +30,12 @@ internal class GetClientOrdersQueryHandler(AppDbContextFactory appDbContextFacto
             return orders.Select(o => new OrderListDto(
                     o.Id,
                     o.OrderNumber,
-                    new Application.DTOs.CommonDtos.OrderStatusInfoDto(o.OrderStatus.Id, o.OrderStatus.DisplayName, o.OrderStatus.DisplayName),
                     o.Client.Name.Value,
                     o.Client.Phone.Number.FullNumber,
                     o.OrderItems.Count,
                     o.Total.Value,
+                    o.OrderStatus,
+                    new EnumItem<OrderStatus>(o.OrderStatus, o.OrderStatus.GetDescription()),
                     o.CreatedAt
                     ));
         }

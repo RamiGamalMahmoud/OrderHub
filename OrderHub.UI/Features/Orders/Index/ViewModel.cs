@@ -1,6 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OpenQA.Selenium.DevTools.V143.CSS;
+using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
 using System;
@@ -8,7 +11,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using static OrderHub.Application.DTOs.CommonDtos;
 using static OrderHub.Application.DTOs.OrderDtos;
 
 namespace OrderHub.UI.Features.Orders.Index;
@@ -19,9 +21,6 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
     private ObservableCollection<OrderViewModel> _orders = [];
     public IEnumerable<OrderViewModel> Orders => _orders;
-
-    private IEnumerable<OrderStatusInfoDto> _orderStatuses;
-    public IEnumerable<OrderStatusInfoDto> OrderStatuses { get => _orderStatuses; set => SetProperty(ref _orderStatuses, value); }
 
     [ObservableProperty]
     private bool _isLoading = true;
@@ -42,7 +41,6 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
     protected override async Task LoadAsync()
     {
         IsLoading = true;
-        OrderStatuses = await _mediator.Send(new Application.Queries.CommonQueries.GetOrderStautsesInfoQuery());
 
         IEnumerable<OrderListDto> orderList = await _mediator.Send(new Application.Queries.OrderQueries.GetOrdersQuery());
 
@@ -54,8 +52,9 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
             ClientPhoneNumber = o.ClientPhoneNumber,
             ItemsCount = o.ItemsCount,
             TotalPrice = o.Total,
-            CreatedAt = o.CreatedAt,
-            OrderStatus = OrderStatuses.Where(os => os.Id == o.OrderStatusInfoDto.Id).SingleOrDefault()
+            OrderStatus = o.EnumItem,
+            CreatedAt = o.CreatedAt
+            
         }));
 
         OnPropertyChanged(nameof(Orders));
@@ -74,7 +73,22 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
     protected override Task DeleteAsync(OrderViewModel model)
     {
-        throw new System.NotImplementedException();
+        return Task.CompletedTask;
+    }
+
+    [RelayCommand]
+    private async Task BroadcastOrderStatus(OrderViewModel model)
+    {
+        await _mediator.Send(new Application.Commands.OrderCommands.BroadcastOrderStatusCommand(model.Id));
+    }
+
+    [RelayCommand]
+    private async Task BrodcastAllOrders()
+    {
+        foreach(OrderViewModel orderViewModel in Orders)
+        {
+            await _mediator.Send(new Application.Commands.OrderCommands.BroadcastOrderStatusCommand(orderViewModel.Id));
+        }
     }
 
     [ObservableProperty]
@@ -90,8 +104,7 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
             ClientPhoneNumber = o.ClientPhoneNumber,
             ItemsCount = o.ItemsCount,
             TotalPrice = o.Total,
-            CreatedAt = o.CreatedAt,
-            OrderStatus = OrderStatuses.Where(os => os.Id == o.OrderStatusInfoDto.Id).SingleOrDefault()
+            CreatedAt = o.CreatedAt
         }));
 
         OnPropertyChanged(nameof(Orders));

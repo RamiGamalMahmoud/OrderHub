@@ -15,7 +15,6 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<Client> Clients { get; set; }
     public DbSet<Deliveryman> Deliverymen {  get; set; }
     public DbSet<ShippingCarrier> ShippingCarriers { get; set; }
-    public DbSet<OrderStatus> OrderStatuses { get; set; }
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
 

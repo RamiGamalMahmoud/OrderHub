@@ -21,7 +21,7 @@ public abstract partial class ViewModel : EditorViewModelBase, IDisposable
     {
         _mediator = mediator;
         _dialogService = dialogService;
-        _notifyPropertiesNames = [nameof(Name), nameof(SelectedCity)];
+        _notifyPropertiesNames = [nameof(Name), nameof(SelectedCity), nameof(PhoneNumber)];
         WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityCreatedMessage>(this, async (r, m) =>
         {
             Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
@@ -43,6 +43,12 @@ public abstract partial class ViewModel : EditorViewModelBase, IDisposable
     [NotifyDataErrorInfo]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     private string _name;
+
+    [ObservableProperty]
+    [Required(ErrorMessage = "رقم الهاتف مطلوب")]
+    [NotifyDataErrorInfo]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    private string _phoneNumber;
 
     [ObservableProperty]
     [Required(ErrorMessage = "اسم المدينة مطلوب")]

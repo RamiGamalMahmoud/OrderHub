@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Common;
+using OrderHub.Domain.Enums;
 using OrderHub.Infrastructure.Extensions;
 using System.Linq;
 using System.Threading;
@@ -25,14 +26,12 @@ internal class GetOrdersPagedQueryHandler(AppDbContextFactory appDbContextFactor
             .Select(o => new OrderListDto(
                 o.Id,
                 o.OrderNumber,
-                new Application.DTOs.CommonDtos.OrderStatusInfoDto(
-                    o.OrderStatus.Id,
-                    o.OrderStatus.DisplayName,
-                    o.OrderStatus.DisplayName),
                 o.Client.Name.Value,
                 o.Client.Phone.Number.FullNumber,
                 o.OrderItems.Count,
                 o.OrderItems.Sum(oi => oi.SubTotal.Value),
+                o.OrderStatus,
+                new EnumItem<OrderStatus>(o.OrderStatus, o.OrderStatus.GetDescription()),
                 o.CreatedAt
             ));
 

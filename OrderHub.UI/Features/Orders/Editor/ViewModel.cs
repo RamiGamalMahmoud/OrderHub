@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using Microsoft.IdentityModel.Abstractions;
 using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
 using System;
@@ -34,13 +35,23 @@ internal abstract partial class ViewModel : EditorViewModelBase
         {
             Clients = await _mediator.Send(new Application.Queries.ClientQueries.GetAllClientsQuery());
         });
+        _messenger.Register<Application.Messages.Categories.CategoryCreatedMessage>(this, async (r, m) =>
+        {
+            RootCategories = await _mediator.Send(new Application.Queries.CommonQueries.GetRootCategoriesQuery());
+        });
         _subCategories = [];
         OrderBuilder = new OrderBuilder();
-        SuppliersViewModel = new SuppliersViewModel();
+        //SuppliersViewModel = new SuppliersViewModel();
         OrderBuilder.ItemsChanged += (s, e) => SaveCommand.NotifyCanExecuteChanged();
         DeliveryMethodsViewModel = new DeliveryMethodsViewModel();
         DeliveryMethodsViewModel.ErrorsChanged += DeliveryMethodsViewModel_ErrorsChanged;
+        
         ValidateAllProperties();
+    }
+
+    private void SuppliersViewModel_ErrorsChanged(object sender, DataErrorsChangedEventArgs e)
+    {
+        AddProductCommand.NotifyCanExecuteChanged();
     }
 
     private void DeliveryMethodsViewModel_ErrorsChanged(object sender, DataErrorsChangedEventArgs e)
@@ -49,7 +60,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
     }
 
     public OrderBuilder OrderBuilder { get; }
-    public SuppliersViewModel SuppliersViewModel { get; }
+    //public SuppliersViewModel SuppliersViewModel { get; }
 
     public DeliveryMethodsViewModel DeliveryMethodsViewModel { get; }
 
@@ -111,7 +122,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
         DeliveryMethodsViewModel.ShippingCarriers = await _mediator.Send(new Application.Queries.CommonQueries.GetAllShippingCarriersInfoQuery());
 
         RootCategories = await _mediator.Send(new Application.Queries.CommonQueries.GetRootCategoriesQuery());
-        SuppliersViewModel.Suppliers = await _mediator.Send(new Application.Queries.CommonQueries.GetSuppliersInfoQuery());
+        //SuppliersViewModel.Suppliers = await _mediator.Send(new Application.Queries.CommonQueries.GetSuppliersInfoQuery());
         Clients = await _mediator.Send(new Application.Queries.ClientQueries.GetAllClientsQuery());
     }
 
@@ -132,10 +143,18 @@ internal abstract partial class ViewModel : EditorViewModelBase
             ProductId = product.Id,
             Price = Price,
             Quantity = Quantity,
-            CategoryName = product.CategoryName
+            CategoryName = product.CategoryName,
+            Suppliers = product.Suppliers.Select(s => new OrderItemSupplier(s.Id, s.Name))
         };
         OrderBuilder.AddItem(item);
         ClearSelectedProduct();
+    }
+
+    private bool _orderCreated;
+    public bool OrderCreated
+    {
+        get => _orderCreated;
+        protected set => SetProperty(ref _orderCreated, value);
     }
 
     [RelayCommand]
@@ -183,12 +202,6 @@ internal abstract partial class ViewModel : EditorViewModelBase
 
     partial void OnSelectedProductChanged(ProductListDto oldValue, ProductListDto newValue)
     {
-        if (newValue is null)
-        {
-            SuppliersViewModel.ProductSuppliers = Enumerable.Empty<SupplierInfoDto>();
-            return;
-        }
-        SuppliersViewModel.ProductSuppliers = SuppliersViewModel.Suppliers.Where(s => newValue.SupplierIds.Contains(s.Id));
         Price = newValue is null ? 0 : newValue.Price;
     }
 

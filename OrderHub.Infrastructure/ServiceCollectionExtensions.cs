@@ -10,6 +10,7 @@ public static class ServiceCollectionExtensions
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
         services.AddSingleton<AppDbContextFactory>();
         services.AddSingleton<Application.Interfaces.Services.IDatabaseService, Services.DatabaseService>();
+        services.AddSingleton<Application.Interfaces.Services.IWhatsappService, Services.WhatsappService>();
         services.AddHttpClient<Application.Interfaces.Services.IAuthService>();
         services.AddSingleton<Application.Interfaces.Services.IOrderService, Services.OrderService>();
         services.AddSingleton<Application.Interfaces.Services.IApplicationDirectoriesService, Services.ApplicationDirectoriesService>();

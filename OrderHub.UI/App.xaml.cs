@@ -68,6 +68,7 @@ public partial class App : System.Windows.Application
         applicationDirectoriesService.EnsureAppDirectoryCreated();
         applicationDirectoriesService.EnsureStorageDirectoryCreated();
         applicationDirectoriesService.EnsureDatabaseFileCreated();
+        applicationDirectoriesService.EnsureWhatAppProfilesDirectoryCreated();
 
         IDatabaseService databaseService = GetService<IDatabaseService>();
         bool canConnect = await databaseService.CanConnectAsync();

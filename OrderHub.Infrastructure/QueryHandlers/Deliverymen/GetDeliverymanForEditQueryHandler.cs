@@ -18,7 +18,7 @@ internal class GetDeliverymanForEditQueryHandler(AppDbContextFactory appDbContex
 
         return await appDbContext.Deliverymen
             .Where(d => d.Id == request.Id)
-            .Select(d => new DeliverymanEditDto(d.Id, d.Name.Value, d.City.Id))
+            .Select(d => new DeliverymanEditDto(d.Id, d.Name.Value, d.City.Id, d.PhoneNumber))
             .FirstOrDefaultAsync();
     }
 }

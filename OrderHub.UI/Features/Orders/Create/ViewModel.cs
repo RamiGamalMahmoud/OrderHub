@@ -3,6 +3,9 @@ using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Features.Orders.Editor;
 using OrderHub.UI.Interfaces;
+using System;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.OrderDtos;
 
@@ -28,16 +31,30 @@ internal class ViewModel : Editor.ViewModel
             .ForClient(SelectedClient.Id)
             .Build();
 
-        Result result = await _mediator.Send(new Application.Commands.OrderCommands.CreateOrderCommand(order));
+        Result<int> result = await _mediator.Send(new Application.Commands.OrderCommands.CreateOrderCommand(order));
         if(result.IsSuccess)
         {
             _messenger.Send(new Application.Messages.Orders.OrderCreatedMessage());
             await _mediator.Publish(new Application.Notifications.SuccessNotification("تم انشاء الطلب بنجاح"));
-            OnRequestClose();
+            await _mediator.Publish(new Application.Notifications.SuccessNotification("جاري ارسال الإشعارات"));
+            await _mediator.Send(new Application.Commands.OrderCommands.BroadcastOrderStatusCommand(result.Value));
+            OrderCreated = true;
+            //OnRequestClose();
         }
         else
         {
 
         }
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.AppendLine($":طلب {DateTime.Today.ToString("yyyy-MM-dd")}");
+        stringBuilder.AppendLine($"العميل: {SelectedClient.Name}");
+        stringBuilder.AppendLine($"المندوب: {DeliveryMethodsViewModel.SelectedDeliveryman?.Name}");
+        stringBuilder.AppendLine($"الشركة: {DeliveryMethodsViewModel.SelectedShippingCarrier?.Name}");
+        stringBuilder.AppendLine($"التوصيل: {DeliveryMethodsViewModel.SelecteddDeliveryMethod.DisplayName}");
+        stringBuilder.AppendLine($"المنتجات: {OrderBuilder.ItemsCount}");
+        stringBuilder.AppendLine($"السعر: {order.OrderItems.Select(o => o.UnitPrice * o.Quantity).Sum().ToString("C2")}");
+        
+        string message = stringBuilder.ToString();
     }
 }

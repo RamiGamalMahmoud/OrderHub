@@ -15,13 +15,13 @@ internal class ChangeOrderStatusCommandHandler(AppDbContextFactory appDbContextF
     public async Task<Result> Handle(ChangeOrderStatusCommand request, CancellationToken cancellationToken)
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
-        OrderStatus orderStatus = await appDbContext.OrderStatuses.SingleOrDefaultAsync(o => o.Id == request.OrderStatusId, cancellationToken: cancellationToken);
-        Order order = await appDbContext.Orders.SingleOrDefaultAsync(o => o.Id == request.Id, cancellationToken: cancellationToken);
+        
+        Order order = await appDbContext.Orders.SingleOrDefaultAsync(o => o.Id == request.OrderId, cancellationToken: cancellationToken);
+        order.ChangeOrderStatus(request.OrderStatus);
         if (order == null)
         {
             return Result.Failure("Order not found.");
         }
-        order.ChangeOrderStatus(orderStatus);
         await appDbContext.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }

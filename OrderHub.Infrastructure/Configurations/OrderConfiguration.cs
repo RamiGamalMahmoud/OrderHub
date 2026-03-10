@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 
 namespace OrderHub.Infrastructure.Configurations;
@@ -30,15 +31,14 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(o => o.OrderStatus)
-            .WithMany()
-            .HasForeignKey(o => o.OrderStatusId)
-            .IsRequired()
-            .OnDelete(DeleteBehavior.Restrict);
-
         builder.Property(o => o.DeliveryMethod)
             .HasConversion<string>()
             .IsRequired(false);
+
+        builder.Property(o => o.OrderStatus)
+            .HasConversion<string>()
+            .HasDefaultValue(OrderStatus.Pending)
+            .IsRequired();
 
         builder.HasOne(o => o.ShippingCarrier)
             .WithMany()

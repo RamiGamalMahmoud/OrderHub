@@ -35,7 +35,19 @@ namespace OrderHub.Infrastructure.Configurations
                 .HasColumnName("product_name")
                 .HasColumnType("VARCHAR(100)")
                 .HasMaxLength(100)
-                .IsRequired(); ;
+                .IsRequired();
+
+            builder.HasOne(o => o.Supplier)
+                .WithMany()
+                .HasForeignKey(o => o.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
+
+            builder.Property(o => o.SupplierName)
+                .HasColumnName("supplier_name")
+                .HasColumnType("VARCHAR(100)")
+                .HasMaxLength(100)
+                .IsRequired(false);
 
             builder.Ignore(o => o.SubTotal);
         }
