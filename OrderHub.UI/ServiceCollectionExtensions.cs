@@ -12,6 +12,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddUI(this IServiceCollection services)
     {
         // Services
+        services.AddSingleton<Application.Interfaces.Services.IAppState, Services.AppState>();
         services.AddSingleton<Interfaces.INavigationService, Services.NavigationService>();
         services.AddSingleton<Interfaces.IDialogService, Services.DialogService>();
         services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);

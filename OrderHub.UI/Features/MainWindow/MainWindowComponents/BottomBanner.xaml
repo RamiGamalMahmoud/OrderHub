@@ -48,6 +48,27 @@
                     Height="20"
                     Style="{StaticResource SallaConnectionIcon}" />
             </Button>
+
+            <TextBlock VerticalAlignment="Center">
+                <icons:MaterialIcon
+                    Width="20"
+                    Height="20"
+                    Kind="Internet">
+                    <icons:MaterialIcon.Style>
+                        <Style TargetType="icons:MaterialIcon">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding AppState.IsConnected}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding AppState.IsConnected}" Value="False">
+                                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </icons:MaterialIcon.Style>
+                </icons:MaterialIcon>
+            </TextBlock>
+
         </StackPanel>
     </Border>
 

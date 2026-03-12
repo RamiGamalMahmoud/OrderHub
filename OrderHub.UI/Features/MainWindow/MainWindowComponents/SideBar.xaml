@@ -41,7 +41,8 @@
                 Background="{StaticResource SuccessBrush}"
                 Command="{Binding OpenWhatappCommand}"
                 Cursor="Hand"
-                Foreground="White">
+                Foreground="White"
+                IsEnabled="{Binding AppState.IsConnected}">
                 <StackPanel Orientation="Horizontal">
                     <icons:MaterialIcon
                         Width="20"

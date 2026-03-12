@@ -18,13 +18,20 @@ internal partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private NavigationCommand _navigationCommand;
 
-    public MainWindowViewModel(INavigationService navigationService, ISessionManager sessionManager, IMediator mediator, IDialogService dialogService, IWhatsappService whatsappService)
+    public MainWindowViewModel(
+        INavigationService navigationService,
+        ISessionManager sessionManager,
+        IMediator mediator,
+        IDialogService dialogService,
+        IWhatsappService whatsappService,
+        IAppState appState)
     {
         _navigationService = navigationService;
         _sessionManager = sessionManager;
         _mediator = mediator;
         _dialogService = dialogService;
         _whatsappService = whatsappService;
+        AppState = appState;
         InitializeNavigationCommands();
     }
 
@@ -78,4 +85,6 @@ internal partial class MainWindowViewModel : ObservableObject
     public bool IsAppInDebug { get; private set; } = false;
 
     public INavigationService NavigationService => _navigationService;
+
+    public IAppState AppState { get; }
 }
