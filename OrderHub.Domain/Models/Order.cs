@@ -30,6 +30,8 @@ public class Order : ModelBase
     public ShippingCarrier ShippingCarrier { get; set; }
     public int? DeliverymanId { get; set; }
     public Deliveryman Deliveryman { get; set; }
+    public int? PaymentMethodId { get; set; }
+    public PaymentMethod PaymentMethod { get; set; }
 
     public void AddOrderItem(OrderItem orderItem) => _orderItems.Add(orderItem);
 

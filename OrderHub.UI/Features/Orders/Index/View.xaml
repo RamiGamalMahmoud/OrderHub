@@ -113,10 +113,28 @@
                     Header="اسم العميل"
                     IsReadOnly="True" />
 
-                <DataGridTemplateColumn Header="حالة الطلب" SortMemberPath="DisplayName">
+                <DataGridTemplateColumn
+                    Width="200"
+                    Header="حالة الطلب"
+                    SortMemberPath="DisplayName">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <local:OrderStatusComponent IsEnabled="{Binding CanEdit}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn
+                    Width="200"
+                    Header="وسيلة الدفع"
+                    SortMemberPath="DisplayName">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ComboBox
+                                Cursor="Hand"
+                                DisplayMemberPath="DisplayName"
+                                ItemsSource="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.PaymentMethods}"
+                                SelectedItem="{Binding PaymentMethod, UpdateSourceTrigger=PropertyChanged}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
@@ -129,6 +147,7 @@
                             <TextBlock
                                 VerticalAlignment="Center"
                                 FlowDirection="LeftToRight"
+                                FontWeight="DemiBold"
                                 Text="{Binding ClientPhoneNumber}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>

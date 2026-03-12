@@ -51,5 +51,11 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
             .HasForeignKey(o => o.DeliverymanId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired(false);
+
+        builder.HasOne(o => o.PaymentMethod)
+            .WithMany()
+            .HasForeignKey(o => o.PaymentMethodId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
     }
 }

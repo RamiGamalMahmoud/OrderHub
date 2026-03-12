@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.CommonDtos;
+using static OrderHub.Application.DTOs.PaymentMothodsDtos;
 
 namespace OrderHub.UI.Features.Orders;
 
@@ -16,6 +17,30 @@ public partial class OrderViewModel : ObservableObject
     public OrderViewModel(IMediator mediator)
     {
         _mediator = mediator;
+    }
+
+    public OrderViewModel(
+        IMediator mediator,
+        int id,
+        string orderNumber,
+        string clientName,
+        string clientPhoneNumber,
+        int itemsCount,
+        decimal totalPrice,
+        DateTime createdAt,
+        PaymentMethodListDto paymentMethodListDto,
+        EnumItem<OrderStatus> orderStatus)
+    {
+        _mediator = mediator;
+        Id = id;
+        OrderNumber = orderNumber;
+        ClientName = clientName;
+        ClientPhoneNumber = clientPhoneNumber;
+        ItemsCount = itemsCount;
+        TotalPrice = totalPrice;
+        CreatedAt = createdAt;
+        _paymentMethod = paymentMethodListDto;
+        _orderStatus = orderStatus;
     }
 
     public int Id { get; init; }
@@ -31,6 +56,19 @@ public partial class OrderViewModel : ObservableObject
 
     [ObservableProperty]
     private IEnumerable<SupplierInfoDto> _suppliers;
+
+    [ObservableProperty]
+    private PaymentMethodListDto _paymentMethod;
+    async partial void OnPaymentMethodChanged(PaymentMethodListDto oldValue, PaymentMethodListDto newValue)
+    {
+        if (newValue != null)
+            await ChangePaymentMethod(newValue.Id);
+    }
+
+    private async Task ChangePaymentMethod(int paymentMethodId)
+    {
+        await _mediator.Send(new Application.Commands.OrderCommands.ChangePaymentMethodCommand(Id, paymentMethodId));
+    }
 
     public DateTime CreatedAt { get; init; }
 

@@ -36,6 +36,7 @@ internal class GetClientOrdersQueryHandler(AppDbContextFactory appDbContextFacto
                     o.Total.Value,
                     o.OrderStatus,
                     new EnumItem<OrderStatus>(o.OrderStatus, o.OrderStatus.GetDescription()),
+                    o.PaymentMethod == null ? null : new Application.DTOs.PaymentMothodsDtos.PaymentMethodListDto(o.PaymentMethod.Id, o.PaymentMethod.DisplayName, o.PaymentMethod.Description, o.PaymentMethod.IsActive),
                     o.CreatedAt
                     ));
         }

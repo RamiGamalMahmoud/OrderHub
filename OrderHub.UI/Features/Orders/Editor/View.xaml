@@ -151,6 +151,7 @@
 
                         <editorComponents:ClientsComponetn Margin="12" />
                         <editorComponents:DeliveryMethodComponent Margin="12" />
+                        <editorComponents:PaymentMethodsComponent Margin="12" />
 
                     </StackPanel>
                 </ScrollViewer>

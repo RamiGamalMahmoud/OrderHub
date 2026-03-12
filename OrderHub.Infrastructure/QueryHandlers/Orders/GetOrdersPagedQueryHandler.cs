@@ -32,6 +32,7 @@ internal class GetOrdersPagedQueryHandler(AppDbContextFactory appDbContextFactor
                 o.OrderItems.Sum(oi => oi.SubTotal.Value),
                 o.OrderStatus,
                 new EnumItem<OrderStatus>(o.OrderStatus, o.OrderStatus.GetDescription()),
+                o.PaymentMethod == null ? null : new Application.DTOs.PaymentMothodsDtos.PaymentMethodListDto(o.PaymentMethod.Id, o.PaymentMethod.DisplayName, o.PaymentMethod.Description, o.PaymentMethod.IsActive),
                 o.CreatedAt
             ));
 

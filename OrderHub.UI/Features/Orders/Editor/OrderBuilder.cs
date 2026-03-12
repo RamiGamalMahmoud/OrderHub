@@ -21,6 +21,7 @@ public partial class OrderBuilder : ObservableObject
 
     public int ItemsCount => Items.Count;
     private DeliveryMethod _deliveryMethod;
+    private int? _paymentMethodId;
 
     public ObservableCollection<OrderItemViewModel> Items { get; } = new();
 
@@ -102,7 +103,14 @@ public partial class OrderBuilder : ObservableObject
         }
 
         IEnumerable<OrderItemDto> orderItems = Items.Select(item => new OrderItemDto(item.ProductId, item.ProductName, (int)item.Quantity, item.Price, item.SupplierName, item.SupplierId));
-        OrderCreateDto orderCreateDto = new OrderCreateDto(_clientId, 1, _deliveryMethod, _deliverymanId, _shippingCarrierId, orderItems);
+        OrderCreateDto orderCreateDto = new OrderCreateDto(
+            _clientId,
+            1,
+            _deliveryMethod,
+            _deliverymanId,
+            _shippingCarrierId,
+            orderItems,
+            _paymentMethodId);
         return orderCreateDto;
     }
 
@@ -127,6 +135,12 @@ public partial class OrderBuilder : ObservableObject
     public OrderBuilder ForClient(int clientId)
     {
         _clientId = clientId;
+        return this;
+    }
+
+    public OrderBuilder WithPaymentMethod(int? paymentMethodId)
+    {
+        _paymentMethodId = paymentMethodId;
         return this;
     }
 }

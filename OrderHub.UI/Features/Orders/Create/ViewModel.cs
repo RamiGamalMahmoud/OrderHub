@@ -29,6 +29,7 @@ internal class ViewModel : Editor.ViewModel
             .WithDeliveryman(DeliveryMethodsViewModel.SelectedDeliveryman?.Id)
             .WithShippingCarrier(DeliveryMethodsViewModel.SelectedShippingCarrier?.Id)
             .ForClient(SelectedClient.Id)
+            .WithPaymentMethod(SelectedPaymentMethod?.Id)
             .Build();
 
         Result<int> result = await _mediator.Send(new Application.Commands.OrderCommands.CreateOrderCommand(order));
@@ -45,16 +46,5 @@ internal class ViewModel : Editor.ViewModel
         {
 
         }
-
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.AppendLine($":طلب {DateTime.Today.ToString("yyyy-MM-dd")}");
-        stringBuilder.AppendLine($"العميل: {SelectedClient.Name}");
-        stringBuilder.AppendLine($"المندوب: {DeliveryMethodsViewModel.SelectedDeliveryman?.Name}");
-        stringBuilder.AppendLine($"الشركة: {DeliveryMethodsViewModel.SelectedShippingCarrier?.Name}");
-        stringBuilder.AppendLine($"التوصيل: {DeliveryMethodsViewModel.SelecteddDeliveryMethod.DisplayName}");
-        stringBuilder.AppendLine($"المنتجات: {OrderBuilder.ItemsCount}");
-        stringBuilder.AppendLine($"السعر: {order.OrderItems.Select(o => o.UnitPrice * o.Quantity).Sum().ToString("C2")}");
-        
-        string message = stringBuilder.ToString();
     }
 }

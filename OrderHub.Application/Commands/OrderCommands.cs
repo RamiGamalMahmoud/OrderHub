@@ -12,4 +12,5 @@ public static class OrderCommands
     public record DeleteOrderCommand() : IRequest<int>;
     public record BroadcastOrderStatusCommand(int OrderId) : IRequest;
     public record ChangeOrderStatusCommand(int OrderId, OrderStatus OrderStatus) : IRequest<Result>;
+    public record ChangePaymentMethodCommand(int OrderId, int PaymentMethodId) : IRequest<Result>;
 }

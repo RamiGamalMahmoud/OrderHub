@@ -2,16 +2,14 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
-using OpenQA.Selenium.DevTools.V143.CSS;
-using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.OrderDtos;
+using static OrderHub.Application.DTOs.PaymentMothodsDtos;
 
 namespace OrderHub.UI.Features.Orders.Index;
 
@@ -42,20 +40,22 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
     {
         IsLoading = true;
 
+        PaymentMethods = await _mediator.Send(new Application.Queries.PaymentMothodQueries.GetPaymentMethodListQuery());
+
         IEnumerable<OrderListDto> orderList = await _mediator.Send(new Application.Queries.OrderQueries.GetOrdersQuery());
 
-        _orders = new ObservableCollection<OrderViewModel>( orderList.Select(o => new OrderViewModel(_mediator)
-        {
-            Id = o.Id,
-            OrderNumber = o.OrderNumber,
-            ClientName = o.ClientName,
-            ClientPhoneNumber = o.ClientPhoneNumber,
-            ItemsCount = o.ItemsCount,
-            TotalPrice = o.Total,
-            OrderStatus = o.EnumItem,
-            CreatedAt = o.CreatedAt
-            
-        }));
+        _orders = new ObservableCollection<OrderViewModel>( orderList.Select(o => new OrderViewModel(
+            _mediator,
+            o.Id,
+            o.OrderNumber,
+            o.ClientName,
+            o.ClientPhoneNumber,
+            o.ItemsCount,
+            o.Total,
+            o.CreatedAt,
+            o.PaymentMethod,
+            o.EnumItem
+        )));
 
         OnPropertyChanged(nameof(Orders));
         IsLoading = false;
@@ -75,6 +75,9 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
     {
         return Task.CompletedTask;
     }
+
+    [ObservableProperty]
+    private IEnumerable<PaymentMethodListDto> _paymentMethods;
 
     [RelayCommand]
     private async Task BroadcastOrderStatus(OrderViewModel model)

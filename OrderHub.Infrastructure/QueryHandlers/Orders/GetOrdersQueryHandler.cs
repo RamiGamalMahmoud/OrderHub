@@ -24,6 +24,7 @@ internal class GetOrdersQueryHandler(AppDbContextFactory appDbContextFactory) : 
             IEnumerable<Order> orders = await appDbContext.Orders
                 .Include(o => o.Client)
                     .ThenInclude(c => c.Phone)
+                .Include(o => o.PaymentMethod)
                 .Include(o => o.OrderItems)
                 .ToListAsync(cancellationToken: cancellationToken);
 
@@ -36,6 +37,7 @@ internal class GetOrdersQueryHandler(AppDbContextFactory appDbContextFactory) : 
                     o.Total.Value,
                     o.OrderStatus,
                     new EnumItem<OrderStatus>(o.OrderStatus, o.OrderStatus.GetDescription()),
+                    o.PaymentMethod == null ? null : new Application.DTOs.PaymentMothodsDtos.PaymentMethodListDto(o.PaymentMethod.Id, o.PaymentMethod.DisplayName, o.PaymentMethod.Description, o.PaymentMethod.IsActive),
                     o.CreatedAt
                     ));
         }

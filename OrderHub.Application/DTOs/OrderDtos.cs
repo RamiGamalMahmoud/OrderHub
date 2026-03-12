@@ -1,7 +1,7 @@
 ﻿using OrderHub.Domain.Enums;
 using System;
 using System.Collections.Generic;
-using static OrderHub.Application.DTOs.CommonDtos;
+using static OrderHub.Application.DTOs.PaymentMothodsDtos;
 
 namespace OrderHub.Application.DTOs;
 
@@ -16,6 +16,7 @@ public static class OrderDtos
         decimal Total,
         OrderStatus OrderStatus,
         EnumItem<OrderStatus> EnumItem,
+        PaymentMethodListDto PaymentMethod,
         DateTime CreatedAt);
 
     public record OrderCreateDto(
@@ -24,7 +25,8 @@ public static class OrderDtos
         DeliveryMethod DeliveryMethod,
         int? DeliveryManId,
         int? ShippingCarrierId,
-        IEnumerable<OrderItemDtos.OrderItemDto> OrderItems);
+        IEnumerable<OrderItemDtos.OrderItemDto> OrderItems,
+        int? PaymentMothodId);
 }
 
 public static class OrderItemDtos

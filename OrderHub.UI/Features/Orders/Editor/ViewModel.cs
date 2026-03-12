@@ -14,6 +14,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.ClientDtos;
 using static OrderHub.Application.DTOs.CommonDtos;
+using static OrderHub.Application.DTOs.PaymentMothodsDtos;
 using static OrderHub.Application.DTOs.ProductDtos;
 
 namespace OrderHub.UI.Features.Orders.Editor;
@@ -108,6 +109,11 @@ internal abstract partial class ViewModel : EditorViewModelBase
     [ObservableProperty]
     private decimal _subTotal;
 
+    [ObservableProperty]
+    private IEnumerable<PaymentMethodListDto> _paymentMethods;
+    [ObservableProperty]
+    private PaymentMethodListDto _selectedPaymentMethod;
+
     public bool HasProductSelected => SelectedProduct is not null;
 
     public IEnumerable<OrderItemViewModel> OrderItems
@@ -122,7 +128,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
         DeliveryMethodsViewModel.ShippingCarriers = await _mediator.Send(new Application.Queries.CommonQueries.GetAllShippingCarriersInfoQuery());
 
         RootCategories = await _mediator.Send(new Application.Queries.CommonQueries.GetRootCategoriesQuery());
-        //SuppliersViewModel.Suppliers = await _mediator.Send(new Application.Queries.CommonQueries.GetSuppliersInfoQuery());
+        PaymentMethods = await _mediator.Send(new Application.Queries.PaymentMothodQueries.GetPaymentMethodListQuery());
         Clients = await _mediator.Send(new Application.Queries.ClientQueries.GetAllClientsQuery());
     }
 
