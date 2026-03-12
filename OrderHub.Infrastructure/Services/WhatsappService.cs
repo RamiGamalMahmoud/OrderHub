@@ -48,8 +48,15 @@ internal class WhatsappService : IWhatsappService
             {
                 _wait.Until(driver =>
                 {
-                    ReadOnlyCollection<IWebElement> elements = driver.FindElements(By.XPath("//div[@contenteditable='true']"));
-                    return elements.Count > 0 ? elements[0] : null;
+                    try
+                    {
+                        ReadOnlyCollection<IWebElement> elements = driver.FindElements(By.XPath("//div[@contenteditable='true']"));
+                        return elements.Count > 0 ? elements[0] : null;
+                    }
+                    catch (Exception)
+                    {
+                        return null;
+                    }
                 });
                 return true;
             }
@@ -75,8 +82,15 @@ internal class WhatsappService : IWhatsappService
                 HandleChromeAlert();
                 var messageBox = _wait.Until(driver =>
                 {
-                    var elements = driver.FindElements(By.XPath("//div[@contenteditable='true'][@data-tab='10']"));
-                    return elements.Count > 0 ? elements[0] : null;
+                    try
+                    {
+                        var elements = driver.FindElements(By.XPath("//div[@contenteditable='true'][@data-tab='10']"));
+                        return elements.Count > 0 ? elements[0] : null;
+                    }
+                    catch (Exception)
+                    {
+                        return null;
+                    }
                 });
 
 
