@@ -22,6 +22,8 @@ internal class ViewModel : Editor.ViewModel
 
     public override bool CanSave => base.CanSave && OrderBuilder.ItemsCount > 0;
 
+    public override string ActionName => "إتمام الطلب";
+
     protected override async Task Save()
     {
         OrderCreateDto order = OrderBuilder

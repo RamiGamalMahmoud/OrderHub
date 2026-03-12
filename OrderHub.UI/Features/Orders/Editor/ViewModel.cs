@@ -61,7 +61,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
     }
 
     public OrderBuilder OrderBuilder { get; }
-    //public SuppliersViewModel SuppliersViewModel { get; }
+    public abstract string ActionName { get; }
 
     public DeliveryMethodsViewModel DeliveryMethodsViewModel { get; }
 
