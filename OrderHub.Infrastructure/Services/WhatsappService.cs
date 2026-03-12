@@ -30,7 +30,6 @@ internal class WhatsappService : IWhatsappService
             options.AddArgument("--disable-backgrounding-occluded-windows");
             options.AddArgument("--disable-renderer-backgrounding");
             options.AddArgument("--disable-background-timer-throttling");
-            options.AddExcludedArgument("--headless");
             options.AddArgument("--no-sandbox");
             options.AddArgument("--disable-dev-shm-usage");
             options.AddArgument("--disable-gpu");
