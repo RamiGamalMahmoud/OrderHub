@@ -23,6 +23,9 @@ public class Order : ModelBase
 
     public IReadOnlyCollection<OrderItem> OrderItems => _orderItems.AsReadOnly();
 
+    private readonly List<OutboxMessage> _outboxMessages = [];
+    public IReadOnlyCollection<OutboxMessage> OutboxMessages => _outboxMessages.AsReadOnly();
+
     public Money Total => new Money(_orderItems.Sum(i => i.SubTotal.Value));
     public DeliveryMethod? DeliveryMethod { get; set; }
     public OrderStatus OrderStatus { get; private set; }
