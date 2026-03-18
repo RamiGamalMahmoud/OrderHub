@@ -8,10 +8,13 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddInfrastructure(this IServiceCollection services)
     {
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
+        services.AddSingleton<Services.WhatsappService>();
+        services.AddSingleton<Application.Interfaces.Services.IWhatsappService>(s => s.GetRequiredService<Services.WhatsappService>());
+        services.AddSingleton<Application.Interfaces.Services.IMessageSender>(s => s.GetRequiredService<Services.WhatsappService>());
+        services.AddSingleton<Application.Interfaces.Services.IMessageService, Services.MessageService>();
         services.AddSingleton<Application.Interfaces.Services.IConnectionService, Services.ConnectionService>();
         services.AddSingleton<AppDbContextFactory>();
         services.AddSingleton<Application.Interfaces.Services.IDatabaseService, Services.DatabaseService>();
-        services.AddSingleton<Application.Interfaces.Services.IWhatsappService, Services.WhatsappService>();
         services.AddHttpClient<Application.Interfaces.Services.IAuthService>();
         services.AddSingleton<Application.Interfaces.Services.IOrderService, Services.OrderService>();
         services.AddSingleton<Application.Interfaces.Services.IApplicationDirectoriesService, Services.ApplicationDirectoriesService>();

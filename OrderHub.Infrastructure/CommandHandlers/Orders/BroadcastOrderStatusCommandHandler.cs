@@ -1,7 +1,11 @@
-﻿using MediatR;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
-using OrderHub.Application.Interfaces.Services;
+using OrderHub.Domain.Common;
+using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -10,12 +14,11 @@ using static OrderHub.Application.Commands.OrderCommands;
 
 namespace OrderHub.Infrastructure.CommandHandlers.Orders
 {
-    internal class BroadcastOrderStatusCommandHandler(AppDbContextFactory appDbContextFactory, IWhatsappService whatsappService) : IRequestHandler<BroadcastOrderStatusCommand>
+    internal class BroadcastOrderStatusCommandHandler(AppDbContextFactory appDbContextFactory, IMessenger messenger) : IRequestHandler<BroadcastOrderStatusCommand, Result>
     {
         private readonly AppDbContextFactory _appDbContextFactory = appDbContextFactory;
-        private readonly IWhatsappService _whatsappService = whatsappService;
 
-        public async Task Handle(BroadcastOrderStatusCommand request, CancellationToken cancellationToken)
+        public async Task<Result> Handle(BroadcastOrderStatusCommand request, CancellationToken cancellationToken)
         {
             using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
             Order order = await appDbContext
@@ -24,41 +27,45 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
                 .Include(o => o.Deliveryman)
                 .Include(o => o.OrderItems).ThenInclude(oi => oi.Supplier).ThenInclude(s => s.Phone)
                 .Include(o => o.Client).ThenInclude(c => c.Phone)
+                .Include(o => o.Client).ThenInclude(c => c.Address).ThenInclude(a => a.City)
                 .FirstOrDefaultAsync(o => o.Id == request.OrderId, cancellationToken);
 
-            await NotifyClient(order.Id, appDbContext);
-            //await NotifSuppliers(order.Id, appDbContext);
-            //await NotifyDeliveryman(order.Id, appDbContext);
-            //await NotifyShippingCarrier(order.Id, appDbContext);
+            List<OutboxMessage> outboxMessages = new List<OutboxMessage>();
+
+            outboxMessages.Add(NotifyClient(order));
+            outboxMessages.AddRange(NotifSuppliers(order));
+            if (order.Deliveryman is not null)
+                outboxMessages.Add(NotifyDeliveryman(order));
+
+            if (order.ShippingCarrier is not null)
+                outboxMessages.Add(NotifyShippingCarrier(order));
+
+            appDbContext.OutboxMessages.AddRange(outboxMessages);
+            try
+            {
+                await appDbContext.SaveChangesAsync(cancellationToken);
+                messenger.Send(new Application.Messages.Orders.MessagesCreatedMessage(outboxMessages));
+                return Result.Success();
+            }
+            catch (Exception)
+            {
+                return Result.Failure("Failed to broadcast order status");
+            }
         }
 
-        private async Task NotifyClient(int orderId, AppDbContext appDbContext)
+        private OutboxMessage NotifyClient(Order order)
         {
-            var clientData = await appDbContext.Orders
-                .AsNoTracking()
-                .Where(o => o.Id == orderId)
-                .Select(o => new
-                {
-                    ClientPhone = o.Client.Phone.Number.FullNumber,
-                    ClientName = o.Client.Name.Value,
-                    OrderNumber = o.OrderNumber,
-                    CreationData = o.CreatedAt.ToString("yyyy-MM-dd"),
-                    OrderItems = o.OrderItems,
-                    Total = o.OrderItems.Sum(oi => oi.UnitPrice.Value * oi.Quantity),
-                    ItemsCount = o.OrderItems.Count
-                })
-                .FirstOrDefaultAsync();
             StringBuilder sb = new StringBuilder();
 
             sb.AppendLine("طلب جديد");
             sb.AppendLine("----------------------");
 
-            sb.AppendLine($"التاريخ: {clientData.CreationData}");
-            sb.AppendLine($"رقم الطلب: {clientData.OrderNumber}");
+            sb.AppendLine($"التاريخ: {order.CreatedAt}");
+            sb.AppendLine($"رقم الطلب: {order.OrderNumber}");
             sb.AppendLine();
 
-            sb.AppendLine($"العميل: {clientData.ClientName}");
-            sb.AppendLine($"رقم الهاتف: {clientData.ClientPhone}");
+            sb.AppendLine($"العميل: {order.Client.Name.Value}");
+            sb.AppendLine($"رقم الهاتف: {order.Client.Phone.Number.FullNumber}");
             sb.AppendLine();
 
             sb.AppendLine("----------------------");
@@ -67,7 +74,7 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
 
             int i = 1;
 
-            foreach (var item in clientData.OrderItems)
+            foreach (var item in order.OrderItems)
             {
                 sb.AppendLine($"{i}) {item.ProductName}");
                 sb.AppendLine($"الكمية: {item.Quantity}");
@@ -77,66 +84,122 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
             }
 
             sb.AppendLine("----------------------");
-            sb.AppendLine($"الإجمالي: {clientData.Total}");
+            sb.AppendLine($"الإجمالي: {order.Total}");
 
             string message = sb.ToString();
-            await _whatsappService.Send(clientData.ClientPhone, message);
-        }
 
-        private async Task NotifSuppliers(int orderId, AppDbContext appDbContext)
-        {
-            Order order = await appDbContext.Orders
-                .Where(o => o.Id == orderId)
-                .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Supplier)
-                        .ThenInclude(s => s.Phone)
-                .Include(o => o.Client).ThenInclude(c => c.Phone)
-                .Include(o => o.Client).ThenInclude(c => c.Address).ThenInclude(a => a.City)
-                .FirstOrDefaultAsync();
-
-            var sb = new StringBuilder();
-
-            sb.AppendLine($"*طلب: {order.CreatedAt:yyyy-MM-dd}*");
-            sb.AppendLine($"*رقم الطلب : {order.OrderNumber}*");
-            sb.AppendLine($"*رقم العميل : {order.Client.Phone.Number.FullNumber}*");
-            sb.AppendLine($"*العميل : {order.Client.Name.Value}*");
-            sb.AppendLine($"*العنوان : {order.Client.Address.FullAddress}*");
-
-            sb.AppendLine("-----------------------------");
-            sb.AppendLine("*المنتجات*");
-            sb.AppendLine("-----------------------------");
-
-            int i = 1;
-
-            foreach (var item in order.OrderItems)
+            OutboxMessage outboxMessage = new OutboxMessage()
             {
-                decimal subtotal = item.UnitPrice.Value * item.Quantity;
+                OrderId = order.Id,
+                RecipientType = RecipientType.Client,
+                Text = message,
+                Status = OutboxMessageStatus.Pending,
+                Recipient = new ClientRecipient()
+                {
+                    ClientId = order.Client.Id,
+                    Name = order.Client.Name.Value,
+                    PhoneNumber = order.Client.Phone.Number.FullNumber,
+                },
 
-                sb.AppendLine($"{i}- {item.ProductName}");
-                sb.AppendLine($"الكمية : {item.Quantity}");
-                sb.AppendLine($"السعر  : {subtotal:0.00}");
-                sb.AppendLine("");
+            };
+            return outboxMessage;
+        }
 
-                i++;
+        private IEnumerable<OutboxMessage> NotifSuppliers(Order order)
+        {
+            var suppliers = order.OrderItems
+                .GroupBy(oi => oi.Supplier);
+            List<OutboxMessage> outboxMessages = new List<OutboxMessage>();
+            foreach (var supplier in suppliers)
+            {
+                if (supplier.Key is null)
+                    continue;
+                IEnumerable<OrderItem> items = supplier.ToList();
+
+                StringBuilder sb = new StringBuilder();
+
+                sb.AppendLine($"*طلب: {order.CreatedAt:yyyy-MM-dd}*");
+                sb.AppendLine($"*رقم الطلب : {order.OrderNumber}*");
+                sb.AppendLine($"*رقم العميل : {order.Client.Phone.Number.FullNumber}*");
+                sb.AppendLine($"*العميل : {order.Client.Name.Value}*");
+                sb.AppendLine($"*العنوان : {order.Client.Address.FullAddress}*");
+
+                sb.AppendLine("-----------------------------");
+                sb.AppendLine("*المنتجات*");
+                sb.AppendLine("-----------------------------");
+
+                int i = 1;
+
+                foreach (var item in items)
+                {
+                    decimal subtotal = item.UnitPrice.Value * item.Quantity;
+
+                    sb.AppendLine($"{i}- {item.ProductName}");
+                    sb.AppendLine($"الكمية : {item.Quantity}");
+                    sb.AppendLine($"السعر  : {subtotal:0.00}");
+                    sb.AppendLine("");
+
+                    i++;
+                }
+
+                sb.AppendLine("-----------------------------");
+
+                sb.AppendLine($"*عدد المنتجات : {items.Count()}*");
+                sb.AppendLine($"*الإجمالي : {items.Sum(i => i.UnitPrice.Value * i.Quantity):0.00}*");
+
+                string messsage = sb.ToString();
+                outboxMessages.Add(new OutboxMessage()
+                {
+                    Text = messsage,
+                    OrderId = order.Id,
+                    RecipientType = RecipientType.Supplier,
+                    Status = OutboxMessageStatus.Pending,
+                    Recipient = new SupplierRecipient()
+                    {
+                        SupplierId = supplier.Key.Id,
+                        Name = supplier.Key.Name.Value,
+                        PhoneNumber = supplier.Key.Phone.Number.FullNumber
+                    }
+                });
             }
-
-            sb.AppendLine("-----------------------------");
-
-            sb.AppendLine($"*عدد المنتجات : {order.OrderItems.Count}*");
-            sb.AppendLine($"*الإجمالي : {order.OrderItems.Sum(i => i.UnitPrice.Value * i.Quantity):0.00}*");
-
-            string message = sb.ToString();
-            await _whatsappService.Send("+201116040634", message);
+            return outboxMessages;
         }
 
-        private Task NotifyDeliveryman(int orderId, AppDbContext appDbContext)
+        private OutboxMessage NotifyDeliveryman(Order order)
         {
-            return Task.CompletedTask;
+            OutboxMessage outboxMessage = new OutboxMessage()
+            {
+                OrderId = order.Id,
+                RecipientType = RecipientType.Deliveryman,
+                Text = "",
+                Status = OutboxMessageStatus.Pending,
+                Recipient = new DeliverymanRecipient()
+                {
+                    DeliveryManId = order.Deliveryman.Id,
+                    Name = order.Deliveryman.Name.Value,
+                    PhoneNumber = order.Deliveryman.PhoneNumber
+                }
+            };
+
+            return outboxMessage;
         }
 
-        private Task NotifyShippingCarrier(int orderId, AppDbContext appDbContext)
+        private OutboxMessage NotifyShippingCarrier(Order order)
         {
-            return Task.CompletedTask;
+            OutboxMessage outboxMessage = new OutboxMessage()
+            {
+                OrderId = order.Id,
+                RecipientType = RecipientType.ShippingCarrier,
+                Text = "",
+                Status = OutboxMessageStatus.Pending,
+                Recipient = new ShippingCarrierRecipient()
+                {
+                    ShippingCarrierId = order.ShippingCarrier.Id,
+                    Name= order.ShippingCarrier.Name.Value,
+                    PhoneNumber = order.ShippingCarrier.Phone.Number.FullNumber
+                }
+            };
+            return outboxMessage;
         }
     }
 }

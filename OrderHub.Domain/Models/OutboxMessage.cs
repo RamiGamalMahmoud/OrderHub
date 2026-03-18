@@ -10,11 +10,13 @@ public class OutboxMessage : ModelBase
     public Order Order { get; set; }
 
     public RecipientType RecipientType { get; set; }
-    public MessageStatus Status { get; set; }
+    public OutboxMessageStatus Status { get; set; }
 
-    public int RetryCount { get; set; }
-    public int MaxRetries { get; set; } = 3;
+    public int? RecipientId { get; set; }
+    public OutboxMessageRecipient Recipient { get; set; }
+
+    public int? RetryCount { get; set; }
+    public int? MaxRetries { get; set; } = 3;
     public DateTime? LastAttemptAt { get; set; }
     public DateTime? SentAt { get; set; }
-    public string ErrorMessage { get; set; }
 }

@@ -1,9 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.UI.Interfaces;
+using System;
 using System.Collections.ObjectModel;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace OrderHub.UI.Features.MainWindow;
@@ -15,6 +18,8 @@ internal partial class MainWindowViewModel : ObservableObject
     private readonly IMediator _mediator;
     private readonly IDialogService _dialogService;
     private readonly IWhatsappService _whatsappService;
+    private readonly IMessageService _messageService;
+    private readonly IMessenger _messenger;
     [ObservableProperty]
     private NavigationCommand _navigationCommand;
 
@@ -24,6 +29,8 @@ internal partial class MainWindowViewModel : ObservableObject
         IMediator mediator,
         IDialogService dialogService,
         IWhatsappService whatsappService,
+        IMessageService messageService,
+        IMessenger messenger,
         IAppState appState)
     {
         _navigationService = navigationService;
@@ -31,6 +38,8 @@ internal partial class MainWindowViewModel : ObservableObject
         _mediator = mediator;
         _dialogService = dialogService;
         _whatsappService = whatsappService;
+        _messageService = messageService;
+        _messenger = messenger;
         AppState = appState;
         InitializeNavigationCommands();
     }
@@ -47,6 +56,9 @@ internal partial class MainWindowViewModel : ObservableObject
         NavigationCommands.Add(new NavigationCommand("الموردون", "BadgeAccount", () => _navigationService.NavigateTo<Features.Suppliers.Index.View>()));
         NavigationCommands.Add(new NavigationCommand("شركات الشحن", "Ship", () => _navigationService.NavigateTo<Features.ShippingCarriers.Index.View>()));
         NavigationCommands.Add(new NavigationCommand("المناديب", "Moped", () => _navigationService.NavigateTo<Features.Deliverymen.Index.View>()));
+        NavigationCommands.Add(new NavigationCommand("سجل الرسائل", "MessageMinusOutline", () => _navigationService.NavigateTo<Features.Messages.Index.View>()));
+
+        RegisterMessages();
         
         IsAuthenticated = 
             _sessionManager.CurrentSession is not null && 
@@ -55,6 +67,11 @@ internal partial class MainWindowViewModel : ObservableObject
 #if DEBUG
         IsAppInDebug = true;
 #endif
+    }
+
+    private void RegisterMessages()
+    {
+        _messenger.Register<Application.Messages.Orders.AddingNewMessageToQueMessage>(this, (r, m) => Message = m.RecipientName);
     }
 
     partial void OnNavigationCommandChanged(NavigationCommand value)
@@ -79,8 +96,12 @@ internal partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenWhatapp()
     {
-        await _whatsappService.StartWhatsApp();
+        await _whatsappService.StartWhatsAppAsync();
+        await _messageService.StartAsync();
     }
+
+    [ObservableProperty]
+    private string _message;
 
     public bool IsAppInDebug { get; private set; } = false;
 

@@ -2,7 +2,7 @@
 
 namespace OrderHub.Domain.Enums;
 
-public enum MessageStatus
+public enum OutboxMessageStatus
 {
     [Description("قيد الانتظار")]
     Pending = 1,

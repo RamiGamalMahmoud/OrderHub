@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
 using System.Collections.Generic;
@@ -34,6 +35,20 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
     {
         _dialogService.ShowDialog<Create.View>();
         return Task.CompletedTask;
+    }
+
+    [RelayCommand]
+    private async Task BrodcastOrder(OrderViewModel order)
+    {
+        Result result = await _mediator.Send(new Application.Commands.OrderCommands.BroadcastOrderStatusCommand(order.Id));
+
+        if (result.IsSuccess)
+        {
+        }
+        else
+        {
+            await _mediator.Publish(new Application.Notifications.AppliationNotification(result.ErrorMessage));
+        }
     }
 
     protected override async Task LoadAsync()

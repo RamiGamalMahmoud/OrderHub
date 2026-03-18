@@ -84,16 +84,13 @@
                             Text="إنشاء طلب جديد" />
                     </StackPanel>
                 </Button>
-                <Button
-                    Margin="5,0"
-                    Command="{Binding BrodcastAllOrdersCommand}"
-                    Content="ارسال الكل" />
             </StackPanel>
         </Grid>
 
 
         <DataGrid
             Grid.Row="1"
+            d:ItemsSource="{d:SampleData}"
             AutoGenerateColumns="False"
             GridLinesVisibility="Vertical"
             IsReadOnly="True"
@@ -158,22 +155,55 @@
                     Header="التاريخ"
                     IsReadOnly="True" />
 
-                <DataGridTemplateColumn Header="خيارات">
+                <DataGridTemplateColumn>
+                    <DataGridTemplateColumn.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <icons:MaterialIcon
+                                Width="20"
+                                Foreground="{StaticResource SuccessBrush}"
+                                Kind="Whatsapp" />
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                Foreground="{StaticResource SuccessBrush}"
+                                Text="ارسال" />
+                        </StackPanel>
+                    </DataGridTemplateColumn.Header>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
-                                <buttons:ButtonEdit />
                                 <Button
                                     Height="auto"
-                                    Padding="0"
-                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastOrderStatusCommand}"
+                                    Margin="5,0"
+                                    BorderThickness="0"
+                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BrodcastOrderCommand}"
                                     CommandParameter="{Binding}"
-                                    Cursor="Hand"
-                                    Foreground="{StaticResource SuccessBrush}">
-                                    <StackPanel>
-                                        <icons:MaterialIcon Width="20" Kind="Whatsapp" />
-                                    </StackPanel>
-                                </Button>
+                                    Content="All"
+                                    Cursor="Hand" />
+                                <Button
+                                    Height="auto"
+                                    Margin="5,0"
+                                    BorderThickness="0"
+                                    Content="عميل"
+                                    Cursor="Hand" />
+                                <Button
+                                    Height="auto"
+                                    Margin="5,0"
+                                    BorderThickness="0"
+                                    Content="مورد"
+                                    Cursor="Hand" />
+                                <Button
+                                    Height="auto"
+                                    Margin="5,0"
+                                    BorderThickness="0"
+                                    Content="شركة شحن"
+                                    Cursor="Hand" />
+                                <Button
+                                    Height="auto"
+                                    Margin="5,0"
+                                    BorderThickness="0"
+                                    Content="مندوب"
+                                    Cursor="Hand" />
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>

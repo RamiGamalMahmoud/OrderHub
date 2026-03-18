@@ -37,7 +37,7 @@ namespace OrderHub.Infrastructure.Services
             if (!Directory.Exists(StoragePath)) Directory.CreateDirectory(StoragePath);
         }
 
-        public void EnsureWhatAppProfilesDirectoryCreated()
+        public void EnsureWhatsAppProfilesDirectoryCreated()
         {
             if (!Directory.Exists(WhatAppProfilesPath)) Directory.CreateDirectory(WhatAppProfilesPath);
         }

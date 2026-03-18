@@ -13,6 +13,6 @@
         void EnsureAppDirectoryCreated();
         void EnsureDatabaseFileCreated();
         void EnsureStorageDirectoryCreated();
-        void EnsureWhatAppProfilesDirectoryCreated();
+        void EnsureWhatsAppProfilesDirectoryCreated();
     }
 }

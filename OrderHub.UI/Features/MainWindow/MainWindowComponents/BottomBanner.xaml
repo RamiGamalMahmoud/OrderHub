@@ -33,43 +33,53 @@
         Padding="5"
         Background="White"
         CornerRadius="5">
-        <StackPanel Grid.Row="1" Orientation="Horizontal">
-            <Button
-                Padding="5,0"
-                VerticalAlignment="Center"
-                BorderThickness="0"
-                Command="{Binding LoginSallaCommand}"
-                Cursor="Hand"
-                Foreground="Green"
-                IsEnabled="{Binding IsAppInDebug, Converter={converters:BoolConverter}}"
-                Visibility="{Binding IsAppInDebug, Converter={converters:BoolToVisibilityConverter}}">
-                <icons:MaterialIcon
-                    Width="20"
-                    Height="20"
-                    Style="{StaticResource SallaConnectionIcon}" />
-            </Button>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel
+                Grid.Row="1"
+                Grid.Column="0"
+                Orientation="Horizontal">
+                <Button
+                    Padding="5,0"
+                    VerticalAlignment="Center"
+                    BorderThickness="0"
+                    Command="{Binding LoginSallaCommand}"
+                    Cursor="Hand"
+                    Foreground="Green"
+                    IsEnabled="{Binding IsAppInDebug, Converter={converters:BoolConverter}}"
+                    Visibility="{Binding IsAppInDebug, Converter={converters:BoolToVisibilityConverter}}">
+                    <icons:MaterialIcon
+                        Width="20"
+                        Height="20"
+                        Style="{StaticResource SallaConnectionIcon}" />
+                </Button>
 
-            <TextBlock VerticalAlignment="Center">
-                <icons:MaterialIcon
-                    Width="20"
-                    Height="20"
-                    Kind="Internet">
-                    <icons:MaterialIcon.Style>
-                        <Style TargetType="icons:MaterialIcon">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding AppState.IsConnected}" Value="True">
-                                    <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding AppState.IsConnected}" Value="False">
-                                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </icons:MaterialIcon.Style>
-                </icons:MaterialIcon>
-            </TextBlock>
+                <TextBlock VerticalAlignment="Center">
+                    <icons:MaterialIcon
+                        Width="20"
+                        Height="20"
+                        Kind="Internet">
+                        <icons:MaterialIcon.Style>
+                            <Style TargetType="icons:MaterialIcon">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding AppState.IsConnected}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding AppState.IsConnected}" Value="False">
+                                        <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </icons:MaterialIcon.Style>
+                    </icons:MaterialIcon>
+                </TextBlock>
 
-        </StackPanel>
+            </StackPanel>
+            <TextBlock Grid.Column="1" Text="{Binding Message}" />
+        </Grid>
     </Border>
 
 </UserControl>

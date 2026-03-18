@@ -19,6 +19,10 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<PaymentMethod> PaymentMethods { get; set; }
     public DbSet<OutboxMessage> OutboxMessages { get; set; }
+    public DbSet<ClientRecipient> ClientRecipients { get; set; }
+    public DbSet<SupplierRecipient> SupplierRecipients { get; set; }
+    public DbSet<DeliverymanRecipient> DeliverymanRecipients { get; set; }
+    public DbSet<ShippingCarrierRecipient> ShippingCarrierRecipients { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

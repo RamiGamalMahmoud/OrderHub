@@ -3,15 +3,31 @@ using OrderHub.Application.Interfaces.Services;
 
 namespace OrderHub.Infrastructure;
 
-internal class AppDbContextFactory(IApplicationDirectoriesService applicationDirectoriesService)
+internal class AppDbContextFactory
 {
+    private readonly DbContextOptions<AppDbContext> _options;
+    private readonly IApplicationDirectoriesService _directories;
+
+    public AppDbContextFactory(IApplicationDirectoriesService directories)
+    {
+        _directories = directories;
+    }
+
+    public AppDbContextFactory(DbContextOptions<AppDbContext> options)
+    {
+        _options = options;
+    }
+
     public AppDbContext CreateDbContext()
     {
-        DbContextOptionsBuilder<AppDbContext> dbContextOptionsBuilder = new();
-        dbContextOptionsBuilder
-            .UseSqlite($"Data Source={applicationDirectoriesService.DatabaseFilePath}")
-            .UseSnakeCaseNamingConvention();
-        AppDbContext appDbContext = new(dbContextOptionsBuilder.Options);
-        return appDbContext;
+        if (_options != null)
+            return new AppDbContext(_options);
+
+        DbContextOptionsBuilder<AppDbContext> builder = new DbContextOptionsBuilder<AppDbContext>();
+
+        builder.UseSqlite($"Data Source={_directories.DatabaseFilePath}")
+               .UseSnakeCaseNamingConvention();
+
+        return new AppDbContext(builder.Options);
     }
 }

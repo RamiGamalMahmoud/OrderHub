@@ -5,14 +5,14 @@ namespace OrderHub.Domain.Enums;
 public enum RecipientType
 {
     [Description("عميل")]
-    Client,
+    Client = 1,
 
     [Description("شركة شحن")]
-    Carrier,
+    ShippingCarrier = 2,
 
     [Description("مورد")]
-    Supplier,
+    Supplier = 3,
 
     [Description("مندوب توصيل")]
-    Deliveryman
+    Deliveryman = 4
 }

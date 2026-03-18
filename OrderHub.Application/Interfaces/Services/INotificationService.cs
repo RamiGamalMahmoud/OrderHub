@@ -4,5 +4,6 @@
     {
         void ShowError(string message);
         void ShowSuccess(string message);
+        void Show(string message);
     }
 }

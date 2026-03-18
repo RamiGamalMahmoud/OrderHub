@@ -307,16 +307,11 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("ErrorMessage")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
-                        .HasColumnName("error_message");
-
                     b.Property<DateTime?>("LastAttemptAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("last_attempt_at");
 
-                    b.Property<int>("MaxRetries")
+                    b.Property<int?>("MaxRetries")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(3)
@@ -330,11 +325,16 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("order_id");
 
-                    b.Property<int>("RecipientType")
+                    b.Property<int?>("RecipientId")
                         .HasColumnType("INTEGER")
+                        .HasColumnName("recipient_id");
+
+                    b.Property<string>("RecipientType")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipient_type");
 
-                    b.Property<int>("RetryCount")
+                    b.Property<int?>("RetryCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(0)
@@ -344,8 +344,9 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("sent_at");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("INTEGER")
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
                         .HasColumnName("status");
 
                     b.Property<string>("Text")
@@ -357,10 +358,49 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_outbox_messages");
 
-                    b.HasIndex("OrderId")
-                        .HasDatabaseName("ix_outbox_messages_order_id");
+                    b.HasIndex("RecipientId")
+                        .HasDatabaseName("ix_outbox_messages_recipient_id");
+
+                    b.HasIndex("OrderId", "RecipientId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_outbox_messages_order_id_recipient_id")
+                        .HasFilter("[Status] = 'Pending'");
 
                     b.ToTable("outbox_messages", (string)null);
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.OutboxMessageRecipient", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("modified_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("phone_number");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("outbox_message_recipients", (string)null);
+
+                    b.UseTptMappingStrategy();
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.PaymentMethod", b =>
@@ -608,6 +648,62 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("product_supplier", (string)null);
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.ClientRecipient", b =>
+                {
+                    b.HasBaseType("OrderHub.Domain.Models.OutboxMessageRecipient");
+
+                    b.Property<int>("ClientId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("client_id");
+
+                    b.HasIndex("ClientId")
+                        .HasDatabaseName("ix_client_recipients_client_id");
+
+                    b.ToTable("client_recipients", (string)null);
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.DeliverymanRecipient", b =>
+                {
+                    b.HasBaseType("OrderHub.Domain.Models.OutboxMessageRecipient");
+
+                    b.Property<int>("DeliveryManId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("delivery_man_id");
+
+                    b.HasIndex("DeliveryManId")
+                        .HasDatabaseName("ix_deliveryman_recipients_delivery_man_id");
+
+                    b.ToTable("deliveryman_recipients", (string)null);
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.ShippingCarrierRecipient", b =>
+                {
+                    b.HasBaseType("OrderHub.Domain.Models.OutboxMessageRecipient");
+
+                    b.Property<int>("ShippingCarrierId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("shipping_carrier_id");
+
+                    b.HasIndex("ShippingCarrierId")
+                        .HasDatabaseName("ix_shippingcarrier_recipients_shipping_carrier_id");
+
+                    b.ToTable("shippingcarrier_recipients", (string)null);
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.SupplierRecipient", b =>
+                {
+                    b.HasBaseType("OrderHub.Domain.Models.OutboxMessageRecipient");
+
+                    b.Property<int>("SupplierId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("supplier_id");
+
+                    b.HasIndex("SupplierId")
+                        .HasDatabaseName("ix_supplier_recipients_supplier_id");
+
+                    b.ToTable("supplier_recipients", (string)null);
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.Address", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.City", "City")
@@ -641,7 +737,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("CategoryId");
 
-                            b1.ToTable("categories");
+                            b1.ToTable("categories", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("CategoryId")
@@ -674,7 +770,7 @@ namespace OrderHub.Infrastructure.Migrations
                                 .IsUnique()
                                 .HasDatabaseName("ix_cities_name");
 
-                            b1.ToTable("cities");
+                            b1.ToTable("cities", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("CityId")
@@ -711,7 +807,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("ClientId");
 
-                            b1.ToTable("clients");
+                            b1.ToTable("clients", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ClientId")
@@ -748,7 +844,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("DeliverymanId");
 
-                            b1.ToTable("deliverymen");
+                            b1.ToTable("deliverymen", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("DeliverymanId")
@@ -831,7 +927,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("OrderItemId");
 
-                            b1.ToTable("order_items");
+                            b1.ToTable("order_items", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("OrderItemId")
@@ -853,7 +949,14 @@ namespace OrderHub.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_outbox_messages_orders_order_id");
 
+                    b.HasOne("OrderHub.Domain.Models.OutboxMessageRecipient", "Recipient")
+                        .WithMany()
+                        .HasForeignKey("RecipientId")
+                        .HasConstraintName("fk_outbox_messages_outbox_message_recipient_recipient_id");
+
                     b.Navigation("Order");
+
+                    b.Navigation("Recipient");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Phone", b =>
@@ -878,7 +981,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("PhoneId");
 
-                            b1.ToTable("phones");
+                            b1.ToTable("phones", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("PhoneId")
@@ -911,7 +1014,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("ProductId");
 
-                            b1.ToTable("products");
+                            b1.ToTable("products", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ProductId")
@@ -930,7 +1033,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("ProductId");
 
-                            b1.ToTable("products");
+                            b1.ToTable("products", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ProductId")
@@ -972,7 +1075,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("ShippingCarrierId");
 
-                            b1.ToTable("shipping_carriers");
+                            b1.ToTable("shipping_carriers", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ShippingCarrierId")
@@ -991,7 +1094,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("ShippingCarrierId");
 
-                            b1.ToTable("shipping_carriers");
+                            b1.ToTable("shipping_carriers", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ShippingCarrierId")
@@ -1021,27 +1124,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasForeignKey("phone_id")
                         .HasConstraintName("fk_suppliers_phones_phone_id");
 
-                    b.OwnsOne("OrderHub.Domain.ValueObjects.EntityName", "Name", b1 =>
-                        {
-                            b1.Property<int>("SupplierId")
-                                .HasColumnType("INTEGER")
-                                .HasColumnName("id");
-
-                            b1.Property<string>("Value")
-                                .IsRequired()
-                                .HasMaxLength(100)
-                                .HasColumnType("varchar(100)")
-                                .HasColumnName("name");
-
-                            b1.HasKey("SupplierId");
-
-                            b1.ToTable("suppliers");
-
-                            b1.WithOwner()
-                                .HasForeignKey("SupplierId")
-                                .HasConstraintName("fk_suppliers_suppliers_id");
-                        });
-
                     b.OwnsOne("OrderHub.Domain.ValueObjects.BusinessHours", "BusinessHours", b1 =>
                         {
                             b1.Property<int>("SupplierId")
@@ -1058,7 +1140,28 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("SupplierId");
 
-                            b1.ToTable("suppliers");
+                            b1.ToTable("suppliers", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("SupplierId")
+                                .HasConstraintName("fk_suppliers_suppliers_id");
+                        });
+
+                    b.OwnsOne("OrderHub.Domain.ValueObjects.EntityName", "Name", b1 =>
+                        {
+                            b1.Property<int>("SupplierId")
+                                .HasColumnType("INTEGER")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("varchar(100)")
+                                .HasColumnName("name");
+
+                            b1.HasKey("SupplierId");
+
+                            b1.ToTable("suppliers", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("SupplierId")
@@ -1090,6 +1193,82 @@ namespace OrderHub.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_product_supplier_suppliers_suppliers_id");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.ClientRecipient", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Client", "Client")
+                        .WithMany()
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_client_recipients_clients_client_id");
+
+                    b.HasOne("OrderHub.Domain.Models.OutboxMessageRecipient", null)
+                        .WithOne()
+                        .HasForeignKey("OrderHub.Domain.Models.ClientRecipient", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_client_recipients_outbox_message_recipients_id");
+
+                    b.Navigation("Client");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.DeliverymanRecipient", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Deliveryman", "DeliveryMan")
+                        .WithMany()
+                        .HasForeignKey("DeliveryManId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_deliveryman_recipients_deliverymen_delivery_man_id");
+
+                    b.HasOne("OrderHub.Domain.Models.OutboxMessageRecipient", null)
+                        .WithOne()
+                        .HasForeignKey("OrderHub.Domain.Models.DeliverymanRecipient", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_deliveryman_recipients_outbox_message_recipients_id");
+
+                    b.Navigation("DeliveryMan");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.ShippingCarrierRecipient", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.OutboxMessageRecipient", null)
+                        .WithOne()
+                        .HasForeignKey("OrderHub.Domain.Models.ShippingCarrierRecipient", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_shippingcarrier_recipients_outbox_message_recipients_id");
+
+                    b.HasOne("OrderHub.Domain.Models.ShippingCarrier", "ShippingCarrier")
+                        .WithMany()
+                        .HasForeignKey("ShippingCarrierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_shippingcarrier_recipients_shipping_carriers_shipping_carrier_id");
+
+                    b.Navigation("ShippingCarrier");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.SupplierRecipient", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.OutboxMessageRecipient", null)
+                        .WithOne()
+                        .HasForeignKey("OrderHub.Domain.Models.SupplierRecipient", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_supplier_recipients_outbox_message_recipients_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_supplier_recipients_suppliers_supplier_id");
+
+                    b.Navigation("Supplier");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Category", b =>

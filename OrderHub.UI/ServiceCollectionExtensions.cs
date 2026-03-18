@@ -4,6 +4,7 @@ using Notification.Wpf;
 using OrderHub.Application;
 using OrderHub.Domain;
 using OrderHub.Infrastructure;
+using OrderHub.UI.StartUpSteps;
 
 namespace OrderHub.UI;
 
@@ -12,6 +13,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddUI(this IServiceCollection services)
     {
         // Services
+        services.AddStartUpSteps();
+        services.AddSingleton<Application.Interfaces.Services.INotifier, Services.Notifier>();
         services.AddSingleton<Application.Interfaces.Services.IAppState, Services.AppState>();
         services.AddSingleton<Interfaces.INavigationService, Services.NavigationService>();
         services.AddSingleton<Interfaces.IDialogService, Services.DialogService>();
@@ -69,6 +72,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<Features.Orders.Index.ViewModel>();
         services.AddTransient<Features.Orders.Create.ViewModel>();
 
+        // Messages
+        services.AddSingleton<Features.Messages.Index.ViewModel>();
+
         return services;
     }
 
@@ -118,6 +124,9 @@ public static class ServiceCollectionExtensions
         // Orders
         services.AddSingleton<Features.Orders.Index.View>();
         services.AddTransient<Features.Orders.Create.View>();
+
+        // Messages
+        services.AddSingleton<Features.Messages.Index.View>();
 
         return services;
     }

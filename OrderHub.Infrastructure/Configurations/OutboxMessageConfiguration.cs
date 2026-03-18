@@ -17,18 +17,18 @@ internal class OutboxMessageConfiguration : ModelConfigurationBase<OutboxMessage
 
         builder.Property(m => m.RecipientType)
             .IsRequired()
-            .HasConversion<int>();
+            .HasConversion<string>();
 
         builder.Property(m => m.Status)
             .IsRequired()
-            .HasConversion<int>();
+            .HasConversion<string>();
 
         builder.Property(m => m.RetryCount)
-            .IsRequired()
+            .IsRequired(false)
             .HasDefaultValue(0);
 
         builder.Property(m => m.MaxRetries)
-            .IsRequired()
+            .IsRequired(false)
             .HasDefaultValue(3);
 
         builder.Property(m => m.LastAttemptAt)
@@ -37,13 +37,18 @@ internal class OutboxMessageConfiguration : ModelConfigurationBase<OutboxMessage
         builder.Property(m => m.SentAt)
             .HasColumnType("datetime2");
 
-        builder.Property(m => m.ErrorMessage)
-            .HasMaxLength(1000)
-            .HasColumnType("nvarchar(1000)");
-
         builder.HasOne(m => m.Order)
             .WithMany(o => o.OutboxMessages)
             .HasForeignKey(m => m.OrderId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(m => m.Recipient)
+            .WithMany()
+            .HasForeignKey(m => m.RecipientId)
+            .IsRequired(false);
+
+        builder.HasIndex(e => new { e.OrderId, e.RecipientId })
+          .IsUnique()
+          .HasFilter("[Status] = 'Pending'");
     }
 }

@@ -5,6 +5,8 @@ using OrderHub.Application.DTOs;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
+using OrderHub.UI.Features.MainWindow;
+using OrderHub.UI.StartUpSteps;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
@@ -26,147 +28,235 @@ public partial class App : System.Windows.Application
             })
             .Build();
 
-        AppDomain.CurrentDomain.UnhandledException += CurrentDomainUnhandledException;
-        System.Windows.Application.Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
-        DispatcherUnhandledException += App_DispatcherUnhandledException;
-        TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+        RegisterGlobalExceptionHandlers();
     }
 
-    private void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
-    {
-        _host.Services.GetRequiredService<IMediator>().Publish(new Application.Notifications.ErrorNotification(e.Exception.Message));
-    }
-
-    private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
-    {
-        _host.Services.GetRequiredService<IMediator>().Publish(new Application.Notifications.ErrorNotification(e.Exception.Message));
-    }
-
-    private void ShowSplashScreen()
-    {
-        MainWindow = _host.Services.GetRequiredService<Features.Splash>();
-        MainWindow.Show();
-    }
-
-    private void CurrentDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
-    {
-#if !DEBUG
-        e.Handled = true;
-#endif 
-    }
-
-    private void CurrentDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
-    {
-    }
-
-    protected override async void OnStartup(StartupEventArgs e)
+    protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        IApplicationDirectoriesService applicationDirectoriesService = GetService<IApplicationDirectoriesService>();
-        applicationDirectoriesService.EnsureAppDirectoryCreated();
-        applicationDirectoriesService.EnsureStorageDirectoryCreated();
-        applicationDirectoriesService.EnsureDatabaseFileCreated();
-        applicationDirectoriesService.EnsureWhatAppProfilesDirectoryCreated();
-
-        IDatabaseService databaseService = GetService<IDatabaseService>();
-        bool canConnect = await databaseService.CanConnectAsync();
 
         ShowSplashScreen();
-
-        if (!canConnect)
-        {
-            await GetService<IMediator>().Publish(new Application.Notifications.ErrorNotification("خطاء في الاتصال بقاعدة البيانات"));
-            return;
-        }
-        if (await databaseService.HasPendingMigrationsAsync())
-        {
-            await databaseService.MigrateAsync();
-            await GetService<IMediator>().Publish(new Application.Notifications.SuccessNotification("تم تحديث قاعدة البيانات."));
-        }
-#if DEBUG
-
-        if (!await HasSaveClientCredentials())
-        {
-            ShowClientCredentialsWindow();
-        }
-
-        else
-        {
-            if (!await HasSaveToken())
-            {
-                await SaveToken();
-            }
-            await StartNewSession();
-        }
-#endif
-
-        ShowMainWindow();
-
-        await _host.RunAsync();
+        _ = StartAsync();
+        //_ = InitializeAsync();
     }
 
-    private async Task StartNewSession()
+    private async Task StartAsync()
+    {
+        IStartupPipeline startupPipeline = GetService<IStartupPipeline>();
+
+        await startupPipeline.RunAsync();
+
+        ShowMainWindow();
+    }
+
+    private async Task InitializeAsync()
+    {
+        try
+        {
+            PrepareDirectoriesAsync();
+
+            var dbReady = await EnsureDatabaseAsync();
+            if (!dbReady)
+                return;
+
+            await InitializeInfrastructureAsync();
+
+#if DEBUG
+            await HandleAuthenticationAsync();
+#endif
+
+            ShowMainWindow();
+        }
+        catch (Exception ex)
+        {
+            await NotifyErrorAsync(ex.Message);
+        }
+    }
+
+    #region Initialization مراحل التشغيل
+
+    private void PrepareDirectoriesAsync()
+    {
+        var dirs = GetService<IApplicationDirectoriesService>();
+
+        dirs.EnsureAppDirectoryCreated();
+        dirs.EnsureStorageDirectoryCreated();
+        dirs.EnsureDatabaseFileCreated();
+        dirs.EnsureWhatsAppProfilesDirectoryCreated();
+    }
+
+    private async Task<bool> EnsureDatabaseAsync()
+    {
+        IDatabaseService db = GetService<IDatabaseService>();
+
+        if (!await db.CanConnectAsync())
+        {
+            await NotifyErrorAsync("خطأ في الاتصال بقاعدة البيانات");
+            return false;
+        }
+
+        if (await db.HasPendingMigrationsAsync())
+        {
+            await db.MigrateAsync();
+            await NotifySuccessAsync("تم تحديث قاعدة البيانات");
+        }
+
+        return true;
+    }
+
+    private async Task InitializeInfrastructureAsync()
+    {
+        await GetService<IWhatsappService>().StartWhatsAppAsync();
+
+        // تقدر تضيف هنا:
+        // MQTT, WebSocket, Sync Service ...
+    }
+
+    private async Task HandleAuthenticationAsync()
+    {
+        if (!await HasSavedClientCredentialsAsync())
+        {
+            ShowClientCredentialsWindow();
+            return;
+        }
+
+        if (!await HasSavedTokenAsync())
+        {
+            await SaveTokenAsync();
+        }
+
+        await StartNewSessionAsync();
+    }
+
+    #endregion
+
+    #region Authentication
+
+    private async Task StartNewSessionAsync()
     {
         ISessionManager sessionManager = GetService<ISessionManager>();
         await sessionManager.StartNewSession();
     }
 
-    private async Task<bool> HasSaveToken()
+    private async Task<bool> HasSavedTokenAsync()
     {
-        ITokenStorageService tokenStorageService = GetService<ITokenStorageService>();
-        Token token = await tokenStorageService.GetTokenAsync();
-        return token is not null;
+        ITokenStorageService tokenStorage = GetService<ITokenStorageService>();
+        Token token = await tokenStorage.GetTokenAsync();
+        return token != null;
     }
 
-    private async Task SaveToken()
+    private async Task SaveTokenAsync()
     {
-        IAuthService authService = GetService<IAuthService>();
-
+        IAuthService auth = GetService<IAuthService>();
         ICredentialsService credentialsService = GetService<ICredentialsService>();
 
-        ClientCredentials clientCredentials = await credentialsService.GetClilentCredentialsAsync();
+        ClientCredentials credentials = await credentialsService.GetClilentCredentialsAsync();
 
-        Result<Token> tokenResult = await authService.AuthorizeAsync(clientCredentials);
+        Result<Token> result = await auth.AuthorizeAsync(credentials);
 
-        ITokenStorageService tokenStorageService = GetService<ITokenStorageService>();
-
-        if (tokenResult.IsSuccess)
+        if (!result.IsSuccess)
         {
-            await tokenStorageService.SaveTokenAsync(tokenResult.Value);
+            await NotifyErrorAsync(result.ErrorMessage);
+            return;
         }
+
+        ITokenStorageService tokenStorage = GetService<ITokenStorageService>();
+        await tokenStorage.SaveTokenAsync(result.Value);
     }
 
-    private async Task<bool> HasSaveClientCredentials()
+    private async Task<bool> HasSavedClientCredentialsAsync()
     {
         ICredentialsService credentialsService = GetService<ICredentialsService>();
-        ClientCredentials clientCredentials = await credentialsService.GetClilentCredentialsAsync();
-        return clientCredentials is not null;
+        ClientCredentials credentials = await credentialsService.GetClilentCredentialsAsync();
+        return credentials != null;
     }
 
-    private T GetService<T>()
+    #endregion
+
+    #region UI Navigation
+
+    private void ShowSplashScreen()
     {
-        return _host.Services.GetRequiredService<T>();
+        MainWindow = GetService<Features.Splash>();
+        MainWindow.Show();
     }
 
     private void ShowClientCredentialsWindow()
     {
-        Window window = MainWindow;
-        MainWindow = GetService<Features.Settings.ClientCredentialsSettings.ClientCredentialsSettingsView>();
-        MainWindow.Show();
-        window.Close();
+        SwitchWindow<Features.Settings.ClientCredentialsSettings.ClientCredentialsSettingsView>();
     }
 
     private void ShowMainWindow()
     {
-        Window window = MainWindow;
-        MainWindow = _host.Services.GetRequiredService<Features.MainWindow.MainWindowView>();
-        MainWindow.Show();
-        window.Close();
+        SwitchWindow<Features.MainWindow.MainWindowView>();
     }
+
+    private void SwitchWindow<T>() where T : Window
+    {
+        Window oldWindow = MainWindow;
+
+        T newWindow = GetService<T>();
+        MainWindow = newWindow;
+
+        newWindow.Show();
+        oldWindow?.Close();
+    }
+
+    #endregion
+
+    #region Exception Handling
+
+    private void RegisterGlobalExceptionHandlers()
+    {
+        AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+    }
+
+    private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        Exception ex = e.ExceptionObject as Exception;
+        _ = NotifyErrorAsync(ex?.Message ?? "Unknown error");
+    }
+
+    private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+#if !DEBUG
+        e.Handled = true;
+#endif
+        _ = NotifyErrorAsync(e.Exception.Message);
+    }
+
+    private void OnUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
+    {
+        _ = NotifyErrorAsync(e.Exception.Message);
+    }
+
+    #endregion
+
+    #region Notifications
+
+    private async Task NotifyErrorAsync(string message)
+    {
+        await GetService<IMediator>().Publish(new Application.Notifications.ErrorNotification(message));
+    }
+
+    private async Task NotifySuccessAsync(string message)
+    {
+        await GetService<IMediator>().Publish(new Application.Notifications.SuccessNotification(message));
+    }
+
+    #endregion
+
+    #region Helpers
+
+    private T GetService<T>() => _host.Services.GetRequiredService<T>();
 
     protected override async void OnExit(ExitEventArgs e)
     {
         base.OnExit(e);
         await _host.StopAsync();
     }
+
+    #endregion
 }

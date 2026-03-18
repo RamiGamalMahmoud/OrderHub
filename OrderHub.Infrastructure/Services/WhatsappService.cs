@@ -2,138 +2,115 @@
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using OrderHub.Application.Interfaces.Services;
-using SeleniumExtras.WaitHelpers;
 using System;
-using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OrderHub.Infrastructure.Services;
 
-internal class WhatsappService : IWhatsappService
+internal class WhatsappService : IWhatsappService, IMessageSender
 {
     private IWebDriver _driver;
     private WebDriverWait _wait;
-    private readonly IApplicationDirectoriesService _applicationDirectoriesService;
 
-    public WhatsappService(IApplicationDirectoriesService applicationDirectoriesService)
+    private readonly SemaphoreSlim _lock = new(1, 1);
+
+    private readonly IApplicationDirectoriesService _directories;
+
+    public WhatsappService(IApplicationDirectoriesService directories)
     {
-        _applicationDirectoriesService = applicationDirectoriesService;
+        _directories = directories;
     }
 
-    public async Task<bool> StartWhatsApp(string url = "https://web.whatsapp.com")
+    public async Task<bool> StartWhatsAppAsync(string url = "https://web.whatsapp.com")
     {
         return await Task.Run(() =>
         {
-            // Main application driver
-            ChromeOptions options = new ChromeOptions();
-            options.AddArgument("--disable-backgrounding-occluded-windows");
-            options.AddArgument("--disable-renderer-backgrounding");
-            options.AddArgument("--disable-background-timer-throttling");
-            options.AddArgument("--no-sandbox");
-            options.AddArgument("--disable-dev-shm-usage");
-            options.AddArgument("--disable-gpu");
-            options.AddArgument("--remote-debugging-port=9222");
-            options.AddArgument($"--user-data-dir={_applicationDirectoriesService.DefaultWhatAppProfilePath}\\MainProfile");
-
-            _driver = new ChromeDriver(options);
-
-            _driver.Navigate().GoToUrl(url);
-
-            _wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(60));
-
-
             try
             {
-                _wait.Until(driver =>
-                {
-                    try
-                    {
-                        ReadOnlyCollection<IWebElement> elements = driver.FindElements(By.XPath("//div[@contenteditable='true']"));
-                        return elements.Count > 0 ? elements[0] : null;
-                    }
-                    catch (Exception)
-                    {
-                        return null;
-                    }
-                });
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        });
-    }
+                ChromeOptions options = new ChromeOptions();
+                options.AddArgument(
+                    $"--user-data-dir={_directories.DefaultWhatAppProfilePath}\\MainProfile"
+                );
+                options.AddArgument("--disable-notifications");
+                options.AddArgument("--disable-backgrounding-occluded-windows");
+                options.AddArgument("--disable-renderer-backgrounding");
+                options.AddArgument("--disable-background-timer-throttling");
+                options.AddArgument("--remote-debugging-port=9222");
 
-    public async Task<bool> Send(string contact, string message)
-    {
-        return IsDriverAlive() &&
-        await Task.Run<bool>(() =>
-        {
-            try
-            {
-                string cleanNumber = new string(contact.Where(char.IsDigit).ToArray());
 
-                string url = $"https://web.whatsapp.com/send?phone={cleanNumber}";
+                _driver = new ChromeDriver(options);
                 _driver.Navigate().GoToUrl(url);
 
-                HandleChromeAlert();
-                var messageBox = _wait.Until(driver =>
+                _wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(60));
+                _wait.Until(d =>
                 {
-                    try
-                    {
-                        var elements = driver.FindElements(By.XPath("//div[@contenteditable='true'][@data-tab='10']"));
-                        return elements.Count > 0 ? elements[0] : null;
-                    }
-                    catch (Exception)
-                    {
-                        return null;
-                    }
+                    var boxes = d.FindElements(By.CssSelector("div[contenteditable='true']"));
+                    return boxes.Count > 0;
                 });
 
-
-                string[] lines = message.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-
-                for (int i = 0; i < lines.Length; i++)
-                {
-                    messageBox.SendKeys(lines[i]);
-
-                    if (i < lines.Length - 1)
-                    {
-                        messageBox.SendKeys(Keys.Shift + Keys.Enter);
-                    }
-                }
-                messageBox.SendKeys(Keys.Enter);
-
-                System.Threading.Thread.Sleep(1000);
                 return true;
             }
-            catch (Exception)
+            catch
             {
                 return false;
             }
         });
-
     }
 
-    private void HandleChromeAlert()
+    public async Task<bool> SendAsync(string contact, string message)
     {
+        if (!IsDriverAlive())
+            return false;
+
+        await _lock.WaitAsync();
+
         try
         {
-            WebDriverWait alertWait = new WebDriverWait(_driver, TimeSpan.FromSeconds(3));
-            alertWait.Until(ExpectedConditions.AlertIsPresent());
-            _driver.SwitchTo().Alert().Dismiss();
+            string cleanNumber = new string(contact.Where(char.IsDigit).ToArray());
+            string url = $"https://web.whatsapp.com/send?phone={cleanNumber}";
+            _driver.Navigate().GoToUrl(url);
+
+            var messageBox = _wait.Until(driver =>
+            {
+                try
+                {
+                    var elements = driver.FindElements(By.XPath("//div[@contenteditable='true'][@data-tab='10']"));
+                    return elements.Count > 0 ? elements[0] : null;
+                }
+                catch { return null; }
+            });
+
+            string[] lines = message.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+            for (int i = 0; i < lines.Length; i++)
+            {
+                messageBox.SendKeys(lines[i]);
+                if (i < lines.Length - 1)
+                    messageBox.SendKeys(Keys.Shift + Keys.Enter);
+            }
+
+            messageBox.SendKeys(Keys.Enter);
+
+            await Task.Delay(1000); // rate limit
+
+            return true;
         }
-        catch { }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            _lock.Release();
+        }
     }
 
     private bool IsDriverAlive()
     {
         try
         {
-            var handles = _driver?.WindowHandles;
-            return handles != null && handles.Count > 0;
+            return _driver != null && _driver.WindowHandles.Any();
         }
         catch
         {
@@ -143,6 +120,6 @@ internal class WhatsappService : IWhatsappService
 
     public void Close()
     {
-        _driver?.Quit();
+        try { _driver?.Quit(); } catch { }
     }
 }

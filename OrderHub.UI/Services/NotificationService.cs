@@ -12,6 +12,11 @@ namespace OrderHub.UI.Services
             _notificationManager = notificationManager;
         }
 
+        public void Show(string message)
+        {
+            _notificationManager.Show(message, NotificationType.Information);
+        }
+
         public void ShowError(string message)
         {
             _notificationManager.Show(message, NotificationType.Error);
