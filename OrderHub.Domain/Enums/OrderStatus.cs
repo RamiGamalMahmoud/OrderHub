@@ -4,7 +4,7 @@ namespace OrderHub.Domain.Enums
 {
     public enum OrderStatus
     {
-        [Description("قيد المراجعة")]
+        [Description("قيد الانتظار")]
         Pending,
 
         [Description("قيد التجهيز")]

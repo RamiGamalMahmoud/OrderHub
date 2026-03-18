@@ -1,5 +1,7 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using OrderHub.Application.Commands;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
@@ -62,7 +64,8 @@ public class BroadcastOrderStatusCommandHandlerTests
         await dbContext.SaveChangesAsync();
 
         TestAppDbContextFactory factory = new TestAppDbContextFactory(dbContext);
-        BroadcastOrderStatusCommandHandler handler = new BroadcastOrderStatusCommandHandler(factory);
+        Mock<IMessenger> mock = new Mock<IMessenger>();
+        BroadcastOrderStatusCommandHandler handler = new BroadcastOrderStatusCommandHandler(factory, mock.Object);
 
         BroadcastOrderStatusCommand command = new BroadcastOrderStatusCommand(order.Id);
 
