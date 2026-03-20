@@ -76,9 +76,7 @@
 
         </Border>
 
-        <ContentControl
-            Margin="0,12,0,0"
-            Content="{Binding DeliveryMethodsViewModel}">
+        <ContentControl Margin="0,12,0,0" Content="{Binding DeliveryMethodsViewModel}">
             <ContentControl.Style>
                 <Style TargetType="ContentControl">
 
@@ -120,6 +118,16 @@
                                 <Setter.Value>
                                     <DataTemplate>
                                         <editorComponents:DeliverymenComponent />
+                                    </DataTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </DataTrigger>
+
+                        <DataTrigger Binding="{Binding DeliveryMethodsViewModel.SelecteddDeliveryMethod.Value}" Value="{x:Static enums:DeliveryMethod.DeliveryChain}">
+                            <Setter Property="ContentTemplate">
+                                <Setter.Value>
+                                    <DataTemplate>
+                                        <editorComponents:DeliveryChainsComponent />
                                     </DataTemplate>
                                 </Setter.Value>
                             </Setter>

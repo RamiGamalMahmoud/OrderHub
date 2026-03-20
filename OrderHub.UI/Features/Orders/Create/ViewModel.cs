@@ -10,16 +10,16 @@ namespace OrderHub.UI.Features.Orders.Create;
 
 internal class ViewModel : Editor.ViewModel
 {
-    public ViewModel(IMediator mediator, IMessenger messenger, IDialogService dialogService) : base(mediator, dialogService, messenger)
+    public ViewModel(IMediator mediator, IMessenger messenger, IDialogService dialogService)
+        : base(mediator, dialogService, messenger)
     {
         HasChanges = true;
     }
 
     public override string Title => "إنشاء طلب جديد";
+    public override string ActionName => "إتمام الطلب";
 
     public override bool CanSave => base.CanSave && OrderBuilder.ItemsCount > 0;
-
-    public override string ActionName => "إتمام الطلب";
 
     protected override async Task Save()
     {
@@ -32,18 +32,36 @@ internal class ViewModel : Editor.ViewModel
             .Build();
 
         Result<int> result = await _mediator.Send(new Application.Commands.OrderCommands.CreateOrderCommand(order));
-        if(result.IsSuccess)
+
+        if (result.IsSuccess)
         {
-            _messenger.Send(new Application.Messages.Orders.OrderCreatedMessage());
-            await _mediator.Publish(new Application.Notifications.SuccessNotification("تم انشاء الطلب بنجاح"));
-            await _mediator.Publish(new Application.Notifications.SuccessNotification("جاري ارسال الإشعارات"));
-            await _mediator.Send(new Application.Commands.OrderCommands.BroadcastOrderStatusCommand(result.Value));
-            OrderCreated = true;
-            //OnRequestClose();
+            await HandleOrderSuccess(result.Value);
+            OnRequestClose();
         }
         else
         {
-
+            await HandleOrderFailure();
         }
+    }
+
+    private async Task HandleOrderSuccess(int orderId)
+    {
+        _messenger.Send(new Application.Messages.Orders.OrderCreatedMessage());
+
+        await PublishSuccessNotification("تم انشاء الطلب بنجاح");
+
+        await _mediator.Send(new Application.Commands.OrderCommands.BroadcastOrderStatusCommand(orderId));
+
+        OrderCreated = true;
+    }
+
+    private async Task HandleOrderFailure()
+    {
+        await _mediator.Publish(new Application.Notifications.ErrorNotification("حدث خطأ أثناء إنشاء الطلب"));
+    }
+
+    private async Task PublishSuccessNotification(string message)
+    {
+        await _mediator.Publish(new Application.Notifications.SuccessNotification(message));
     }
 }

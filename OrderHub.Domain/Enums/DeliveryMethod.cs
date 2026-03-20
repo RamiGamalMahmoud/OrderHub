@@ -13,7 +13,10 @@ public enum DeliveryMethod
     DeliveryMan = 2,
 
     [Description("شركة شحن")]
-    ShippingCompany = 3
+    ShippingCompany = 3,
+
+    [Description("سلسلة توصيل")]
+    DeliveryChain = 4
 }
 
 public static class EnumExtensions

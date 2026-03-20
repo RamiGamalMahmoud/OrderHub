@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using Microsoft.IdentityModel.Abstractions;
+using OrderHub.Domain.Models;
 using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
 using System;
@@ -239,4 +240,6 @@ internal abstract partial class ViewModel : EditorViewModelBase
     private void ClearSelectedProduct() => SelectedProduct = null;
 
     private bool CanAddProduct() => SelectedProduct is not null && SubTotal > 0;
+
 }
+
