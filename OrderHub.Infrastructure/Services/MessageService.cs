@@ -1,8 +1,9 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +17,7 @@ internal class MessageService : IMessageService
     private readonly AppDbContextFactory _dbFactory;
     private readonly IMessageSender _messageSender;
     private readonly IMessenger _messenger;
+    private readonly SemaphoreSlim _stateLock = new(1, 1);
 
     private readonly ConcurrentQueue<OutboxMessage> _queue = new();
 
@@ -31,14 +33,22 @@ internal class MessageService : IMessageService
         _messageSender = messageSender;
         _messenger = messenger;
 
-        WeakReferenceMessenger.Default.Register<Application.Messages.Orders.MessagesCreatedMessage>(this, (r, m) => QueueMessages(m.OutboxMessages));
+        _messenger.Register<Application.Messages.Orders.MessagesCreatedMessage>(this, (r, m) => QueueMessages(m.OutboxMessages));
     }
 
-    public void QueueMessage(OutboxMessage message) => _queue.Enqueue(message);
+    public void QueueMessage(OutboxMessage message)
+    {
+        if (message?.Recipient is null)
+        {
+            return;
+        }
+
+        _queue.Enqueue(message);
+    }
 
     public void QueueMessages(IEnumerable<OutboxMessage> messages)
     {
-        foreach (OutboxMessage message in messages)
+        foreach (OutboxMessage message in messages.Where(message => message?.Recipient is not null))
         {
             _messenger.Send(new Application.Messages.Orders.AddingNewMessageToQueMessage(message.Recipient.Name));
             _queue.Enqueue(message);
@@ -47,78 +57,118 @@ internal class MessageService : IMessageService
 
     public async Task StartAsync()
     {
-        if (_worker != null)
-            return;
+        await _stateLock.WaitAsync();
 
-        _cts = new CancellationTokenSource();
+        try
+        {
+            if (_worker is { IsCompleted: false })
+            {
+                return;
+            }
 
-        await LoadMessagesAsync();
+            _cts?.Dispose();
+            _cts = new CancellationTokenSource();
 
-        _worker = Task.Run(ProcessLoop);
+            await LoadMessagesAsync(_cts.Token);
+
+            _worker = Task.Run(() => ProcessLoop(_cts.Token), _cts.Token);
+        }
+        finally
+        {
+            _stateLock.Release();
+        }
     }
 
-    private async Task LoadMessagesAsync()
+    private async Task LoadMessagesAsync(CancellationToken cancellationToken)
     {
         using AppDbContext appDbContext = _dbFactory.CreateDbContext();
 
         IEnumerable<OutboxMessage> pendingMessages = await appDbContext.OutboxMessages
             .Where(x => x.Status == OutboxMessageStatus.Pending)
             .Include(x => x.Recipient)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         QueueMessages(pendingMessages);
     }
 
-    private async Task ProcessLoop()
+    private async Task ProcessLoop(CancellationToken cancellationToken)
     {
-        while (!_cts.IsCancellationRequested)
+        while (!cancellationToken.IsCancellationRequested)
         {
             if (!_queue.TryDequeue(out OutboxMessage message))
             {
-                await Task.Delay(2000);
+                try
+                {
+                    await Task.Delay(2000, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+
                 continue;
             }
 
             try
             {
                 bool sent = await _messageSender.SendAsync(message.Recipient.PhoneNumber, message.Text);
-
-                using AppDbContext db = _dbFactory.CreateDbContext();
-
-                OutboxMessage entity = await db.OutboxMessages.FindAsync(message.Id);
-
-                if (entity == null)
-                    continue;
-
-                entity.Status = sent ? OutboxMessageStatus.Sent : OutboxMessageStatus.Failed;
-                entity.LastAttemptAt = System.DateTime.Now;
-                entity.SentAt = sent ? System.DateTime.Now : null;
-
-                await db.SaveChangesAsync();
-                _messenger.Send(new Application.Messages.OutboxMessages.MessageStatusChangedMessage(message.Id, entity.Status, entity.OrderId, entity.RecipientType));
+                await UpdateMessageStatusAsync(message.Id, sent ? OutboxMessageStatus.Sent : OutboxMessageStatus.Failed, sent);
             }
             catch
             {
-                using AppDbContext db = _dbFactory.CreateDbContext();
-
-                OutboxMessage entity = await db.OutboxMessages.FindAsync(message.Id);
-
-                if (entity != null)
-                {
-                    entity.Status = OutboxMessageStatus.Failed;
-                    entity.LastAttemptAt = System.DateTime.Now;
-                    await db.SaveChangesAsync();
-                    _messenger.Send(new Application.Messages.OutboxMessages.MessageStatusChangedMessage(entity.Id, entity.Status, entity.OrderId, entity.RecipientType));
-                }
+                await UpdateMessageStatusAsync(message.Id, OutboxMessageStatus.Failed, false);
             }
         }
     }
 
+    private async Task UpdateMessageStatusAsync(int messageId, OutboxMessageStatus status, bool sent)
+    {
+        using AppDbContext db = _dbFactory.CreateDbContext();
+
+        OutboxMessage entity = await db.OutboxMessages.FindAsync(messageId);
+        if (entity is null)
+        {
+            return;
+        }
+
+        entity.Status = status;
+        entity.LastAttemptAt = DateTime.Now;
+        entity.SentAt = sent ? DateTime.Now : null;
+
+        await db.SaveChangesAsync();
+        _messenger.Send(new Application.Messages.OutboxMessages.MessageStatusChangedMessage(
+            entity.Id,
+            entity.Status,
+            entity.OrderId,
+            entity.RecipientType));
+    }
+
     public async Task StopAsync()
     {
-        _cts?.Cancel();
+        await _stateLock.WaitAsync();
 
-        if (_worker != null)
-            await _worker;
+        try
+        {
+            _cts?.Cancel();
+
+            if (_worker is not null)
+            {
+                try
+                {
+                    await _worker;
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            }
+
+            _worker = null;
+            _cts?.Dispose();
+            _cts = null;
+        }
+        finally
+        {
+            _stateLock.Release();
+        }
     }
 }

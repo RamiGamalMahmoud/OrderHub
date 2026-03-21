@@ -96,8 +96,15 @@ internal partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenWhatapp()
     {
-        await _whatsappService.StartWhatsAppAsync();
+        bool started = await _whatsappService.StartWhatsAppAsync();
+        if (!started)
+        {
+            await _mediator.Publish(new Application.Notifications.ErrorNotification("تعذر تشغيل واتساب ويب."));
+            return;
+        }
+
         await _messageService.StartAsync();
+        await _mediator.Publish(new Application.Notifications.SuccessNotification("تم تشغيل واتساب ويب وخدمة الرسائل."));
     }
 
     [ObservableProperty]

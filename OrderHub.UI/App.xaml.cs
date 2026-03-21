@@ -255,6 +255,8 @@ public partial class App : System.Windows.Application
     protected override async void OnExit(ExitEventArgs e)
     {
         base.OnExit(e);
+        await GetService<IMessageService>().StopAsync();
+        GetService<IWhatsappService>().Close();
         await _host.StopAsync();
     }
 
