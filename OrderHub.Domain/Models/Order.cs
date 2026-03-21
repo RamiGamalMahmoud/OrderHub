@@ -42,6 +42,8 @@ public class Order : ModelBase
 
     public void AddDeliveryStep(OrderDeliveryStep deliveryStep) => _deliverySteps.Add(deliveryStep);
 
+    public void ChangeClient(int clientId) => ClientId = clientId;
+
     public void RemoveOrderItem(OrderItem orderItem)
     {
         OrderItem item = _orderItems.FirstOrDefault(i => i == orderItem);
@@ -51,6 +53,10 @@ public class Order : ModelBase
         }
         _orderItems.Remove(orderItem);
     }
+
+    public void ClearOrderItems() => _orderItems.Clear();
+
+    public void ClearDeliverySteps() => _deliverySteps.Clear();
 
     public void ChangeOrderStatus(OrderStatus orderStatus) => OrderStatus = orderStatus;
 }

@@ -25,7 +25,7 @@ namespace OrderHub.Infrastructure.Configurations
                 .HasColumnType("DECIMAL(18,2)")
                 .IsRequired();
 
-            builder.HasOne<Product>()
+            builder.HasOne(o => o.Product)
                 .WithMany()
                 .HasForeignKey(o => o.ProductId)
                 .OnDelete(DeleteBehavior.Restrict)

@@ -71,6 +71,7 @@ public static class ServiceCollectionExtensions
         // Orders
         services.AddSingleton<Features.Orders.Index.ViewModel>();
         services.AddTransient<Features.Orders.Create.ViewModel>();
+        services.AddTransient<Features.Orders.Edit.ViewModel>();
 
         // Messages
         services.AddSingleton<Features.Messages.Index.ViewModel>();
@@ -124,6 +125,7 @@ public static class ServiceCollectionExtensions
         // Orders
         services.AddSingleton<Features.Orders.Index.View>();
         services.AddTransient<Features.Orders.Create.View>();
+        services.AddTransient<Features.Orders.Edit.View>();
 
         // Messages
         services.AddSingleton<Features.Messages.Index.View>();

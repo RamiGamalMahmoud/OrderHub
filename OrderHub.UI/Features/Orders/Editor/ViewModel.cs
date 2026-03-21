@@ -7,6 +7,7 @@ using OrderHub.UI.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading;
@@ -26,6 +27,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
 
     private CancellationTokenSource _searchCts;
     private CancellationTokenSource _categoryCts;
+    private bool _suspendChangeTracking;
 
     public OrderBuilder OrderBuilder { get; }
     public ObservableCollection<OrderItemViewModel> OrderItems => OrderBuilder.Items;
@@ -42,15 +44,35 @@ internal abstract partial class ViewModel : EditorViewModelBase
 
         OrderBuilder = new OrderBuilder();
         DeliveryMethodsViewModel = new DeliveryMethodsViewModel();
+        _notifyPropertiesNames =
+        [
+            nameof(SelectedClient),
+            nameof(SelectedPaymentMethod),
+            nameof(SelectedCategory),
+            nameof(SelectedProduct),
+            nameof(Price),
+            nameof(Quantity)
+        ];
 
         OrderBuilder.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(OrderBuilder.TotalPrice))
+            {
+                MarkAsChanged();
                 SaveCommand.NotifyCanExecuteChanged();
+            }
         };
+
+        OrderBuilder.Items.CollectionChanged += OrderItems_CollectionChanged;
 
         DeliveryMethodsViewModel.ErrorsChanged += (_, _) =>
             SaveCommand.NotifyCanExecuteChanged();
+
+        DeliveryMethodsViewModel.PropertyChanged += (_, _) =>
+        {
+            MarkAsChanged();
+            SaveCommand.NotifyCanExecuteChanged();
+        };
 
         RegisterMessages();
     }
@@ -111,7 +133,11 @@ internal abstract partial class ViewModel : EditorViewModelBase
         RootCategories = await categoriesTask;
         PaymentMethods = await paymentsTask;
         Clients = await clientsTask;
+
+        await AfterLoadAsync();
     }
+
+    protected virtual Task AfterLoadAsync() => Task.CompletedTask;
 
 
     async partial void OnSearchTermChanged(string oldValue, string newValue)
@@ -232,4 +258,50 @@ internal abstract partial class ViewModel : EditorViewModelBase
     [RelayCommand]
     private void ShowCreateClient()
         => _dialogService.ShowDialog<Features.Clients.Create.View>();
+
+    protected async Task RunWithoutTrackingAsync(Func<Task> action)
+    {
+        _suspendChangeTracking = true;
+
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            _suspendChangeTracking = false;
+        }
+    }
+
+    protected void MarkAsChanged()
+    {
+        if (_suspendChangeTracking)
+            return;
+
+        HasChanges = true;
+    }
+
+    private void OrderItems_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.NewItems is not null)
+        {
+            foreach (OrderItemViewModel item in e.NewItems)
+                item.PropertyChanged += OrderItem_PropertyChanged;
+        }
+
+        if (e.OldItems is not null)
+        {
+            foreach (OrderItemViewModel item in e.OldItems)
+                item.PropertyChanged -= OrderItem_PropertyChanged;
+        }
+
+        MarkAsChanged();
+        SaveCommand.NotifyCanExecuteChanged();
+    }
+
+    private void OrderItem_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        MarkAsChanged();
+        SaveCommand.NotifyCanExecuteChanged();
+    }
 }

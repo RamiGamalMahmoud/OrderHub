@@ -155,6 +155,16 @@
                     Header="التاريخ"
                     IsReadOnly="True" />
 
+                <DataGridTemplateColumn Header="خيارات">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <buttons:ButtonEdit />
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
                 <DataGridTemplateColumn>
                     <DataGridTemplateColumn.Header>
                         <StackPanel Orientation="Horizontal">

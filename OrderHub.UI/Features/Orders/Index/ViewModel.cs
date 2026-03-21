@@ -5,6 +5,7 @@ using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
+using OrderHub.UI.Stores.Markers;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -19,6 +20,7 @@ namespace OrderHub.UI.Features.Orders.Index;
 internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 {
     private readonly IDialogService _dialogService;
+    private readonly ISelectionStore<IOrderMarker, int> _selectionStore;
 
     private readonly ObservableCollection<OrderViewModel> _orders = new();
     public ObservableCollection<OrderViewModel> Orders => _orders;
@@ -34,12 +36,21 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
     private CancellationTokenSource _searchCts;
 
-    public ViewModel(IMediator mediator, IMessenger messenger, IDialogService dialogService)
+    public ViewModel(
+        IMediator mediator,
+        IMessenger messenger,
+        IDialogService dialogService,
+        ISelectionStore<IOrderMarker, int> selectionStore)
         : base(mediator, messenger)
     {
         _dialogService = dialogService;
+        _selectionStore = selectionStore;
 
         messenger.Register<Application.Messages.Orders.OrderCreatedMessage>(
+            this,
+            async (_, _) => await ReloadAsync());
+
+        messenger.Register<Application.Messages.Orders.OrderUpdatedMessage>(
             this,
             async (_, _) => await ReloadAsync());
     }
@@ -150,7 +161,12 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         }
     }
 
-    protected override Task ShowEditAsync(OrderViewModel model) => Task.CompletedTask;
+    protected override Task ShowEditAsync(OrderViewModel model)
+    {
+        _selectionStore.Id = model.Id;
+        _dialogService.ShowDialog<Edit.View>();
+        return Task.CompletedTask;
+    }
 
     protected override Task DeleteAsync(OrderViewModel model) => Task.CompletedTask;
 

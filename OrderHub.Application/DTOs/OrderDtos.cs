@@ -12,6 +12,11 @@ public static class OrderDtos
         DeliveryMethod DeliveryMethod,
         int HandlerId);
 
+    public record OrderDeliveryStepEditDto(
+        int StepOrder,
+        DeliveryMethod DeliveryMethod,
+        int HandlerId);
+
     public record OrderListDto(
         int Id,
         string OrderNumber,
@@ -24,7 +29,38 @@ public static class OrderDtos
         PaymentMethodListDto PaymentMethod,
         DateTime CreatedAt);
 
+    public record OrderItemEditDto(
+        int ProductId,
+        string ProductName,
+        string CategoryName,
+        decimal UnitPrice,
+        int Quantity,
+        int? SupplierId,
+        string SupplierName,
+        IReadOnlyCollection<CommonDtos.SupplierInfoDto> Suppliers);
+
+    public record OrderEditDto(
+        int Id,
+        int ClientId,
+        DeliveryMethod DeliveryMethod,
+        int? DeliveryManId,
+        int? ShippingCarrierId,
+        int? PaymentMothodId,
+        IReadOnlyCollection<OrderItemEditDto> OrderItems,
+        IReadOnlyCollection<OrderDeliveryStepEditDto> DeliverySteps);
+
     public record OrderCreateDto(
+        int ClientId,
+        int OrderStatusId,
+        DeliveryMethod DeliveryMethod,
+        int? DeliveryManId,
+        int? ShippingCarrierId,
+        IEnumerable<OrderItemDtos.OrderItemDto> OrderItems,
+        IEnumerable<OrderDeliveryStepCreateDto> DeliverySteps,
+        int? PaymentMothodId);
+
+    public record OrderUpdateDto(
+        int Id,
         int ClientId,
         int OrderStatusId,
         DeliveryMethod DeliveryMethod,
