@@ -33,7 +33,15 @@ internal class GetOrdersPagedQueryHandler(AppDbContextFactory appDbContextFactor
                 o.OrderStatus,
                 new EnumItem<OrderStatus>(o.OrderStatus, o.OrderStatus.GetDescription()),
                 o.PaymentMethod == null ? null : new Application.DTOs.PaymentMothodsDtos.PaymentMethodListDto(o.PaymentMethod.Id, o.PaymentMethod.DisplayName, o.PaymentMethod.Description, o.PaymentMethod.IsActive),
-                o.CreatedAt
+                o.CreatedAt,
+                true,
+                o.OrderItems.Any(item => item.SupplierId != null),
+                o.ShippingCarrierId != null || o.DeliverySteps.Any(step => step.ShippingCarrierId != null),
+                o.DeliverymanId != null || o.DeliverySteps.Any(step => step.DeliverymanId != null),
+                o.OutboxMessages.Any(message => message.RecipientType == RecipientType.Client && message.Status == OutboxMessageStatus.Sent),
+                o.OutboxMessages.Any(message => message.RecipientType == RecipientType.Supplier && message.Status == OutboxMessageStatus.Sent),
+                o.OutboxMessages.Any(message => message.RecipientType == RecipientType.ShippingCarrier && message.Status == OutboxMessageStatus.Sent),
+                o.OutboxMessages.Any(message => message.RecipientType == RecipientType.Deliveryman && message.Status == OutboxMessageStatus.Sent)
             ));
 
         return await query.ToPagedResultAsync(request.PageNumber, request.PageSize, cancellationToken);

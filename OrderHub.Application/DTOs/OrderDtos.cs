@@ -27,7 +27,15 @@ public static class OrderDtos
         OrderStatus OrderStatus,
         EnumItem<OrderStatus> EnumItem,
         PaymentMethodListDto PaymentMethod,
-        DateTime CreatedAt);
+        DateTime CreatedAt,
+        bool HasClientRecipient,
+        bool HasSupplierRecipient,
+        bool HasShippingCarrierRecipient,
+        bool HasDeliverymanRecipient,
+        bool IsClientMessageSent,
+        bool IsSupplierMessageSent,
+        bool IsShippingCarrierMessageSent,
+        bool IsDeliverymanMessageSent);
 
     public record OrderItemEditDto(
         int ProductId,

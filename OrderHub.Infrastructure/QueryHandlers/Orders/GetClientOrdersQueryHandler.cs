@@ -23,7 +23,10 @@ internal class GetClientOrdersQueryHandler(AppDbContextFactory appDbContextFacto
             IEnumerable<Order> orders = await appDbContext.Orders
                 .Include(o => o.Client)
                     .ThenInclude(c => c.Phone)
+                .Include(o => o.PaymentMethod)
                 .Include(o => o.OrderItems)
+                .Include(o => o.DeliverySteps)
+                .Include(o => o.OutboxMessages)
                 .Where(o => o.Client.Name.Value.Contains(request.ClientName))
                 .ToListAsync(cancellationToken: cancellationToken);
 
@@ -37,7 +40,15 @@ internal class GetClientOrdersQueryHandler(AppDbContextFactory appDbContextFacto
                     o.OrderStatus,
                     new EnumItem<OrderStatus>(o.OrderStatus, o.OrderStatus.GetDescription()),
                     o.PaymentMethod == null ? null : new Application.DTOs.PaymentMothodsDtos.PaymentMethodListDto(o.PaymentMethod.Id, o.PaymentMethod.DisplayName, o.PaymentMethod.Description, o.PaymentMethod.IsActive),
-                    o.CreatedAt
+                    o.CreatedAt,
+                    true,
+                    o.OrderItems.Any(item => item.SupplierId is not null),
+                    o.ShippingCarrierId is not null || o.DeliverySteps.Any(step => step.ShippingCarrierId is not null),
+                    o.DeliverymanId is not null || o.DeliverySteps.Any(step => step.DeliverymanId is not null),
+                    o.OutboxMessages.Any(message => message.RecipientType == RecipientType.Client && message.Status == Domain.Enums.OutboxMessageStatus.Sent),
+                    o.OutboxMessages.Any(message => message.RecipientType == RecipientType.Supplier && message.Status == Domain.Enums.OutboxMessageStatus.Sent),
+                    o.OutboxMessages.Any(message => message.RecipientType == RecipientType.ShippingCarrier && message.Status == Domain.Enums.OutboxMessageStatus.Sent),
+                    o.OutboxMessages.Any(message => message.RecipientType == RecipientType.Deliveryman && message.Status == Domain.Enums.OutboxMessageStatus.Sent)
                     ));
         }
         catch (System.Exception)

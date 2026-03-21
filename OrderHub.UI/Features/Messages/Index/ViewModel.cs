@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using System;
@@ -99,6 +100,20 @@ public partial class ViewModel : ObservableObject
         OutboxMessages = new ObservableCollection<OutboxMessageViewModel>(
             filteredMessages.OrderByDescending(message => message.CreatedAt));
     }
+
+    [RelayCommand]
+    private async Task ResendMessage(OutboxMessageViewModel message)
+    {
+        Result result = await _mediator.Send(new Application.Commands.OutboxMessageCommands.ResendOutboxMessageCommand(message.Id));
+
+        if (!result.IsSuccess)
+        {
+            await _mediator.Publish(new Application.Notifications.ErrorNotification(result.ErrorMessage));
+            return;
+        }
+
+        await _mediator.Publish(new Application.Notifications.SuccessNotification("تمت إعادة جدولة الرسالة للإرسال."));
+    }
 }
 
 public partial class OutboxMessageViewModel : ObservableObject
@@ -107,6 +122,11 @@ public partial class OutboxMessageViewModel : ObservableObject
 
     [ObservableProperty]
     private EnumItem<OutboxMessageStatus> _status;
+
+    public bool CanResend => Status?.Value == OutboxMessageStatus.Failed;
+
+    partial void OnStatusChanged(EnumItem<OutboxMessageStatus> oldValue, EnumItem<OutboxMessageStatus> newValue)
+        => OnPropertyChanged(nameof(CanResend));
 
     public string OrderNumber { get; init; }
     public string RecipientName { get; init; }

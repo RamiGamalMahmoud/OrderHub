@@ -91,9 +91,11 @@ internal class MessageService : IMessageService
                     continue;
 
                 entity.Status = sent ? OutboxMessageStatus.Sent : OutboxMessageStatus.Failed;
+                entity.LastAttemptAt = System.DateTime.Now;
+                entity.SentAt = sent ? System.DateTime.Now : null;
 
                 await db.SaveChangesAsync();
-                _messenger.Send(new Application.Messages.OutboxMessages.MessageStatusChangedMessage(message.Id, entity.Status));
+                _messenger.Send(new Application.Messages.OutboxMessages.MessageStatusChangedMessage(message.Id, entity.Status, entity.OrderId, entity.RecipientType));
             }
             catch
             {
@@ -104,7 +106,9 @@ internal class MessageService : IMessageService
                 if (entity != null)
                 {
                     entity.Status = OutboxMessageStatus.Failed;
+                    entity.LastAttemptAt = System.DateTime.Now;
                     await db.SaveChangesAsync();
+                    _messenger.Send(new Application.Messages.OutboxMessages.MessageStatusChangedMessage(entity.Id, entity.Status, entity.OrderId, entity.RecipientType));
                 }
             }
         }

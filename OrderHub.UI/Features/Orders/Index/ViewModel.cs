@@ -58,6 +58,14 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         messenger.Register<Application.Messages.Orders.OrderDeletedMessage>(
             this,
             async (_, _) => await ReloadAsync());
+
+        messenger.Register<Application.Messages.OutboxMessages.MessageStatusChangedMessage>(
+            this,
+            (_, m) =>
+            {
+                OrderViewModel order = Orders.FirstOrDefault(item => item.Id == m.OrderId);
+                order?.UpdateRecipientStatus(m.RecipientType, m.NewStatus == Domain.Enums.OutboxMessageStatus.Sent);
+            });
     }
 
     // =========================
@@ -234,6 +242,14 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         o.Total,
         o.CreatedAt,
         o.PaymentMethod,
-        o.EnumItem
+        o.EnumItem,
+        o.HasClientRecipient,
+        o.HasSupplierRecipient,
+        o.HasShippingCarrierRecipient,
+        o.HasDeliverymanRecipient,
+        o.IsClientMessageSent,
+        o.IsSupplierMessageSent,
+        o.IsShippingCarrierMessageSent,
+        o.IsDeliverymanMessageSent
     );
 }

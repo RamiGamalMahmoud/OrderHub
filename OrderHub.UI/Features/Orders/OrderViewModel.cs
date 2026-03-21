@@ -29,7 +29,15 @@ public partial class OrderViewModel : ObservableObject
         decimal totalPrice,
         DateTime createdAt,
         PaymentMethodListDto paymentMethodListDto,
-        EnumItem<OrderStatus> orderStatus)
+        EnumItem<OrderStatus> orderStatus,
+        bool hasClientRecipient,
+        bool hasSupplierRecipient,
+        bool hasShippingCarrierRecipient,
+        bool hasDeliverymanRecipient,
+        bool isClientMessageSent,
+        bool isSupplierMessageSent,
+        bool isShippingCarrierMessageSent,
+        bool isDeliverymanMessageSent)
     {
         _mediator = mediator;
         Id = id;
@@ -41,6 +49,14 @@ public partial class OrderViewModel : ObservableObject
         CreatedAt = createdAt;
         _paymentMethod = paymentMethodListDto;
         _orderStatus = orderStatus;
+        HasClientRecipient = hasClientRecipient;
+        HasSupplierRecipient = hasSupplierRecipient;
+        HasShippingCarrierRecipient = hasShippingCarrierRecipient;
+        HasDeliverymanRecipient = hasDeliverymanRecipient;
+        IsClientMessageSent = isClientMessageSent;
+        IsSupplierMessageSent = isSupplierMessageSent;
+        IsShippingCarrierMessageSent = isShippingCarrierMessageSent;
+        IsDeliverymanMessageSent = isDeliverymanMessageSent;
     }
 
     public int Id { get; init; }
@@ -73,6 +89,39 @@ public partial class OrderViewModel : ObservableObject
     public DateTime CreatedAt { get; init; }
 
     [ObservableProperty]
+    private bool _hasClientRecipient;
+
+    [ObservableProperty]
+    private bool _hasSupplierRecipient;
+
+    [ObservableProperty]
+    private bool _hasShippingCarrierRecipient;
+
+    [ObservableProperty]
+    private bool _hasDeliverymanRecipient;
+
+    [ObservableProperty]
+    private bool _isClientMessageSent;
+
+    [ObservableProperty]
+    private bool _isSupplierMessageSent;
+
+    [ObservableProperty]
+    private bool _isShippingCarrierMessageSent;
+
+    [ObservableProperty]
+    private bool _isDeliverymanMessageSent;
+
+    public bool IsAllMessageSent =>
+        (!HasClientRecipient || IsClientMessageSent)
+        && (!HasSupplierRecipient || IsSupplierMessageSent)
+        && (!HasShippingCarrierRecipient || IsShippingCarrierMessageSent)
+        && (!HasDeliverymanRecipient || IsDeliverymanMessageSent);
+
+    public bool CanBroadcastAll =>
+        HasClientRecipient || HasSupplierRecipient || HasShippingCarrierRecipient || HasDeliverymanRecipient;
+
+    [ObservableProperty]
     private EnumItem<OrderStatus> _orderStatus;
     async partial void OnOrderStatusChanged(EnumItem<OrderStatus> oldValue, EnumItem<OrderStatus> newValue)
     {
@@ -90,5 +139,53 @@ public partial class OrderViewModel : ObservableObject
     private async Task ChangeOrderStatus(OrderStatus orderStatus)
     {
         await _mediator.Send(new Application.Commands.OrderCommands.ChangeOrderStatusCommand(Id, orderStatus));
+    }
+
+    partial void OnHasClientRecipientChanged(bool oldValue, bool newValue)
+    {
+        OnPropertyChanged(nameof(CanBroadcastAll));
+        OnPropertyChanged(nameof(IsAllMessageSent));
+    }
+
+    partial void OnHasSupplierRecipientChanged(bool oldValue, bool newValue)
+    {
+        OnPropertyChanged(nameof(CanBroadcastAll));
+        OnPropertyChanged(nameof(IsAllMessageSent));
+    }
+
+    partial void OnHasShippingCarrierRecipientChanged(bool oldValue, bool newValue)
+    {
+        OnPropertyChanged(nameof(CanBroadcastAll));
+        OnPropertyChanged(nameof(IsAllMessageSent));
+    }
+
+    partial void OnHasDeliverymanRecipientChanged(bool oldValue, bool newValue)
+    {
+        OnPropertyChanged(nameof(CanBroadcastAll));
+        OnPropertyChanged(nameof(IsAllMessageSent));
+    }
+
+    partial void OnIsClientMessageSentChanged(bool oldValue, bool newValue) => OnPropertyChanged(nameof(IsAllMessageSent));
+    partial void OnIsSupplierMessageSentChanged(bool oldValue, bool newValue) => OnPropertyChanged(nameof(IsAllMessageSent));
+    partial void OnIsShippingCarrierMessageSentChanged(bool oldValue, bool newValue) => OnPropertyChanged(nameof(IsAllMessageSent));
+    partial void OnIsDeliverymanMessageSentChanged(bool oldValue, bool newValue) => OnPropertyChanged(nameof(IsAllMessageSent));
+
+    public void UpdateRecipientStatus(RecipientType recipientType, bool isSent)
+    {
+        switch (recipientType)
+        {
+            case RecipientType.Client:
+                IsClientMessageSent = isSent;
+                break;
+            case RecipientType.Supplier:
+                IsSupplierMessageSent = isSent;
+                break;
+            case RecipientType.ShippingCarrier:
+                IsShippingCarrierMessageSent = isSent;
+                break;
+            case RecipientType.Deliveryman:
+                IsDeliverymanMessageSent = isSent;
+                break;
+        }
     }
 }
