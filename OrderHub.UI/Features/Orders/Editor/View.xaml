@@ -17,7 +17,6 @@
     x:ClassModifier="internal"
     FontFamily="{StaticResource FontFamily}"
     FontSize="14"
-    IsEnabled="{Binding OrderCreated, Converter={converters:BoolConverter Operand=False}}"
     WindowStartupLocation="CenterScreen"
     WindowState="Maximized"
     mc:Ignorable="d">
