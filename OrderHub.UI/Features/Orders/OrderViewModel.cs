@@ -1,5 +1,7 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using System;
 using System.Collections.Generic;
@@ -13,14 +15,17 @@ namespace OrderHub.UI.Features.Orders;
 public partial class OrderViewModel : ObservableObject
 {
     private readonly IMediator _mediator;
+    private readonly IMessenger _messenger;
 
-    public OrderViewModel(IMediator mediator)
+    public OrderViewModel(IMediator mediator, IMessenger messenger)
     {
         _mediator = mediator;
+        _messenger = messenger;
     }
 
     public OrderViewModel(
         IMediator mediator,
+        IMessenger messenger,
         int id,
         string orderNumber,
         string clientName,
@@ -40,6 +45,7 @@ public partial class OrderViewModel : ObservableObject
         bool isDeliverymanMessageSent)
     {
         _mediator = mediator;
+        _messenger = messenger;
         Id = id;
         OrderNumber = orderNumber;
         ClientName = clientName;
@@ -75,15 +81,24 @@ public partial class OrderViewModel : ObservableObject
 
     [ObservableProperty]
     private PaymentMethodListDto _paymentMethod;
+
     async partial void OnPaymentMethodChanged(PaymentMethodListDto oldValue, PaymentMethodListDto newValue)
     {
         if (newValue != null)
+        {
             await ChangePaymentMethod(newValue.Id);
+        }
     }
 
     private async Task ChangePaymentMethod(int paymentMethodId)
     {
-        await _mediator.Send(new Application.Commands.OrderCommands.ChangePaymentMethodCommand(Id, paymentMethodId));
+        Result result = await _mediator.Send(
+            new Application.Commands.OrderCommands.ChangePaymentMethodCommand(Id, paymentMethodId));
+
+        if (result.IsSuccess)
+        {
+            _messenger.Send(new Application.Messages.Orders.OrderUpdatedMessage());
+        }
     }
 
     public DateTime CreatedAt { get; init; }
@@ -123,6 +138,7 @@ public partial class OrderViewModel : ObservableObject
 
     [ObservableProperty]
     private EnumItem<OrderStatus> _orderStatus;
+
     async partial void OnOrderStatusChanged(EnumItem<OrderStatus> oldValue, EnumItem<OrderStatus> newValue)
     {
         await ChangeOrderStatus(newValue.Value);
@@ -138,7 +154,13 @@ public partial class OrderViewModel : ObservableObject
 
     private async Task ChangeOrderStatus(OrderStatus orderStatus)
     {
-        await _mediator.Send(new Application.Commands.OrderCommands.ChangeOrderStatusCommand(Id, orderStatus));
+        Result result = await _mediator.Send(
+            new Application.Commands.OrderCommands.ChangeOrderStatusCommand(Id, orderStatus));
+
+        if (result.IsSuccess)
+        {
+            _messenger.Send(new Application.Messages.Orders.OrderUpdatedMessage());
+        }
     }
 
     partial void OnHasClientRecipientChanged(bool oldValue, bool newValue)

@@ -22,10 +22,7 @@ internal class GetOrdersPagedQueryHandler(AppDbContextFactory appDbContextFactor
 
         var query = appDbContext.Orders
             .AsNoTracking()
-            .Where(o =>
-                (string.IsNullOrWhiteSpace(request.SearchTerm) || o.Client.Name.Value.Contains(request.SearchTerm))
-                && (!request.FromDate.HasValue || o.CreatedAt >= request.FromDate.Value.Date)
-                && (!request.ToDate.HasValue || o.CreatedAt < request.ToDate.Value.Date.AddDays(1)))
+            .ApplyFilter(request.SearchTerm, request.FromDate, request.ToDate, request.PaymentMethodId, request.OrderStatus)
             .OrderByDescending(o => o.CreatedAt)
             .Select(o => new OrderListDto(
                 o.Id,

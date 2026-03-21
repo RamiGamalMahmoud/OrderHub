@@ -1,5 +1,6 @@
 using MediatR;
 using OrderHub.Application.Common;
+using OrderHub.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using static OrderHub.Application.DTOs.OrderDtos;
@@ -14,7 +15,15 @@ public static class OrderQueries
         int PageSize = 20,
         string SearchTerm = null,
         DateTime? FromDate = null,
-        DateTime? ToDate = null) : IRequest<PagedResult<OrderListDto>>;
+        DateTime? ToDate = null,
+        int? PaymentMethodId = null,
+        OrderStatus? OrderStatus = null) : IRequest<PagedResult<OrderListDto>>;
+    public record GetOrdersSummaryQuery(
+        string SearchTerm = null,
+        DateTime? FromDate = null,
+        DateTime? ToDate = null,
+        int? PaymentMethodId = null,
+        OrderStatus? OrderStatus = null) : IRequest<OrderSummaryDto>;
     public record GetClientOrdersQuery(string ClientName) : IRequest<IEnumerable<OrderListDto>>;
     public record GetOrderForEditQuery(int OrderId) : IRequest<OrderEditDto>;
 }

@@ -37,6 +37,20 @@ public static class OrderDtos
         bool IsShippingCarrierMessageSent,
         bool IsDeliverymanMessageSent);
 
+    public record OrderStatusSummaryDto(
+        OrderStatus Status,
+        EnumItem<OrderStatus> EnumItem,
+        int Count);
+
+    public record OrderPaymentMethodSummaryDto(
+        int? PaymentMethodId,
+        string PaymentMethodName,
+        int Count);
+
+    public record OrderSummaryDto(
+        IReadOnlyCollection<OrderStatusSummaryDto> StatusSummaries,
+        IReadOnlyCollection<OrderPaymentMethodSummaryDto> PaymentMethodSummaries);
+
     public record OrderItemEditDto(
         int ProductId,
         string ProductName,

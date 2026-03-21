@@ -89,6 +89,23 @@
 
             <StackPanel Grid.Column="2" Orientation="Horizontal">
                 <Button
+                    Height="40"
+                    Margin="0,0,8,0"
+                    Command="{Binding ToggleSummaryCommand}"
+                    Cursor="Hand">
+                    <StackPanel Orientation="Horizontal">
+                        <icons:MaterialIcon
+                            Width="20"
+                            Margin="5,0"
+                            Kind="HamburgerMenu" />
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            FontWeight="DemiBold"
+                            Text="{Binding SummaryToggleText}" />
+                    </StackPanel>
+                </Button>
+                <Button
                     Grid.Column="2"
                     Height="40"
                     hc:BorderElement.CornerRadius="7"
@@ -112,226 +129,211 @@
         </Grid>
 
 
-        <StackPanel
-            Grid.Row="1"
-            Margin="0,0,0,8"
-            Orientation="Horizontal">
-            <TextBlock
-                Margin="0,0,8,0"
-                VerticalAlignment="Center"
-                FontWeight="DemiBold"
-                Text="من" />
-            <DatePicker
-                Width="140"
-                Margin="0,0,12,0"
-                Cursor="Hand"
-                SelectedDate="{Binding FromDate}" />
-            <TextBlock
-                Margin="0,0,8,0"
-                VerticalAlignment="Center"
-                FontWeight="DemiBold"
-                Text="إلى" />
-            <DatePicker
-                Width="140"
-                Cursor="Hand"
-                SelectedDate="{Binding ToDate}" />
-        </StackPanel>
+        <local:OrderFiltersBar Grid.Row="1" />
 
-        <DataGrid
-            Grid.Row="2"
-            d:ItemsSource="{d:SampleData}"
-            AutoGenerateColumns="False"
-            GridLinesVisibility="Vertical"
-            IsReadOnly="True"
-            ItemsSource="{Binding Orders, IsAsync=True}"
-            VerticalGridLinesBrush="LightGray">
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
-            <DataGrid.Columns>
+            <DataGrid
+                Grid.Column="0"
+                d:ItemsSource="{d:SampleData}"
+                AutoGenerateColumns="False"
+                GridLinesVisibility="Vertical"
+                IsReadOnly="True"
+                ItemsSource="{Binding Orders, IsAsync=True}"
+                VerticalGridLinesBrush="LightGray">
 
-                <DataGridTextColumn
-                    Binding="{Binding OrderNumber}"
-                    FontWeight="DemiBold"
-                    Header="رقم الطلب"
-                    IsReadOnly="False" />
+                <DataGrid.Columns>
 
-                <DataGridTextColumn
-                    Binding="{Binding ClientName}"
-                    Header="اسم العميل"
-                    IsReadOnly="True" />
+                    <DataGridTextColumn
+                        Binding="{Binding OrderNumber}"
+                        FontWeight="DemiBold"
+                        Header="رقم الطلب"
+                        IsReadOnly="False" />
 
-                <DataGridTemplateColumn
-                    Width="200"
-                    Header="حالة الطلب"
-                    SortMemberPath="DisplayName">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <local:OrderStatusComponent IsEnabled="{Binding CanEdit}" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                    <DataGridTextColumn
+                        Binding="{Binding ClientName}"
+                        Header="اسم العميل"
+                        IsReadOnly="True" />
 
-                <DataGridTemplateColumn
-                    Width="200"
-                    Header="وسيلة الدفع"
-                    SortMemberPath="DisplayName">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ComboBox
-                                Cursor="Hand"
-                                DisplayMemberPath="DisplayName"
-                                ItemsSource="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.PaymentMethods}"
-                                SelectedItem="{Binding PaymentMethod, UpdateSourceTrigger=PropertyChanged}" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                    <DataGridTemplateColumn
+                        Width="200"
+                        Header="حالة الطلب"
+                        SortMemberPath="DisplayName">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <local:OrderStatusComponent IsEnabled="{Binding CanEdit}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-                <DataGridTextColumn Binding="{Binding TotalPrice}" Header="إجمالي الطلب" />
+                    <DataGridTemplateColumn
+                        Width="200"
+                        Header="وسيلة الدفع"
+                        SortMemberPath="DisplayName">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox
+                                    Cursor="Hand"
+                                    DisplayMemberPath="DisplayName"
+                                    ItemsSource="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.PaymentMethods}"
+                                    SelectedItem="{Binding PaymentMethod, UpdateSourceTrigger=PropertyChanged}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="رقم الهاتف">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                FlowDirection="LeftToRight"
-                                FontWeight="DemiBold"
-                                Text="{Binding ClientPhoneNumber}" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                    <DataGridTextColumn Binding="{Binding TotalPrice}" Header="إجمالي الطلب" />
 
-                <DataGridTextColumn
-                    Binding="{Binding CreatedAt}"
-                    Header="التاريخ"
-                    IsReadOnly="True" />
+                    <DataGridTemplateColumn Header="رقم الهاتف">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FlowDirection="LeftToRight"
+                                    FontWeight="DemiBold"
+                                    Text="{Binding ClientPhoneNumber}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="خيارات">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
+                    <DataGridTextColumn
+                        Binding="{Binding CreatedAt}"
+                        Header="التاريخ"
+                        IsReadOnly="True" />
+
+                    <DataGridTemplateColumn Header="خيارات">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <buttons:ButtonEdit />
+                                    <buttons:ButtonDelete Margin="5,0" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn>
+                        <DataGridTemplateColumn.Header>
                             <StackPanel Orientation="Horizontal">
-                                <buttons:ButtonEdit />
-                                <buttons:ButtonDelete Margin="5,0" />
+                                <icons:MaterialIcon
+                                    Width="20"
+                                    Foreground="{StaticResource SuccessBrush}"
+                                    Kind="Whatsapp" />
+                                <TextBlock
+                                    Margin="5,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Foreground="{StaticResource SuccessBrush}"
+                                    Text="ارسال" />
                             </StackPanel>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                        </DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button
+                                        Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastOrderCommand}"
+                                        CommandParameter="{Binding}"
+                                        Content="All"
+                                        IsEnabled="{Binding CanBroadcastAll}">
+                                        <Button.Style>
+                                            <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsAllMessageSent}" Value="True">
+                                                        <Setter Property="Background" Value="#16a34a" />
+                                                        <Setter Property="Foreground" Value="White" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button
+                                        Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastClientCommand}"
+                                        CommandParameter="{Binding}"
+                                        Content="عميل"
+                                        IsEnabled="{Binding HasClientRecipient}">
+                                        <Button.Style>
+                                            <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsClientMessageSent}" Value="True">
+                                                        <Setter Property="Background" Value="#16a34a" />
+                                                        <Setter Property="Foreground" Value="White" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button
+                                        Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastSupplierCommand}"
+                                        CommandParameter="{Binding}"
+                                        Content="مورد"
+                                        IsEnabled="{Binding HasSupplierRecipient}">
+                                        <Button.Style>
+                                            <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsSupplierMessageSent}" Value="True">
+                                                        <Setter Property="Background" Value="#16a34a" />
+                                                        <Setter Property="Foreground" Value="White" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button
+                                        Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastShippingCarrierCommand}"
+                                        CommandParameter="{Binding}"
+                                        Content="شركة شحن"
+                                        IsEnabled="{Binding HasShippingCarrierRecipient}">
+                                        <Button.Style>
+                                            <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsShippingCarrierMessageSent}" Value="True">
+                                                        <Setter Property="Background" Value="#16a34a" />
+                                                        <Setter Property="Foreground" Value="White" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button
+                                        Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastDeliverymanCommand}"
+                                        CommandParameter="{Binding}"
+                                        Content="مندوب"
+                                        IsEnabled="{Binding HasDeliverymanRecipient}">
+                                        <Button.Style>
+                                            <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsDeliverymanMessageSent}" Value="True">
+                                                        <Setter Property="Background" Value="#16a34a" />
+                                                        <Setter Property="Foreground" Value="White" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
 
-                <DataGridTemplateColumn>
-                    <DataGridTemplateColumn.Header>
-                        <StackPanel Orientation="Horizontal">
-                            <icons:MaterialIcon
-                                Width="20"
-                                Foreground="{StaticResource SuccessBrush}"
-                                Kind="Whatsapp" />
-                            <TextBlock
-                                Margin="5,0,0,0"
-                                VerticalAlignment="Center"
-                                Foreground="{StaticResource SuccessBrush}"
-                                Text="ارسال" />
-                        </StackPanel>
-                    </DataGridTemplateColumn.Header>
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <Button
-                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastOrderCommand}"
-                                    CommandParameter="{Binding}"
-                                    Content="All"
-                                    IsEnabled="{Binding CanBroadcastAll}">
-                                    <Button.Style>
-                                        <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsAllMessageSent}" Value="True">
-                                                    <Setter Property="Background" Value="#16a34a" />
-                                                    <Setter Property="Foreground" Value="White" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-                                <Button
-                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastClientCommand}"
-                                    CommandParameter="{Binding}"
-                                    Content="عميل"
-                                    IsEnabled="{Binding HasClientRecipient}">
-                                    <Button.Style>
-                                        <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsClientMessageSent}" Value="True">
-                                                    <Setter Property="Background" Value="#16a34a" />
-                                                    <Setter Property="Foreground" Value="White" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-                                <Button
-                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastSupplierCommand}"
-                                    CommandParameter="{Binding}"
-                                    Content="مورد"
-                                    IsEnabled="{Binding HasSupplierRecipient}">
-                                    <Button.Style>
-                                        <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsSupplierMessageSent}" Value="True">
-                                                    <Setter Property="Background" Value="#16a34a" />
-                                                    <Setter Property="Foreground" Value="White" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-                                <Button
-                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastShippingCarrierCommand}"
-                                    CommandParameter="{Binding}"
-                                    Content="شركة شحن"
-                                    IsEnabled="{Binding HasShippingCarrierRecipient}">
-                                    <Button.Style>
-                                        <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsShippingCarrierMessageSent}" Value="True">
-                                                    <Setter Property="Background" Value="#16a34a" />
-                                                    <Setter Property="Foreground" Value="White" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-                                <Button
-                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastDeliverymanCommand}"
-                                    CommandParameter="{Binding}"
-                                    Content="مندوب"
-                                    IsEnabled="{Binding HasDeliverymanRecipient}">
-                                    <Button.Style>
-                                        <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsDeliverymanMessageSent}" Value="True">
-                                                    <Setter Property="Background" Value="#16a34a" />
-                                                    <Setter Property="Foreground" Value="White" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-                            </StackPanel>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-        </DataGrid>
+            <StackPanel
+                Grid.Column="1"
+                Margin="12,0,0,0"
+                Visibility="{Binding IsSummaryExpanded, Converter={converters:BoolToVisibilityConverter}}">
+                <local:OrderSummaryPanel />
+            </StackPanel>
+        </Grid>
 
         <DockPanel
             Grid.Row="3"
             Margin="0,10,0,0"
-            LastChildFill="False">
-            <TextBlock
-                Margin="0,0,10,0"
-                VerticalAlignment="Center"
-                DockPanel.Dock="Left"
-                FontWeight="DemiBold"
-                Text="{Binding PaginationSummary}" />
-
+            LastChildFill="True">
             <StackPanel
-                DockPanel.Dock="Right"
+                HorizontalAlignment="Left"
+                DockPanel.Dock="Left"
                 FlowDirection="LeftToRight"
                 Orientation="Horizontal">
                 <Button
@@ -344,6 +346,13 @@
                     Command="{Binding NextPageCommand}"
                     Content="التالي" />
             </StackPanel>
+
+            <TextBlock
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                DockPanel.Dock="Right"
+                FontWeight="DemiBold"
+                Text="{Binding PaginationSummary}" />
         </DockPanel>
     </Grid>
 </UserControl>

@@ -1,0 +1,74 @@
+<UserControl
+    x:Class="OrderHub.UI.Features.Orders.Index.OrderFiltersBar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <StackPanel
+        Margin="0,0,0,8"
+        Orientation="Horizontal">
+        <TextBlock
+            Margin="0,0,8,0"
+            VerticalAlignment="Center"
+            FontWeight="DemiBold"
+            Text="الدفع" />
+        <ComboBox
+            Width="160"
+            Margin="0,0,12,0"
+            Cursor="Hand"
+            DisplayMemberPath="DisplayName"
+            ItemsSource="{Binding PaymentMethodFilters}"
+            SelectedItem="{Binding SelectedPaymentMethod}" />
+        <TextBlock
+            Margin="0,0,8,0"
+            VerticalAlignment="Center"
+            FontWeight="DemiBold"
+            Text="الحالة" />
+        <ComboBox
+            Width="160"
+            Margin="0,0,12,0"
+            Cursor="Hand"
+            DisplayMemberPath="DisplayName"
+            ItemsSource="{Binding OrderStatusFilters}"
+            SelectedItem="{Binding SelectedOrderStatus}" />
+        <TextBlock
+            Margin="0,0,8,0"
+            VerticalAlignment="Center"
+            FontWeight="DemiBold"
+            Text="من" />
+        <DatePicker
+            Width="140"
+            Margin="0,0,12,0"
+            Cursor="Hand"
+            SelectedDate="{Binding FromDate}" />
+        <TextBlock
+            Margin="0,0,8,0"
+            VerticalAlignment="Center"
+            FontWeight="DemiBold"
+            Text="إلى" />
+        <DatePicker
+            Width="140"
+            Cursor="Hand"
+            SelectedDate="{Binding ToDate}" />
+        <Button
+            Height="auto"
+            Margin="12,0,0,0"
+            Command="{Binding SetTodayCommand}"
+            Content="اليوم"
+            Cursor="Hand" />
+        <Button
+            Height="auto"
+            Margin="8,0,0,0"
+            Command="{Binding SetCurrentWeekCommand}"
+            Content="الأسبوع الحالي"
+            Cursor="Hand" />
+        <Button
+            Height="auto"
+            Margin="8,0,0,0"
+            Command="{Binding SetCurrentMonthCommand}"
+            Content="الشهر الحالي"
+            Cursor="Hand" />
+    </StackPanel>
+</UserControl>
