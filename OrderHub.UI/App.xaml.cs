@@ -5,7 +5,6 @@ using OrderHub.Application.DTOs;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
-using OrderHub.UI.Features.MainWindow;
 using OrderHub.UI.StartUpSteps;
 using System;
 using System.Threading.Tasks;
@@ -42,11 +41,20 @@ public partial class App : System.Windows.Application
 
     private async Task StartAsync()
     {
-        IStartupPipeline startupPipeline = GetService<IStartupPipeline>();
+        try
+        {
+            await Dispatcher.Yield(DispatcherPriority.Render);
 
-        await startupPipeline.RunAsync();
+            IStartupPipeline startupPipeline = GetService<IStartupPipeline>();
 
-        ShowMainWindow();
+            await startupPipeline.RunAsync();
+
+            ShowMainWindow();
+        }
+        catch (Exception ex)
+        {
+            await HandleExceptionAsync(ex, "Application startup");
+        }
     }
 
     private async Task InitializeAsync()
@@ -69,7 +77,7 @@ public partial class App : System.Windows.Application
         }
         catch (Exception ex)
         {
-            await NotifyErrorAsync(ex.Message);
+            await HandleExceptionAsync(ex, "Legacy initialization");
         }
     }
 
@@ -216,7 +224,7 @@ public partial class App : System.Windows.Application
     private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
         Exception ex = e.ExceptionObject as Exception;
-        _ = NotifyErrorAsync(ex?.Message ?? "Unknown error");
+        _ = HandleExceptionAsync(ex ?? new Exception("Unknown error"), "AppDomain.CurrentDomain.UnhandledException");
     }
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
@@ -224,12 +232,13 @@ public partial class App : System.Windows.Application
 #if !DEBUG
         e.Handled = true;
 #endif
-        _ = NotifyErrorAsync(e.Exception.Message);
+        _ = HandleExceptionAsync(e.Exception, "DispatcherUnhandledException");
     }
 
     private void OnUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
     {
-        _ = NotifyErrorAsync(e.Exception.Message);
+        e.SetObserved();
+        _ = HandleExceptionAsync(e.Exception, "TaskScheduler.UnobservedTaskException");
     }
 
     #endregion
@@ -251,6 +260,26 @@ public partial class App : System.Windows.Application
     #region Helpers
 
     private T GetService<T>() => _host.Services.GetRequiredService<T>();
+
+    private async Task HandleExceptionAsync(Exception exception, string context)
+    {
+        try
+        {
+            IAppLogger logger = GetService<IAppLogger>();
+            await logger.LogErrorAsync($"Unhandled exception in {context}.", exception);
+        }
+        catch
+        {
+        }
+
+#if DEBUG
+        string message = exception.Message;
+#else
+        string message = "حدث خطأ غير متوقع. تم حفظ تفاصيل الخطأ في ملف السجل.";
+#endif
+
+        await NotifyErrorAsync(message);
+    }
 
     protected override async void OnExit(ExitEventArgs e)
     {

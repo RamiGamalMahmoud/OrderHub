@@ -11,6 +11,7 @@ public class TestApplicationDirectoriesService : IApplicationDirectoriesService
     public string TokenFilePath { get; }
     public string WhatAppProfilesPath { get; }
     public string DefaultWhatAppProfilePath { get; }
+    public string LogsPath { get; }
 
     public TestApplicationDirectoriesService(string databasePath)
     {
@@ -33,6 +34,11 @@ public class TestApplicationDirectoriesService : IApplicationDirectoriesService
     }
 
     public void EnsureWhatsAppProfilesDirectoryCreated()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public void EnsureLogsDirectoryCreated()
     {
         throw new System.NotImplementedException();
     }

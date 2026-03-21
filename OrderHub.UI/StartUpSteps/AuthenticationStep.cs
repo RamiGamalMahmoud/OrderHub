@@ -23,6 +23,7 @@ public class AuthenticationStep : IStartupStep
     }
 
     public int Order => 4;
+    public string DisplayName => "جاري التحقق من المصادقة";
 
     public async Task ExecuteAsync()
     {

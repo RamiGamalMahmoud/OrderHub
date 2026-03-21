@@ -16,6 +16,7 @@ public static class ServiceCollectionExtensions
         services.AddStartUpSteps();
         services.AddSingleton<Application.Interfaces.Services.INotifier, Services.Notifier>();
         services.AddSingleton<Application.Interfaces.Services.IAppState, Services.AppState>();
+        services.AddSingleton<Services.StartupProgress>();
         services.AddSingleton<Interfaces.INavigationService, Services.NavigationService>();
         services.AddSingleton<Interfaces.IDialogService, Services.DialogService>();
         services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);

@@ -13,6 +13,7 @@ public class PrepareDirectoriesStep : IStartupStep
     }
 
     public int Order => 1;
+    public string DisplayName => "جاري تجهيز المجلدات";
 
     public Task ExecuteAsync()
     {
@@ -20,6 +21,7 @@ public class PrepareDirectoriesStep : IStartupStep
         _dirs.EnsureStorageDirectoryCreated();
         _dirs.EnsureDatabaseFileCreated();
         _dirs.EnsureWhatsAppProfilesDirectoryCreated();
+        _dirs.EnsureLogsDirectoryCreated();
 
         return Task.CompletedTask;
     }

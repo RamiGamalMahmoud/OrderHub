@@ -18,6 +18,7 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient<Application.Interfaces.Services.IAuthService>();
         services.AddSingleton<Application.Interfaces.Services.IOrderService, Services.OrderService>();
         services.AddSingleton<Application.Interfaces.Services.IApplicationDirectoriesService, Services.ApplicationDirectoriesService>();
+        services.AddSingleton<Application.Interfaces.Services.IAppLogger, Services.FileAppLogger>();
         services.AddSingleton<Application.Interfaces.Services.IEncryptionService, Services.EncryptionService>();
         services.AddSingleton<Application.Interfaces.Services.ICredentialsService, Services.FileCredentialsService>();
         services.AddSingleton<Application.Interfaces.Services.ITokenStorageService, Services.FieTokenStorageService>();

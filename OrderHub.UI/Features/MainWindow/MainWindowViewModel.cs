@@ -48,7 +48,7 @@ internal partial class MainWindowViewModel : ObservableObject
 
     private void InitializeNavigationCommands()
     {
-        NavigationCommands.Add(new NavigationCommand("الصفحة الرئيسية", "Home", () => _navigationService.NavigateTo<Features.Home.HomeView>()));
+        NavigationCommands.Add(new NavigationCommand("الصفحة الرئيسية", "Home", () => throw new Exception()));
         NavigationCommands.Add(new NavigationCommand("الطلبات", "ListBox", () => _navigationService.NavigateTo<Features.Orders.Index.View>()));
         NavigationCommands.Add(new NavigationCommand("المنتجات", "Factory", () => _navigationService.NavigateTo<Features.Products.Index.View>()));
         NavigationCommands.Add(new NavigationCommand("الأقسام", "Factory", () => _navigationService.NavigateTo<Features.Categories.Index.View>()));

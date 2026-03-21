@@ -16,6 +16,7 @@ public class DatabaseInitializationStep : IStartupStep
     }
 
     public int Order => 2;
+    public string DisplayName => "جاري فحص قاعدة البيانات";
 
     public async Task ExecuteAsync()
     {

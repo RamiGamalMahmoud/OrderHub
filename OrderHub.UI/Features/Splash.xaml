@@ -23,13 +23,49 @@
             <ImageBrush ImageSource="/Resources/Images/OrderHub.png" Stretch="UniformToFill" />
         </Border.Background>
 
-        <ProgressBar
-            Height="5"
-            VerticalAlignment="Bottom"
-            Background="White"
-            BorderThickness="0"
-            Foreground="#1976D2"
-            IsIndeterminate="True" />
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Button
+                Grid.Row="0"
+                Width="34"
+                Height="34"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Background="#CCB71C1C"
+                BorderBrush="#00FFFFFF"
+                BorderThickness="0"
+                Click="CloseButton_Click"
+                Content="X"
+                Cursor="Hand"
+                FontSize="14"
+                FontWeight="Bold"
+                Foreground="White" />
+
+            <TextBlock
+                Grid.Row="2"
+                Margin="0,8"
+                HorizontalAlignment="Center"
+                FontSize="16"
+                FontWeight="DemiBold"
+                Text="{Binding Message}" />
+
+            <ProgressBar
+                Grid.Row="3"
+                Height="20"
+                VerticalAlignment="Bottom"
+                Background="#CCFFFFFF"
+                BorderThickness="0"
+                Foreground="#1976D2"
+                Maximum="100"
+                Minimum="0"
+                Value="{Binding Value}" />
+        </Grid>
 
     </Border>
 
