@@ -22,6 +22,10 @@ internal class GetOrdersPagedQueryHandler(AppDbContextFactory appDbContextFactor
 
         var query = appDbContext.Orders
             .AsNoTracking()
+            .Where(o =>
+                (string.IsNullOrWhiteSpace(request.SearchTerm) || o.Client.Name.Value.Contains(request.SearchTerm))
+                && (!request.FromDate.HasValue || o.CreatedAt >= request.FromDate.Value.Date)
+                && (!request.ToDate.HasValue || o.CreatedAt < request.ToDate.Value.Date.AddDays(1)))
             .OrderByDescending(o => o.CreatedAt)
             .Select(o => new OrderListDto(
                 o.Id,
@@ -29,7 +33,7 @@ internal class GetOrdersPagedQueryHandler(AppDbContextFactory appDbContextFactor
                 o.Client.Name.Value,
                 o.Client.Phone.Number.FullNumber,
                 o.OrderItems.Count,
-                o.OrderItems.Sum(oi => oi.SubTotal.Value),
+                o.OrderItems.Sum(oi => oi.UnitPrice.Value * oi.Quantity),
                 o.OrderStatus,
                 new EnumItem<OrderStatus>(o.OrderStatus, o.OrderStatus.GetDescription()),
                 o.PaymentMethod == null ? null : new Application.DTOs.PaymentMothodsDtos.PaymentMethodListDto(o.PaymentMethod.Id, o.PaymentMethod.DisplayName, o.PaymentMethod.Description, o.PaymentMethod.IsActive),

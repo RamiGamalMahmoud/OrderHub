@@ -13,6 +13,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using OrderHub.Application.Common;
 using static OrderHub.Application.DTOs.OrderDtos;
 using static OrderHub.Application.DTOs.PaymentMothodsDtos;
 
@@ -35,7 +36,31 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
     [ObservableProperty]
     private string _searchTerm;
 
+    [ObservableProperty]
+    private DateTime? _fromDate = DateTime.Today;
+
+    [ObservableProperty]
+    private DateTime? _toDate = DateTime.Today;
+
+    [ObservableProperty]
+    private int _currentPage = 1;
+
+    [ObservableProperty]
+    private int _pageSize = 4;
+
+    [ObservableProperty]
+    private int _totalPages;
+
+    [ObservableProperty]
+    private int _totalCount;
+
     private CancellationTokenSource _searchCts;
+
+    public bool CanGoPreviousPage => CurrentPage > 1;
+    public bool CanGoNextPage => CurrentPage < TotalPages;
+    public string PaginationSummary => TotalCount == 0
+        ? "لا توجد طلبات"
+        : $"الصفحة {CurrentPage} من {TotalPages} - إجمالي {TotalCount}";
 
     public ViewModel(
         IMediator mediator,
@@ -81,10 +106,7 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
             PaymentMethods = await _mediator.Send(
                 new Application.Queries.PaymentMothodQueries.GetPaymentMethodListQuery());
 
-            var orders = await _mediator.Send(
-                new Application.Queries.OrderQueries.GetOrdersQuery());
-
-            UpdateOrders(orders.Select(Map));
+            await LoadOrdersPageAsync();
         }
         catch (Exception ex)
         {
@@ -105,36 +127,30 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
     async partial void OnSearchTermChanged(string oldValue, string newValue)
     {
-        _searchCts?.Cancel();
-        _searchCts = new CancellationTokenSource();
-        var token = _searchCts.Token;
-
-        try
-        {
-            //await Task.Delay(400, token);
-
-            IsLoading = true;
-
-            var result = await _mediator.Send(
-                new Application.Queries.OrderQueries.GetClientOrdersQuery(newValue),
-                token);
-
-            UpdateOrders(result.Select(Map));
-        }
-        catch (OperationCanceledException)
-        {
-            // Ignore cancellation
-        }
-        catch (Exception ex)
-        {
-            await _mediator.Publish(
-                new Application.Notifications.AppliationNotification(ex.Message));
-        }
-        finally
-        {
-            IsLoading = false;
-        }
+        await RefreshWithPagingAsync();
     }
+
+    async partial void OnFromDateChanged(DateTime? oldValue, DateTime? newValue) => await RefreshWithPagingAsync();
+
+    async partial void OnToDateChanged(DateTime? oldValue, DateTime? newValue) => await RefreshWithPagingAsync();
+
+    partial void OnCurrentPageChanged(int oldValue, int newValue)
+    {
+        PreviousPageCommand.NotifyCanExecuteChanged();
+        NextPageCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(PaginationSummary));
+        OnPropertyChanged(nameof(CanGoPreviousPage));
+        OnPropertyChanged(nameof(CanGoNextPage));
+    }
+
+    partial void OnTotalPagesChanged(int oldValue, int newValue)
+    {
+        NextPageCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(PaginationSummary));
+        OnPropertyChanged(nameof(CanGoNextPage));
+    }
+
+    partial void OnTotalCountChanged(int oldValue, int newValue) => OnPropertyChanged(nameof(PaginationSummary));
 
 
     protected override Task ShowCreateAsync()
@@ -252,4 +268,80 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         o.IsShippingCarrierMessageSent,
         o.IsDeliverymanMessageSent
     );
+
+    [RelayCommand(CanExecute = nameof(CanGoPreviousPage))]
+    private async Task PreviousPage()
+    {
+        if (CurrentPage <= 1)
+        {
+            return;
+        }
+
+        CurrentPage--;
+        await LoadOrdersPageAsync();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanGoNextPage))]
+    private async Task NextPage()
+    {
+        if (CurrentPage >= TotalPages)
+        {
+            return;
+        }
+
+        CurrentPage++;
+        await LoadOrdersPageAsync();
+    }
+
+    private async Task RefreshWithPagingAsync()
+    {
+        CurrentPage = 1;
+
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+        CancellationToken token = _searchCts.Token;
+
+        try
+        {
+            await LoadOrdersPageAsync(token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task LoadOrdersPageAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            IsLoading = true;
+
+            PagedResult<OrderListDto> pagedOrders = await _mediator.Send(
+                new Application.Queries.OrderQueries.GetOrdersPagedQuery(
+                    CurrentPage,
+                    PageSize,
+                    SearchTerm,
+                    FromDate,
+                    ToDate),
+                cancellationToken);
+
+            TotalPages = pagedOrders.TotalPages;
+            TotalCount = pagedOrders.TotalCount;
+            CurrentPage = pagedOrders.PageNumber;
+
+            UpdateOrders(pagedOrders.Items.Select(Map));
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            await _mediator.Publish(
+                new Application.Notifications.AppliationNotification(ex.Message));
+        }
+        finally
+        {
+            IsLoading = false;
+            PreviousPageCommand.NotifyCanExecuteChanged();
+            NextPageCommand.NotifyCanExecuteChanged();
+            OnPropertyChanged(nameof(PaginationSummary));
+        }
+    }
 }

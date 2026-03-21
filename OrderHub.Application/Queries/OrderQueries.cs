@@ -1,5 +1,6 @@
-﻿using MediatR;
+using MediatR;
 using OrderHub.Application.Common;
+using System;
 using System.Collections.Generic;
 using static OrderHub.Application.DTOs.OrderDtos;
 
@@ -8,7 +9,12 @@ namespace OrderHub.Application.Queries;
 public static class OrderQueries
 {
     public record GetOrdersQuery : IRequest<IEnumerable<OrderListDto>>;
-    public record GetOrdersPagedQuery(int PageNumber = 1, int PageSize = 20) : IRequest<PagedResult<OrderListDto>>;
+    public record GetOrdersPagedQuery(
+        int PageNumber = 1,
+        int PageSize = 20,
+        string SearchTerm = null,
+        DateTime? FromDate = null,
+        DateTime? ToDate = null) : IRequest<PagedResult<OrderListDto>>;
     public record GetClientOrdersQuery(string ClientName) : IRequest<IEnumerable<OrderListDto>>;
     public record GetOrderForEditQuery(int OrderId) : IRequest<OrderEditDto>;
 }
