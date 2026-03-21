@@ -35,6 +35,11 @@ internal class UpdateSupplierCommandHandler(AppDbContextFactory appDbContextFact
         supplier.UpdateBuisnessHours(request.Dto.OpenAt, request.Dto.CloseAt);
         supplier.Address.ChangeCity(city);
         supplier.Address.ChangeStreet(request.Dto.Street);
+        await Services.OutboxRecipientPhoneUpdater.UpdateSupplierPhoneAsync(
+            appDbContext,
+            supplier.Id,
+            supplier.Phone.Number.FullNumber,
+            cancellationToken);
 
         try
         {

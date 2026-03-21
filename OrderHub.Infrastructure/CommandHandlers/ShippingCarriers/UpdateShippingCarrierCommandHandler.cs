@@ -34,6 +34,11 @@ internal class UpdateShippingCarrierCommandHandler(AppDbContextFactory appDbCont
         shippingCarrier.Address.ChangeCity(selectedCity);
         shippingCarrier.Address.ChangeStreet(request.Dto.Street);
         shippingCarrier.ChangeShippingCost(request.Dto.ShippingCost);
+        await Services.OutboxRecipientPhoneUpdater.UpdateShippingCarrierPhoneAsync(
+            appDbContext,
+            shippingCarrier.Id,
+            shippingCarrier.Phone.Number.FullNumber,
+            cancellationToken);
 
         try
         {

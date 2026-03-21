@@ -27,6 +27,11 @@ internal class UpdateDeliverymanCommandHandler(AppDbContextFactory appDbContextF
         deliveryman.Rename(request.DeliverymanUpdateDto.Name);
         deliveryman.PhoneNumber = request.DeliverymanUpdateDto.PhoneNumber;
         deliveryman.ChangeCity(city);
+        await Services.OutboxRecipientPhoneUpdater.UpdateDeliverymanPhoneAsync(
+            appDbContext,
+            deliveryman.Id,
+            deliveryman.PhoneNumber,
+            cancellationToken);
 
         try
         {
