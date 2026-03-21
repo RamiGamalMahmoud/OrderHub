@@ -5,6 +5,7 @@ using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
 using OrderHub.UI.Stores.Markers;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.SupplierDtos;
 
@@ -14,6 +15,7 @@ internal partial class SuppliersViewModel : IndexViewModelBase<SupplierListDto>
 {
     private readonly IDialogService _dialogService;
     private readonly ISelectionStore<ISupplierMarker, int> _selectionStore;
+    private List<SupplierListDto> _allSuppliers = [];
 
     public SuppliersViewModel(IMediator mediator, IDialogService dialogService, ISelectionStore<ISupplierMarker, int> selectionStore, IMessenger messenger) : base(mediator, messenger)
     {
@@ -27,12 +29,14 @@ internal partial class SuppliersViewModel : IndexViewModelBase<SupplierListDto>
 
     protected override async Task LoadAsync()
     {
-        Suppliers = await _mediator.Send(new Application.Queries.SupplierQueries.GetAllSuppliersQuery());
+        _allSuppliers = (await _mediator.Send(new Application.Queries.SupplierQueries.GetAllSuppliersQuery())).ToList();
+        ApplyFilter();
     }
 
     protected override async Task ReloadAsync()
     {
-        Suppliers = await _mediator.Send(new Application.Queries.SupplierQueries.GetAllSuppliersQuery());
+        _allSuppliers = (await _mediator.Send(new Application.Queries.SupplierQueries.GetAllSuppliersQuery())).ToList();
+        ApplyFilter();
     }
 
     protected override Task ShowEditAsync(SupplierListDto dto)
@@ -68,4 +72,25 @@ internal partial class SuppliersViewModel : IndexViewModelBase<SupplierListDto>
 
     private IEnumerable<SupplierListDto> _supplierListDtos;
     public IEnumerable<SupplierListDto> Suppliers { get => _supplierListDtos; private set => SetProperty(ref _supplierListDtos, value); }
+
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
+    private string _searchTerm;
+
+    partial void OnSearchTermChanged(string oldValue, string newValue) => ApplyFilter();
+
+    private void ApplyFilter()
+    {
+        IEnumerable<SupplierListDto> filtered = _allSuppliers;
+
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            string term = SearchTerm.Trim();
+            filtered = filtered.Where(supplier =>
+                supplier.Name?.Contains(term) == true
+                || supplier.Address?.Contains(term) == true
+                || supplier.PhoneNumber?.Contains(term) == true);
+        }
+
+        Suppliers = filtered.ToList();
+    }
 }

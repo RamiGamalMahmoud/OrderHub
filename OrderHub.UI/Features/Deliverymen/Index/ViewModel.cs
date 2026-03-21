@@ -5,6 +5,7 @@ using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
 using OrderHub.UI.Stores.Markers;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.DeliverymanDtos;
 
@@ -15,6 +16,7 @@ public partial class ViewModel : IndexViewModelBase<DeliverymanListDto>
     private readonly ISelectionStore<IDeliverymanMarker, int> _selectionStore;
     private readonly IDialogService _dialogService;
     private IEnumerable<DeliverymanListDto> _deliverymen;
+    private List<DeliverymanListDto> _allDeliverymen = [];
 
     public ViewModel(IMessenger messenger, IMediator mediator, ISelectionStore<IDeliverymanMarker, int> selectionStore, IDialogService dialogService) : base(mediator,messenger)
     {
@@ -28,17 +30,19 @@ public partial class ViewModel : IndexViewModelBase<DeliverymanListDto>
 
     protected override async Task LoadAsync()
     {
-        Deliverymen = await _mediator.Send(new Application.Queries.DeliverymanQueries.GetAllDeliverymenListQuery());
+        _allDeliverymen = (await _mediator.Send(new Application.Queries.DeliverymanQueries.GetAllDeliverymenListQuery())).ToList();
+        ApplyFilter();
     }
 
     protected override async Task ReloadAsync()
     {
-        Deliverymen = await _mediator.Send(new Application.Queries.DeliverymanQueries.GetAllDeliverymenListQuery());
+        _allDeliverymen = (await _mediator.Send(new Application.Queries.DeliverymanQueries.GetAllDeliverymenListQuery())).ToList();
+        ApplyFilter();
     }
 
     protected override async Task DeleteAsync(DeliverymanListDto deliveryman)
     {
-        if (_dialogService.Confirm("") is not true)
+        if (_dialogService.Confirm($"هل تريد حذف المندوب ({deliveryman.Name})؟") is not true)
         {
             return;
         }
@@ -72,5 +76,26 @@ public partial class ViewModel : IndexViewModelBase<DeliverymanListDto>
     {
         get => _deliverymen;
         set => SetProperty(ref _deliverymen, value);
+    }
+
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
+    private string _searchTerm;
+
+    partial void OnSearchTermChanged(string oldValue, string newValue) => ApplyFilter();
+
+    private void ApplyFilter()
+    {
+        IEnumerable<DeliverymanListDto> filtered = _allDeliverymen;
+
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            string term = SearchTerm.Trim();
+            filtered = filtered.Where(deliveryman =>
+                deliveryman.Name?.Contains(term) == true
+                || deliveryman.CityName?.Contains(term) == true
+                || deliveryman.PhoneNumber?.Contains(term) == true);
+        }
+
+        Deliverymen = filtered.ToList();
     }
 }

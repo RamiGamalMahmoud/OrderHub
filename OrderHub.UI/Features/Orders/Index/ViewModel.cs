@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
+using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
 using OrderHub.UI.Stores.Markers;
@@ -51,6 +52,10 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
             async (_, _) => await ReloadAsync());
 
         messenger.Register<Application.Messages.Orders.OrderUpdatedMessage>(
+            this,
+            async (_, _) => await ReloadAsync());
+
+        messenger.Register<Application.Messages.Orders.OrderDeletedMessage>(
             this,
             async (_, _) => await ReloadAsync());
     }
@@ -133,14 +138,33 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
     [RelayCommand]
     private async Task BroadcastOrder(OrderViewModel model)
     {
-        Result result = await _mediator.Send(
-            new Application.Commands.OrderCommands.BroadcastOrderStatusCommand(model.Id));
+        await BroadcastOrderAsync(model, null);
+    }
 
-        if (!result.IsSuccess)
+    [RelayCommand]
+    private Task BroadcastClient(OrderViewModel model) => BroadcastOrderAsync(model, RecipientType.Client);
+
+    [RelayCommand]
+    private Task BroadcastSupplier(OrderViewModel model) => BroadcastOrderAsync(model, RecipientType.Supplier);
+
+    [RelayCommand]
+    private Task BroadcastShippingCarrier(OrderViewModel model) => BroadcastOrderAsync(model, RecipientType.ShippingCarrier);
+
+    [RelayCommand]
+    private Task BroadcastDeliveryman(OrderViewModel model) => BroadcastOrderAsync(model, RecipientType.Deliveryman);
+
+    private async Task BroadcastOrderAsync(OrderViewModel model, RecipientType? recipientType)
+    {
+        Result result = await _mediator.Send(
+            new Application.Commands.OrderCommands.BroadcastOrderStatusCommand(model.Id, recipientType));
+
+        if (result.IsSuccess)
         {
-            await _mediator.Publish(
-                new Application.Notifications.AppliationNotification(result.ErrorMessage));
+            return;
         }
+
+        await _mediator.Publish(
+            new Application.Notifications.AppliationNotification(result.ErrorMessage));
     }
 
     [RelayCommand]
@@ -168,7 +192,27 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         return Task.CompletedTask;
     }
 
-    protected override Task DeleteAsync(OrderViewModel model) => Task.CompletedTask;
+    protected override async Task DeleteAsync(OrderViewModel model)
+    {
+        if (!_dialogService.Confirm($"هل تريد حذف الطلب ({model.OrderNumber})؟"))
+        {
+            return;
+        }
+
+        Result result = await _mediator.Send(
+            new Application.Commands.OrderCommands.DeleteOrderCommand(model.Id));
+
+        if (!result.IsSuccess)
+        {
+            await _mediator.Publish(
+                new Application.Notifications.ErrorNotification(result.ErrorMessage));
+            return;
+        }
+
+        _messenger.Send(new Application.Messages.Orders.OrderDeletedMessage(model.Id));
+        await _mediator.Publish(
+            new Application.Notifications.SuccessNotification("تم حذف الطلب بنجاح."));
+    }
 
 
     private void UpdateOrders(IEnumerable<OrderViewModel> newOrders)

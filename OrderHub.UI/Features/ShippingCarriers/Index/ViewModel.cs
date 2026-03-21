@@ -5,6 +5,7 @@ using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
 using OrderHub.UI.Stores.Markers;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.ShippingCarriersDtos;
 
@@ -15,6 +16,7 @@ public partial class ViewModel : IndexViewModelBase<ShippingCarrierListDto>
     private readonly ISelectionStore<IShippingCarrierMarker, int> _selectionStore;
     private readonly IDialogService _dialogService;
     private IEnumerable<ShippingCarrierListDto> _shippingCarriers;
+    private List<ShippingCarrierListDto> _allShippingCarriers = [];
 
     public ViewModel(IMediator mediator, IMessenger messenger, ISelectionStore<IShippingCarrierMarker, int> selectionStore, IDialogService dialogService) : base(mediator, messenger)
     {
@@ -44,12 +46,14 @@ public partial class ViewModel : IndexViewModelBase<ShippingCarrierListDto>
 
     protected override async Task LoadAsync()
     {
-        ShippingCarriers = await _mediator.Send(new Application.Queries.ShippingCarriersQueries.GetShippingCarriersQuery());
+        _allShippingCarriers = (await _mediator.Send(new Application.Queries.ShippingCarriersQueries.GetShippingCarriersQuery())).ToList();
+        ApplyFilter();
     }
 
     protected override async Task ReloadAsync()
     {
-        ShippingCarriers = await _mediator.Send(new Application.Queries.ShippingCarriersQueries.GetShippingCarriersQuery());
+        _allShippingCarriers = (await _mediator.Send(new Application.Queries.ShippingCarriersQueries.GetShippingCarriersQuery())).ToList();
+        ApplyFilter();
     }
 
     protected override Task ShowCreateAsync()
@@ -66,4 +70,25 @@ public partial class ViewModel : IndexViewModelBase<ShippingCarrierListDto>
     }
 
     public IEnumerable<ShippingCarrierListDto> ShippingCarriers { get => _shippingCarriers; private set => SetProperty(ref _shippingCarriers, value); }
+
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
+    private string _searchTerm;
+
+    partial void OnSearchTermChanged(string oldValue, string newValue) => ApplyFilter();
+
+    private void ApplyFilter()
+    {
+        IEnumerable<ShippingCarrierListDto> filtered = _allShippingCarriers;
+
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            string term = SearchTerm.Trim();
+            filtered = filtered.Where(carrier =>
+                carrier.Name?.Contains(term) == true
+                || carrier.PhoneNumber?.Contains(term) == true
+                || carrier.Address?.Contains(term) == true);
+        }
+
+        ShippingCarriers = filtered.ToList();
+    }
 }

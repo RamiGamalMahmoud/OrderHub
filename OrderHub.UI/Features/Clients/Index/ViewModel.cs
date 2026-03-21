@@ -6,6 +6,7 @@ using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
 using OrderHub.UI.Stores.Markers;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.ClientDtos;
 
@@ -15,6 +16,7 @@ public partial class ViewModel : IndexViewModelBase<ClientListDto>
 {
     private readonly IDialogService _dialogService;
     private readonly ISelectionStore<IClientMarker, int> _selectionStore;
+    private List<ClientListDto> _allClients = [];
 
     public ViewModel(IMediator mediator, IDialogService dialogService, ISelectionStore<IClientMarker, int> selectionStore, IMessenger messenger) : base(mediator, messenger)
     {
@@ -45,12 +47,14 @@ public partial class ViewModel : IndexViewModelBase<ClientListDto>
 
     protected override async Task LoadAsync()
     {
-        Clients = await _mediator.Send(new Application.Queries.ClientQueries.GetAllClientsQuery());
+        _allClients = (await _mediator.Send(new Application.Queries.ClientQueries.GetAllClientsQuery())).ToList();
+        ApplyFilter();
     }
 
     protected override async Task ReloadAsync()
     {
-        Clients = await _mediator.Send(new Application.Queries.ClientQueries.GetAllClientsQuery());
+        _allClients = (await _mediator.Send(new Application.Queries.ClientQueries.GetAllClientsQuery())).ToList();
+        ApplyFilter();
     }
 
     protected override Task ShowEditAsync(ClientListDto dto)
@@ -68,4 +72,25 @@ public partial class ViewModel : IndexViewModelBase<ClientListDto>
 
     [ObservableProperty]
     private IEnumerable<ClientListDto> _clients;
+
+    [ObservableProperty]
+    private string _searchTerm;
+
+    partial void OnSearchTermChanged(string oldValue, string newValue) => ApplyFilter();
+
+    private void ApplyFilter()
+    {
+        IEnumerable<ClientListDto> filtered = _allClients;
+
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            string term = SearchTerm.Trim();
+            filtered = filtered.Where(client =>
+                client.Name?.Contains(term) == true
+                || client.Address?.Contains(term) == true
+                || client.PhoneNumber?.Contains(term) == true);
+        }
+
+        Clients = filtered.ToList();
+    }
 }

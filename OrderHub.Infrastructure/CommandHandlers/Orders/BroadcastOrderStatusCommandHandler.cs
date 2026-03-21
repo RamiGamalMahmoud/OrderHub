@@ -34,9 +34,20 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
 
             List<OutboxMessage> outboxMessages = new List<OutboxMessage>();
 
-            outboxMessages.Add(NotifyClient(order));
-            outboxMessages.AddRange(NotifSuppliers(order));
-            outboxMessages.AddRange(NotifyDeliveryRecipients(order));
+            if (request.RecipientType is null or RecipientType.Client)
+            {
+                outboxMessages.Add(NotifyClient(order));
+            }
+
+            if (request.RecipientType is null or RecipientType.Supplier)
+            {
+                outboxMessages.AddRange(NotifSuppliers(order));
+            }
+
+            if (request.RecipientType is null or RecipientType.Deliveryman or RecipientType.ShippingCarrier)
+            {
+                outboxMessages.AddRange(NotifyDeliveryRecipients(order, request.RecipientType));
+            }
 
             appDbContext.OutboxMessages.AddRange(outboxMessages);
             try
@@ -169,7 +180,7 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
             {
                 OrderId = order.Id,
                 RecipientType = RecipientType.Deliveryman,
-                Text = "",
+                Text = BuildDeliveryMessage(order, "مندوب التوصيل"),
                 Status = OutboxMessageStatus.Pending,
                 Recipient = new DeliverymanRecipient()
                 {
@@ -188,7 +199,7 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
             {
                 OrderId = order.Id,
                 RecipientType = RecipientType.Deliveryman,
-                Text = "",
+                Text = BuildDeliveryMessage(order, "مندوب التوصيل"),
                 Status = OutboxMessageStatus.Pending,
                 Recipient = new DeliverymanRecipient()
                 {
@@ -207,7 +218,7 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
             {
                 OrderId = order.Id,
                 RecipientType = RecipientType.ShippingCarrier,
-                Text = "",
+                Text = BuildDeliveryMessage(order, "شركة الشحن"),
                 Status = OutboxMessageStatus.Pending,
                 Recipient = new ShippingCarrierRecipient()
                 {
@@ -225,7 +236,7 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
             {
                 OrderId = order.Id,
                 RecipientType = RecipientType.ShippingCarrier,
-                Text = "",
+                Text = BuildDeliveryMessage(order, "شركة الشحن"),
                 Status = OutboxMessageStatus.Pending,
                 Recipient = new ShippingCarrierRecipient()
                 {
@@ -237,7 +248,7 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
             return outboxMessage;
         }
 
-        private IEnumerable<OutboxMessage> NotifyDeliveryRecipients(Order order)
+        private IEnumerable<OutboxMessage> NotifyDeliveryRecipients(Order order, RecipientType? recipientType = null)
         {
             if (order.DeliveryMethod == DeliveryMethod.DeliveryChain)
             {
@@ -245,6 +256,10 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
                     .OrderBy(step => step.StepOrder)
                     .GroupBy(step => new { step.DeliveryMethod, step.DeliverymanId, step.ShippingCarrierId })
                     .Select(group => group.First())
+                    .Where(step =>
+                        recipientType is null
+                        || (recipientType == RecipientType.Deliveryman && step.DeliveryMethod == DeliveryMethod.DeliveryMan)
+                        || (recipientType == RecipientType.ShippingCarrier && step.DeliveryMethod == DeliveryMethod.ShippingCompany))
                     .Select(step => step.DeliveryMethod switch
                     {
                         DeliveryMethod.DeliveryMan when step.Deliveryman is not null => NotifyDeliveryman(order, step.Deliveryman),
@@ -257,17 +272,44 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
 
             List<OutboxMessage> outboxMessages = new List<OutboxMessage>();
 
-            if (order.Deliveryman is not null)
+            if (order.Deliveryman is not null && (recipientType is null or RecipientType.Deliveryman))
             {
                 outboxMessages.Add(NotifyDeliveryman(order));
             }
 
-            if (order.ShippingCarrier is not null)
+            if (order.ShippingCarrier is not null && (recipientType is null or RecipientType.ShippingCarrier))
             {
                 outboxMessages.Add(NotifyShippingCarrier(order));
             }
 
             return outboxMessages;
+        }
+
+        private string BuildDeliveryMessage(Order order, string recipientRole)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            sb.AppendLine($"*إشعار إلى {recipientRole}*");
+            sb.AppendLine($"*رقم الطلب:* {order.OrderNumber}");
+            sb.AppendLine($"*التاريخ:* {order.CreatedAt:yyyy-MM-dd HH:mm}");
+            sb.AppendLine($"*العميل:* {order.Client.Name.Value}");
+            sb.AppendLine($"*رقم العميل:* {order.Client.Phone.Number.FullNumber}");
+            sb.AppendLine($"*العنوان:* {order.Client.Address.FullAddress}");
+            sb.AppendLine("-----------------------------");
+            sb.AppendLine("*المنتجات*");
+
+            int index = 1;
+            foreach (var item in order.OrderItems)
+            {
+                sb.AppendLine($"{index}- {item.ProductName} x {item.Quantity}");
+                index++;
+            }
+
+            sb.AppendLine("-----------------------------");
+            sb.AppendLine($"*عدد المنتجات:* {order.OrderItems.Count}");
+            sb.AppendLine($"*الإجمالي:* {order.Total.Value:0.00}");
+
+            return sb.ToString();
         }
     }
 }

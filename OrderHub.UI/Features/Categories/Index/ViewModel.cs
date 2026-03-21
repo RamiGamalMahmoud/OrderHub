@@ -19,6 +19,7 @@ namespace OrderHub.UI.Features.Categories.Index
     {
         private readonly IDialogService _dialogService;
         private readonly ISelectionStore<ICategoryMarker, int> _selectionStore;
+        private List<CategoryListDto> _allCategories = [];
 
         public ViewModel(IMediator mediator, IDialogService dialogService, ISelectionStore<ICategoryMarker, int> selectionStore, IMessenger messenger) : base(mediator, messenger)
         {
@@ -58,13 +59,15 @@ namespace OrderHub.UI.Features.Categories.Index
 
         protected override async Task LoadAsync()
         {
-            CategoriesList = await _mediator.Send(new Application.Queries.CategoryQueries.GetCategoryListQuery(null));
+            _allCategories = (await _mediator.Send(new Application.Queries.CategoryQueries.GetCategoryListQuery(null))).ToList();
             _selectedCategoriesList.Clear();
+            ApplyFilter();
         }
 
         protected override async Task ReloadAsync()
         {
-            CategoriesList = await _mediator.Send(new Application.Queries.CategoryQueries.GetCategoryListQuery(null));
+            _allCategories = (await _mediator.Send(new Application.Queries.CategoryQueries.GetCategoryListQuery(null))).ToList();
+            ApplyFilter();
         }
 
         protected override Task ShowCreateAsync()
@@ -96,7 +99,8 @@ namespace OrderHub.UI.Features.Categories.Index
             }
             _selectedCategoriesList.Add(dto);
 
-            CategoriesList = await _mediator.Send(new Application.Queries.CategoryQueries.GetCategoryListQuery(dto.Id));
+            _allCategories = (await _mediator.Send(new Application.Queries.CategoryQueries.GetCategoryListQuery(dto.Id))).ToList();
+            ApplyFilter();
         }
 
         [RelayCommand]
@@ -145,11 +149,26 @@ namespace OrderHub.UI.Features.Categories.Index
         private IEnumerable<CategoryListDto> _categoriesList;
 
         [ObservableProperty]
-        private string _searchTirm;
+        private string _searchTerm;
+
+        partial void OnSearchTermChanged(string oldValue, string newValue) => ApplyFilter();
 
         private readonly ObservableCollection<CategoryListDto> _selectedCategoriesList = [];
         public IEnumerable<CategoryListDto> SelectedCategoriesList => _selectedCategoriesList;
         [ObservableProperty]
         private CategoryListDto _selectedCategory;
+
+        private void ApplyFilter()
+        {
+            IEnumerable<CategoryListDto> filtered = _allCategories;
+
+            if (!string.IsNullOrWhiteSpace(SearchTerm))
+            {
+                string term = SearchTerm.Trim();
+                filtered = filtered.Where(category => category.Name?.Contains(term) == true);
+            }
+
+            CategoriesList = filtered.ToList();
+        }
     }
 }

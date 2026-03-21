@@ -160,6 +160,7 @@
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
                                 <buttons:ButtonEdit />
+                                <buttons:ButtonDelete Margin="5,0" />
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
@@ -194,24 +195,32 @@
                                     Height="auto"
                                     Margin="5,0"
                                     BorderThickness="0"
+                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastClientCommand}"
+                                    CommandParameter="{Binding}"
                                     Content="عميل"
                                     Cursor="Hand" />
                                 <Button
                                     Height="auto"
                                     Margin="5,0"
                                     BorderThickness="0"
+                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastSupplierCommand}"
+                                    CommandParameter="{Binding}"
                                     Content="مورد"
                                     Cursor="Hand" />
                                 <Button
                                     Height="auto"
                                     Margin="5,0"
                                     BorderThickness="0"
+                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastShippingCarrierCommand}"
+                                    CommandParameter="{Binding}"
                                     Content="شركة شحن"
                                     Cursor="Hand" />
                                 <Button
                                     Height="auto"
                                     Margin="5,0"
                                     BorderThickness="0"
+                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastDeliverymanCommand}"
+                                    CommandParameter="{Binding}"
                                     Content="مندوب"
                                     Cursor="Hand" />
                             </StackPanel>
