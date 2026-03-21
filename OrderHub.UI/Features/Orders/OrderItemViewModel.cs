@@ -1,16 +1,23 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System;
+using OrderHub.Domain.Models;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace OrderHub.UI.Features.Orders;
 
-public partial class OrderItemViewModel : ObservableObject
+public partial class OrderItemViewModel : ObservableValidator
 {
+    // =========================
+    // 📦 Static Data
+    // =========================
+
     public required string ProductName { get; init; }
     public required string CategoryName { get; init; }
     public int ProductId { get; init; }
+
+    // =========================
+    // 💰 Pricing
+    // =========================
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SubTotal))]
@@ -20,35 +27,42 @@ public partial class OrderItemViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(SubTotal))]
     private decimal _quantity;
 
-    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
-    {
-        base.OnPropertyChanged(e);
-        if(e.PropertyName== nameof(Price) || e.PropertyName == nameof(Quantity))
-        {
-            OnSubTotalChanged(this, EventArgs.Empty);
-        }
-    }
-
-    public event EventHandler SubTotalChanged;
-    private void OnSubTotalChanged(object sender, EventArgs e) => SubTotalChanged?.Invoke(this, e);
-
     public decimal SubTotal => Price * Quantity;
 
-    [Required]
-    public string SupplierName { get; set; }
-    [Required]
-    public int? SupplierId { get; set; }
+    // =========================
+    // 🏢 Supplier
+    // =========================
 
     [ObservableProperty]
     private OrderItemSupplier _supplier;
+
+    [ObservableProperty]
+    [Required(ErrorMessage = "Supplier is required")]
+    private string _supplierName;
+
+    [ObservableProperty]
+    [Required(ErrorMessage = "Supplier must be selected")]
+    private int? _supplierId;
 
     partial void OnSupplierChanged(OrderItemSupplier oldValue, OrderItemSupplier newValue)
     {
         SupplierName = newValue?.Name;
         SupplierId = newValue?.Id;
+
+        ValidateAllProperties();
     }
 
-    public IEnumerable<OrderItemSupplier> Suppliers { get; set; } = [];
+    // =========================
+    // 📋 Data Source
+    // =========================
+
+    public IEnumerable<OrderItemSupplier> Suppliers { get; init; } = [];
+
+    // =========================
+    // 🧪 Validation API
+    // =========================
+
+    public bool IsValid => !HasErrors;
 }
 
 public record OrderItemSupplier(int Id, string Name);

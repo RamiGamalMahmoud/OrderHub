@@ -4,9 +4,12 @@ using OrderHub.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using static OrderHub.Application.DTOs.CommonDtos;
+using static OrderHub.Application.DTOs.OrderDtos;
 
 namespace OrderHub.UI.Features.Orders.Editor;
 
@@ -14,6 +17,7 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
 {
     public DeliveryMethodsViewModel()
     {
+        DeliverySteps.CollectionChanged += DeliverySteps_CollectionChanged;
         ValidateAllProperties();
     }
 
@@ -33,6 +37,7 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
     {
         SelectedDeliveryman = null;
         SelectedShippingCarrier = null;
+        ValidateProperty(SelecteddDeliveryMethod, nameof(SelecteddDeliveryMethod));
     }
 
     [ObservableProperty]
@@ -65,9 +70,6 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
 
     public ObservableCollection<DeliveryStepViewModel> DeliverySteps { get; set; } = [];
 
-    // ================================
-    // Validation
-    // ================================
     public static ValidationResult ValidateDeliveryMethod(EnumItem<DeliveryMethod> deliveryMethod, ValidationContext context)
     {
         if (context.ObjectInstance is not DeliveryMethodsViewModel viewModel || deliveryMethod is null)
@@ -81,22 +83,26 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
             DeliveryMethod.ShippingCompany when viewModel.SelectedShippingCarrier is null
                 => new ValidationResult("Shipping carrier is required"),
 
+            DeliveryMethod.DeliveryChain when !viewModel.DeliverySteps.Any()
+                => new ValidationResult("At least one delivery step is required"),
+
+            DeliveryMethod.DeliveryChain when viewModel.DeliverySteps.Any(step => step.SelectedHandler is null)
+                => new ValidationResult("Each delivery step must have a selected handler"),
+
             DeliveryMethod.Pickup => ValidationResult.Success,
 
             _ => ValidationResult.Success,
         };
     }
 
-    // ================================
-    // Commands
-    // ================================
 
     [RelayCommand]
     private void AddDeliverymanStep()
     {
-        DeliverySteps.Add(new DeliveryStepViewModel()
+        DeliverySteps.Add(new DeliveryStepViewModel
         {
-            Handlers = Deliverymen.Select(d => new Handler(d.Id, d.Name)),
+            Handlers = (Deliverymen ?? Enumerable.Empty<DeliverymanInfoDto>()).Select(d => new Handler(d.Id, d.Name)),
+            Method = DeliveryMethod.DeliveryMan,
             Type = DeliveryMethod.DeliveryMan.GetDescription(),
             StepOrder = DeliverySteps.Count + 1
         });
@@ -105,9 +111,10 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
     [RelayCommand]
     private void AddShippingCarrierStep()
     {
-        DeliverySteps.Add(new DeliveryStepViewModel()
+        DeliverySteps.Add(new DeliveryStepViewModel
         {
-            Handlers = ShippingCarriers.Select(d => new Handler(d.Id, d.Name)),
+            Handlers = (ShippingCarriers ?? Enumerable.Empty<ShippingCarrierInfoDto>()).Select(d => new Handler(d.Id, d.Name)),
+            Method = DeliveryMethod.ShippingCompany,
             Type = DeliveryMethod.ShippingCompany.GetDescription(),
             StepOrder = DeliverySteps.Count + 1
         });
@@ -118,6 +125,12 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
     {
         DeliverySteps.Remove(step);
         ResetSelectedDeliveryStepsOrder();
+        if (ReferenceEquals(SelectedDeliveryStep, step))
+        {
+            SelectedDeliveryStep = null;
+        }
+
+        ValidateProperty(SelecteddDeliveryMethod, nameof(SelecteddDeliveryMethod));
     }
 
     [RelayCommand(CanExecute = nameof(CanMoveDeliveryStepDown))]
@@ -168,6 +181,49 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
             DeliverySteps[i].StepOrder = i + 1;
         }
     }
+
+    public IEnumerable<OrderDeliveryStepCreateDto> BuildDeliverySteps()
+    {
+        return DeliverySteps
+            .Where(step => step.SelectedHandler is not null)
+            .OrderBy(step => step.StepOrder)
+            .Select(step => new OrderDeliveryStepCreateDto(
+                step.StepOrder,
+                step.Method,
+                step.SelectedHandler.Id));
+    }
+
+    private void DeliverySteps_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.NewItems is not null)
+        {
+            foreach (DeliveryStepViewModel step in e.NewItems)
+            {
+                step.PropertyChanged += DeliveryStep_PropertyChanged;
+            }
+        }
+
+        if (e.OldItems is not null)
+        {
+            foreach (DeliveryStepViewModel step in e.OldItems)
+            {
+                step.PropertyChanged -= DeliveryStep_PropertyChanged;
+            }
+        }
+
+        MoveDeliveryStepUpCommand.NotifyCanExecuteChanged();
+        MoveDeliveryStepDownCommand.NotifyCanExecuteChanged();
+        RemoveDeliveryStepCommand.NotifyCanExecuteChanged();
+        ValidateProperty(SelecteddDeliveryMethod, nameof(SelecteddDeliveryMethod));
+    }
+
+    private void DeliveryStep_PropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(DeliveryStepViewModel.SelectedHandler))
+        {
+            ValidateProperty(SelecteddDeliveryMethod, nameof(SelecteddDeliveryMethod));
+        }
+    }
 }
 
 public record Handler(int Id, string Name);
@@ -176,6 +232,7 @@ public partial class DeliveryStepViewModel : ObservableObject
 {
     public int Id { get; set; }
     public int OrderId { get; set; }
+    public DeliveryMethod Method { get; set; }
 
     [ObservableProperty]
     private int _stepOrder;

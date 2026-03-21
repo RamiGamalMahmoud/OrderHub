@@ -25,6 +25,8 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
                 .Orders
                 .Include(o => o.ShippingCarrier).ThenInclude(s => s.Phone)
                 .Include(o => o.Deliveryman)
+                .Include(o => o.DeliverySteps).ThenInclude(step => step.Deliveryman)
+                .Include(o => o.DeliverySteps).ThenInclude(step => step.ShippingCarrier).ThenInclude(carrier => carrier.Phone)
                 .Include(o => o.OrderItems).ThenInclude(oi => oi.Supplier).ThenInclude(s => s.Phone)
                 .Include(o => o.Client).ThenInclude(c => c.Phone)
                 .Include(o => o.Client).ThenInclude(c => c.Address).ThenInclude(a => a.City)
@@ -34,11 +36,7 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
 
             outboxMessages.Add(NotifyClient(order));
             outboxMessages.AddRange(NotifSuppliers(order));
-            if (order.Deliveryman is not null)
-                outboxMessages.Add(NotifyDeliveryman(order));
-
-            if (order.ShippingCarrier is not null)
-                outboxMessages.Add(NotifyShippingCarrier(order));
+            outboxMessages.AddRange(NotifyDeliveryRecipients(order));
 
             appDbContext.OutboxMessages.AddRange(outboxMessages);
             try
@@ -184,6 +182,25 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
             return outboxMessage;
         }
 
+        private OutboxMessage NotifyDeliveryman(Order order, Deliveryman deliveryman)
+        {
+            OutboxMessage outboxMessage = new OutboxMessage()
+            {
+                OrderId = order.Id,
+                RecipientType = RecipientType.Deliveryman,
+                Text = "",
+                Status = OutboxMessageStatus.Pending,
+                Recipient = new DeliverymanRecipient()
+                {
+                    DeliveryManId = deliveryman.Id,
+                    Name = deliveryman.Name.Value,
+                    PhoneNumber = deliveryman.PhoneNumber
+                }
+            };
+
+            return outboxMessage;
+        }
+
         private OutboxMessage NotifyShippingCarrier(Order order)
         {
             OutboxMessage outboxMessage = new OutboxMessage()
@@ -200,6 +217,57 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
                 }
             };
             return outboxMessage;
+        }
+
+        private OutboxMessage NotifyShippingCarrier(Order order, ShippingCarrier shippingCarrier)
+        {
+            OutboxMessage outboxMessage = new OutboxMessage()
+            {
+                OrderId = order.Id,
+                RecipientType = RecipientType.ShippingCarrier,
+                Text = "",
+                Status = OutboxMessageStatus.Pending,
+                Recipient = new ShippingCarrierRecipient()
+                {
+                    ShippingCarrierId = shippingCarrier.Id,
+                    Name = shippingCarrier.Name.Value,
+                    PhoneNumber = shippingCarrier.Phone.Number.FullNumber
+                }
+            };
+            return outboxMessage;
+        }
+
+        private IEnumerable<OutboxMessage> NotifyDeliveryRecipients(Order order)
+        {
+            if (order.DeliveryMethod == DeliveryMethod.DeliveryChain)
+            {
+                return order.DeliverySteps
+                    .OrderBy(step => step.StepOrder)
+                    .GroupBy(step => new { step.DeliveryMethod, step.DeliverymanId, step.ShippingCarrierId })
+                    .Select(group => group.First())
+                    .Select(step => step.DeliveryMethod switch
+                    {
+                        DeliveryMethod.DeliveryMan when step.Deliveryman is not null => NotifyDeliveryman(order, step.Deliveryman),
+                        DeliveryMethod.ShippingCompany when step.ShippingCarrier is not null => NotifyShippingCarrier(order, step.ShippingCarrier),
+                        _ => null
+                    })
+                    .Where(message => message is not null)
+                    .ToList();
+            }
+
+            List<OutboxMessage> outboxMessages = new List<OutboxMessage>();
+
+            if (order.Deliveryman is not null)
+            {
+                outboxMessages.Add(NotifyDeliveryman(order));
+            }
+
+            if (order.ShippingCarrier is not null)
+            {
+                outboxMessages.Add(NotifyShippingCarrier(order));
+            }
+
+            return outboxMessages;
         }
     }
 }

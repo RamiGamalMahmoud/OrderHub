@@ -31,6 +31,12 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasMany(o => o.DeliverySteps)
+            .WithOne(step => step.Order)
+            .HasForeignKey(step => step.OrderId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.Property(o => o.DeliveryMethod)
             .HasConversion<string>()
             .IsRequired(false);

@@ -75,6 +75,58 @@ public class DeliveryMethodsViewModelTests
         deliveryMethodsViewModel.HasErrors.Should().BeFalse();
     }
 
+    [Fact]
+    public void DeliveryMethodsViewModelHasErrors_ShouldBeTrue_WithDeliveryMethodDeliveryChainAndNoSteps()
+    {
+        DeliveryMethodsViewModel deliveryMethodsViewModel = DeliveryMethodsViewModel;
+
+        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.Where(d => d.Value == Domain.Enums.DeliveryMethod.DeliveryChain).FirstOrDefault();
+
+        deliveryMethodsViewModel.HasErrors.Should().BeTrue();
+        deliveryMethodsViewModel.GetErrors().Select(e => e.ErrorMessage).Should().Contain("At least one delivery step is required");
+    }
+
+    [Fact]
+    public void DeliveryMethodsViewModelHasErrors_ShouldBeTrue_WithDeliveryMethodDeliveryChainAndStepWithoutHandler()
+    {
+        DeliveryMethodsViewModel deliveryMethodsViewModel = DeliveryMethodsViewModel;
+
+        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.Where(d => d.Value == Domain.Enums.DeliveryMethod.DeliveryChain).FirstOrDefault();
+        deliveryMethodsViewModel.AddDeliverymanStepCommand.Execute(null);
+
+        deliveryMethodsViewModel.HasErrors.Should().BeTrue();
+        deliveryMethodsViewModel.GetErrors().Select(e => e.ErrorMessage).Should().Contain("Each delivery step must have a selected handler");
+    }
+
+    [Fact]
+    public void DeliveryMethodsViewModelHasErrors_ShouldBeFalse_WithDeliveryMethodDeliveryChainAndAllStepsHaveHandlers()
+    {
+        DeliveryMethodsViewModel deliveryMethodsViewModel = DeliveryMethodsViewModel;
+
+        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.Where(d => d.Value == Domain.Enums.DeliveryMethod.DeliveryChain).FirstOrDefault();
+        deliveryMethodsViewModel.AddDeliverymanStepCommand.Execute(null);
+        deliveryMethodsViewModel.AddShippingCarrierStepCommand.Execute(null);
+
+        deliveryMethodsViewModel.DeliverySteps[0].SelectedHandler = deliveryMethodsViewModel.DeliverySteps[0].Handlers.First();
+        deliveryMethodsViewModel.DeliverySteps[1].SelectedHandler = deliveryMethodsViewModel.DeliverySteps[1].Handlers.First();
+
+        deliveryMethodsViewModel.HasErrors.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RemoveDeliveryStep_ShouldResetStepOrder()
+    {
+        DeliveryMethodsViewModel deliveryMethodsViewModel = DeliveryMethodsViewModel;
+
+        deliveryMethodsViewModel.AddDeliverymanStepCommand.Execute(null);
+        deliveryMethodsViewModel.AddShippingCarrierStepCommand.Execute(null);
+        deliveryMethodsViewModel.AddDeliverymanStepCommand.Execute(null);
+
+        deliveryMethodsViewModel.RemoveDeliveryStepCommand.Execute(deliveryMethodsViewModel.DeliverySteps[1]);
+
+        deliveryMethodsViewModel.DeliverySteps.Select(step => step.StepOrder).Should().Equal([1, 2]);
+    }
+
     private DeliveryMethodsViewModel DeliveryMethodsViewModel => new DeliveryMethodsViewModel
     {
         Deliverymen =

@@ -1,8 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using static OrderHub.Application.DTOs.OrderDtos;
 using static OrderHub.Application.DTOs.OrderItemDtos;
@@ -11,78 +12,84 @@ namespace OrderHub.UI.Features.Orders.Editor;
 
 public partial class OrderBuilder : ObservableObject
 {
-
     private int _clientId;
     private int? _deliverymanId;
     private int? _shippingCarrierId;
+    private IEnumerable<OrderDeliveryStepCreateDto> _deliverySteps = [];
 
-    [ObservableProperty]
-    private decimal _totalPrice;
-
-    public int ItemsCount => Items.Count;
     private DeliveryMethod _deliveryMethod;
     private int? _paymentMethodId;
 
     public ObservableCollection<OrderItemViewModel> Items { get; } = new();
 
-    public event EventHandler ItemsChanged;
+    [ObservableProperty]
+    private decimal _totalPrice;
+
+    public int ItemsCount => Items.Count;
 
     public OrderBuilder()
     {
-        Items.CollectionChanged += (s, e) =>
+        Items.CollectionChanged += (_, e) =>
         {
+            if (e.NewItems != null)
+            {
+                foreach (OrderItemViewModel item in e.NewItems)
+                    Attach(item);
+            }
+
+            if (e.OldItems != null)
+            {
+                foreach (OrderItemViewModel item in e.OldItems)
+                    Detach(item);
+            }
+
             RecalculateTotals();
-            ItemsChanged?.Invoke(this, EventArgs.Empty);
             OnPropertyChanged(nameof(ItemsCount));
         };
     }
 
+    private void Attach(OrderItemViewModel item)
+    {
+        item.PropertyChanged += Item_PropertyChanged;
+    }
+
+    private void Detach(OrderItemViewModel item)
+    {
+        item.PropertyChanged -= Item_PropertyChanged;
+    }
+
+    private void Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(OrderItemViewModel.SubTotal))
+        {
+            RecalculateTotals();
+        }
+    }
+
     public void AddItem(OrderItemViewModel item)
     {
-        // Check for existing product to merge quantities
         var existing = Items.FirstOrDefault(i =>
-            i.ProductName == item.ProductName &&
+            i.ProductId == item.ProductId &&
             i.Price == item.Price);
 
         if (existing is not null)
         {
             existing.Quantity += item.Quantity;
+            return;
         }
-        else
-        {
-            Items.Add(item);
-            // Hook up property changes for recalculation
-            item.PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName == nameof(OrderItemViewModel.SubTotal))
-                    RecalculateTotals();
-            };
 
-            item.SubTotalChanged += (s, e) => RecalculateTotals();
-        }
+        Items.Add(item);
     }
 
     public void RemoveItem(OrderItemViewModel item)
     {
         Items.Remove(item);
-        item.SubTotalChanged -= (s, e) => RecalculateTotals();
-    }
-
-    public void UpdateItemPrice(OrderItemViewModel item, decimal newPrice)
-    {
-        if (Items.Contains(item))
-            item.Price = newPrice;
-    }
-
-    public void UpdateItemQuantity(OrderItemViewModel item, decimal newQuantity)
-    {
-        if (Items.Contains(item))
-            item.Quantity = newQuantity;
     }
 
     public void Clear()
     {
         Items.Clear();
+
     }
 
     private void RecalculateTotals()
@@ -90,46 +97,49 @@ public partial class OrderBuilder : ObservableObject
         TotalPrice = Items.Sum(i => i.SubTotal);
     }
 
-    public OrderCreateDto Build()
+    public Result<OrderCreateDto> Build()
     {
-        if (_deliveryMethod is DeliveryMethod.DeliveryMan && _deliverymanId is null)
-        {
-            throw new Exception("Deliveryman is required");
-        }
+        if (!Items.Any())
+            return Result<OrderCreateDto>.Failure("Order must contain at least one item.");
 
-        if (_deliveryMethod is DeliveryMethod.ShippingCompany && _shippingCarrierId is null)
-        {
-            throw new Exception("Shipping carrier is required");
-        }
+        if (_clientId <= 0)
+            return Result<OrderCreateDto>.Failure("Client is required.");
 
-        IEnumerable<OrderItemDto> orderItems = Items.Select(item => new OrderItemDto(item.ProductId, item.ProductName, (int)item.Quantity, item.Price, item.SupplierName, item.SupplierId));
-        OrderCreateDto orderCreateDto = new OrderCreateDto(
+        if (_deliveryMethod == DeliveryMethod.DeliveryMan && _deliverymanId is null)
+            return Result<OrderCreateDto>.Failure("Deliveryman is required.");
+
+        if (_deliveryMethod == DeliveryMethod.ShippingCompany && _shippingCarrierId is null)
+            return Result<OrderCreateDto>.Failure("Shipping carrier is required.");
+
+        if (_deliveryMethod == DeliveryMethod.DeliveryChain && !_deliverySteps.Any())
+            return Result<OrderCreateDto>.Failure("At least one delivery step is required.");
+
+        var orderItems = Items.Select(item =>
+            new OrderItemDto(
+                item.ProductId,
+                item.ProductName,
+                (int)item.Quantity,
+                item.Price,
+                item.SupplierName,
+                item.SupplierId
+            ));
+
+        var deliverySteps = _deliveryMethod == DeliveryMethod.DeliveryChain
+            ? _deliverySteps
+            : [];
+
+        var dto = new OrderCreateDto(
             _clientId,
             1,
             _deliveryMethod,
             _deliverymanId,
             _shippingCarrierId,
             orderItems,
-            _paymentMethodId);
-        return orderCreateDto;
-    }
+            deliverySteps,
+            _paymentMethodId
+        );
 
-    public OrderBuilder WithDeliveryMethod(DeliveryMethod deliveryMethod)
-    {
-        _deliveryMethod = deliveryMethod;
-        return this;
-    }
-
-    public OrderBuilder WithShippingCarrier(int? shippingCarrierId)
-    {
-        _shippingCarrierId = shippingCarrierId;
-        return this;
-    }
-
-    public OrderBuilder WithDeliveryman(int? deliverymanId)
-    {
-        _deliverymanId = deliverymanId;
-        return this;
+        return Result<OrderCreateDto>.Success(dto);
     }
 
     public OrderBuilder ForClient(int clientId)
@@ -138,9 +148,33 @@ public partial class OrderBuilder : ObservableObject
         return this;
     }
 
-    public OrderBuilder WithPaymentMethod(int? paymentMethodId)
+    public OrderBuilder WithDeliveryMethod(DeliveryMethod method)
     {
-        _paymentMethodId = paymentMethodId;
+        _deliveryMethod = method;
+        return this;
+    }
+
+    public OrderBuilder WithDeliveryman(int? id)
+    {
+        _deliverymanId = id;
+        return this;
+    }
+
+    public OrderBuilder WithShippingCarrier(int? id)
+    {
+        _shippingCarrierId = id;
+        return this;
+    }
+
+    public OrderBuilder WithPaymentMethod(int? id)
+    {
+        _paymentMethodId = id;
+        return this;
+    }
+
+    public OrderBuilder WithDeliverySteps(IEnumerable<OrderDeliveryStepCreateDto> steps)
+    {
+        _deliverySteps = steps ?? [];
         return this;
     }
 }

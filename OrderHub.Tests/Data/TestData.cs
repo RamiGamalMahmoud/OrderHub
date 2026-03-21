@@ -9,7 +9,7 @@ public static class TestData
         return new Client(
             name,
             "123 Main Street",
-            new City("City 1"),
+            new City($"{name} City"),
             "01012345678",
             "+20"
         );
@@ -19,7 +19,7 @@ public static class TestData
     {
         return new Deliveryman(
             name,
-            new City("City 2"),
+            new City($"{name} City"),
             "01112345678"
         );
     }
@@ -27,7 +27,7 @@ public static class TestData
     public static ShippingCarrier CreateShippingCarrier(string name = "FastShip", decimal shippingCost = 20)
     {
         var phone = Phone.Create("0123456789", "+20").Value;
-        var address = Address.Create("Street 1", new City("City 3")).Value;
+        var address = Address.Create("Street 1", new City($"{name} City")).Value;
 
         return new ShippingCarrier(name, shippingCost, phone, address);
     }
@@ -35,7 +35,7 @@ public static class TestData
     public static Supplier CreateSupplier(string name = "Supplier A")
     {
         var phone = Phone.Create("01298765432", "+20").Value;
-        var address = Address.Create("Supplier Street", new City("City 4")).Value;
+        var address = Address.Create("Supplier Street", new City($"{name} City")).Value;
         var open = new TimeOnly(9, 0);
         var close = new TimeOnly(18, 0);
 

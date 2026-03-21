@@ -8,6 +8,7 @@ namespace OrderHub.Domain.Models;
 public class Order : ModelBase
 {
     private readonly List<OrderItem> _orderItems = [];
+    private readonly List<OrderDeliveryStep> _deliverySteps = [];
     private Order() { }
 
     public int ClientId { get; private set; }
@@ -22,6 +23,7 @@ public class Order : ModelBase
     public string OrderNumber { get; private set; }
 
     public IReadOnlyCollection<OrderItem> OrderItems => _orderItems.AsReadOnly();
+    public IReadOnlyCollection<OrderDeliveryStep> DeliverySteps => _deliverySteps.AsReadOnly();
 
     private readonly List<OutboxMessage> _outboxMessages = [];
     public IReadOnlyCollection<OutboxMessage> OutboxMessages => _outboxMessages.AsReadOnly();
@@ -37,6 +39,8 @@ public class Order : ModelBase
     public PaymentMethod PaymentMethod { get; set; }
 
     public void AddOrderItem(OrderItem orderItem) => _orderItems.Add(orderItem);
+
+    public void AddDeliveryStep(OrderDeliveryStep deliveryStep) => _deliverySteps.Add(deliveryStep);
 
     public void RemoveOrderItem(OrderItem orderItem)
     {

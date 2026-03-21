@@ -69,7 +69,8 @@
                 <ListBox
                     x:Name="StespListBox"
                     HorizontalContentAlignment="Stretch"
-                    ItemsSource="{Binding DeliverySteps}">
+                    ItemsSource="{Binding DeliverySteps}"
+                    SelectedItem="{Binding SelectedDeliveryStep}">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <Grid Margin="0,5">

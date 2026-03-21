@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using static OrderHub.Application.DTOs.CommonDtos;
 
 namespace OrderHub.UI.Features.Orders.Editor;

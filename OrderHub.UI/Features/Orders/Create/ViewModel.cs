@@ -27,9 +27,10 @@ internal class ViewModel : Editor.ViewModel
             .WithDeliveryMethod(DeliveryMethodsViewModel.SelecteddDeliveryMethod.Value)
             .WithDeliveryman(DeliveryMethodsViewModel.SelectedDeliveryman?.Id)
             .WithShippingCarrier(DeliveryMethodsViewModel.SelectedShippingCarrier?.Id)
+            .WithDeliverySteps(DeliveryMethodsViewModel.BuildDeliverySteps())
             .ForClient(SelectedClient.Id)
             .WithPaymentMethod(SelectedPaymentMethod?.Id)
-            .Build();
+            .Build().Value;
 
         Result<int> result = await _mediator.Send(new Application.Commands.OrderCommands.CreateOrderCommand(order));
 
@@ -51,8 +52,6 @@ internal class ViewModel : Editor.ViewModel
         await PublishSuccessNotification("تم انشاء الطلب بنجاح");
 
         await _mediator.Send(new Application.Commands.OrderCommands.BroadcastOrderStatusCommand(orderId));
-
-        OrderCreated = true;
     }
 
     private async Task HandleOrderFailure()

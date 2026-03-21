@@ -7,6 +7,11 @@ namespace OrderHub.Application.DTOs;
 
 public static class OrderDtos
 {
+    public record OrderDeliveryStepCreateDto(
+        int StepOrder,
+        DeliveryMethod DeliveryMethod,
+        int HandlerId);
+
     public record OrderListDto(
         int Id,
         string OrderNumber,
@@ -26,6 +31,7 @@ public static class OrderDtos
         int? DeliveryManId,
         int? ShippingCarrierId,
         IEnumerable<OrderItemDtos.OrderItemDto> OrderItems,
+        IEnumerable<OrderDeliveryStepCreateDto> DeliverySteps,
         int? PaymentMothodId);
 }
 

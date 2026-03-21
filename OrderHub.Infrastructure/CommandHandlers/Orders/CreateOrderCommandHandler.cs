@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using static OrderHub.Application.Commands.OrderCommands;
+using static OrderHub.Application.DTOs.OrderDtos;
 using static OrderHub.Application.DTOs.OrderItemDtos;
 
 namespace OrderHub.Infrastructure.CommandHandlers.Orders;
@@ -40,8 +41,23 @@ internal class CreateOrderCommandHandler(AppDbContextFactory appDbContextFactory
             order.AddOrderItem(orderItem);
         }
 
+        foreach (OrderDeliveryStepCreateDto deliveryStepDto in request.CreateDto.DeliverySteps ?? Enumerable.Empty<OrderDeliveryStepCreateDto>())
+        {
+            order.AddDeliveryStep(new OrderDeliveryStep
+            {
+                StepOrder = deliveryStepDto.StepOrder,
+                DeliveryMethod = deliveryStepDto.DeliveryMethod,
+                DeliverymanId = deliveryStepDto.DeliveryMethod == Domain.Enums.DeliveryMethod.DeliveryMan
+                    ? deliveryStepDto.HandlerId
+                    : null,
+                ShippingCarrierId = deliveryStepDto.DeliveryMethod == Domain.Enums.DeliveryMethod.ShippingCompany
+                    ? deliveryStepDto.HandlerId
+                    : null
+            });
+        }
+
         appDbContext.Orders.Add(order);
-        await appDbContext.SaveChangesAsync();
+        await appDbContext.SaveChangesAsync(cancellationToken);
         return Result<int>.Success(order.Id);
     }
 
