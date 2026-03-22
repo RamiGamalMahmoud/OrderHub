@@ -17,6 +17,9 @@ public partial class ViewModel : ObservableObject
 {
     private readonly IMediator _mediator;
     private List<OutboxMessageViewModel> _allOutboxMessages = [];
+    private readonly ObservableCollection<MessageSummaryItemViewModel> _statusSummaries = [];
+
+    public ObservableCollection<MessageSummaryItemViewModel> StatusSummaries => _statusSummaries;
 
     public ViewModel(IMediator mediator, IMessenger messenger)
     {
@@ -29,6 +32,8 @@ public partial class ViewModel : ObservableObject
             {
                 outboxMessage.Status = new EnumItem<OutboxMessageStatus>(m.NewStatus, m.NewStatus.GetDescription());
             }
+
+            ApplyFilter();
         });
 
         messenger.Register<Application.Messages.Orders.MessagesCreatedMessage>(this, (r, m) =>
@@ -79,7 +84,28 @@ public partial class ViewModel : ObservableObject
     [ObservableProperty]
     private string _searchTerm;
 
+    [ObservableProperty]
+    private EnumItem<OutboxMessageStatus> _selectedStatusFilter;
+
+    [ObservableProperty]
+    private DateTime? _fromDate = DateTime.Today;
+
+    [ObservableProperty]
+    private DateTime? _toDate = DateTime.Today;
+
+    public IEnumerable<EnumItem<OutboxMessageStatus>> StatusFilters =>
+        new[] { new EnumItem<OutboxMessageStatus>(default, "الكل") }
+        .Concat(Enum.GetValues(typeof(OutboxMessageStatus))
+            .Cast<OutboxMessageStatus>()
+            .Select(status => new EnumItem<OutboxMessageStatus>(status, status.GetDescription())));
+
     partial void OnSearchTermChanged(string oldValue, string newValue) => ApplyFilter();
+
+    partial void OnSelectedStatusFilterChanged(EnumItem<OutboxMessageStatus> oldValue, EnumItem<OutboxMessageStatus> newValue) => ApplyFilter();
+
+    partial void OnFromDateChanged(DateTime? oldValue, DateTime? newValue) => ApplyFilter();
+
+    partial void OnToDateChanged(DateTime? oldValue, DateTime? newValue) => ApplyFilter();
 
     private void ApplyFilter()
     {
@@ -97,8 +123,44 @@ public partial class ViewModel : ObservableObject
                 || message.RecipientType?.DisplayName?.Contains(term) == true);
         }
 
+        if (SelectedStatusFilter is not null && SelectedStatusFilter.DisplayName != "الكل")
+        {
+            filteredMessages = filteredMessages.Where(message => message.Status?.Value.Equals(SelectedStatusFilter.Value) == true);
+        }
+
+        if (FromDate.HasValue)
+        {
+            filteredMessages = filteredMessages.Where(message => message.CreatedAt >= FromDate.Value.Date);
+        }
+
+        if (ToDate.HasValue)
+        {
+            filteredMessages = filteredMessages.Where(message => message.CreatedAt < ToDate.Value.Date.AddDays(1));
+        }
+
+        List<OutboxMessageViewModel> materializedMessages = filteredMessages
+            .OrderByDescending(message => message.CreatedAt)
+            .ToList();
+
         OutboxMessages = new ObservableCollection<OutboxMessageViewModel>(
-            filteredMessages.OrderByDescending(message => message.CreatedAt));
+            materializedMessages);
+
+        UpdateSummary(materializedMessages);
+    }
+
+    private void UpdateSummary(IEnumerable<OutboxMessageViewModel> filteredMessages)
+    {
+        Dictionary<OutboxMessageStatus, int> counts = filteredMessages
+            .GroupBy(message => message.Status.Value)
+            .ToDictionary(group => group.Key, group => group.Count());
+
+        _statusSummaries.Clear();
+        foreach (OutboxMessageStatus status in Enum.GetValues<OutboxMessageStatus>())
+        {
+            _statusSummaries.Add(new MessageSummaryItemViewModel(
+                status.GetDescription(),
+                counts.GetValueOrDefault(status, 0)));
+        }
     }
 
     [RelayCommand]
@@ -114,6 +176,49 @@ public partial class ViewModel : ObservableObject
 
         await _mediator.Publish(new Application.Notifications.SuccessNotification("تمت إعادة جدولة الرسالة للإرسال."));
     }
+
+    [RelayCommand]
+    private void SetToday()
+    {
+        FromDate = DateTime.Today;
+        ToDate = DateTime.Today;
+    }
+
+    [RelayCommand]
+    private void SetCurrentWeek()
+    {
+        DateTime today = DateTime.Today;
+        int diff = ((int)today.DayOfWeek + 6) % 7;
+        DateTime startOfWeek = today.AddDays(-diff);
+
+        FromDate = startOfWeek;
+        ToDate = startOfWeek.AddDays(6);
+    }
+
+    [RelayCommand]
+    private void SetCurrentMonth()
+    {
+        DateTime today = DateTime.Today;
+        DateTime startOfMonth = new(today.Year, today.Month, 1);
+
+        FromDate = startOfMonth;
+        ToDate = startOfMonth.AddMonths(1).AddDays(-1);
+    }
+}
+
+public sealed class MessageSummaryItemViewModel
+{
+    public MessageSummaryItemViewModel(string title, int count)
+    {
+        Title = title;
+        Count = count;
+    }
+
+    public string Title { get; }
+
+    public int Count { get; }
+
+    public string DisplayText => $"{Title} - {Count}";
 }
 
 public partial class OutboxMessageViewModel : ObservableObject

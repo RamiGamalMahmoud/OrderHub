@@ -291,9 +291,7 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         {
             _statusSummaries.Add(new OrderSummaryItemViewModel(
                 item.EnumItem.DisplayName,
-                item.Count,
-                "#f1f5f9",
-                "#111827"));
+                item.Count));
         }
 
         _paymentMethodSummaries.Clear();
@@ -301,9 +299,7 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         {
             _paymentMethodSummaries.Add(new OrderSummaryItemViewModel(
                 item.PaymentMethodName,
-                item.Count,
-                "#f1f5f9",
-                "#111827"));
+                item.Count));
         }
     }
 
@@ -473,21 +469,15 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
 internal sealed class OrderSummaryItemViewModel
 {
-    public OrderSummaryItemViewModel(string title, int count, string background, string foreground)
+    public OrderSummaryItemViewModel(string title, int count)
     {
         Title = title;
         Count = count;
-        Background = background;
-        Foreground = foreground;
     }
 
     public string Title { get; }
 
     public int Count { get; }
-
-    public string Background { get; }
-
-    public string Foreground { get; }
 
     public string DisplayText => $"{Title}: {Count}";
 

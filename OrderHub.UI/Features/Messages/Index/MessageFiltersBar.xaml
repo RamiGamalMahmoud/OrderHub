@@ -1,25 +1,15 @@
 <UserControl
-    x:Class="OrderHub.UI.Features.Orders.Index.OrderFiltersBar"
+    x:Class="OrderHub.UI.Features.Messages.Index.MessageFiltersBar"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <StackPanel Margin="0,0,0,8" Orientation="Horizontal">
-        <TextBlock
-            Margin="0,0,8,0"
-            VerticalAlignment="Center"
-            FontWeight="DemiBold"
-            Text="الدفع" />
-        <ComboBox
-            Width="160"
-            Margin="0,0,12,0"
-            VerticalAlignment="Center"
-            Cursor="Hand"
-            DisplayMemberPath="DisplayName"
-            ItemsSource="{Binding PaymentMethodFilters}"
-            SelectedItem="{Binding SelectedPaymentMethod}" />
+    <StackPanel Orientation="Horizontal">
+
+
         <TextBlock
             Margin="0,0,8,0"
             VerticalAlignment="Center"
@@ -31,8 +21,9 @@
             VerticalAlignment="Center"
             Cursor="Hand"
             DisplayMemberPath="DisplayName"
-            ItemsSource="{Binding OrderStatusFilters}"
-            SelectedItem="{Binding SelectedOrderStatus}" />
+            ItemsSource="{Binding StatusFilters}"
+            SelectedItem="{Binding SelectedStatusFilter}" />
+
         <TextBlock
             Margin="0,0,8,0"
             VerticalAlignment="Center"
@@ -44,6 +35,7 @@
             VerticalAlignment="Center"
             Cursor="Hand"
             SelectedDate="{Binding FromDate}" />
+
         <TextBlock
             Margin="0,0,8,0"
             VerticalAlignment="Center"
@@ -51,24 +43,25 @@
             Text="إلى" />
         <DatePicker
             Width="140"
+            Margin="0,0,12,0"
             VerticalAlignment="Center"
             Cursor="Hand"
             SelectedDate="{Binding ToDate}" />
+
         <Button
             Height="auto"
-            Margin="12,0,0,0"
+            Margin="0,0,8,0"
             Command="{Binding SetTodayCommand}"
             Content="اليوم"
             Cursor="Hand" />
         <Button
             Height="auto"
-            Margin="8,0,0,0"
+            Margin="0,0,8,0"
             Command="{Binding SetCurrentWeekCommand}"
             Content="الأسبوع الحالي"
             Cursor="Hand" />
         <Button
             Height="auto"
-            Margin="8,0,0,0"
             Command="{Binding SetCurrentMonthCommand}"
             Content="الشهر الحالي"
             Cursor="Hand" />

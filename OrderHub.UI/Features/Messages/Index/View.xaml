@@ -15,7 +15,9 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="50" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="1*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <Grid>
@@ -37,27 +39,7 @@
                 Grid.Column="1"
                 HorizontalAlignment="Center"
                 Orientation="Horizontal">
-                <hc:SearchBar
-                    Width="300"
-                    VerticalAlignment="Center"
-                    hc:InfoElement.Placeholder="ابحث عن طلب باسم العميل ..."
-                    hc:InfoElement.ShowClearButton="True"
-                    Style="{StaticResource SearchBarPlus}"
-                    Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}" />
-
-                <Button
-                    Margin="5,0"
-                    VerticalAlignment="Center"
-                    Cursor="Hand">
-                    <StackPanel Orientation="Horizontal">
-                        <icons:MaterialIcon Width="20" Kind="FilterVariant" />
-                        <TextBlock
-                            Margin="5,0,0,0"
-                            VerticalAlignment="Center"
-                            Text="تصفية" />
-                    </StackPanel>
-                </Button>
-
+                <local:MessageFiltersBar Grid.Row="1" />
             </StackPanel>
 
             <StackPanel Grid.Column="2" Orientation="Horizontal">
@@ -84,8 +66,11 @@
         </Grid>
 
 
+
+
         <DataGrid
-            Grid.Row="1"
+            Grid.Row="2"
+            Margin="0,12,0,0"
             d:ItemsSource="{d:SampleData}"
             AutoGenerateColumns="False"
             GridLinesVisibility="Vertical"
@@ -176,6 +161,31 @@
 
             </DataGrid.Columns>
         </DataGrid>
+
+        <StackPanel Grid.Row="3" Margin="0,10,0,0">
+            <TextBlock
+                Margin="0,0,0,6"
+                FontWeight="DemiBold"
+                Text="ملخص الحالات" />
+            <ItemsControl ItemsSource="{Binding StatusSummaries}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border
+                            Margin="0,0,8,8"
+                            Padding="12,8"
+                            Background="#f1f5f9"
+                            CornerRadius="8">
+                            <TextBlock FontWeight="DemiBold" Text="{Binding DisplayText}" />
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
     </Grid>
 
 </UserControl>

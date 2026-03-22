@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace OrderHub.UI.Features.Messages.Index;
 
@@ -18,7 +19,7 @@ public partial class View : UserControl
     {
         if(!_isLoaded && DataContext is ViewModel viewModel)
         {
-            await viewModel.LoadAsync();
+            await Dispatcher.Invoke(viewModel.LoadAsync);
             _isLoaded = true;
         }
     }

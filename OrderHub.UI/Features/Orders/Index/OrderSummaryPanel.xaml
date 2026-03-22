@@ -36,7 +36,6 @@
                                 CornerRadius="8">
                                 <TextBlock
                                     FontWeight="DemiBold"
-                                    Foreground="{Binding Foreground}"
                                     Text="{Binding MenuText}" />
                             </Border>
                         </DataTemplate>
@@ -58,7 +57,6 @@
                                 CornerRadius="8">
                                 <TextBlock
                                     FontWeight="DemiBold"
-                                    Foreground="{Binding Foreground}"
                                     Text="{Binding MenuText}" />
                             </Border>
                         </DataTemplate>
