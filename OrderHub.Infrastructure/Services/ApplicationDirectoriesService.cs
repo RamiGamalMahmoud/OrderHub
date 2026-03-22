@@ -6,7 +6,17 @@ namespace OrderHub.Infrastructure.Services
 {
     internal class ApplicationDirectoriesService : IApplicationDirectoriesService
     {
-        public string AppPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OrderHub");
+        public string AppPath
+        {
+            get
+            {
+#if DEBUG
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OrderHub - Dev");
+#else
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OrderHub");
+#endif
+            }
+        }
         public string CredentialsFilePath => Path.Combine(StoragePath, "creditals.bin");
         public string StoragePath => Path.Combine(AppPath, "Storage");
         public string TokenFilePath => Path.Combine(StoragePath, "token.bin");
