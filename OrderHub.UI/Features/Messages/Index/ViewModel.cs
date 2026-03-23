@@ -17,9 +17,9 @@ public partial class ViewModel : ObservableObject
 {
     private readonly IMediator _mediator;
     private List<OutboxMessageViewModel> _allOutboxMessages = [];
-    private readonly ObservableCollection<MessageSummaryItemViewModel> _statusSummaries = [];
 
-    public ObservableCollection<MessageSummaryItemViewModel> StatusSummaries => _statusSummaries;
+    [ObservableProperty]
+    private ObservableCollection<MessageSummaryItemViewModel> _statusSummaries = [];
 
     public ViewModel(IMediator mediator, IMessenger messenger)
     {
@@ -154,13 +154,15 @@ public partial class ViewModel : ObservableObject
             .GroupBy(message => message.Status.Value)
             .ToDictionary(group => group.Key, group => group.Count());
 
-        _statusSummaries.Clear();
+        ObservableCollection<MessageSummaryItemViewModel> statusSummaries = [];
         foreach (OutboxMessageStatus status in Enum.GetValues<OutboxMessageStatus>())
         {
-            _statusSummaries.Add(new MessageSummaryItemViewModel(
+            statusSummaries.Add(new MessageSummaryItemViewModel(
                 status.GetDescription(),
                 counts.GetValueOrDefault(status, 0)));
         }
+
+        System.Windows.Application.Current.Dispatcher.InvokeAsync(() => StatusSummaries = statusSummaries);
     }
 
     [RelayCommand]
