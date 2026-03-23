@@ -15,17 +15,32 @@ internal class DeleteClientCommandHandler(AppDbContextFactory appDbContextFactor
     public async Task<Result> Handle(DeleteClientCommand request, CancellationToken cancellationToken)
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
-        Client client = await appDbContext.Clients.FindAsync(request.Id);
+        Client client = await appDbContext.Clients.FindAsync([request.Id], cancellationToken);
+        if (client is null)
+        {
+            return Result.Failure("العميل غير موجود.");
+        }
+
+        if (await appDbContext.Orders.AnyAsync(order => order.ClientId == request.Id, cancellationToken))
+        {
+            return Result.Failure("لا يمكن حذف العميل لأنه مرتبط بطلبات.");
+        }
+
+        if (await appDbContext.ClientRecipients.AnyAsync(recipient => recipient.ClientId == request.Id, cancellationToken))
+        {
+            return Result.Failure("لا يمكن حذف العميل لأنه مرتبط بسجل الرسائل.");
+        }
+
         appDbContext.Clients.Remove(client);
 
         try
         {
-            await appDbContext.SaveChangesAsync();
+            await appDbContext.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }
         catch (DbUpdateException)
         {
-            return Result.Failure();
+            return Result.Failure("تعذر حذف العميل.");
         }
     }
 }

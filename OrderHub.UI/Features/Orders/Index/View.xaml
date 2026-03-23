@@ -16,27 +16,7 @@
     FontFamily="{StaticResource FontFamily}"
     mc:Ignorable="d">
 
-    <UserControl.Resources>
-        <Style
-            x:Key="MessageRecipientButtonStyle"
-            BasedOn="{StaticResource ButtonBaseStyle}"
-            TargetType="Button">
-            <Setter Property="Height" Value="28" />
-            <Setter Property="Margin" Value="5,0" />
-            <Setter Property="Padding" Value="10,4" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Background" Value="#e5e7eb" />
-            <Setter Property="Foreground" Value="#111827" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Opacity" Value="1" />
-            <Style.Triggers>
-                <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Opacity" Value="0.45" />
-                    <Setter Property="Cursor" Value="Arrow" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-    </UserControl.Resources>
+
 
     <Grid>
         <Grid.RowDefinitions>
@@ -237,88 +217,7 @@
                         </DataGridTemplateColumn.Header>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button
-                                        Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastOrderCommand}"
-                                        CommandParameter="{Binding}"
-                                        Content="All"
-                                        IsEnabled="{Binding CanBroadcastAll}">
-                                        <Button.Style>
-                                            <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsAllMessageSent}" Value="True">
-                                                        <Setter Property="Background" Value="#16a34a" />
-                                                        <Setter Property="Foreground" Value="White" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Button.Style>
-                                    </Button>
-                                    <Button
-                                        Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastClientCommand}"
-                                        CommandParameter="{Binding}"
-                                        Content="عميل"
-                                        IsEnabled="{Binding HasClientRecipient}">
-                                        <Button.Style>
-                                            <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsClientMessageSent}" Value="True">
-                                                        <Setter Property="Background" Value="#16a34a" />
-                                                        <Setter Property="Foreground" Value="White" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Button.Style>
-                                    </Button>
-                                    <Button
-                                        Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastSupplierCommand}"
-                                        CommandParameter="{Binding}"
-                                        Content="مورد"
-                                        IsEnabled="{Binding HasSupplierRecipient}">
-                                        <Button.Style>
-                                            <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsSupplierMessageSent}" Value="True">
-                                                        <Setter Property="Background" Value="#16a34a" />
-                                                        <Setter Property="Foreground" Value="White" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Button.Style>
-                                    </Button>
-                                    <Button
-                                        Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastShippingCarrierCommand}"
-                                        CommandParameter="{Binding}"
-                                        Content="شركة شحن"
-                                        IsEnabled="{Binding HasShippingCarrierRecipient}">
-                                        <Button.Style>
-                                            <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsShippingCarrierMessageSent}" Value="True">
-                                                        <Setter Property="Background" Value="#16a34a" />
-                                                        <Setter Property="Foreground" Value="White" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Button.Style>
-                                    </Button>
-                                    <Button
-                                        Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.BroadcastDeliverymanCommand}"
-                                        CommandParameter="{Binding}"
-                                        Content="مندوب"
-                                        IsEnabled="{Binding HasDeliverymanRecipient}">
-                                        <Button.Style>
-                                            <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsDeliverymanMessageSent}" Value="True">
-                                                        <Setter Property="Background" Value="#16a34a" />
-                                                        <Setter Property="Foreground" Value="White" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Button.Style>
-                                    </Button>
-                                </StackPanel>
+                                <local:MessagingButtons />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>

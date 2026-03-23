@@ -1,52 +1,110 @@
 ﻿using OrderHub.Application.Interfaces.Services;
 using System;
 using System.Net.NetworkInformation;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace OrderHub.Infrastructure.Services;
 
 internal class ConnectionService : IConnectionService
 {
-    System.Timers.Timer _timer;
+    private readonly SemaphoreSlim _stateLock = new(1, 1);
+    private readonly Ping _ping = new();
+    private readonly SynchronizationContext _context = SynchronizationContext.Current;
 
-    private readonly Ping _ping = new Ping();
-
-    public ConnectionService()
-    {
-        _timer = new System.Timers.Timer
-        {
-            Interval = 1000
-        };
-    }
+    private CancellationTokenSource _cts;
+    private Task _worker;
 
     public bool IsConnected { get; private set; }
 
     public event EventHandler<bool> ConnectionChanged;
 
-    public bool TryConnect()
+    public async Task Start()
     {
+        await _stateLock.WaitAsync();
+
         try
         {
-            PingReply reply = _ping.Send("8.8.8.8");
-            IsConnected = reply.Status == IPStatus.Success;
+            if (_worker is { IsCompleted: false })
+                return;
+
+            _cts?.Dispose();
+            _cts = new CancellationTokenSource();
+
+            _worker = Task.Run(() => MonitorConnection(_cts.Token));
         }
-        catch (Exception)
+        finally
         {
-            IsConnected = false;
+            _stateLock.Release();
         }
-        return IsConnected;
     }
 
-    public void Start()
+    public async Task Stop()
     {
-        _timer.Elapsed += (sender, args) =>
+        await _stateLock.WaitAsync();
+
+        try
+        {
+            _cts?.Cancel();
+
+            if (_worker != null)
             {
-                ConnectionChanged?.Invoke(this, TryConnect());
-            };
-        _timer.Start();
+                try
+                {
+                    await _worker;
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            }
+
+            _worker = null;
+            _cts?.Dispose();
+            _cts = null;
+        }
+        finally
+        {
+            _stateLock.Release();
+        }
     }
 
-    public void Stop()
+    private async Task MonitorConnection(CancellationToken token)
     {
-        _timer.Elapsed -= (sender, args) => ConnectionChanged?.Invoke(this, TryConnect());
+        while (!token.IsCancellationRequested)
+        {
+            try
+            {
+                await Task.Delay(2000, token);
+
+                PingReply reply = await _ping.SendPingAsync("8.8.8.8");
+                bool newState = reply.Status == IPStatus.Success;
+
+                if (newState != IsConnected)
+                {
+                    IsConnected = newState;
+                    RaiseConnectionChanged(newState);
+                }
+            }
+            catch
+            {
+                if (IsConnected)
+                {
+                    IsConnected = false;
+                    RaiseConnectionChanged(false);
+                }
+            }
+        }
+    }
+
+    private void RaiseConnectionChanged(bool state)
+    {
+        if (_context != null)
+        {
+            _context.Post(_ => ConnectionChanged?.Invoke(this, state), null);
+        }
+        else
+        {
+            ConnectionChanged?.Invoke(this, state);
+        }
     }
 }

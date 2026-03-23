@@ -10,11 +10,8 @@ namespace OrderHub.UI.Features.Products.Create
 {
     public class ViewModel : Editor.ViewModel
     {
-        private readonly IMessenger _messenger;
-
-        public ViewModel(IMediator mediator, IMessenger messenger) : base(mediator)
+        public ViewModel(IMediator mediator, IMessenger messenger) : base(mediator, messenger)
         {
-            _messenger = messenger;
         }
 
         public override string Title => "إضافة منتج";

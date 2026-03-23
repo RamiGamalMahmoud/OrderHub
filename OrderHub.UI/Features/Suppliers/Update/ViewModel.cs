@@ -55,6 +55,8 @@ public partial class ViewModel : EditSupplierViewModelBase
 
             await _mediator.Publish(new Application.Notifications.SuccessNotification("تم تعديل بيانات المورد"));
             _messenger.Send(new Application.Messages.Suppliers.SupplierUpdatedMessage());
+            _selectionStore.Clear();
+            OnRequestClose();
         }
         else
         {

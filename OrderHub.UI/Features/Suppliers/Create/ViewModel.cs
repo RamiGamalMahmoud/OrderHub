@@ -32,6 +32,7 @@ public partial class ViewModel : EditSupplierViewModelBase
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification("تم إضافة المورد بنجاح"));
             _messenger.Send(new Application.Messages.Suppliers.SupplierCreatedMessage());
+            OnRequestClose();
         }
         else
         {

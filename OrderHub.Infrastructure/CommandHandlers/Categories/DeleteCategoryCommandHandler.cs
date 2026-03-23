@@ -15,11 +15,26 @@ internal class DeleteCategoryCommandHandler(AppDbContextFactory appDbContextFact
     public async Task<Result> Handle(DeleteCategoryCommand request, CancellationToken cancellationToken)
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
-        Category category = await appDbContext.Categories.FindAsync(request.Id);
+        Category category = await appDbContext.Categories.FindAsync([request.Id], cancellationToken);
+        if (category is null)
+        {
+            return Result.Failure("القسم غير موجود.");
+        }
+
+        if (await appDbContext.Products.AnyAsync(product => product.Category.Id == request.Id, cancellationToken))
+        {
+            return Result.Failure("لا يمكن حذف القسم لأنه مرتبط بمنتجات.");
+        }
+
+        if (await appDbContext.Categories.AnyAsync(item => item.ParentCategoryId == request.Id, cancellationToken))
+        {
+            return Result.Failure("لا يمكن حذف القسم لأنه يحتوي على أقسام فرعية.");
+        }
+
         appDbContext.Categories.Remove(category);
         try
         {
-            await appDbContext.SaveChangesAsync();
+            await appDbContext.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }
         catch (DbUpdateException)

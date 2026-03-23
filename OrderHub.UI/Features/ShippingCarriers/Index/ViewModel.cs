@@ -22,6 +22,10 @@ public partial class ViewModel : IndexViewModelBase<ShippingCarrierListDto>
     {
         _selectionStore = selectionStore;
         _dialogService = dialogService;
+
+        _messenger.Register<Application.Messages.ShippingCarriers.ShippingCarrierCreatedMessage>(this, async (_, _) => await ReloadAsync());
+        _messenger.Register<Application.Messages.ShippingCarriers.ShippingCarrierUpdatedMessage>(this, async (_, _) => await ReloadAsync());
+        _messenger.Register<Application.Messages.ShippingCarriers.ShippingCarrierDeletedMessage>(this, async (_, _) => await ReloadAsync());
     }
 
     protected override async Task DeleteAsync(ShippingCarrierListDto model)
@@ -34,7 +38,6 @@ public partial class ViewModel : IndexViewModelBase<ShippingCarrierListDto>
             string message = MessageBuilder.Build(MessageBuilder.OperationType.Delete, true, "شركة شحن");
             await _mediator.Publish(new Application.Notifications.SuccessNotification(message));
             _messenger.Send(new Application.Messages.ShippingCarriers.ShippingCarrierDeletedMessage());
-            await ReloadAsync();
         }
 
         else

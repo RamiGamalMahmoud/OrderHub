@@ -19,11 +19,26 @@ internal class DeleteShippingCarrierCommandHandler(AppDbContextFactory appDbCont
         if(shippingCarrier is null)
             return Result.Failure("شركة الشحن غير موجودة.");
 
+        if (await appDbContext.Orders.AnyAsync(order => order.ShippingCarrierId == request.Id, cancellationToken))
+        {
+            return Result.Failure("لا يمكن حذف شركة الشحن لأنها مرتبطة بطلبات.");
+        }
+
+        if (await appDbContext.OrderDeliverySteps.AnyAsync(step => step.ShippingCarrierId == request.Id, cancellationToken))
+        {
+            return Result.Failure("لا يمكن حذف شركة الشحن لأنها مستخدمة في سلسلة التوصيل.");
+        }
+
+        if (await appDbContext.ShippingCarrierRecipients.AnyAsync(recipient => recipient.ShippingCarrierId == request.Id, cancellationToken))
+        {
+            return Result.Failure("لا يمكن حذف شركة الشحن لأنها مرتبطة بسجل الرسائل.");
+        }
+
         appDbContext.ShippingCarriers.Remove(shippingCarrier);
 
         try
         {
-            await appDbContext.SaveChangesAsync();
+            await appDbContext.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }
         catch(DbUpdateException)

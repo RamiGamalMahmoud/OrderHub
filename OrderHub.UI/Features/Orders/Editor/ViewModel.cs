@@ -84,10 +84,40 @@ internal abstract partial class ViewModel : EditorViewModelBase
             async (_, _) => Clients = await _mediator.Send(
                 new Application.Queries.ClientQueries.GetAllClientsQuery()));
 
+        _messenger.Register<Application.Messages.Clients.ClientUpdatedMessage>(
+            this,
+            async (_, _) => Clients = await _mediator.Send(
+                new Application.Queries.ClientQueries.GetAllClientsQuery()));
+
         _messenger.Register<Application.Messages.Categories.CategoryCreatedMessage>(
             this,
             async (_, _) => RootCategories = await _mediator.Send(
                 new Application.Queries.CommonQueries.GetRootCategoriesQuery()));
+
+        _messenger.Register<Application.Messages.Categories.CategoryUpdatedMessage>(
+            this,
+            async (_, _) => RootCategories = await _mediator.Send(
+                new Application.Queries.CommonQueries.GetRootCategoriesQuery()));
+
+        _messenger.Register<Application.Messages.Deliveryman.DeliverymanCreatedMessage>(
+            this,
+            async (_, _) => DeliveryMethodsViewModel.Deliverymen = await _mediator.Send(
+                new Application.Queries.CommonQueries.GetAllDeliverymenInfoQuery()));
+
+        _messenger.Register<Application.Messages.Deliveryman.DeleverymanUpdateMessage>(
+            this,
+            async (_, _) => DeliveryMethodsViewModel.Deliverymen = await _mediator.Send(
+                new Application.Queries.CommonQueries.GetAllDeliverymenInfoQuery()));
+
+        _messenger.Register<Application.Messages.ShippingCarriers.ShippingCarrierCreatedMessage>(
+            this,
+            async (_, _) => DeliveryMethodsViewModel.ShippingCarriers = await _mediator.Send(
+                new Application.Queries.CommonQueries.GetAllShippingCarriersInfoQuery()));
+
+        _messenger.Register<Application.Messages.ShippingCarriers.ShippingCarrierUpdatedMessage>(
+            this,
+            async (_, _) => DeliveryMethodsViewModel.ShippingCarriers = await _mediator.Send(
+                new Application.Queries.CommonQueries.GetAllShippingCarriersInfoQuery()));
     }
 
     [ObservableProperty] private IEnumerable<CategoryInfoDto> _rootCategories;

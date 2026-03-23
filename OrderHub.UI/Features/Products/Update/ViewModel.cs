@@ -13,12 +13,9 @@ namespace OrderHub.UI.Features.Products.Update;
 public class ViewModel : Editor.ViewModel
 {
     private readonly ISelectionStore<IProductMarker, int> _selectionStore;
-    private readonly IMessenger _messenger;
-
-    public ViewModel(IMediator mediator, ISelectionStore<IProductMarker, int> selectionStore, IMessenger messenger) : base(mediator)
+    public ViewModel(IMediator mediator, ISelectionStore<IProductMarker, int> selectionStore, IMessenger messenger) : base(mediator, messenger)
     {
         _selectionStore = selectionStore;
-        _messenger = messenger;
         HasChanges = false;
     }
 
@@ -52,7 +49,7 @@ public class ViewModel : Editor.ViewModel
         ProductUpdateDto productUpdateDto = new ProductUpdateDto(_selectionStore.Id, Name, Code, Price, SelectedCategory.Id, selectedSuppliersIds);
         Result result = await _mediator.Send(new Application.Commands.ProductCommands.UpdateProductCommand(productUpdateDto));
 
-        if(result.IsSuccess)
+        if (result.IsSuccess)
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification("تم تحديث بيانات المنتج"));
             _messenger.Send(new Application.Messages.Products.ProductedUpdatedMessage());

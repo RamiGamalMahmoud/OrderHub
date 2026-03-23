@@ -18,17 +18,23 @@ internal class DeleteProductCommandHandler(AppDbContextFactory appDbContextFacto
         Product product = await appDbContext.Products.FindAsync(request.Id);
 
         if (product is null)
-            return Result.Failure();
+            return Result.Failure("المنتج غير موجود.");
+
+        if (await appDbContext.OrderItems.AnyAsync(item => item.ProductId == request.Id, cancellationToken))
+        {
+            return Result.Failure("لا يمكن حذف المنتج لأنه مرتبط بطلبات.");
+        }
+
         appDbContext.Products.Remove(product);
 
         try
         {
-            await appDbContext.SaveChangesAsync();
+            await appDbContext.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }
         catch(DbUpdateException)
         {
-            return Result.Failure();
+            return Result.Failure("تعذر حذف المنتج.");
         }
     }
 }
