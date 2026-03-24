@@ -11,7 +11,7 @@ namespace OrderHub.Infrastructure.Services;
 
 internal class WhatsappService : IWhatsappService, IMessageSender
 {
-    private const string DefaultUrl = "https://web.whatsapp.com";
+    private const string _defaultUrl = "https://web.whatsapp.com";
 
     private IWebDriver _driver;
     private WebDriverWait _wait;
@@ -24,7 +24,7 @@ internal class WhatsappService : IWhatsappService, IMessageSender
         _directories = directories;
     }
 
-    public async Task<bool> StartWhatsAppAsync(string url = DefaultUrl)
+    public async Task<bool> StartWhatsAppAsync(string url = _defaultUrl)
     {
         await _lifecycleLock.WaitAsync();
 
@@ -91,7 +91,7 @@ internal class WhatsappService : IWhatsappService, IMessageSender
                 return false;
             }
 
-            _driver.Navigate().GoToUrl($"{DefaultUrl}/send?phone={cleanNumber}");
+            _driver.Navigate().GoToUrl($"{_defaultUrl}/send?phone={cleanNumber}");
 
             IWebElement messageBox = WaitForMessageBox();
             if (messageBox is null)
@@ -149,8 +149,15 @@ internal class WhatsappService : IWhatsappService, IMessageSender
                     return false;
                 }
 
-                return driver.FindElements(By.Id("side")).Any()
-                    || FindMessageBox(driver) is not null;
+                try
+                {
+                    return driver.FindElements(By.Id("side")).Any()
+                                || FindMessageBox(driver) is not null;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
             });
         }
         catch (NoSuchWindowException)
@@ -294,8 +301,15 @@ internal class WhatsappService : IWhatsappService, IMessageSender
 
     private static bool HasLoginPrompt(IWebDriver driver)
     {
-        return driver.FindElements(By.CssSelector("canvas[aria-label*='QR'], canvas[aria-label*='qr']")).Any()
-            || driver.FindElements(By.XPath("//*[contains(text(),'Scan') and contains(text(),'QR')]")).Any();
+        try
+        {
+            return driver.FindElements(By.CssSelector("canvas[aria-label*='QR'], canvas[aria-label*='qr']")).Any()
+                || driver.FindElements(By.XPath("//*[contains(text(),'Scan') and contains(text(),'QR')]")).Any();
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     private static bool HasInvalidChatState(IWebDriver driver)
