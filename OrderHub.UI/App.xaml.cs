@@ -1,10 +1,7 @@
 ﻿using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using OrderHub.Application.DTOs;
 using OrderHub.Application.Interfaces.Services;
-using OrderHub.Domain.Common;
-using OrderHub.Domain.Models;
 using OrderHub.UI.StartUpSteps;
 using System;
 using System.Threading.Tasks;
@@ -57,141 +54,10 @@ public partial class App : System.Windows.Application
         }
     }
 
-    private async Task InitializeAsync()
-    {
-        try
-        {
-            PrepareDirectoriesAsync();
-
-            var dbReady = await EnsureDatabaseAsync();
-            if (!dbReady)
-                return;
-
-            await InitializeInfrastructureAsync();
-
-#if DEBUG
-            await HandleAuthenticationAsync();
-#endif
-
-            ShowMainWindow();
-        }
-        catch (Exception ex)
-        {
-            await HandleExceptionAsync(ex, "Legacy initialization");
-        }
-    }
-
-    #region Initialization مراحل التشغيل
-
-    private void PrepareDirectoriesAsync()
-    {
-        var dirs = GetService<IApplicationDirectoriesService>();
-
-        dirs.EnsureAppDirectoryCreated();
-        dirs.EnsureStorageDirectoryCreated();
-        dirs.EnsureDatabaseFileCreated();
-        dirs.EnsureWhatsAppProfilesDirectoryCreated();
-    }
-
-    private async Task<bool> EnsureDatabaseAsync()
-    {
-        IDatabaseService db = GetService<IDatabaseService>();
-
-        if (!await db.CanConnectAsync())
-        {
-            await NotifyErrorAsync("خطأ في الاتصال بقاعدة البيانات");
-            return false;
-        }
-
-        if (await db.HasPendingMigrationsAsync())
-        {
-            await db.MigrateAsync();
-            await NotifySuccessAsync("تم تحديث قاعدة البيانات");
-        }
-
-        return true;
-    }
-
-    private async Task InitializeInfrastructureAsync()
-    {
-        await GetService<IWhatsappService>().StartWhatsAppAsync();
-
-        // تقدر تضيف هنا:
-        // MQTT, WebSocket, Sync Service ...
-    }
-
-    private async Task HandleAuthenticationAsync()
-    {
-        if (!await HasSavedClientCredentialsAsync())
-        {
-            ShowClientCredentialsWindow();
-            return;
-        }
-
-        if (!await HasSavedTokenAsync())
-        {
-            await SaveTokenAsync();
-        }
-
-        await StartNewSessionAsync();
-    }
-
-    #endregion
-
-    #region Authentication
-
-    private async Task StartNewSessionAsync()
-    {
-        ISessionManager sessionManager = GetService<ISessionManager>();
-        await sessionManager.StartNewSession();
-    }
-
-    private async Task<bool> HasSavedTokenAsync()
-    {
-        ITokenStorageService tokenStorage = GetService<ITokenStorageService>();
-        Token token = await tokenStorage.GetTokenAsync();
-        return token != null;
-    }
-
-    private async Task SaveTokenAsync()
-    {
-        IAuthService auth = GetService<IAuthService>();
-        ICredentialsService credentialsService = GetService<ICredentialsService>();
-
-        ClientCredentials credentials = await credentialsService.GetClilentCredentialsAsync();
-
-        Result<Token> result = await auth.AuthorizeAsync(credentials);
-
-        if (!result.IsSuccess)
-        {
-            await NotifyErrorAsync(result.ErrorMessage);
-            return;
-        }
-
-        ITokenStorageService tokenStorage = GetService<ITokenStorageService>();
-        await tokenStorage.SaveTokenAsync(result.Value);
-    }
-
-    private async Task<bool> HasSavedClientCredentialsAsync()
-    {
-        ICredentialsService credentialsService = GetService<ICredentialsService>();
-        ClientCredentials credentials = await credentialsService.GetClilentCredentialsAsync();
-        return credentials != null;
-    }
-
-    #endregion
-
-    #region UI Navigation
-
     private void ShowSplashScreen()
     {
         MainWindow = GetService<Features.Splash>();
         MainWindow.Show();
-    }
-
-    private void ShowClientCredentialsWindow()
-    {
-        SwitchWindow<Features.Settings.ClientCredentialsSettings.ClientCredentialsSettingsView>();
     }
 
     private void ShowMainWindow()
@@ -209,8 +75,6 @@ public partial class App : System.Windows.Application
         newWindow.Show();
         oldWindow?.Close();
     }
-
-    #endregion
 
     #region Exception Handling
 
