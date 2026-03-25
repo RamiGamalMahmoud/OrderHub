@@ -36,6 +36,7 @@ namespace OrderHub.Infrastructure.Services
         {
             using (AppDbContext context = _appDbContextFactory.CreateDbContext())
             {
+                await context.Database.ExecuteSqlRawAsync("DELETE FROM '__EFMigrationsLock';");
                 await context.Database.MigrateAsync();
             }
         }
