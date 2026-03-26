@@ -10,7 +10,14 @@ public static class ServiceCollectionExtensions
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
         services.AddSingleton<AppDbContextFactory>();
 
+        services.AddRepositories();
         services.AddServices();
+        return services;
+    }
+
+    private static IServiceCollection AddRepositories(this IServiceCollection services)
+    {
+        services.AddSingleton<Application.Interfaces.Repositories.IWhatsapGroupsRepository, Repositories.WhatsapGroupsRepository>();
         return services;
     }
 
