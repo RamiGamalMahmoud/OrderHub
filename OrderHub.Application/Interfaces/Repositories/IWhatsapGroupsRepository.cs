@@ -8,4 +8,5 @@ public interface IWhatsapGroupsRepository
 {
     Task<IEnumerable<WhatsappGroupDtos.WhatsappGroupInfoDto>> GetWhatsappGroupInfos();
     Task<IEnumerable<WhatsappGroupDtos.WhatsappGroupListDto>> GetWhatsappGroupLists();
+    Task<bool> IsGroupExist(string groupName);
 }

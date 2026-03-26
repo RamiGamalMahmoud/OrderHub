@@ -25,4 +25,10 @@ internal class WhatsapGroupsRepository(AppDbContextFactory appDbContextFactory) 
             .Select(w => new WhatsappGroupInfoDto(w.Id, w.GroupName, w.GroupType))
             .ToListAsync();
     }
+
+    public async Task<bool> IsGroupExist(string groupName)
+    {
+        using AppDbContext appDbContext = appDbContextFactory.CreateDbContext();
+        return await appDbContext.Set<WhatsappGroup>().AnyAsync(w => w.GroupName == groupName);
+    }
 }
