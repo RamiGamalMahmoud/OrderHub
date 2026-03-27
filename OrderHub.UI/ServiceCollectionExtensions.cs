@@ -77,6 +77,11 @@ public static class ServiceCollectionExtensions
         // Messages
         services.AddSingleton<Features.Messages.Index.ViewModel>();
 
+        // Whatsapp
+        services.AddSingleton<Features.WhatsappGroups.Index.WhatsappGroupsViewModel>();
+        services.AddTransient<Features.WhatsappGroups.Create.ViewModel>();
+        services.AddTransient<Features.WhatsappGroups.Update.ViewModel>();
+
         return services;
     }
 
@@ -130,6 +135,11 @@ public static class ServiceCollectionExtensions
 
         // Messages
         services.AddSingleton<Features.Messages.Index.View>();
+
+        // Whatsapp
+        services.AddSingleton<Features.WhatsappGroups.Index.View>();
+        services.AddTransient<Features.WhatsappGroups.Create.View>();
+        services.AddTransient<Features.WhatsappGroups.Update.View>();
 
         return services;
     }

@@ -1,0 +1,71 @@
+﻿<Window
+    x:Class="OrderHub.UI.Features.WhatsappGroups.Editor.View"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
+    xmlns:local="clr-namespace:OrderHub.UI.Features.WhatsappGroups.Editor"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="{Binding Title}"
+    d:DataContext="{d:DesignInstance Type=local:ViewModel}"
+    FontFamily="{StaticResource FontFamily}"
+    FontSize="14"
+    ResizeMode="NoResize"
+    SizeToContent="WidthAndHeight"
+    WindowStartupLocation="CenterScreen"
+    mc:Ignorable="d">
+
+    <Border
+        Width="360"
+        Margin="12"
+        Padding="12"
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        BorderBrush="LightGray"
+        BorderThickness="1"
+        CornerRadius="12"
+        FlowDirection="RightToLeft">
+        <Grid>
+
+            <StackPanel>
+
+                <TextBlock Margin="0,16,0,4" Text="اسم الجروب" />
+
+                <TextBox Height="32" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+
+                <TextBlock Margin="0,16,0,4" Text="نوع الجروب" />
+
+                <ComboBox Height="32" DisplayMemberPath="DisplayName" ItemsSource="{Binding GroupTypes}" SelectedItem="{Binding GroupType}" />
+
+                <StackPanel
+                    Margin="0,16,0,0"
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal">
+
+                    <Button
+                        Width="100"
+                        Height="auto"
+                        Margin="5,0"
+                        Padding="0"
+                        Command="{Binding SaveCommand}"
+                        Content="حفظ"
+                        Cursor="Hand"
+                        IsDefault="True"
+                        Style="{StaticResource ButtonPrimary}" />
+                    <Button
+                        Width="100"
+                        Height="auto"
+                        Margin="5,0"
+                        Padding="0"
+                        Command="{Binding CloseEditorCommand}"
+                        Content="إلغاء"
+                        Cursor="Hand"
+                        IsCancel="True" />
+                </StackPanel>
+
+            </StackPanel>
+
+        </Grid>
+    </Border>
+
+</Window>

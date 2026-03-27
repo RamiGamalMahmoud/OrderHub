@@ -56,6 +56,7 @@ internal partial class MainWindowViewModel : ObservableObject
         NavigationCommands.Add(new NavigationCommand("الموردون", "BadgeAccount", () => _navigationService.NavigateTo<Features.Suppliers.Index.View>()));
         NavigationCommands.Add(new NavigationCommand("شركات الشحن", "Ship", () => _navigationService.NavigateTo<Features.ShippingCarriers.Index.View>()));
         NavigationCommands.Add(new NavigationCommand("المناديب", "Moped", () => _navigationService.NavigateTo<Features.Deliverymen.Index.View>()));
+        NavigationCommands.Add(new NavigationCommand("مجموعات الواتساب", "Whatsapp", () => _navigationService.NavigateTo<Features.WhatsappGroups.Index.View>()));
         NavigationCommands.Add(new NavigationCommand("سجل الرسائل", "MessageMinusOutline", () => _navigationService.NavigateTo<Features.Messages.Index.View>()));
 
         RegisterMessages();
