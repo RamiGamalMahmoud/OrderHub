@@ -15,13 +15,13 @@ internal class CreateClientCommandHandler(AppDbContextFactory appDbContextFactor
     public async Task<Result> Handle(CreateClientCommand request, CancellationToken cancellationToken)
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
-        City city = await appDbContext.Cities.FindAsync(request.ClientCreateDto.CityId);
+        City city = await appDbContext.Cities.FindAsync(request.Client.CityId);
         Client client = new Client(
-            request.ClientCreateDto.Name,
-            request.ClientCreateDto.Street,
+            request.Client.Name,
+            request.Client.Street,
             city,
-            request.ClientCreateDto.PhoneNumber,
-            request.ClientCreateDto.CountryCode);
+            request.Client.PhoneNumber,
+            request.Client.CountryCode);
 
         appDbContext.Clients.Add(client);
 

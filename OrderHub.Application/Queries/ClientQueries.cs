@@ -9,5 +9,7 @@ public class ClientQueries
 {
     public record GetAllClientsQuery : IRequest<IEnumerable<ClientListDto>>;
     public record GetAllClientsPagedQuery(int PageNumber = 1, int PageSize = 20) : IRequest<PagedResult<ClientListDto>>;
-    public record GetClientEditQuery(int Id) : IRequest<ClientEditDto>;
+    public record GetClientEditQuery(int Id) : IRequest<ClientFormDto>;
+    public record GetClientsByNameQuery(string SearchTerm = null, int Take = 20) : IRequest<IEnumerable<ClientListDto>>;
+    public record GetClientByIdQuery(int Id) : IRequest<ClientListDto>;
 }

@@ -25,14 +25,14 @@ public class ViewModel : Editor.ViewModel
     {
         await base.LoadDataAsync();
 
-        ProductEdtiDto productEdtiDto = await _mediator.Send(new Application.Queries.ProductQueries.GetProductForEditQuery(_selectionStore.Id));
+        ProductFormDto product = await _mediator.Send(new Application.Queries.ProductQueries.GetProductForEditQuery(_selectionStore.Id));
 
-        Name = productEdtiDto.Name;
-        Code = productEdtiDto.Code;
-        PriceText = productEdtiDto.Price.ToString();
-        SelectedCategory = Categories.Where(c => c.Id == productEdtiDto.CategoryId).FirstOrDefault();
+        Name = product.Name;
+        Code = product.Code;
+        PriceText = product.Price.ToString();
+        SelectedCategory = Categories.Where(c => c.Id == product.CategoryId).FirstOrDefault();
 
-        foreach (int supplierId in productEdtiDto.SelectedSuppliersIds)
+        foreach (int supplierId in product.SelectedSuppliersIds)
         {
             Suppliers.Where(supplier => supplier.Value.Id == supplierId).FirstOrDefault().IsSelected = true;
         }
@@ -46,8 +46,8 @@ public class ViewModel : Editor.ViewModel
             .Where(supplier => supplier.IsSelected)
             .Select(supplier => supplier.Value.Id);
 
-        ProductUpdateDto productUpdateDto = new ProductUpdateDto(_selectionStore.Id, Name, Code, Price, SelectedCategory.Id, selectedSuppliersIds);
-        Result result = await _mediator.Send(new Application.Commands.ProductCommands.UpdateProductCommand(productUpdateDto));
+        ProductFormDto product = new ProductFormDto(Name, Code, Price, SelectedCategory.Id, selectedSuppliersIds);
+        Result result = await _mediator.Send(new Application.Commands.ProductCommands.UpdateProductCommand(_selectionStore.Id, product));
 
         if (result.IsSuccess)
         {

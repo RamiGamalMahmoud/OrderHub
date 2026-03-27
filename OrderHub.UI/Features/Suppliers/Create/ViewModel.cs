@@ -24,7 +24,7 @@ public partial class ViewModel : EditSupplierViewModelBase
             Name, 
             TimeOnly.FromDateTime(OpenAt.Value), TimeOnly.FromDateTime(CloseAt.Value), 
             Street, City.Id, 
-            Number, CountryCode);
+            Number, CountryCode, SelectedWhatsappGroup.Id);
 
         Result result = await _mediator.Send(new Application.Commands.SupplierCommands.CreateSupplierCommand(supplierCreateDto));
 

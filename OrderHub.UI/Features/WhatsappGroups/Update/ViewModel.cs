@@ -29,12 +29,13 @@ public partial class ViewModel : Editor.ViewModel
 
         Name = whatsappGroupEditDto.Name;
         GroupType = new EnumItem<WhatsappGroupType>(whatsappGroupEditDto.WhatsappGroupType, whatsappGroupEditDto.WhatsappGroupType.GetDescription());
+        GroupLink = whatsappGroupEditDto.GroupLink;
         HasChanges = false;
     }
 
     protected override async Task Save()
     {
-        Result result = await _mediator.Send(new Application.Commands.WhatsappGroupCommands.UpdateWhatsappGroupCommand(_selectionStore.Id, Name, GroupType.Value));
+        Result result = await _mediator.Send(new Application.Commands.WhatsappGroupCommands.UpdateWhatsappGroupCommand(_selectionStore.Id, Name, GroupType.Value, GroupLink));
         if(result.IsSuccess)
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification(MessageBuilder.Build(MessageBuilder.OperationType.Update, true, "مجموعة الواتساب")));

@@ -9,11 +9,11 @@ using static OrderHub.Application.Queries.ClientQueries;
 
 namespace OrderHub.Infrastructure.QueryHandlers.Clients;
 
-internal class GetClientEditQueryHandler(AppDbContextFactory appDbContextFactory) : IRequestHandler<GetClientEditQuery, ClientEditDto>
+internal class GetClientEditQueryHandler(AppDbContextFactory appDbContextFactory) : IRequestHandler<GetClientEditQuery, ClientFormDto>
 {
     private readonly AppDbContextFactory _appDbContextFactory = appDbContextFactory;
 
-    public async Task<ClientEditDto> Handle(GetClientEditQuery request, CancellationToken cancellationToken)
+    public async Task<ClientFormDto> Handle(GetClientEditQuery request, CancellationToken cancellationToken)
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
 
@@ -25,8 +25,7 @@ internal class GetClientEditQueryHandler(AppDbContextFactory appDbContextFactory
             .Where(c => c.Id == request.Id)
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
 
-        return new ClientEditDto(
-            client.Id, 
+        return new ClientFormDto(
             client.Name.Value, 
             client.Address.Street, 
             client.Address.City.Id, 

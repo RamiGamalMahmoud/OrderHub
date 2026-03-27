@@ -24,7 +24,8 @@ internal class GetAllSuppliersQueryHandler(AppDbContextFactory appDbContextFacto
                     s.Id,
                     s.Name.Value,
                     s.BusinessHours.OpenAt, s.BusinessHours.CloseAt,
-                    $"{s.Address.City.Name} - {s.Address.Street}", s.Phone.ToString()))
+                    $"{s.Address.City.Name} - {s.Address.Street}", s.Phone.ToString(),
+                    s.WhatsappGroup.GroupName))
                 .ToListAsync(cancellationToken: cancellationToken);
         }
     }

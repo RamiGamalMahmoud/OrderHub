@@ -15,6 +15,7 @@ public partial class WhatsappGroupViewModel : ObservableObject
 
     public int Id { get; init; }
     public string Name { get; init; }
+    public string GroupLink { get; init; }
     public EnumItem<WhatsappGroupType> WhatsappGroupType { get; init; }
 
     public static WhatsappGroupViewModel FromDto(WhatsappGroupListDto dto)

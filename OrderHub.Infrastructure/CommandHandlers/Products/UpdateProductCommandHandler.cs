@@ -8,8 +8,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using static OrderHub.Application.Commands.ProductCommands;
-using static OrderHub.Application.DTOs.ProductDtos;
-
 namespace OrderHub.Infrastructure.CommandHandlers.Products;
 
 internal class UpdateProductCommandHandler(AppDbContextFactory appDbContextFactory) : IRequestHandler<UpdateProductCommand, Result>
@@ -19,9 +17,9 @@ internal class UpdateProductCommandHandler(AppDbContextFactory appDbContextFacto
     public async Task<Result> Handle(UpdateProductCommand request, CancellationToken cancellationToken)
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
-        ProductUpdateDto dto = request.ProductUpdateDto;
+        var dto = request.Product;
         Product product = await appDbContext.Products
-            .Where(p => p.Id == dto.Id)
+            .Where(p => p.Id == request.Id)
             .Include(p => p.Category)
             .Include(p => p.Suppliers)
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);

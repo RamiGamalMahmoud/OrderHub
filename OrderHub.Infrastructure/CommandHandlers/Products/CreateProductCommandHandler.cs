@@ -20,19 +20,19 @@ internal class CreateProductCommandHandler(AppDbContextFactory appDbContextFacto
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
 
-        Category category = await appDbContext.Categories.FindAsync(request.ProductCreateDto.CategoryId);
+        Category category = await appDbContext.Categories.FindAsync(request.Product.CategoryId);
 
         Product product = new Product(
-            request.ProductCreateDto.Name,
-            request.ProductCreateDto.Code,
+            request.Product.Name,
+            request.Product.Code,
             category,
-            new Money(request.ProductCreateDto.Price));
+            new Money(request.Product.Price));
 
-        if (request.ProductCreateDto.SelectedSuppliersIds.Any())
+        if (request.Product.SelectedSuppliersIds.Any())
         {
             IEnumerable<Supplier> suppliers = await appDbContext
                 .Suppliers
-                .Where(s => request.ProductCreateDto.SelectedSuppliersIds.Contains(s.Id))
+                .Where(s => request.Product.SelectedSuppliersIds.Contains(s.Id))
                 .ToListAsync();
             foreach (Supplier supplier in suppliers)
             {

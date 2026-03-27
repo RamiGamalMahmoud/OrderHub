@@ -17,7 +17,7 @@ internal class GetAllWhatsappGroupForEditQueryHandler(AppDbContextFactory appDbC
         var whatsappGroup = await appDbContext
             .WhatsappGroups
             .Where(x => x.Id == request.Id)
-            .Select(x => new WhatsappGroupEditDto(x.Id, x.GroupName, x.GroupType))
+            .Select(x => new WhatsappGroupEditDto(x.Id, x.GroupName, x.GroupType, x.GroupLink))
             .FirstOrDefaultAsync(cancellationToken);
 
         return whatsappGroup;

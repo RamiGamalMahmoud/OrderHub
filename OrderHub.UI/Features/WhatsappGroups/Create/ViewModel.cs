@@ -13,13 +13,14 @@ public class ViewModel : Editor.ViewModel
     public ViewModel(IMediator mediator, IMessenger messenger) : base(mediator)
     {
         _messenger = messenger;
+        HasChanges = true;
     }
 
     public override string Title => "إنشاء مجموعة واتساب";
 
     protected override async Task Save()
     {
-        var result = await _mediator.Send(new WhatsappGroupCommands.CreateWhatsappGroupCommand(Name, GroupType.Value));
+        var result = await _mediator.Send(new WhatsappGroupCommands.CreateWhatsappGroupCommand(Name, GroupType.Value, GroupLink));
         if (result.IsSuccess)
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification(MessageBuilder.Build(MessageBuilder.OperationType.Create, true, "مجموعة الواتساب")));

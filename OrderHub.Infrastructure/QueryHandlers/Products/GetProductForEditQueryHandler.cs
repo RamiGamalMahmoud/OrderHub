@@ -9,11 +9,11 @@ using static OrderHub.Application.Queries.ProductQueries;
 
 namespace OrderHub.Infrastructure.QueryHandlers.Products;
 
-internal class GetProductForEditQueryHandler(AppDbContextFactory appDbContextFactory) : IRequestHandler<GetProductForEditQuery, ProductEdtiDto>
+internal class GetProductForEditQueryHandler(AppDbContextFactory appDbContextFactory) : IRequestHandler<GetProductForEditQuery, ProductFormDto>
 {
     private readonly AppDbContextFactory _appDbContextFactory = appDbContextFactory;
 
-    public async Task<ProductEdtiDto> Handle(GetProductForEditQuery request, CancellationToken cancellationToken)
+    public async Task<ProductFormDto> Handle(GetProductForEditQuery request, CancellationToken cancellationToken)
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
 
@@ -25,8 +25,7 @@ internal class GetProductForEditQueryHandler(AppDbContextFactory appDbContextFac
             .Where(p => p.Id == request.Id)
             .FirstOrDefaultAsync();
 
-        return new ProductEdtiDto(
-            product.Id,
+        return new ProductFormDto(
             product.Name.Value,
             product.Code,
             product.Price.Value,

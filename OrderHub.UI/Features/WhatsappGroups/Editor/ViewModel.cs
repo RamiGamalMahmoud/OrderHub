@@ -18,7 +18,7 @@ public abstract partial class ViewModel : EditorViewModelBase
 
     public ViewModel(IMediator mediator)
     {
-        _notifyPropertiesNames = [nameof(Name), nameof(GroupType)];
+        _notifyPropertiesNames = [nameof(Name), nameof(GroupType), nameof(GroupLink)];
         _mediator = mediator;
         ValidateAllProperties();
     }
@@ -27,13 +27,22 @@ public abstract partial class ViewModel : EditorViewModelBase
     [Required(ErrorMessage = "يجب ادخال اسم الجروب")]
     [NotifyDataErrorInfo]
     [Display(Name = "اسم الجروب")]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     private string _name;
 
     [ObservableProperty]
     [Required(ErrorMessage = "يجب اختيار نوع الجروب")]
     [NotifyDataErrorInfo]
     [Display(Name = "نوع الجروب")]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     private EnumItem<WhatsappGroupType> _groupType;
+
+    [ObservableProperty]
+    [Required(ErrorMessage = "يجب ادخال رابط الجروب")]
+    [NotifyDataErrorInfo]
+    [Display(Name = "رابط الجروب")]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    private string _groupLink;
 
     public IEnumerable<EnumItem<WhatsappGroupType>> GroupTypes =>
         Enum.GetValues<WhatsappGroupType>()

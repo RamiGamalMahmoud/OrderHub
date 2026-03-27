@@ -30,17 +30,17 @@ internal class ViewModel : Editor.ViewModel
     public override async Task InitializeAsync()
     {
         await base.InitializeAsync();
-        DeliverymanEditDto deliverymanEditDto = await _mediator.Send(new Application.Queries.DeliverymanQueries.GetDeliverymanForEditQuery(_selectionStore.Id));
+        DeliverymanFormDto deliveryman = await _mediator.Send(new Application.Queries.DeliverymanQueries.GetDeliverymanForEditQuery(_selectionStore.Id));
 
-        Name = deliverymanEditDto.Name;
-        SelectedCity = Cities.Where(c => c.Id == deliverymanEditDto.Id).FirstOrDefault();
-        PhoneNumber = deliverymanEditDto.PhoneNumber;
+        Name = deliveryman.Name;
+        SelectedCity = Cities.Where(c => c.Id == deliveryman.CityId).FirstOrDefault();
+        PhoneNumber = deliveryman.PhoneNumber;
     }
 
     protected override async Task Save()
     {
-        DeliverymanUpdateDto updateDto = new DeliverymanUpdateDto(_selectionStore.Id, Name, SelectedCity.Id, PhoneNumber);
-        Result result = await _mediator.Send(new Application.Commands.DeliverymanCommands.UpdateDeliverymanCommand(updateDto));
+        DeliverymanFormDto deliveryman = new DeliverymanFormDto(Name, SelectedCity.Id, PhoneNumber);
+        Result result = await _mediator.Send(new Application.Commands.DeliverymanCommands.UpdateDeliverymanCommand(_selectionStore.Id, deliveryman));
         if(result.IsSuccess)
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification("تم تعديل بيانات المندوب بنجاح."));

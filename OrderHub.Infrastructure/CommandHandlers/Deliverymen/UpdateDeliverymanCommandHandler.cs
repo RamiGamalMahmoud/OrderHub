@@ -15,17 +15,17 @@ internal class UpdateDeliverymanCommandHandler(AppDbContextFactory appDbContextF
     public async Task<Result> Handle(UpdateDeliverymanCommand request, CancellationToken cancellationToken)
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
-        Deliveryman deliveryman = await appDbContext.Deliverymen.FindAsync(request.DeliverymanUpdateDto.Id);
+        Deliveryman deliveryman = await appDbContext.Deliverymen.FindAsync(request.Id);
 
-        City city = await appDbContext.Cities.FindAsync(request.DeliverymanUpdateDto.CityId);
+        City city = await appDbContext.Cities.FindAsync(request.Deliveryman.CityId);
 
         if(deliveryman is null)
         {
             return Result.Failure();
         }
 
-        deliveryman.Rename(request.DeliverymanUpdateDto.Name);
-        deliveryman.PhoneNumber = request.DeliverymanUpdateDto.PhoneNumber;
+        deliveryman.Rename(request.Deliveryman.Name);
+        deliveryman.PhoneNumber = request.Deliveryman.PhoneNumber;
         deliveryman.ChangeCity(city);
         await Services.OutboxRecipientPhoneUpdater.UpdateDeliverymanPhoneAsync(
             appDbContext,

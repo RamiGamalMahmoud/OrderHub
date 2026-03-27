@@ -35,7 +35,15 @@
 
                 <TextBlock Margin="0,16,0,4" Text="نوع الجروب" />
 
-                <ComboBox Height="32" DisplayMemberPath="DisplayName" ItemsSource="{Binding GroupTypes}" SelectedItem="{Binding GroupType}" />
+                <ComboBox
+                    Height="32"
+                    DisplayMemberPath="DisplayName"
+                    ItemsSource="{Binding GroupTypes}"
+                    SelectedItem="{Binding GroupType}" />
+
+                <TextBlock Margin="0,16,0,4" Text="رابط الجروب" />
+
+                <TextBox Height="32" Text="{Binding GroupLink, UpdateSourceTrigger=PropertyChanged}" />
 
                 <StackPanel
                     Margin="0,16,0,0"

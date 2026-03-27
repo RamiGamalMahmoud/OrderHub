@@ -29,6 +29,7 @@ internal class UpdateWhatsappGroupCommandHandler(AppDbContextFactory appDbContex
 
         whatsappGroup.GroupName = request.Name;
         whatsappGroup.GroupType = request.WhatsappGroupType;
+        whatsappGroup.GroupLink = request.GroupLink;
 
         try
         {

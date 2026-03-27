@@ -23,20 +23,20 @@ namespace OrderHub.UI.Features.Clients.Update
         public override async Task LoadAsync()
         {
             await base.LoadAsync();
-            ClientEditDto clientEditDto = await _mediator.Send(new Application.Queries.ClientQueries.GetClientEditQuery(_selectionStore.Id));
+            ClientFormDto client = await _mediator.Send(new Application.Queries.ClientQueries.GetClientEditQuery(_selectionStore.Id));
 
-            Name = clientEditDto.Name;
-            Street = clientEditDto.Street;
-            SelectedCity = Cities.FirstOrDefault(c => c.Id == clientEditDto.CityId);
-            Number = clientEditDto.PhoneNumber;
-            CountryCode = clientEditDto.CountryCode;
+            Name = client.Name;
+            Street = client.Street;
+            SelectedCity = Cities.FirstOrDefault(c => c.Id == client.CityId);
+            Number = client.PhoneNumber;
+            CountryCode = client.CountryCode;
             HasChanges = false;
         }
 
         protected override async Task Save()
         {
-            ClientUpdateDto clientUpdateDto = new ClientUpdateDto(_selectionStore.Id, Name, Street, SelectedCity.Id, Number, CountryCode);
-            Result result = await _mediator.Send(new Application.Commands.ClienCommands.UpdateClientCommand(clientUpdateDto));
+            ClientFormDto client = new ClientFormDto(Name, Street, SelectedCity.Id, Number, CountryCode);
+            Result result = await _mediator.Send(new Application.Commands.ClienCommands.UpdateClientCommand(_selectionStore.Id, client));
 
             if (result.IsSuccess)
             {

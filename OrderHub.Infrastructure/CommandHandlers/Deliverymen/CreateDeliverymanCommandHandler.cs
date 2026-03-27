@@ -15,8 +15,8 @@ internal class CreateDeliverymanCommandHandler(AppDbContextFactory appDbContextF
     public async Task<Result> Handle(CreateDeliverymanCommand request, CancellationToken cancellationToken)
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
-        City city = await appDbContext.Cities.FindAsync(request.DeliverymanCreateDto.CityId);
-        Deliveryman deliveryman = new Deliveryman(request.DeliverymanCreateDto.Name, city, request.DeliverymanCreateDto.PhoneNumber);
+        City city = await appDbContext.Cities.FindAsync(request.Deliveryman.CityId);
+        Deliveryman deliveryman = new Deliveryman(request.Deliveryman.Name, city, request.Deliveryman.PhoneNumber);
 
         appDbContext.Deliverymen.Add(deliveryman);
         try

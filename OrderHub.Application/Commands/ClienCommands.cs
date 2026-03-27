@@ -6,7 +6,7 @@ namespace OrderHub.Application.Commands;
 
 public static class ClienCommands
 {
-    public record CreateClientCommand(ClientCreateDto ClientCreateDto) : IRequest<Result>;
+    public record CreateClientCommand(ClientFormDto Client) : IRequest<Result>;
     public record DeleteClientCommand(int Id) : IRequest<Result>;
-    public record UpdateClientCommand(ClientUpdateDto ClientUpdateDto) : IRequest<Result>;
+    public record UpdateClientCommand(int Id, ClientFormDto Client) : IRequest<Result>;
 }

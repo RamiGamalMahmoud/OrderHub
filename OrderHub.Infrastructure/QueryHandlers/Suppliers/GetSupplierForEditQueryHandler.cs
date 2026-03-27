@@ -21,6 +21,7 @@ internal class GetSupplierForEditQueryHandler(AppDbContextFactory appDbContextFa
             .AsNoTracking()
             .Include(s => s.Address).ThenInclude(a => a.City)
             .Include(s => s.Phone)
+            .Include(s => s.WhatsappGroup)
             .Where(s => s.Id == request.Id)
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
 
@@ -32,7 +33,8 @@ internal class GetSupplierForEditQueryHandler(AppDbContextFactory appDbContextFa
             supplier.Address.Street,
             supplier.Address.City.Id,
             supplier.Phone.Number.NationalNumber,
-            supplier.Phone.Number.CountryCode
+            supplier.Phone.Number.CountryCode,
+            supplier.WhatsappGroup?.Id
             );
     }
 }

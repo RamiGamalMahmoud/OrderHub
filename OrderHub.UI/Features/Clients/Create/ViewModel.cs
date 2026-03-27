@@ -13,8 +13,8 @@ namespace OrderHub.UI.Features.Clients.Create
 
         protected override async Task Save()
         {
-            ClientCreateDto clientCreateDto = new ClientCreateDto(Name, Street, SelectedCity.Id, Number, CountryCode);
-            Result result = await _mediator.Send(new Application.Commands.ClienCommands.CreateClientCommand(clientCreateDto));
+            ClientFormDto client = new ClientFormDto(Name, Street, SelectedCity.Id, Number, CountryCode);
+            Result result = await _mediator.Send(new Application.Commands.ClienCommands.CreateClientCommand(client));
             if(result.IsSuccess)
             {
                 await _mediator.Publish(new Application.Notifications.SuccessNotification("تم انشاء العميل بنجاح"));

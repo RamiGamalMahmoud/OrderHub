@@ -14,8 +14,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.ClientDtos;
 using static OrderHub.Application.DTOs.CommonDtos;
+using static OrderHub.Application.DTOs.DeliverymanDtos;
 using static OrderHub.Application.DTOs.PaymentMothodsDtos;
 using static OrderHub.Application.DTOs.ProductDtos;
+using static OrderHub.Application.DTOs.ShippingCarriersDtos;
 
 namespace OrderHub.UI.Features.Orders.Editor;
 
@@ -25,6 +27,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
     protected readonly IDialogService _dialogService;
     protected readonly IMessenger _messenger;
 
+    private CancellationTokenSource _clientSearchCts;
     private CancellationTokenSource _searchCts;
     private CancellationTokenSource _categoryCts;
     private bool _suspendChangeTracking;
@@ -43,7 +46,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
         _messenger = messenger;
 
         OrderBuilder = new OrderBuilder();
-        DeliveryMethodsViewModel = new DeliveryMethodsViewModel();
+        DeliveryMethodsViewModel = new DeliveryMethodsViewModel(mediator);
         _notifyPropertiesNames =
         [
             nameof(SelectedClient),
@@ -81,13 +84,11 @@ internal abstract partial class ViewModel : EditorViewModelBase
     {
         _messenger.Register<Application.Messages.Clients.ClientCreatedMessage>(
             this,
-            async (_, _) => Clients = await _mediator.Send(
-                new Application.Queries.ClientQueries.GetAllClientsQuery()));
+            async (_, _) => await ReloadClientsAsync(ClientSearchTerm));
 
         _messenger.Register<Application.Messages.Clients.ClientUpdatedMessage>(
             this,
-            async (_, _) => Clients = await _mediator.Send(
-                new Application.Queries.ClientQueries.GetAllClientsQuery()));
+            async (_, _) => await ReloadClientsAsync(ClientSearchTerm));
 
         _messenger.Register<Application.Messages.Categories.CategoryCreatedMessage>(
             this,
@@ -101,23 +102,19 @@ internal abstract partial class ViewModel : EditorViewModelBase
 
         _messenger.Register<Application.Messages.Deliveryman.DeliverymanCreatedMessage>(
             this,
-            async (_, _) => DeliveryMethodsViewModel.Deliverymen = await _mediator.Send(
-                new Application.Queries.CommonQueries.GetAllDeliverymenInfoQuery()));
+            async (_, _) => await ReloadDeliverymenAsync(DeliveryMethodsViewModel.DeliverymanSearchTerm));
 
         _messenger.Register<Application.Messages.Deliveryman.DeleverymanUpdateMessage>(
             this,
-            async (_, _) => DeliveryMethodsViewModel.Deliverymen = await _mediator.Send(
-                new Application.Queries.CommonQueries.GetAllDeliverymenInfoQuery()));
+            async (_, _) => await ReloadDeliverymenAsync(DeliveryMethodsViewModel.DeliverymanSearchTerm));
 
         _messenger.Register<Application.Messages.ShippingCarriers.ShippingCarrierCreatedMessage>(
             this,
-            async (_, _) => DeliveryMethodsViewModel.ShippingCarriers = await _mediator.Send(
-                new Application.Queries.CommonQueries.GetAllShippingCarriersInfoQuery()));
+            async (_, _) => await ReloadShippingCarriersAsync(DeliveryMethodsViewModel.ShippingCarrierSearchTerm));
 
         _messenger.Register<Application.Messages.ShippingCarriers.ShippingCarrierUpdatedMessage>(
             this,
-            async (_, _) => DeliveryMethodsViewModel.ShippingCarriers = await _mediator.Send(
-                new Application.Queries.CommonQueries.GetAllShippingCarriersInfoQuery()));
+            async (_, _) => await ReloadShippingCarriersAsync(DeliveryMethodsViewModel.ShippingCarrierSearchTerm));
     }
 
     [ObservableProperty] private IEnumerable<CategoryInfoDto> _rootCategories;
@@ -126,6 +123,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
     [ObservableProperty] private IEnumerable<ProductListDto> _products;
     [ObservableProperty] private IEnumerable<PaymentMethodListDto> _paymentMethods;
     [ObservableProperty] private PaymentMethodListDto _selectedPaymentMethod;
+    [ObservableProperty] private string _clientSearchTerm;
     [ObservableProperty] private string _searchTerm;
     [ObservableProperty] private CategoryInfoDto _selectedCategory;
 
@@ -150,25 +148,40 @@ internal abstract partial class ViewModel : EditorViewModelBase
 
     internal async Task LoadAsync()
     {
-        var deliverymenTask = _mediator.Send(new Application.Queries.CommonQueries.GetAllDeliverymenInfoQuery());
-        var carriersTask = _mediator.Send(new Application.Queries.CommonQueries.GetAllShippingCarriersInfoQuery());
         var categoriesTask = _mediator.Send(new Application.Queries.CommonQueries.GetRootCategoriesQuery());
         var paymentsTask = _mediator.Send(new Application.Queries.PaymentMothodQueries.GetPaymentMethodListQuery());
-        var clientsTask = _mediator.Send(new Application.Queries.ClientQueries.GetAllClientsQuery());
+        var clientsTask = _mediator.Send(new Application.Queries.ClientQueries.GetClientsByNameQuery());
+        var deliverymenTask = _mediator.Send(new Application.Queries.DeliverymanQueries.GetDeliverymenByNameQuery());
+        var carriersTask = _mediator.Send(new Application.Queries.ShippingCarriersQueries.GetShippingCarriersByNameQuery());
 
         await Task.WhenAll(deliverymenTask, carriersTask, categoriesTask, paymentsTask, clientsTask);
 
-        DeliveryMethodsViewModel.Deliverymen = await deliverymenTask;
-        DeliveryMethodsViewModel.ShippingCarriers = await carriersTask;
+        DeliveryMethodsViewModel.SetDeliverymen(await deliverymenTask);
+        DeliveryMethodsViewModel.SetShippingCarriers(await carriersTask);
         RootCategories = await categoriesTask;
         PaymentMethods = await paymentsTask;
-        Clients = await clientsTask;
+        Clients = MergeSelectedItem(await clientsTask, SelectedClient);
 
         await AfterLoadAsync();
     }
 
     protected virtual Task AfterLoadAsync() => Task.CompletedTask;
 
+    async partial void OnClientSearchTermChanged(string oldValue, string newValue)
+    {
+        _clientSearchCts?.Cancel();
+        _clientSearchCts = new CancellationTokenSource();
+        CancellationToken token = _clientSearchCts.Token;
+
+        try
+        {
+            await Task.Delay(300, token);
+            await ReloadClientsAsync(newValue, token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
 
     async partial void OnSearchTermChanged(string oldValue, string newValue)
     {
@@ -289,6 +302,48 @@ internal abstract partial class ViewModel : EditorViewModelBase
     private void ShowCreateClient()
         => _dialogService.ShowDialog<Features.Clients.Create.View>();
 
+    protected async Task EnsureClientLoadedAsync(int clientId)
+    {
+        if (Clients?.Any(client => client.Id == clientId) == true)
+            return;
+
+        ClientListDto client = await _mediator.Send(new Application.Queries.ClientQueries.GetClientByIdQuery(clientId));
+        if (client is not null)
+        {
+            Clients = MergeSelectedItem(Clients, client);
+        }
+    }
+
+    protected async Task EnsureDeliverymanLoadedAsync(int? deliverymanId)
+    {
+        if (deliverymanId is null || DeliveryMethodsViewModel.Deliverymen?.Any(deliveryman => deliveryman.Id == deliverymanId) == true)
+            return;
+
+        DeliverymanListDto deliveryman = await _mediator.Send(
+            new Application.Queries.DeliverymanQueries.GetDeliverymanByIdQuery(deliverymanId.Value));
+
+        if (deliveryman is not null)
+        {
+            DeliveryMethodsViewModel.SetDeliverymen(
+                MergeSelectedItem(DeliveryMethodsViewModel.Deliverymen, deliveryman));
+        }
+    }
+
+    protected async Task EnsureShippingCarrierLoadedAsync(int? shippingCarrierId)
+    {
+        if (shippingCarrierId is null || DeliveryMethodsViewModel.ShippingCarriers?.Any(carrier => carrier.Id == shippingCarrierId) == true)
+            return;
+
+        ShippingCarrierListDto shippingCarrier = await _mediator.Send(
+            new Application.Queries.ShippingCarriersQueries.GetShippingCarrierByIdQuery(shippingCarrierId.Value));
+
+        if (shippingCarrier is not null)
+        {
+            DeliveryMethodsViewModel.SetShippingCarriers(
+                MergeSelectedItem(DeliveryMethodsViewModel.ShippingCarriers, shippingCarrier));
+        }
+    }
+
     protected async Task RunWithoutTrackingAsync(Func<Task> action)
     {
         _suspendChangeTracking = true;
@@ -333,5 +388,43 @@ internal abstract partial class ViewModel : EditorViewModelBase
     {
         MarkAsChanged();
         SaveCommand.NotifyCanExecuteChanged();
+    }
+
+    private async Task ReloadClientsAsync(string searchTerm, CancellationToken cancellationToken = default)
+    {
+        IEnumerable<ClientListDto> clients = await _mediator.Send(
+            new Application.Queries.ClientQueries.GetClientsByNameQuery(searchTerm),
+            cancellationToken);
+
+        Clients = MergeSelectedItem(clients, SelectedClient);
+    }
+
+    private async Task ReloadDeliverymenAsync(string searchTerm, CancellationToken cancellationToken = default)
+    {
+        IEnumerable<DeliverymanListDto> deliverymen = await _mediator.Send(
+            new Application.Queries.DeliverymanQueries.GetDeliverymenByNameQuery(searchTerm),
+            cancellationToken);
+
+        DeliveryMethodsViewModel.SetDeliverymen(deliverymen);
+    }
+
+    private async Task ReloadShippingCarriersAsync(string searchTerm, CancellationToken cancellationToken = default)
+    {
+        IEnumerable<ShippingCarrierListDto> shippingCarriers = await _mediator.Send(
+            new Application.Queries.ShippingCarriersQueries.GetShippingCarriersByNameQuery(searchTerm),
+            cancellationToken);
+
+        DeliveryMethodsViewModel.SetShippingCarriers(shippingCarriers);
+    }
+
+    private static IEnumerable<TItem> MergeSelectedItem<TItem>(IEnumerable<TItem> items, TItem selectedItem)
+        where TItem : class
+    {
+        TItem[] results = (items ?? Enumerable.Empty<TItem>()).ToArray();
+
+        if (selectedItem is null || results.Any(item => EqualityComparer<TItem>.Default.Equals(item, selectedItem)))
+            return results;
+
+        return new[] { selectedItem }.Concat(results);
     }
 }

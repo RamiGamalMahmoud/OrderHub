@@ -97,6 +97,8 @@
 
                 <DataGridTextColumn Binding="{Binding PhoneNumber}" Header="رقم الهاتف" />
 
+                <DataGridTextColumn Binding="{Binding WhatsappGroup}" Header="جروب الواتساب" />
+
                 <DataGridTemplateColumn Header="أوقات الدوام">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>

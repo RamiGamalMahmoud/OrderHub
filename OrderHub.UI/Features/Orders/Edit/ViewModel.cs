@@ -38,6 +38,22 @@ internal class ViewModel : Editor.ViewModel
             return;
         }
 
+        await EnsureClientLoadedAsync(order.ClientId);
+        await EnsureDeliverymanLoadedAsync(order.DeliveryManId);
+        await EnsureShippingCarrierLoadedAsync(order.ShippingCarrierId);
+
+        foreach (OrderDeliveryStepEditDto step in order.DeliverySteps)
+        {
+            if (step.DeliveryMethod == DeliveryMethod.DeliveryMan)
+            {
+                await EnsureDeliverymanLoadedAsync(step.HandlerId);
+            }
+            else if (step.DeliveryMethod == DeliveryMethod.ShippingCompany)
+            {
+                await EnsureShippingCarrierLoadedAsync(step.HandlerId);
+            }
+        }
+
         await RunWithoutTrackingAsync(() =>
         {
             OrderBuilder.Clear();

@@ -51,7 +51,7 @@ internal partial class SuppliersViewModel : IndexViewModelBase<SupplierListDto>
         if (_dialogService.Confirm($"هل تريد حذف المورد {dto.Name}"))
         {
             Result result = await _mediator.Send(new Application.Commands.SupplierCommands.DeleteSupplierCommand(dto.Id));
-            if(result.IsSuccess)
+            if (result.IsSuccess)
             {
                 await _mediator.Publish(new Application.Notifications.SuccessNotification(MessageBuilder.Build(MessageBuilder.OperationType.Delete, true, "المورد")));
                 _messenger.Send(new Application.Messages.Suppliers.SupplierDeletedMessage());

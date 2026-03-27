@@ -1,5 +1,6 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MediatR;
 using OrderHub.Domain.Enums;
 using System;
 using System.Collections.Generic;
@@ -8,15 +9,23 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using static OrderHub.Application.DTOs.CommonDtos;
+using System.Threading;
+using System.Threading.Tasks;
+using static OrderHub.Application.DTOs.DeliverymanDtos;
 using static OrderHub.Application.DTOs.OrderDtos;
+using static OrderHub.Application.DTOs.ShippingCarriersDtos;
 
 namespace OrderHub.UI.Features.Orders.Editor;
 
 public partial class DeliveryMethodsViewModel : ObservableValidator
 {
-    public DeliveryMethodsViewModel()
+    private readonly IMediator _mediator;
+    private CancellationTokenSource _deliverymanSearchCts;
+    private CancellationTokenSource _shippingCarrierSearchCts;
+
+    public DeliveryMethodsViewModel(IMediator mediator)
     {
+        _mediator = mediator;
         DeliverySteps.CollectionChanged += DeliverySteps_CollectionChanged;
         ValidateAllProperties();
     }
@@ -41,26 +50,32 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
     }
 
     [ObservableProperty]
-    private ShippingCarrierInfoDto _selectedShippingCarrier;
+    private ShippingCarrierListDto _selectedShippingCarrier;
 
-    partial void OnSelectedShippingCarrierChanged(ShippingCarrierInfoDto oldValue, ShippingCarrierInfoDto newValue)
+    partial void OnSelectedShippingCarrierChanged(ShippingCarrierListDto oldValue, ShippingCarrierListDto newValue)
     {
         ValidateProperty(SelecteddDeliveryMethod, nameof(SelecteddDeliveryMethod));
     }
 
     [ObservableProperty]
-    private DeliverymanInfoDto _selectedDeliveryman;
+    private DeliverymanListDto _selectedDeliveryman;
 
-    partial void OnSelectedDeliverymanChanged(DeliverymanInfoDto oldValue, DeliverymanInfoDto newValue)
+    partial void OnSelectedDeliverymanChanged(DeliverymanListDto oldValue, DeliverymanListDto newValue)
     {
         ValidateProperty(SelecteddDeliveryMethod, nameof(SelecteddDeliveryMethod));
     }
 
     [ObservableProperty]
-    private IEnumerable<DeliverymanInfoDto> _deliverymen;
+    private IEnumerable<DeliverymanListDto> _deliverymen = [];
 
     [ObservableProperty]
-    private IEnumerable<ShippingCarrierInfoDto> _shippingCarriers;
+    private IEnumerable<ShippingCarrierListDto> _shippingCarriers = [];
+
+    [ObservableProperty]
+    private string _deliverymanSearchTerm;
+
+    [ObservableProperty]
+    private string _shippingCarrierSearchTerm;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(MoveDeliveryStepDownCommand))]
@@ -69,6 +84,70 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
     private DeliveryStepViewModel _selectedDeliveryStep;
 
     public ObservableCollection<DeliveryStepViewModel> DeliverySteps { get; set; } = [];
+
+    public void SetDeliverymen(IEnumerable<DeliverymanListDto> deliverymen)
+    {
+        Deliverymen = MergeSelectedItem(deliverymen, SelectedDeliveryman);
+    }
+
+    public void SetShippingCarriers(IEnumerable<ShippingCarrierListDto> shippingCarriers)
+    {
+        ShippingCarriers = MergeSelectedItem(shippingCarriers, SelectedShippingCarrier);
+    }
+
+    async partial void OnDeliverymanSearchTermChanged(string oldValue, string newValue)
+    {
+        _deliverymanSearchCts?.Cancel();
+        _deliverymanSearchCts = new CancellationTokenSource();
+        CancellationToken token = _deliverymanSearchCts.Token;
+
+        try
+        {
+            await Task.Delay(300, token);
+            IEnumerable<DeliverymanListDto> deliverymen = await _mediator.Send(
+                new Application.Queries.DeliverymanQueries.GetDeliverymenByNameQuery(newValue),
+                token);
+            SetDeliverymen(deliverymen);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    async partial void OnShippingCarrierSearchTermChanged(string oldValue, string newValue)
+    {
+        _shippingCarrierSearchCts?.Cancel();
+        _shippingCarrierSearchCts = new CancellationTokenSource();
+        CancellationToken token = _shippingCarrierSearchCts.Token;
+
+        try
+        {
+            await Task.Delay(300, token);
+            IEnumerable<ShippingCarrierListDto> shippingCarriers = await _mediator.Send(
+                new Application.Queries.ShippingCarriersQueries.GetShippingCarriersByNameQuery(newValue),
+                token);
+            SetShippingCarriers(shippingCarriers);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    partial void OnDeliverymenChanged(IEnumerable<DeliverymanListDto> oldValue, IEnumerable<DeliverymanListDto> newValue)
+    {
+        RefreshDeliveryStepHandlers(
+            DeliveryMethod.DeliveryMan,
+            (newValue ?? Enumerable.Empty<DeliverymanListDto>())
+                .Select(deliveryman => new Handler(deliveryman.Id, deliveryman.Name)));
+    }
+
+    partial void OnShippingCarriersChanged(IEnumerable<ShippingCarrierListDto> oldValue, IEnumerable<ShippingCarrierListDto> newValue)
+    {
+        RefreshDeliveryStepHandlers(
+            DeliveryMethod.ShippingCompany,
+            (newValue ?? Enumerable.Empty<ShippingCarrierListDto>())
+                .Select(carrier => new Handler(carrier.Id, carrier.Name)));
+    }
 
     public static ValidationResult ValidateDeliveryMethod(EnumItem<DeliveryMethod> deliveryMethod, ValidationContext context)
     {
@@ -95,13 +174,12 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
         };
     }
 
-
     [RelayCommand]
     private void AddDeliverymanStep()
     {
         DeliverySteps.Add(new DeliveryStepViewModel
         {
-            Handlers = (Deliverymen ?? Enumerable.Empty<DeliverymanInfoDto>()).Select(d => new Handler(d.Id, d.Name)),
+            Handlers = (Deliverymen ?? Enumerable.Empty<DeliverymanListDto>()).Select(d => new Handler(d.Id, d.Name)),
             Method = DeliveryMethod.DeliveryMan,
             Type = DeliveryMethod.DeliveryMan.GetDescription(),
             StepOrder = DeliverySteps.Count + 1
@@ -113,7 +191,7 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
     {
         DeliverySteps.Add(new DeliveryStepViewModel
         {
-            Handlers = (ShippingCarriers ?? Enumerable.Empty<ShippingCarrierInfoDto>()).Select(d => new Handler(d.Id, d.Name)),
+            Handlers = (ShippingCarriers ?? Enumerable.Empty<ShippingCarrierListDto>()).Select(d => new Handler(d.Id, d.Name)),
             Method = DeliveryMethod.ShippingCompany,
             Type = DeliveryMethod.ShippingCompany.GetDescription(),
             StepOrder = DeliverySteps.Count + 1
@@ -191,6 +269,32 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
                 step.StepOrder,
                 step.Method,
                 step.SelectedHandler.Id));
+    }
+
+    private void RefreshDeliveryStepHandlers(DeliveryMethod method, IEnumerable<Handler> handlers)
+    {
+        Handler[] handlerOptions = handlers.ToArray();
+
+        foreach (DeliveryStepViewModel step in DeliverySteps.Where(step => step.Method == method))
+        {
+            Handler selectedHandler = step.SelectedHandler;
+            step.Handlers = handlerOptions;
+            if (selectedHandler is not null)
+            {
+                step.SelectedHandler = step.Handlers.FirstOrDefault(handler => handler.Id == selectedHandler.Id);
+            }
+        }
+    }
+
+    private static IEnumerable<TItem> MergeSelectedItem<TItem>(IEnumerable<TItem> items, TItem selectedItem)
+        where TItem : class
+    {
+        TItem[] results = (items ?? Enumerable.Empty<TItem>()).ToArray();
+
+        if (selectedItem is null || results.Contains(selectedItem))
+            return results;
+
+        return new[] { selectedItem }.Concat(results);
     }
 
     private void DeliverySteps_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)

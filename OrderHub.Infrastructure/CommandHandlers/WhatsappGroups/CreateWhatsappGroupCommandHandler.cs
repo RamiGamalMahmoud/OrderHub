@@ -19,7 +19,8 @@ internal class CreateWhatsappGroupCommandHandler(AppDbContextFactory appDbContex
         WhatsappGroup whatsappGroup = new WhatsappGroup
         {
             GroupName = request.Name,
-            GroupType = request.WhatsappGroupType
+            GroupType = request.WhatsappGroupType,
+            GroupLink = request.GroupLink
         };
 
         appDbContext.WhatsappGroups.Add(whatsappGroup);

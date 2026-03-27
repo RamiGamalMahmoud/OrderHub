@@ -34,6 +34,7 @@ public partial class ViewModel : EditSupplierViewModelBase
         City = Cities.Where(c => c.Id == SupplierEditDto.CityId).FirstOrDefault();
         Number = SupplierEditDto.PhoneNumber;
         CountryCode = SupplierEditDto.CountryCode;
+        SelectedWhatsappGroup = WhatsappGroups.Where(wg => wg.Id == SupplierEditDto.WhatsappGroupId).FirstOrDefault();
         HasChanges = false;
     }
 
@@ -47,7 +48,8 @@ public partial class ViewModel : EditSupplierViewModelBase
             Street,
             City.Id,
             Number,
-            CountryCode);
+            CountryCode,
+            SelectedWhatsappGroup.Id);
 
         Result result = await _mediator.Send(new Application.Commands.SupplierCommands.UpdateSupplierCommand(supplierUpdateDto));
         if(result.IsSuccess)

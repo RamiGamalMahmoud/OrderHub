@@ -6,7 +6,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using static OrderHub.Application.Commands.ClienCommands;
-using static OrderHub.Application.DTOs.ClientDtos;
 
 namespace OrderHub.Infrastructure.CommandHandlers.Clientss;
 
@@ -17,7 +16,7 @@ internal class UpdateClientCommandHandler(AppDbContextFactory appDbContextFactor
     public async Task<Result> Handle(UpdateClientCommand request, CancellationToken cancellationToken)
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
-        ClientUpdateDto dto = request.ClientUpdateDto;
+        var dto = request.Client;
         
         City newCity = await appDbContext.Cities.FindAsync(dto.CityId);
 
@@ -25,7 +24,7 @@ internal class UpdateClientCommandHandler(AppDbContextFactory appDbContextFactor
             .Clients
             .Include(c => c.Address).ThenInclude(a => a.City)
             .Include(c => c.Phone)
-            .Where(c => c.Id == dto.Id)
+            .Where(c => c.Id == request.Id)
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
 
         client.UpdateName(dto.Name);

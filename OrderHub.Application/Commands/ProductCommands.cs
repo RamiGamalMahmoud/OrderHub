@@ -6,7 +6,7 @@ namespace OrderHub.Application.Commands;
 
 public static class ProductCommands
 {
-    public record CreateProductCommand(ProductCreateDto ProductCreateDto) : IRequest<Result>;
+    public record CreateProductCommand(ProductFormDto Product) : IRequest<Result>;
     public record DeleteProductCommand(int Id) : IRequest<Result>;
-    public record UpdateProductCommand(ProductUpdateDto ProductUpdateDto) : IRequest<Result>;
+    public record UpdateProductCommand(int Id, ProductFormDto Product) : IRequest<Result>;
 }
