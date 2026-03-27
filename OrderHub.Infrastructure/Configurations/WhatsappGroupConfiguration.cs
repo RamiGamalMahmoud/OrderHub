@@ -20,5 +20,9 @@ internal class WhatsappGroupConfiguration : ModelConfigurationBase<WhatsappGroup
         builder.Property(w => w.GroupType)
             .HasConversion<string>()
             .IsRequired();
+
+        builder.Property(x => x.GroupLink)
+            .HasColumnType("VARCHAR(100)")
+            .IsRequired();
     }
 }
