@@ -84,7 +84,6 @@
 	<ItemGroup>
 	  <Folder Include="Features\Cities\Edit\" />
 	  <Folder Include="Features\Cities\Index\" />
-	  <Folder Include="Features\WhatsappGroups\Create\" />
 	  <Folder Include="Resources\Fonts\Tajawal\" />
 	</ItemGroup>
 

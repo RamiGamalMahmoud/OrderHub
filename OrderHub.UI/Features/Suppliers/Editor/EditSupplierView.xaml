@@ -33,6 +33,7 @@
                 <RowDefinition Height="1*" />
                 <RowDefinition Height="1*" />
                 <RowDefinition Height="1*" />
+                <RowDefinition Height="1*" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
 
@@ -132,7 +133,6 @@
                         <ColumnDefinition Width="auto" />
                     </Grid.ColumnDefinitions>
                     <hc:ComboBox
-                        MinWidth="200"
                         Margin="0,10"
                         hc:InfoElement.Placeholder="اختر المدينة"
                         hc:InfoElement.ShowClearButton="True"
@@ -141,6 +141,8 @@
                         SelectedItem="{Binding City}" />
                     <Button
                         Grid.Column="2"
+                        Margin="5,0,0,0"
+                        Padding="0"
                         HorizontalAlignment="Right"
                         BorderThickness="0"
                         Command="{Binding ShowCreateCityCommand}"
@@ -164,6 +166,36 @@
 
             <StackPanel
                 Grid.Row="4"
+                Margin="0,10"
+                Orientation="Vertical">
+                <DockPanel>
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontWeight="DemiBold"
+                        Text="جروب الواتساب" />
+
+                    <Button
+                        Margin="5,0,0,0"
+                        Padding="0"
+                        HorizontalAlignment="Right"
+                        BorderThickness="0"
+                        Command="{Binding ShowCreateWhatsappGroupCommand}"
+                        Cursor="Hand">
+                        <icons:MaterialIcon
+                            Width="20"
+                            Foreground="{StaticResource Primary}"
+                            Kind="PlusCircle" />
+                    </Button>
+                </DockPanel>
+                <hc:ComboBox
+                    hc:InfoElement.Placeholder="اختر جروب الواتساب"
+                    DisplayMemberPath="Name"
+                    ItemsSource="{Binding WhatsappGroups}"
+                    SelectedItem="{Binding SelectedWhatsappGroup}" />
+            </StackPanel>
+
+            <StackPanel
+                Grid.Row="5"
                 Grid.ColumnSpan="2"
                 Margin="0,16,0,0"
                 HorizontalAlignment="Center"
@@ -173,6 +205,7 @@
                     Width="100"
                     Height="auto"
                     Margin="5,0"
+                    Padding="0"
                     HorizontalAlignment="Left"
                     Command="{Binding SaveCommand}"
                     Content="حفظ"
@@ -183,6 +216,7 @@
                     Width="100"
                     Height="auto"
                     Margin="5,0"
+                    Padding="0"
                     HorizontalAlignment="Right"
                     Command="{Binding CloseEditorCommand}"
                     Content="إلغاء"

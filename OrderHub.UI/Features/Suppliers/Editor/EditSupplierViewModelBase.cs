@@ -19,7 +19,7 @@ public abstract partial class EditSupplierViewModelBase : EditorViewModelBase
 
     public EditSupplierViewModelBase(IMediator mediator, IDialogService dialogService)
     {
-        _notifyPropertiesNames = [nameof(Name), nameof(OpenAt), nameof(CloseAt), nameof(Number), nameof(CountryCode), nameof(City), nameof(Street)];
+        _notifyPropertiesNames = [nameof(Name), nameof(OpenAt), nameof(CloseAt), nameof(Number), nameof(CountryCode), nameof(City), nameof(Street), nameof(SelectedWhatsappGroup)];
         _mediator = mediator;
         _dialogService = dialogService;
         WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityCreatedMessage>(this, async (r, m) =>
@@ -76,16 +76,29 @@ public abstract partial class EditSupplierViewModelBase : EditorViewModelBase
     [ObservableProperty]
     private IEnumerable<CityInfoDto> _cities;
 
+    [ObservableProperty]
+    private IEnumerable<Application.DTOs.WhatsappGroupDtos.WhatsappGroupInfoDto> _whatsappGroups;
+
+    [ObservableProperty]
+    [Required(ErrorMessage = "يجب اختيار جروب الواتساب")]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    [NotifyDataErrorInfo]
+    private Application.DTOs.WhatsappGroupDtos.WhatsappGroupInfoDto _selectedWhatsappGroup;
+
     [RelayCommand]
     private void ShowCreateCity() => _dialogService.ShowDialog<Cities.Create.CreateCityView>();
 
     public virtual async Task LoadAsync()
     {
         Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
+        WhatsappGroups = await _mediator.Send(new Application.Queries.WhatsappGroupQueries.GetAllWhatsappGroupInfosQuery(Domain.Enums.WhatsappGroupType.Suppliers));
     }
 
     [RelayCommand]
     private void CloseEdit() => OnRequestClose();
+
+    [RelayCommand]
+    private void ShowCreateWhatsappGroup() => _dialogService.ShowDialog<Features.WhatsappGroups.Create.View>();
 
 
     public override string Title => "انشاء مورد جديد";
