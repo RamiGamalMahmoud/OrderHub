@@ -42,6 +42,12 @@ namespace OrderHub.Infrastructure.Configurations
                     timeOnly => timeOnly.ToTimeSpan(),
                     timeSpan => TimeOnly.FromTimeSpan(timeSpan));
             });
+
+            builder.HasOne(x => x.WhatsappGroup)
+                .WithMany()
+                .HasForeignKey("whatsapp_group_id")
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
