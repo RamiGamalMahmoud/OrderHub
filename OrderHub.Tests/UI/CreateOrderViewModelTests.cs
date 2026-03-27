@@ -68,7 +68,7 @@ public class CreateOrderViewModelTests
         CreateOrderViewModel viewModel = CreateOrderViewModel;
         viewModel.DeliveryMethodsViewModel.SelecteddDeliveryMethod = new EnumItem<DeliveryMethod>(Domain.Enums.DeliveryMethod.ShippingCompany, "");
 
-        viewModel.DeliveryMethodsViewModel.SelectedShippingCarrier = new Application.DTOs.CommonDtos.ShippingCarrierInfoDto(1, "Shipping Company 1");
+        viewModel.DeliveryMethodsViewModel.SelectedShippingCarrier = new Application.DTOs.ShippingCarriersDtos.ShippingCarrierListDto(1, "Shipping Company 1", 25, "+966 555555555", "City - Street");
         viewModel.DeliveryMethodsViewModel.HasErrors.Should().BeFalse();
 
         viewModel.SelectedClient = new Application.DTOs.ClientDtos.ClientListDto(1, "Client 1", "Address 1", "+966 123456789");
@@ -168,13 +168,13 @@ public class CreateOrderViewModelTests
         {
             Deliverymen =
             [
-                new Application.DTOs.CommonDtos.DeliverymanInfoDto(1, "Deliveryman 1"),
-                new Application.DTOs.CommonDtos.DeliverymanInfoDto(2, "Deliveryman 2")
+                new Application.DTOs.DeliverymanDtos.DeliverymanListDto(1, "Deliveryman 1", "Riyadh", "+966 500000001"),
+                new Application.DTOs.DeliverymanDtos.DeliverymanListDto(2, "Deliveryman 2", "Jeddah", "+966 500000002")
             ],
             ShippingCarriers =
             [
-                new Application.DTOs.CommonDtos.ShippingCarrierInfoDto(1, "Shipping Company 1"),
-                new Application.DTOs.CommonDtos.ShippingCarrierInfoDto(2, "Shipping Company 2")
+                new Application.DTOs.ShippingCarriersDtos.ShippingCarrierListDto(1, "Shipping Company 1", 25, "+966 511111111", "Riyadh - Street 1"),
+                new Application.DTOs.ShippingCarriersDtos.ShippingCarrierListDto(2, "Shipping Company 2", 30, "+966 522222222", "Jeddah - Street 2")
             ]
         }
     };

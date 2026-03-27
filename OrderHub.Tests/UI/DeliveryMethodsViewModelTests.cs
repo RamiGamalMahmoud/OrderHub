@@ -1,8 +1,10 @@
-﻿using FluentAssertions;
+using FluentAssertions;
+using MediatR;
+using Moq;
 using OrderHub.UI.Features.Orders.Editor;
-using System.Collections.Generic;
 using System.Linq;
-using static OrderHub.Application.DTOs.CommonDtos;
+using static OrderHub.Application.DTOs.DeliverymanDtos;
+using static OrderHub.Application.DTOs.ShippingCarriersDtos;
 
 namespace OrderHub.Tests.UI;
 
@@ -22,7 +24,7 @@ public class DeliveryMethodsViewModelTests
     {
         DeliveryMethodsViewModel deliveryMethodsViewModel = DeliveryMethodsViewModel;
 
-        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.Where(d => d.Value == Domain.Enums.DeliveryMethod.Pickup).FirstOrDefault();
+        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.FirstOrDefault(d => d.Value == Domain.Enums.DeliveryMethod.Pickup);
 
         deliveryMethodsViewModel.HasErrors.Should().BeFalse();
     }
@@ -32,7 +34,7 @@ public class DeliveryMethodsViewModelTests
     {
         DeliveryMethodsViewModel deliveryMethodsViewModel = DeliveryMethodsViewModel;
 
-        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.Where(d => d.Value == Domain.Enums.DeliveryMethod.ShippingCompany).FirstOrDefault();
+        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.FirstOrDefault(d => d.Value == Domain.Enums.DeliveryMethod.ShippingCompany);
 
         deliveryMethodsViewModel.HasErrors.Should().BeTrue();
         deliveryMethodsViewModel.GetErrors().Select(e => e.ErrorMessage).Should().Contain("Shipping carrier is required");
@@ -43,10 +45,10 @@ public class DeliveryMethodsViewModelTests
     {
         DeliveryMethodsViewModel deliveryMethodsViewModel = DeliveryMethodsViewModel;
 
-        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.Where(d => d.Value == Domain.Enums.DeliveryMethod.ShippingCompany).FirstOrDefault();
+        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.FirstOrDefault(d => d.Value == Domain.Enums.DeliveryMethod.ShippingCompany);
 
         deliveryMethodsViewModel.HasErrors.Should().BeTrue();
-        deliveryMethodsViewModel.SelectedShippingCarrier = DeliveryMethodsViewModel.ShippingCarriers.FirstOrDefault();
+        deliveryMethodsViewModel.SelectedShippingCarrier = deliveryMethodsViewModel.ShippingCarriers.FirstOrDefault();
 
         deliveryMethodsViewModel.HasErrors.Should().BeFalse();
     }
@@ -56,7 +58,7 @@ public class DeliveryMethodsViewModelTests
     {
         DeliveryMethodsViewModel deliveryMethodsViewModel = DeliveryMethodsViewModel;
 
-        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.Where(d => d.Value == Domain.Enums.DeliveryMethod.DeliveryMan).FirstOrDefault();
+        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.FirstOrDefault(d => d.Value == Domain.Enums.DeliveryMethod.DeliveryMan);
 
         deliveryMethodsViewModel.HasErrors.Should().BeTrue();
         deliveryMethodsViewModel.GetErrors().Select(e => e.ErrorMessage).Should().Contain("Deliveryman is required");
@@ -67,10 +69,10 @@ public class DeliveryMethodsViewModelTests
     {
         DeliveryMethodsViewModel deliveryMethodsViewModel = DeliveryMethodsViewModel;
 
-        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.Where(d => d.Value == Domain.Enums.DeliveryMethod.DeliveryMan).FirstOrDefault();
+        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.FirstOrDefault(d => d.Value == Domain.Enums.DeliveryMethod.DeliveryMan);
 
         deliveryMethodsViewModel.HasErrors.Should().BeTrue();
-        deliveryMethodsViewModel.SelectedDeliveryman = DeliveryMethodsViewModel.Deliverymen.FirstOrDefault();
+        deliveryMethodsViewModel.SelectedDeliveryman = deliveryMethodsViewModel.Deliverymen.FirstOrDefault();
 
         deliveryMethodsViewModel.HasErrors.Should().BeFalse();
     }
@@ -80,7 +82,7 @@ public class DeliveryMethodsViewModelTests
     {
         DeliveryMethodsViewModel deliveryMethodsViewModel = DeliveryMethodsViewModel;
 
-        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.Where(d => d.Value == Domain.Enums.DeliveryMethod.DeliveryChain).FirstOrDefault();
+        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.FirstOrDefault(d => d.Value == Domain.Enums.DeliveryMethod.DeliveryChain);
 
         deliveryMethodsViewModel.HasErrors.Should().BeTrue();
         deliveryMethodsViewModel.GetErrors().Select(e => e.ErrorMessage).Should().Contain("At least one delivery step is required");
@@ -91,7 +93,7 @@ public class DeliveryMethodsViewModelTests
     {
         DeliveryMethodsViewModel deliveryMethodsViewModel = DeliveryMethodsViewModel;
 
-        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.Where(d => d.Value == Domain.Enums.DeliveryMethod.DeliveryChain).FirstOrDefault();
+        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.FirstOrDefault(d => d.Value == Domain.Enums.DeliveryMethod.DeliveryChain);
         deliveryMethodsViewModel.AddDeliverymanStepCommand.Execute(null);
 
         deliveryMethodsViewModel.HasErrors.Should().BeTrue();
@@ -103,7 +105,7 @@ public class DeliveryMethodsViewModelTests
     {
         DeliveryMethodsViewModel deliveryMethodsViewModel = DeliveryMethodsViewModel;
 
-        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.Where(d => d.Value == Domain.Enums.DeliveryMethod.DeliveryChain).FirstOrDefault();
+        deliveryMethodsViewModel.SelecteddDeliveryMethod = DeliveryMethodsViewModel.DeliveryMethods.FirstOrDefault(d => d.Value == Domain.Enums.DeliveryMethod.DeliveryChain);
         deliveryMethodsViewModel.AddDeliverymanStepCommand.Execute(null);
         deliveryMethodsViewModel.AddShippingCarrierStepCommand.Execute(null);
 
@@ -127,25 +129,19 @@ public class DeliveryMethodsViewModelTests
         deliveryMethodsViewModel.DeliverySteps.Select(step => step.StepOrder).Should().Equal([1, 2]);
     }
 
-    private DeliveryMethodsViewModel DeliveryMethodsViewModel => new DeliveryMethodsViewModel
+    private DeliveryMethodsViewModel DeliveryMethodsViewModel => new(new Mock<IMediator>().Object)
     {
         Deliverymen =
-            [
-                new DeliverymanInfoDto(1, "Deliveryman 1"),
-                new DeliverymanInfoDto(2, "Deliveryman 2"),
-                new DeliverymanInfoDto(3, "Deliveryman 3")
-            ],
-
+        [
+            new DeliverymanListDto(1, "Deliveryman 1", "Riyadh", "+966 500000001"),
+            new DeliverymanListDto(2, "Deliveryman 2", "Jeddah", "+966 500000002"),
+            new DeliverymanListDto(3, "Deliveryman 3", "Dammam", "+966 500000003")
+        ],
         ShippingCarriers =
-            [
-                new ShippingCarrierInfoDto(1, "ShippingCarrier 1"),
-                new ShippingCarrierInfoDto(2, "ShippingCarrier 2"),
-                new ShippingCarrierInfoDto(3, "ShippingCarrier 3")
-            ]
+        [
+            new ShippingCarrierListDto(1, "ShippingCarrier 1", 10, "+966 511111111", "Riyadh - Street 1"),
+            new ShippingCarrierListDto(2, "ShippingCarrier 2", 15, "+966 522222222", "Jeddah - Street 2"),
+            new ShippingCarrierListDto(3, "ShippingCarrier 3", 20, "+966 533333333", "Dammam - Street 3")
+        ]
     };
 }
-/// Test 3 cases
-/// 1. DeliveryMethod is Pickup
-/// 2. DeliveryMethod is Deliveryman
-/// 3. DeliveryMethod is ShippingCarrier
-///
