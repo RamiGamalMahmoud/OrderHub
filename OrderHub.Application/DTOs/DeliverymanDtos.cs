@@ -2,6 +2,6 @@
 
 public static class DeliverymanDtos
 {
-    public record DeliverymanListDto(int Id, string Name, string CityName, string PhoneNumber);
-    public record DeliverymanFormDto(string Name, int CityId, string PhoneNumber);
+    public record DeliverymanListDto(int Id, string Name, string CityName, string PhoneNumber, string WhatsappGroupName = null);
+    public record DeliverymanFormDto(string Name, int CityId, string PhoneNumber, int? WhatsappGroupId);
 }

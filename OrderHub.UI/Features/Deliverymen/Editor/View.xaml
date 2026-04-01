@@ -31,6 +31,7 @@
                 <RowDefinition Height="1*" />
                 <RowDefinition Height="1*" />
                 <RowDefinition Height="1*" />
+                <RowDefinition Height="1*" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
 
@@ -90,6 +91,23 @@
                     IsEditable="False"
                     ItemsSource="{Binding Cities}"
                     SelectedItem="{Binding SelectedCity}" />
+            </StackPanel>
+
+            <StackPanel
+                Grid.Row="3"
+                Grid.ColumnSpan="2"
+                Margin="0,10"
+                Orientation="Vertical">
+                <TextBlock
+                    Margin="0,12,0,4"
+                    FontWeight="Bold"
+                    Text="مجموعة واتساب" />
+                <ComboBox
+                    Height="32"
+                    DisplayMemberPath="Name"
+                    IsEditable="False"
+                    ItemsSource="{Binding WhatsappGroupsOptions}"
+                    SelectedItem="{Binding SelectedWhatsappGroup}" />
             </StackPanel>
 
             <StackPanel

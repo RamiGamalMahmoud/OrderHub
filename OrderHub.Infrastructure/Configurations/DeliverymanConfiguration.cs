@@ -27,6 +27,12 @@ namespace OrderHub.Infrastructure.Configurations
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasOne(deliveryman => deliveryman.WhatsappGroup)
+                .WithMany()
+                .HasForeignKey("whatsapp_group_id")
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.Property(d => d.PhoneNumber)
                 .HasColumnType("varchar(15)")
                 .HasMaxLength(15)

@@ -18,6 +18,9 @@ internal class UpdateDeliverymanCommandHandler(AppDbContextFactory appDbContextF
         Deliveryman deliveryman = await appDbContext.Deliverymen.FindAsync(request.Id);
 
         City city = await appDbContext.Cities.FindAsync(request.Deliveryman.CityId);
+        WhatsappGroup whatsappGroup = request.Deliveryman.WhatsappGroupId is int whatsappGroupId
+            ? await appDbContext.WhatsappGroups.FindAsync(whatsappGroupId)
+            : null;
 
         if(deliveryman is null)
         {
@@ -27,6 +30,7 @@ internal class UpdateDeliverymanCommandHandler(AppDbContextFactory appDbContextF
         deliveryman.Rename(request.Deliveryman.Name);
         deliveryman.PhoneNumber = request.Deliveryman.PhoneNumber;
         deliveryman.ChangeCity(city);
+        deliveryman.ChangeWhatsappGroup(whatsappGroup);
         await Services.OutboxRecipientPhoneUpdater.UpdateDeliverymanPhoneAsync(
             appDbContext,
             deliveryman.Id,

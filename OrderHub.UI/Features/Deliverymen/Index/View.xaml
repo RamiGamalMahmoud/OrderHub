@@ -94,6 +94,8 @@
 
                 <DataGridTextColumn Binding="{Binding CityName}" Header="المدينة" />
 
+                <DataGridTextColumn Binding="{Binding WhatsappGroupName}" Header="مجموعة واتساب" />
+
                 <DataGridTemplateColumn Header="خيارات">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>

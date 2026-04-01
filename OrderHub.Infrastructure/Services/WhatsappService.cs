@@ -73,7 +73,7 @@ internal class WhatsappService : IWhatsappService, IMessageSender
         }
     }
 
-    public async Task<bool> SendAsync(string contact, string message)
+    public async Task<bool> SendToPhoneAsync(string phoneNumber, string message)
     {
         await _lifecycleLock.WaitAsync();
 
@@ -85,33 +85,13 @@ internal class WhatsappService : IWhatsappService, IMessageSender
                 return false;
             }
 
-            string cleanNumber = new string(contact.Where(char.IsDigit).ToArray());
+            string cleanNumber = new string(phoneNumber.Where(char.IsDigit).ToArray());
             if (string.IsNullOrWhiteSpace(cleanNumber))
             {
                 return false;
             }
 
-            _driver.Navigate().GoToUrl($"{_defaultUrl}/send?phone={cleanNumber}");
-
-            IWebElement messageBox = WaitForMessageBox();
-            if (messageBox is null)
-            {
-                return false;
-            }
-
-            string[] lines = message.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-            for (int i = 0; i < lines.Length; i++)
-            {
-                messageBox.SendKeys(lines[i]);
-                if (i < lines.Length - 1)
-                {
-                    messageBox.SendKeys(Keys.Shift + Keys.Enter);
-                }
-            }
-
-            messageBox.SendKeys(Keys.Enter);
-
-            return WaitForMessageAccepted(messageBox, message);
+            return await NavigateAndSendAsync($"{_defaultUrl}/send?phone={cleanNumber}", message, isGroupChat: false);
         }
         catch (NoSuchWindowException)
         {
@@ -130,6 +110,255 @@ internal class WhatsappService : IWhatsappService, IMessageSender
         finally
         {
             _lifecycleLock.Release();
+        }
+    }
+
+    public Task<bool> SendAsync(string contact, string message)
+    {
+        return LooksLikeGroupLink(contact)
+            ? SendToGroupAsync(contact, message)
+            : SendToPhoneAsync(contact, message);
+    }
+
+    public async Task<bool> SendToGroupAsync(string groupLink, string message)
+    {
+        await _lifecycleLock.WaitAsync();
+
+        try
+        {
+            if (!IsDriverAlive())
+            {
+                CloseDriver();
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(groupLink))
+            {
+                return false;
+            }
+
+            string normalizedLink = NormalizeGroupLink(groupLink);
+            if (string.IsNullOrWhiteSpace(normalizedLink))
+            {
+                return false;
+            }
+
+            return await NavigateAndSendAsync(normalizedLink, message, isGroupChat: true);
+        }
+        catch (NoSuchWindowException)
+        {
+            CloseDriver();
+            return false;
+        }
+        catch (WebDriverException ex) when (IsClosedWindowError(ex))
+        {
+            CloseDriver();
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            _lifecycleLock.Release();
+        }
+    }
+
+    private Task<bool> NavigateAndSendAsync(string url, string message, bool isGroupChat)
+    {
+        _driver.Navigate().GoToUrl(url);
+
+        if (isGroupChat && !EnsureGroupChatOpened())
+        {
+            return Task.FromResult(false);
+        }
+
+        IWebElement messageBox = WaitForMessageBox();
+        if (messageBox is null)
+        {
+            return Task.FromResult(false);
+        }
+
+        string[] lines = message.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+        for (int i = 0; i < lines.Length; i++)
+        {
+            messageBox.SendKeys(lines[i]);
+            if (i < lines.Length - 1)
+            {
+                messageBox.SendKeys(Keys.Shift + Keys.Enter);
+            }
+        }
+
+        messageBox.SendKeys(Keys.Enter);
+
+        return Task.FromResult(WaitForMessageAccepted(messageBox, message));
+    }
+
+    private static string NormalizeGroupLink(string groupLink)
+    {
+        string trimmed = groupLink?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return null;
+        }
+
+        if (trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return ConvertInviteLinkToWebUrl(trimmed);
+        }
+
+        return ConvertInviteLinkToWebUrl($"https://{trimmed.TrimStart('/')}");
+    }
+
+    private static string ConvertInviteLinkToWebUrl(string link)
+    {
+        if (!Uri.TryCreate(link, UriKind.Absolute, out Uri uri))
+        {
+            return link;
+        }
+
+        if (!uri.Host.Contains("chat.whatsapp.com", StringComparison.OrdinalIgnoreCase))
+        {
+            return link;
+        }
+
+        string inviteCode = uri.AbsolutePath.Trim('/').Split('/').LastOrDefault();
+        if (string.IsNullOrWhiteSpace(inviteCode))
+        {
+            return link;
+        }
+
+        return $"{_defaultUrl}/accept?code={inviteCode}";
+    }
+
+    private static bool LooksLikeGroupLink(string destination)
+    {
+        if (string.IsNullOrWhiteSpace(destination))
+        {
+            return false;
+        }
+
+        string value = destination.Trim();
+        return value.Contains("chat.whatsapp.com", StringComparison.OrdinalIgnoreCase)
+            || value.Contains("whatsapp.com", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool EnsureGroupChatOpened()
+    {
+        if (_wait is null || _driver is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            if (FindMessageBox(_driver) is not null)
+            {
+                return true;
+            }
+
+            string[] existingHandles = _driver.WindowHandles.ToArray();
+
+            return _wait.Until(driver =>
+            {
+                if (HasLoginPrompt(driver) || HasInvalidChatState(driver))
+                {
+                    return false;
+                }
+
+                SwitchToNewestWindow(existingHandles);
+
+                if (FindMessageBox(driver) is not null)
+                {
+                    return true;
+                }
+
+                IWebElement actionButton = FindContinueToChatButton(driver);
+                if (actionButton is not null)
+                {
+                    ClickElement(actionButton);
+                    SwitchToNewestWindow(existingHandles);
+                }
+
+                return FindMessageBox(driver) is not null;
+            });
+        }
+        catch (NoSuchWindowException)
+        {
+            CloseDriver();
+            return false;
+        }
+        catch (WebDriverException ex) when (IsClosedWindowError(ex))
+        {
+            CloseDriver();
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static IWebElement FindContinueToChatButton(IWebDriver driver)
+    {
+        string[] selectors =
+        [
+            "//a[contains(@href,'web.whatsapp.com/send') or contains(@href,'web.whatsapp.com/accept')]",
+            "//a[contains(@href,'web.whatsapp.com') and (contains(.,'Continue to chat') or contains(.,'Continue') or contains(.,'Join chat'))]",
+            "//button[contains(.,'Continue to chat') or contains(.,'Join chat') or contains(.,'Use WhatsApp Web')]",
+            "//a[contains(.,'Join chat') or contains(.,'Continue to chat')]",
+            "//button[contains(.,'واتساب ويب') or contains(.,'الدردشة')]",
+            "//a[contains(.,'واتساب ويب') or contains(.,'الدردشة')]"
+        ];
+
+        foreach (string selector in selectors)
+        {
+            IWebElement button = driver
+                .FindElements(By.XPath(selector))
+                .FirstOrDefault(element => element.Displayed && element.Enabled);
+
+            if (button is not null)
+            {
+                return button;
+            }
+        }
+
+        return null;
+    }
+
+    private void SwitchToNewestWindow(string[] previousHandles)
+    {
+        try
+        {
+            string newHandle = _driver.WindowHandles
+                .FirstOrDefault(handle => !previousHandles.Contains(handle));
+
+            if (!string.IsNullOrWhiteSpace(newHandle))
+            {
+                _driver.SwitchTo().Window(newHandle);
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private void ClickElement(IWebElement element)
+    {
+        try
+        {
+            element.Click();
+        }
+        catch
+        {
+            if (_driver is IJavaScriptExecutor executor)
+            {
+                executor.ExecuteScript("arguments[0].click();", element);
+            }
         }
     }
 
@@ -152,9 +381,9 @@ internal class WhatsappService : IWhatsappService, IMessageSender
                 try
                 {
                     return driver.FindElements(By.Id("side")).Any()
-                                || FindMessageBox(driver) is not null;
+                        || FindMessageBox(driver) is not null;
                 }
-                catch (Exception)
+                catch
                 {
                     return false;
                 }
@@ -306,7 +535,7 @@ internal class WhatsappService : IWhatsappService, IMessageSender
             return driver.FindElements(By.CssSelector("canvas[aria-label*='QR'], canvas[aria-label*='qr']")).Any()
                 || driver.FindElements(By.XPath("//*[contains(text(),'Scan') and contains(text(),'QR')]")).Any();
         }
-        catch (Exception)
+        catch
         {
             return false;
         }

@@ -24,10 +24,11 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
             Order order = await appDbContext
                 .Orders
                 .Include(o => o.ShippingCarrier).ThenInclude(s => s.Phone)
-                .Include(o => o.Deliveryman)
-                .Include(o => o.DeliverySteps).ThenInclude(step => step.Deliveryman)
+                .Include(o => o.Deliveryman).ThenInclude(d => d.WhatsappGroup)
+                .Include(o => o.DeliverySteps).ThenInclude(step => step.Deliveryman).ThenInclude(d => d.WhatsappGroup)
                 .Include(o => o.DeliverySteps).ThenInclude(step => step.ShippingCarrier).ThenInclude(carrier => carrier.Phone)
                 .Include(o => o.OrderItems).ThenInclude(oi => oi.Supplier).ThenInclude(s => s.Phone)
+                .Include(o => o.OrderItems).ThenInclude(oi => oi.Supplier).ThenInclude(s => s.WhatsappGroup)
                 .Include(o => o.Client).ThenInclude(c => c.Phone)
                 .Include(o => o.Client).ThenInclude(c => c.Address).ThenInclude(a => a.City)
                 .FirstOrDefaultAsync(o => o.Id == request.OrderId, cancellationToken);
@@ -41,12 +42,24 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
 
             if (request.RecipientType is null or RecipientType.Supplier)
             {
-                outboxMessages.AddRange(NotifSuppliers(order));
+                Result<IEnumerable<OutboxMessage>> supplierMessagesResult = NotifSuppliers(order);
+                if (!supplierMessagesResult.IsSuccess)
+                {
+                    return Result.Failure(supplierMessagesResult.ErrorMessage);
+                }
+
+                outboxMessages.AddRange(supplierMessagesResult.Value);
             }
 
             if (request.RecipientType is null or RecipientType.Deliveryman or RecipientType.ShippingCarrier)
             {
-                outboxMessages.AddRange(NotifyDeliveryRecipients(order, request.RecipientType));
+                Result<IEnumerable<OutboxMessage>> deliveryMessagesResult = NotifyDeliveryRecipients(order, request.RecipientType);
+                if (!deliveryMessagesResult.IsSuccess)
+                {
+                    return Result.Failure(deliveryMessagesResult.ErrorMessage);
+                }
+
+                outboxMessages.AddRange(deliveryMessagesResult.Value);
             }
 
             appDbContext.OutboxMessages.AddRange(outboxMessages);
@@ -114,7 +127,7 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
             return outboxMessage;
         }
 
-        private IEnumerable<OutboxMessage> NotifSuppliers(Order order)
+        private Result<IEnumerable<OutboxMessage>> NotifSuppliers(Order order)
         {
             var suppliers = order.OrderItems
                 .GroupBy(oi => oi.Supplier);
@@ -123,6 +136,12 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
             {
                 if (supplier.Key is null)
                     continue;
+
+                if (string.IsNullOrWhiteSpace(supplier.Key.WhatsappGroup?.GroupLink))
+                {
+                    return Result<IEnumerable<OutboxMessage>>.Failure($"المورد {supplier.Key.Name.Value} لا يملك مجموعة واتساب صالحة.");
+                }
+
                 IEnumerable<OrderItem> items = supplier.ToList();
 
                 StringBuilder sb = new StringBuilder();
@@ -167,11 +186,11 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
                     {
                         SupplierId = supplier.Key.Id,
                         Name = supplier.Key.Name.Value,
-                        PhoneNumber = supplier.Key.Phone.Number.FullNumber
+                        PhoneNumber = supplier.Key.WhatsappGroup.GroupLink
                     }
                 });
             }
-            return outboxMessages;
+            return Result<IEnumerable<OutboxMessage>>.Success(outboxMessages);
         }
 
         private OutboxMessage NotifyDeliveryman(Order order)
@@ -186,7 +205,7 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
                 {
                     DeliveryManId = order.Deliveryman.Id,
                     Name = order.Deliveryman.Name.Value,
-                    PhoneNumber = order.Deliveryman.PhoneNumber
+                    PhoneNumber = order.Deliveryman.WhatsappGroup.GroupLink
                 }
             };
 
@@ -205,7 +224,7 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
                 {
                     DeliveryManId = deliveryman.Id,
                     Name = deliveryman.Name.Value,
-                    PhoneNumber = deliveryman.PhoneNumber
+                    PhoneNumber = deliveryman.WhatsappGroup.GroupLink
                 }
             };
 
@@ -248,11 +267,16 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
             return outboxMessage;
         }
 
-        private IEnumerable<OutboxMessage> NotifyDeliveryRecipients(Order order, RecipientType? recipientType = null)
+        private Result<IEnumerable<OutboxMessage>> NotifyDeliveryRecipients(Order order, RecipientType? recipientType = null)
         {
+            if (TryGetMissingDeliverymanGroupName(order, recipientType, out string deliverymanName))
+            {
+                return Result<IEnumerable<OutboxMessage>>.Failure($"المندوب {deliverymanName} لا يملك مجموعة واتساب صالحة.");
+            }
+
             if (order.DeliveryMethod == DeliveryMethod.DeliveryChain)
             {
-                return order.DeliverySteps
+                IEnumerable<OutboxMessage> messages = order.DeliverySteps
                     .OrderBy(step => step.StepOrder)
                     .GroupBy(step => new { step.DeliveryMethod, step.DeliverymanId, step.ShippingCarrierId })
                     .Select(group => group.First())
@@ -268,6 +292,8 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
                     })
                     .Where(message => message is not null)
                     .ToList();
+
+                return Result<IEnumerable<OutboxMessage>>.Success(messages);
             }
 
             List<OutboxMessage> outboxMessages = new List<OutboxMessage>();
@@ -282,7 +308,34 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
                 outboxMessages.Add(NotifyShippingCarrier(order));
             }
 
-            return outboxMessages;
+            return Result<IEnumerable<OutboxMessage>>.Success(outboxMessages);
+        }
+
+        private static bool TryGetMissingDeliverymanGroupName(Order order, RecipientType? recipientType, out string deliverymanName)
+        {
+            if (order.DeliveryMethod == DeliveryMethod.DeliveryChain)
+            {
+                Deliveryman missingDeliveryman = order.DeliverySteps
+                    .Where(step => step.DeliveryMethod == DeliveryMethod.DeliveryMan)
+                    .Select(step => step.Deliveryman)
+                    .FirstOrDefault(deliveryman =>
+                        deliveryman is not null
+                        && (recipientType is null or RecipientType.Deliveryman)
+                        && string.IsNullOrWhiteSpace(deliveryman.WhatsappGroup?.GroupLink));
+
+                deliverymanName = missingDeliveryman?.Name.Value;
+                return missingDeliveryman is not null;
+            }
+
+            if (recipientType is RecipientType.ShippingCarrier || order.Deliveryman is null)
+            {
+                deliverymanName = null;
+                return false;
+            }
+
+            deliverymanName = order.Deliveryman.Name.Value;
+            return (recipientType is null or RecipientType.Deliveryman)
+                && string.IsNullOrWhiteSpace(order.Deliveryman.WhatsappGroup?.GroupLink);
         }
 
         private string BuildDeliveryMessage(Order order, string recipientRole)

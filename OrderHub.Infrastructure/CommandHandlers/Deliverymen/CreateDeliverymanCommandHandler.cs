@@ -16,7 +16,15 @@ internal class CreateDeliverymanCommandHandler(AppDbContextFactory appDbContextF
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
         City city = await appDbContext.Cities.FindAsync(request.Deliveryman.CityId);
-        Deliveryman deliveryman = new Deliveryman(request.Deliveryman.Name, city, request.Deliveryman.PhoneNumber);
+        WhatsappGroup whatsappGroup = request.Deliveryman.WhatsappGroupId is int whatsappGroupId
+            ? await appDbContext.WhatsappGroups.FindAsync(whatsappGroupId)
+            : null;
+
+        Deliveryman deliveryman = new Deliveryman(
+            request.Deliveryman.Name,
+            city,
+            request.Deliveryman.PhoneNumber,
+            whatsappGroup);
 
         appDbContext.Deliverymen.Add(deliveryman);
         try

@@ -46,13 +46,36 @@ public class BroadcastOrderStatusCommandHandlerTests
             var carrier = TestData.CreateShippingCarrier();
             var supplier1 = TestData.CreateSupplier("Supplier 1");
             var supplier2 = TestData.CreateSupplier("Supplier 2");
+            var supplierGroup1 = new WhatsappGroup
+            {
+                GroupName = "Supplier Group 1",
+                GroupLink = "https://chat.whatsapp.com/supplier-group-1",
+                GroupType = WhatsappGroupType.Suppliers
+            };
+            var supplierGroup2 = new WhatsappGroup
+            {
+                GroupName = "Supplier Group 2",
+                GroupLink = "https://chat.whatsapp.com/supplier-group-2",
+                GroupType = WhatsappGroupType.Suppliers
+            };
+            var deliverymenGroup = new WhatsappGroup
+            {
+                GroupName = "Deliverymen Group",
+                GroupLink = "https://chat.whatsapp.com/deliverymen-group",
+                GroupType = WhatsappGroupType.Deliverymen
+            };
             var category = new Category("Category 1");
             var product1 = new Product("Product A", "PROD-1", category, new Money(50));
             var product2 = new Product("Product B", "PROD-2", category, new Money(100));
 
+            supplier1.WhatsappGroup = supplierGroup1;
+            supplier2.WhatsappGroup = supplierGroup2;
+            deliveryman.ChangeWhatsappGroup(deliverymenGroup);
+
             dbContext.Clients.Add(client);
             dbContext.Deliverymen.Add(deliveryman);
             dbContext.ShippingCarriers.Add(carrier);
+            dbContext.WhatsappGroups.AddRange(supplierGroup1, supplierGroup2, deliverymenGroup);
             dbContext.Suppliers.AddRange(supplier1, supplier2);
             dbContext.Categories.Add(category);
             dbContext.Products.AddRange(product1, product2);

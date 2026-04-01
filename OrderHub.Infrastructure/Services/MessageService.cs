@@ -111,7 +111,7 @@ internal class MessageService : IMessageService
 
             try
             {
-                bool sent = await _messageSender.SendAsync(message.Recipient.PhoneNumber, message.Text);
+                bool sent = await SendMessageAsync(message);
                 await UpdateMessageStatusAsync(message.Id, sent ? OutboxMessageStatus.Sent : OutboxMessageStatus.Failed, sent);
             }
             catch
@@ -119,6 +119,21 @@ internal class MessageService : IMessageService
                 await UpdateMessageStatusAsync(message.Id, OutboxMessageStatus.Failed, false);
             }
         }
+    }
+
+    private Task<bool> SendMessageAsync(OutboxMessage message)
+    {
+        if (message?.Recipient is null || string.IsNullOrWhiteSpace(message.Recipient.PhoneNumber))
+        {
+            return Task.FromResult(false);
+        }
+
+        return message.RecipientType switch
+        {
+            RecipientType.Supplier or RecipientType.Deliveryman
+                => _messageSender.SendToGroupAsync(message.Recipient.PhoneNumber, message.Text),
+            _ => _messageSender.SendToPhoneAsync(message.Recipient.PhoneNumber, message.Text)
+        };
     }
 
     private async Task UpdateMessageStatusAsync(int messageId, OutboxMessageStatus status, bool sent)

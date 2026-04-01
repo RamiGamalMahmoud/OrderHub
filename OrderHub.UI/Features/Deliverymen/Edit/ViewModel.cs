@@ -35,11 +35,13 @@ internal class ViewModel : Editor.ViewModel
         Name = deliveryman.Name;
         SelectedCity = Cities.Where(c => c.Id == deliveryman.CityId).FirstOrDefault();
         PhoneNumber = deliveryman.PhoneNumber;
+        SelectedWhatsappGroup = WhatsappGroups.Where(group => group.Id == deliveryman.WhatsappGroupId).FirstOrDefault();
     }
 
     protected override async Task Save()
     {
-        DeliverymanFormDto deliveryman = new DeliverymanFormDto(Name, SelectedCity.Id, PhoneNumber);
+        int? whatsappGroupId = SelectedWhatsappGroup?.Id > 0 ? SelectedWhatsappGroup.Id : null;
+        DeliverymanFormDto deliveryman = new DeliverymanFormDto(Name, SelectedCity.Id, PhoneNumber, whatsappGroupId);
         Result result = await _mediator.Send(new Application.Commands.DeliverymanCommands.UpdateDeliverymanCommand(_selectionStore.Id, deliveryman));
         if(result.IsSuccess)
         {

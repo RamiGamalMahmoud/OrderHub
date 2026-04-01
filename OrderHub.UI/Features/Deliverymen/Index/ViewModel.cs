@@ -93,7 +93,8 @@ public partial class ViewModel : IndexViewModelBase<DeliverymanListDto>
             filtered = filtered.Where(deliveryman =>
                 deliveryman.Name?.Contains(term) == true
                 || deliveryman.CityName?.Contains(term) == true
-                || deliveryman.PhoneNumber?.Contains(term) == true);
+                || deliveryman.PhoneNumber?.Contains(term) == true
+                || deliveryman.WhatsappGroupName?.Contains(term) == true);
         }
 
         Deliverymen = filtered.ToList();
