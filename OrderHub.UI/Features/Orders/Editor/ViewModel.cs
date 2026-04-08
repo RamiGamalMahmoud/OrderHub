@@ -78,6 +78,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
         };
 
         RegisterMessages();
+        ValidateAllProperties();
     }
 
     private void RegisterMessages()
@@ -117,18 +118,36 @@ internal abstract partial class ViewModel : EditorViewModelBase
             async (_, _) => await ReloadShippingCarriersAsync(DeliveryMethodsViewModel.ShippingCarrierSearchTerm));
     }
 
-    [ObservableProperty] private IEnumerable<CategoryInfoDto> _rootCategories;
-    [ObservableProperty] private ObservableCollection<KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>> _subCategories =[];
-    [ObservableProperty] private IEnumerable<ClientListDto> _clients;
-    [ObservableProperty] private IEnumerable<ProductListDto> _products;
-    [ObservableProperty] private IEnumerable<PaymentMethodListDto> _paymentMethods;
-    [ObservableProperty] private PaymentMethodListDto _selectedPaymentMethod;
-    [ObservableProperty] private string _clientSearchTerm;
-    [ObservableProperty] private string _searchTerm;
-    [ObservableProperty] private CategoryInfoDto _selectedCategory;
+    [ObservableProperty] 
+    private IEnumerable<CategoryInfoDto> _rootCategories;
+
+    [ObservableProperty] 
+    private ObservableCollection<KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>> _subCategories =[];
+
+    [ObservableProperty] 
+    private IEnumerable<ClientListDto> _clients;
+
+    [ObservableProperty] 
+    private IEnumerable<ProductListDto> _products;
+
+    [ObservableProperty] 
+    private IEnumerable<PaymentMethodListDto> _paymentMethods;
+
+    [ObservableProperty] 
+    private PaymentMethodListDto _selectedPaymentMethod;
+
+    [ObservableProperty] 
+    private string _clientSearchTerm;
+
+    [ObservableProperty] 
+    private string _searchTerm;
+
+    [ObservableProperty] 
+    private CategoryInfoDto _selectedCategory;
+
 
     [ObservableProperty]
-    [Required]
+    [Required(ErrorMessage = "العميل مطلوب")]
     [NotifyDataErrorInfo]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     private ClientListDto _selectedClient;

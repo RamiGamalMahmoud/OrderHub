@@ -31,18 +31,6 @@
                     FontSize="16"
                     FontWeight="DemiBold"
                     Text="بيانات شركة الشحن" />
-
-                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                    <ToggleButton
-                        x:Name="ShippingCarriersExpander"
-                        BorderThickness="0"
-                        Cursor="Hand">
-                        <icons:MaterialIcon
-                            Width="20"
-                            Foreground="{StaticResource Primary}"
-                            Kind="ExpandMore" />
-                    </ToggleButton>
-                </StackPanel>
             </DockPanel>
 
             <!--  Client Selection  -->
@@ -53,64 +41,15 @@
                         FontWeight="SemiBold"
                         Foreground="Gray"
                         Text="اسم شركة الشحن" />
-                    <TextBox
-                        Margin="0,5,0,0"
-                        Padding="10,6"
-                        HorizontalContentAlignment="Right"
-                        Text="{Binding ShippingCarrierSearchTerm, UpdateSourceTrigger=PropertyChanged}" />
                     <ComboBox
                         Height="40"
                         Margin="0,8,0,0"
                         DisplayMemberPath="Name"
+                        IsEditable="True"
                         ItemsSource="{Binding ShippingCarriers}"
                         SelectedItem="{Binding SelectedShippingCarrier, UpdateSourceTrigger=PropertyChanged}" />
                 </StackPanel>
 
-            </StackPanel>
-
-            <StackPanel Orientation="Vertical" Visibility="{Binding ElementName=ShippingCarriersExpander, Path=IsChecked, Converter={converters:BoolToVisibilityConverter}}">
-                <StackPanel Margin="0,10" Orientation="Vertical">
-                    <TextBlock
-                        FontSize="12"
-                        FontWeight="SemiBold"
-                        Foreground="Gray"
-                        Text="رقم الهاتف" />
-                    <Label
-                        Height="40"
-                        Margin="0,5,0,0"
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Stretch">
-                        <StackPanel Orientation="Horizontal">
-                            <icons:MaterialIcon Width="20" Kind="PhoneOutline" />
-                            <TextBlock
-                                Margin="10,0,0,0"
-                                VerticalAlignment="Center"
-                                FlowDirection="LeftToRight"
-                                Text="{Binding SelectedShippingCarrier.PhoneNumber}" />
-                        </StackPanel>
-                    </Label>
-                </StackPanel>
-
-                <StackPanel Margin="0,10" Orientation="Vertical">
-                    <TextBlock
-                        FontSize="12"
-                        FontWeight="SemiBold"
-                        Foreground="Gray"
-                        Text="العنوان" />
-                    <Label
-                        Height="40"
-                        Margin="0,5,0,0"
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Stretch">
-                        <StackPanel Orientation="Horizontal">
-                            <icons:MaterialIcon Width="20" Kind="LocationOutline" />
-                            <TextBlock
-                                Margin="10,0,0,0"
-                                VerticalAlignment="Center"
-                                Text="{Binding SelectedShippingCarrier.Address}" />
-                        </StackPanel>
-                    </Label>
-                </StackPanel>
             </StackPanel>
 
         </StackPanel>

@@ -63,6 +63,7 @@
                         Margin="0,5,0,0"
                         Cursor="Hand"
                         DisplayMemberPath="Name"
+                        IsEditable="True"
                         ItemsSource="{Binding ProductSuppliers}"
                         SelectedItem="{Binding SelectedSupplier}" />
                 </StackPanel>

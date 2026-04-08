@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:converters="clr-namespace:Hoax.WpfConverters;assembly=Hoax.WpfConverters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:local="clr-namespace:OrderHub.UI.Features.Orders.Editor.Components"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -62,15 +63,12 @@
                         FontWeight="SemiBold"
                         Foreground="Gray"
                         Text="اسم العميل" />
-                    <TextBox
-                        Margin="0,5,0,0"
-                        Padding="10,6"
-                        HorizontalContentAlignment="Right"
-                        Text="{Binding ClientSearchTerm, UpdateSourceTrigger=PropertyChanged}" />
-                    <ComboBox
+                    <hc:ComboBox
                         Height="40"
                         Margin="0,8,0,0"
+                        hc:InfoElement.ShowClearButton="True"
                         DisplayMemberPath="Name"
+                        IsEditable="True"
                         ItemsSource="{Binding Clients}"
                         SelectedItem="{Binding SelectedClient}" />
                 </StackPanel>

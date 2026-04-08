@@ -36,7 +36,7 @@
         <Button
             Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl, AncestorLevel=2}, Path=DataContext.BroadcastOrderCommand}"
             CommandParameter="{Binding}"
-            Content="All"
+            Content="الكل"
             Visibility="{Binding CanBroadcastAll, Converter={converters:BoolToVisibilityConverter}}">
             <Button.Style>
                 <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
