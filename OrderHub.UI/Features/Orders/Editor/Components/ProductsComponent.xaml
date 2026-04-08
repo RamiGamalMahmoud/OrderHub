@@ -57,7 +57,7 @@
                     hc:InfoElement.Placeholder="ابحث عن منتج"
                     FontSize="14"
                     FontWeight="SemiBold"
-                    Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}" />
+                    Text="{Binding ProductsPanel.SearchTerm, UpdateSourceTrigger=PropertyChanged}" />
 
                 <StackPanel Orientation="Vertical">
                     <ComboBox
@@ -66,10 +66,10 @@
                         DisplayMemberPath="Name"
                         FontSize="16"
                         FontWeight="DemiBold"
-                        ItemsSource="{Binding RootCategories}"
-                        SelectedItem="{Binding SelectedCategory}" />
+                        ItemsSource="{Binding ProductsPanel.RootCategories}"
+                        SelectedItem="{Binding ProductsPanel.SelectedCategory}" />
 
-                    <ItemsControl ItemsSource="{Binding SubCategories}">
+                    <ItemsControl ItemsSource="{Binding ProductsPanel.SubCategories}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <StackPanel Orientation="Vertical" />
@@ -84,7 +84,7 @@
                                     FontSize="16"
                                     FontWeight="DemiBold"
                                     ItemsSource="{Binding Value}"
-                                    SelectedItem="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.SelectedCategory}" />
+                                    SelectedItem="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.ProductsPanel.SelectedCategory}" />
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -98,8 +98,8 @@
                 Background="White"
                 BorderThickness="1"
                 ItemContainerStyle="{StaticResource MyStye}"
-                ItemsSource="{Binding Products}"
-                SelectedItem="{Binding SelectedProduct}">
+                ItemsSource="{Binding ProductsPanel.Products}"
+                SelectedItem="{Binding ProductsPanel.SelectedProduct}">
                 <ListView.Resources />
                 <ListView.ItemTemplate>
                     <DataTemplate>
@@ -151,7 +151,7 @@
                             FontSize="20"
                             FontWeight="DemiBold"
                             Minimum="0.0"
-                            Value="{Binding Price}" />
+                            Value="{Binding ProductsPanel.Price}" />
                     </StackPanel>
 
                     <StackPanel
@@ -170,7 +170,7 @@
                             FontSize="20"
                             FontWeight="DemiBold"
                             Minimum="1"
-                            Value="{Binding Quantity}" />
+                            Value="{Binding ProductsPanel.Quantity}" />
                     </StackPanel>
 
                     <StackPanel
@@ -186,7 +186,7 @@
                             Margin="0,5,0,0"
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Center"
-                            Content="{Binding SubTotal}"
+                            Content="{Binding ProductsPanel.SubTotal}"
                             FontSize="20"
                             FontWeight="DemiBold" />
                     </StackPanel>
@@ -198,8 +198,7 @@
                     Height="40"
                     Margin="0,10,0,0"
                     HorizontalAlignment="Stretch"
-                    Command="{Binding AddProductCommand}"
-                    CommandParameter="{Binding SelectedProduct}"
+                    Command="{Binding ProductsPanel.AddProductCommand}"
                     Cursor="Hand"
                     FontSize="16"
                     Style="{StaticResource ButtonPrimary}">
