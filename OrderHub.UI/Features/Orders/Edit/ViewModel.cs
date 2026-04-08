@@ -38,7 +38,7 @@ internal class ViewModel : Editor.ViewModel
             return;
         }
 
-        await EnsureClientLoadedAsync(order.ClientId);
+        await PartyPanel.EnsureClientLoadedAsync(order.ClientId);
         await EnsureDeliverymanLoadedAsync(order.DeliveryManId);
         await EnsureShippingCarrierLoadedAsync(order.ShippingCarrierId);
 
@@ -59,8 +59,8 @@ internal class ViewModel : Editor.ViewModel
             OrderBuilder.Clear();
             DeliveryMethodsViewModel.DeliverySteps.Clear();
 
-            SelectedClient = Clients?.FirstOrDefault(client => client.Id == order.ClientId);
-            SelectedPaymentMethod = PaymentMethods?.FirstOrDefault(method => method.Id == order.PaymentMothodId);
+            PartyPanel.SelectedClient = PartyPanel.Clients?.FirstOrDefault(client => client.Id == order.ClientId);
+            PartyPanel.SelectedPaymentMethod = PartyPanel.PaymentMethods?.FirstOrDefault(method => method.Id == order.PaymentMothodId);
             DeliveryMethodsViewModel.SelecteddDeliveryMethod = Editor.DeliveryMethodsViewModel.DeliveryMethods
                 .FirstOrDefault(method => method.Value == order.DeliveryMethod);
 
@@ -131,8 +131,8 @@ internal class ViewModel : Editor.ViewModel
             .WithDeliveryman(DeliveryMethodsViewModel.SelectedDeliveryman?.Id)
             .WithShippingCarrier(DeliveryMethodsViewModel.SelectedShippingCarrier?.Id)
             .WithDeliverySteps(DeliveryMethodsViewModel.BuildDeliverySteps())
-            .ForClient(SelectedClient.Id)
-            .WithPaymentMethod(SelectedPaymentMethod?.Id)
+            .ForClient(PartyPanel.SelectedClient.Id)
+            .WithPaymentMethod(PartyPanel.SelectedPaymentMethod?.Id)
             .Build();
 
         if (!order.IsSuccess)

@@ -28,8 +28,8 @@ internal class ViewModel : Editor.ViewModel
             .WithDeliveryman(DeliveryMethodsViewModel.SelectedDeliveryman?.Id)
             .WithShippingCarrier(DeliveryMethodsViewModel.SelectedShippingCarrier?.Id)
             .WithDeliverySteps(DeliveryMethodsViewModel.BuildDeliverySteps())
-            .ForClient(SelectedClient.Id)
-            .WithPaymentMethod(SelectedPaymentMethod?.Id)
+            .ForClient(PartyPanel.SelectedClient.Id)
+            .WithPaymentMethod(PartyPanel.SelectedPaymentMethod?.Id)
             .Build().Value;
 
         Result<int> result = await _mediator.Send(new Application.Commands.OrderCommands.CreateOrderCommand(order));

@@ -36,7 +36,7 @@
                 <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
                     <Button
                         BorderThickness="0"
-                        Command="{Binding ShowCreateClientCommand}"
+                        Command="{Binding PartyPanel.ShowCreateClientCommand}"
                         Cursor="Hand">
                         <icons:MaterialIcon
                             Width="20"
@@ -69,8 +69,8 @@
                         hc:InfoElement.ShowClearButton="True"
                         DisplayMemberPath="Name"
                         IsEditable="True"
-                        ItemsSource="{Binding Clients}"
-                        SelectedItem="{Binding SelectedClient}" />
+                        ItemsSource="{Binding PartyPanel.Clients}"
+                        SelectedItem="{Binding PartyPanel.SelectedClient}" />
                 </StackPanel>
 
             </StackPanel>
@@ -93,7 +93,7 @@
                                 Margin="10,0,0,0"
                                 VerticalAlignment="Center"
                                 FlowDirection="LeftToRight"
-                                Text="{Binding SelectedClient.PhoneNumber}" />
+                                Text="{Binding PartyPanel.SelectedClient.PhoneNumber}" />
                         </StackPanel>
                     </Label>
                 </StackPanel>
@@ -114,7 +114,7 @@
                             <TextBlock
                                 Margin="10,0,0,0"
                                 VerticalAlignment="Center"
-                                Text="{Binding SelectedClient.Address}" />
+                                Text="{Binding PartyPanel.SelectedClient.Address}" />
                         </StackPanel>
                     </Label>
                 </StackPanel>

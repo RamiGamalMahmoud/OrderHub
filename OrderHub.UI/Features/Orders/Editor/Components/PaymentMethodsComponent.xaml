@@ -35,8 +35,8 @@
                     Padding="0"
                     Background="Transparent"
                     BorderThickness="0"
-                    ItemsSource="{Binding PaymentMethods}"
-                    SelectedItem="{Binding SelectedPaymentMethod}"
+                    ItemsSource="{Binding PartyPanel.PaymentMethods}"
+                    SelectedItem="{Binding PartyPanel.SelectedPaymentMethod}"
                     Validation.ErrorTemplate="{x:Null}">
                     <ListView.ItemsPanel>
                         <ItemsPanelTemplate>

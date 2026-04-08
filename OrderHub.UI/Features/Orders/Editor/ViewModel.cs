@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.UI.Common;
@@ -8,13 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using static OrderHub.Application.DTOs.ClientDtos;
 using static OrderHub.Application.DTOs.DeliverymanDtos;
-using static OrderHub.Application.DTOs.PaymentMothodsDtos;
 using static OrderHub.Application.DTOs.ShippingCarriersDtos;
 
 namespace OrderHub.UI.Features.Orders.Editor;
@@ -25,12 +20,12 @@ internal abstract partial class ViewModel : EditorViewModelBase
     protected readonly IDialogService _dialogService;
     protected readonly IMessenger _messenger;
 
-    private CancellationTokenSource _clientSearchCts;
     private bool _suspendChangeTracking;
 
     public OrderBuilder OrderBuilder { get; }
     public ObservableCollection<OrderItemViewModel> OrderItems => OrderBuilder.Items;
     public OrderProductsPanelViewModel ProductsPanel { get; }
+    public OrderPartyPanelViewModel PartyPanel { get; }
     public DeliveryMethodsViewModel DeliveryMethodsViewModel { get; }
 
     public abstract string ActionName { get; }
@@ -43,12 +38,9 @@ internal abstract partial class ViewModel : EditorViewModelBase
 
         OrderBuilder = new OrderBuilder();
         ProductsPanel = new OrderProductsPanelViewModel(mediator, OrderBuilder);
+        PartyPanel = new OrderPartyPanelViewModel(mediator, dialogService);
         DeliveryMethodsViewModel = new DeliveryMethodsViewModel(mediator);
-        _notifyPropertiesNames =
-        [
-            nameof(SelectedClient),
-            nameof(SelectedPaymentMethod)
-        ];
+        _notifyPropertiesNames = [];
 
         OrderBuilder.PropertyChanged += (_, e) =>
         {
@@ -61,6 +53,13 @@ internal abstract partial class ViewModel : EditorViewModelBase
 
         OrderBuilder.Items.CollectionChanged += OrderItems_CollectionChanged;
 
+        PartyPanel.ErrorsChanged += (_, _) => SaveCommand.NotifyCanExecuteChanged();
+        PartyPanel.PropertyChanged += (_, _) =>
+        {
+            MarkAsChanged();
+            SaveCommand.NotifyCanExecuteChanged();
+        };
+
         DeliveryMethodsViewModel.ErrorsChanged += (_, _) =>
             SaveCommand.NotifyCanExecuteChanged();
 
@@ -71,18 +70,17 @@ internal abstract partial class ViewModel : EditorViewModelBase
         };
 
         RegisterMessages();
-        ValidateAllProperties();
     }
 
     private void RegisterMessages()
     {
         _messenger.Register<Application.Messages.Clients.ClientCreatedMessage>(
             this,
-            async (_, _) => await ReloadClientsAsync(ClientSearchTerm));
+            async (_, _) => await PartyPanel.ReloadClientsAsync(PartyPanel.ClientSearchTerm));
 
         _messenger.Register<Application.Messages.Clients.ClientUpdatedMessage>(
             this,
-            async (_, _) => await ReloadClientsAsync(ClientSearchTerm));
+            async (_, _) => await PartyPanel.ReloadClientsAsync(PartyPanel.ClientSearchTerm));
 
         _messenger.Register<Application.Messages.Categories.CategoryCreatedMessage>(
             this,
@@ -109,84 +107,28 @@ internal abstract partial class ViewModel : EditorViewModelBase
             async (_, _) => await ReloadShippingCarriersAsync(DeliveryMethodsViewModel.ShippingCarrierSearchTerm));
     }
 
-    [ObservableProperty]
-    private IEnumerable<ClientListDto> _clients;
-
-    [ObservableProperty]
-    private IEnumerable<PaymentMethodListDto> _paymentMethods;
-
-    [ObservableProperty]
-    private PaymentMethodListDto _selectedPaymentMethod;
-
-    [ObservableProperty]
-    private string _clientSearchTerm;
-
-    [ObservableProperty]
-    [Required(ErrorMessage = "Ящуъящ ъсщэа")]
-    [NotifyDataErrorInfo]
-    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
-    private ClientListDto _selectedClient;
-
     public override bool CanSave =>
         base.CanSave &&
+        !PartyPanel.HasErrors &&
         !DeliveryMethodsViewModel.HasErrors &&
-        OrderBuilder.Items.Any();
+        OrderBuilder.Items.Count > 0;
 
     internal async Task LoadAsync()
     {
         Task productsPanelTask = ProductsPanel.LoadAsync();
-        var paymentsTask = _mediator.Send(new Application.Queries.PaymentMothodQueries.GetPaymentMethodListQuery());
-        var clientsTask = _mediator.Send(new Application.Queries.ClientQueries.GetClientsByNameQuery());
+        Task partyPanelTask = PartyPanel.LoadAsync();
         var deliverymenTask = _mediator.Send(new Application.Queries.DeliverymanQueries.GetDeliverymenByNameQuery());
         var carriersTask = _mediator.Send(new Application.Queries.ShippingCarriersQueries.GetShippingCarriersByNameQuery());
 
-        await Task.WhenAll(deliverymenTask, carriersTask, productsPanelTask, paymentsTask, clientsTask);
+        await Task.WhenAll(deliverymenTask, carriersTask, productsPanelTask, partyPanelTask);
 
         DeliveryMethodsViewModel.SetDeliverymen(await deliverymenTask);
         DeliveryMethodsViewModel.SetShippingCarriers(await carriersTask);
-        PaymentMethods = await paymentsTask;
-        Clients = MergeSelectedItem(await clientsTask, SelectedClient);
 
         await AfterLoadAsync();
     }
 
     protected virtual Task AfterLoadAsync() => Task.CompletedTask;
-
-    async partial void OnClientSearchTermChanged(string oldValue, string newValue)
-    {
-        _clientSearchCts?.Cancel();
-        _clientSearchCts = new CancellationTokenSource();
-        CancellationToken token = _clientSearchCts.Token;
-
-        try
-        {
-            await Task.Delay(300, token);
-            await ReloadClientsAsync(newValue, token);
-        }
-        catch (OperationCanceledException)
-        {
-        }
-    }
-
-    [RelayCommand]
-    private void RemoveOrderItem(OrderItemViewModel item)
-        => OrderBuilder.RemoveItem(item);
-
-    [RelayCommand]
-    private void ShowCreateClient()
-        => _dialogService.ShowDialog<Features.Clients.Create.View>();
-
-    protected async Task EnsureClientLoadedAsync(int clientId)
-    {
-        if (Clients?.Any(client => client.Id == clientId) == true)
-            return;
-
-        ClientListDto client = await _mediator.Send(new Application.Queries.ClientQueries.GetClientByIdQuery(clientId));
-        if (client is not null)
-        {
-            Clients = MergeSelectedItem(Clients, client);
-        }
-    }
 
     protected async Task EnsureDeliverymanLoadedAsync(int? deliverymanId)
     {
@@ -240,6 +182,10 @@ internal abstract partial class ViewModel : EditorViewModelBase
         HasChanges = true;
     }
 
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void RemoveOrderItem(OrderItemViewModel item)
+        => OrderBuilder.RemoveItem(item);
+
     private void OrderItems_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
     {
         if (e.NewItems is not null)
@@ -264,16 +210,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
         SaveCommand.NotifyCanExecuteChanged();
     }
 
-    private async Task ReloadClientsAsync(string searchTerm, CancellationToken cancellationToken = default)
-    {
-        IEnumerable<ClientListDto> clients = await _mediator.Send(
-            new Application.Queries.ClientQueries.GetClientsByNameQuery(searchTerm),
-            cancellationToken);
-
-        Clients = MergeSelectedItem(clients, SelectedClient);
-    }
-
-    private async Task ReloadDeliverymenAsync(string searchTerm, CancellationToken cancellationToken = default)
+    private async Task ReloadDeliverymenAsync(string searchTerm, System.Threading.CancellationToken cancellationToken = default)
     {
         IEnumerable<DeliverymanListDto> deliverymen = await _mediator.Send(
             new Application.Queries.DeliverymanQueries.GetDeliverymenByNameQuery(searchTerm),
@@ -282,7 +219,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
         DeliveryMethodsViewModel.SetDeliverymen(deliverymen);
     }
 
-    private async Task ReloadShippingCarriersAsync(string searchTerm, CancellationToken cancellationToken = default)
+    private async Task ReloadShippingCarriersAsync(string searchTerm, System.Threading.CancellationToken cancellationToken = default)
     {
         IEnumerable<ShippingCarrierListDto> shippingCarriers = await _mediator.Send(
             new Application.Queries.ShippingCarriersQueries.GetShippingCarriersByNameQuery(searchTerm),
@@ -291,7 +228,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
         DeliveryMethodsViewModel.SetShippingCarriers(shippingCarriers);
     }
 
-    private static IEnumerable<TItem> MergeSelectedItem<TItem>(IEnumerable<TItem> items, TItem selectedItem)
+    protected static IEnumerable<TItem> MergeSelectedItem<TItem>(IEnumerable<TItem> items, TItem selectedItem)
         where TItem : class
     {
         TItem[] results = (items ?? Enumerable.Empty<TItem>()).ToArray();
