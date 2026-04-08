@@ -95,7 +95,13 @@ internal static class OrderQueryFilters
         OrderStatus? orderStatus)
     {
         return query.Where(order =>
-            (string.IsNullOrWhiteSpace(searchTerm) || order.Client.Name.Value.Contains(searchTerm))
+            (string.IsNullOrWhiteSpace(searchTerm)
+                || order.Client.Name.Value.Contains(searchTerm)
+                || order.OrderNumber.Contains(searchTerm)
+                || order.EntitySequences.Any(sequence =>
+                    sequence.RecipientType == RecipientType.Client
+                    && sequence.EntityId == order.ClientId
+                    && sequence.DisplayTitle.Contains(searchTerm)))
             && (!fromDate.HasValue || order.CreatedAt >= fromDate.Value.Date)
             && (!toDate.HasValue || order.CreatedAt < toDate.Value.Date.AddDays(1))
             && (!paymentMethodId.HasValue || order.PaymentMethodId == paymentMethodId.Value)

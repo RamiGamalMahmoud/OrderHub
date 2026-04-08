@@ -46,7 +46,7 @@ public partial class ViewModel : ObservableObject
                     Status = new EnumItem<OutboxMessageStatus>(outboxMessage.Status, outboxMessage.Status.GetDescription()),
                     RecipientName = outboxMessage.Recipient.Name,
                     RecipientType = new EnumItem<RecipientType>(outboxMessage.RecipientType, outboxMessage.RecipientType.GetDescription()),
-                    OrderNumber = outboxMessage.Order.OrderNumber,
+                    OrderNumber = GetDisplayTitle(outboxMessage),
                     Text = outboxMessage.Text,
                     PhoneNumber = outboxMessage.Recipient.PhoneNumber,
                     CreatedAt = outboxMessage.CreatedAt
@@ -67,7 +67,7 @@ public partial class ViewModel : ObservableObject
                 Status = new EnumItem<OutboxMessageStatus>(m.Status, m.Status.GetDescription()),
                 RecipientName = m.Recipient.Name,
                 RecipientType = new EnumItem<RecipientType>(m.RecipientType, m.RecipientType.GetDescription()),
-                OrderNumber = m.Order.OrderNumber,
+                OrderNumber = GetDisplayTitle(m),
                 Text = m.Text,
                 PhoneNumber = m.Recipient.PhoneNumber,
                 CreatedAt = m.CreatedAt
@@ -205,6 +205,29 @@ public partial class ViewModel : ObservableObject
 
         FromDate = startOfMonth;
         ToDate = startOfMonth.AddMonths(1).AddDays(-1);
+    }
+
+    private static string GetDisplayTitle(OutboxMessage outboxMessage)
+    {
+        if (outboxMessage.Order is null)
+        {
+            return string.Empty;
+        }
+
+        int? entityId = outboxMessage.Recipient switch
+        {
+            ClientRecipient clientRecipient => clientRecipient.ClientId,
+            SupplierRecipient supplierRecipient => supplierRecipient.SupplierId,
+            DeliverymanRecipient deliverymanRecipient => deliverymanRecipient.DeliveryManId,
+            _ => null
+        };
+
+        if (outboxMessage.RecipientType == RecipientType.ShippingCarrier)
+        {
+            return outboxMessage.Order.GetDisplayTitle(RecipientType.Client, outboxMessage.Order.ClientId);
+        }
+
+        return outboxMessage.Order.GetDisplayTitle(outboxMessage.RecipientType, entityId);
     }
 }
 

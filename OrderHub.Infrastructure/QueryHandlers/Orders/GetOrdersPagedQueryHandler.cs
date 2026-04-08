@@ -27,6 +27,10 @@ internal class GetOrdersPagedQueryHandler(AppDbContextFactory appDbContextFactor
             .Select(o => new OrderListDto(
                 o.Id,
                 o.OrderNumber,
+                o.EntitySequences
+                    .Where(sequence => sequence.RecipientType == RecipientType.Client && sequence.EntityId == o.ClientId)
+                    .Select(sequence => sequence.DisplayTitle)
+                    .FirstOrDefault() ?? o.OrderNumber,
                 o.Client.Name.Value,
                 o.Client.Phone.Number.FullNumber,
                 o.OrderItems.Count,

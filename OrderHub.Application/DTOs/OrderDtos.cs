@@ -7,6 +7,10 @@ namespace OrderHub.Application.DTOs;
 
 public static class OrderDtos
 {
+    public record OrderItemAttributeDto(
+        string Name,
+        string Value);
+
     public record OrderDeliveryStepCreateDto(
         int StepOrder,
         DeliveryMethod DeliveryMethod,
@@ -20,6 +24,7 @@ public static class OrderDtos
     public record OrderListDto(
         int Id,
         string OrderNumber,
+        string ClientOrderTitle,
         string ClientName,
         string ClientPhoneNumber,
         int ItemsCount,
@@ -59,7 +64,8 @@ public static class OrderDtos
         int Quantity,
         int? SupplierId,
         string SupplierName,
-        IReadOnlyCollection<CommonDtos.SupplierInfoDto> Suppliers);
+        IReadOnlyCollection<CommonDtos.SupplierInfoDto> Suppliers,
+        IReadOnlyCollection<OrderItemAttributeDto> Attributes);
 
     public record OrderEditDto(
         int Id,
@@ -95,5 +101,12 @@ public static class OrderDtos
 
 public static class OrderItemDtos
 {
-    public record OrderItemDto(int ProductId, string ProductName, int Quantity, decimal UnitPrice, string SupplierName, int? SupplierId);
+    public record OrderItemDto(
+        int ProductId,
+        string ProductName,
+        int Quantity,
+        decimal UnitPrice,
+        string SupplierName,
+        int? SupplierId,
+        IReadOnlyCollection<OrderDtos.OrderItemAttributeDto> Attributes);
 }

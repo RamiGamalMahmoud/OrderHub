@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
+using OrderHub.Infrastructure.Helpers;
 using System;
 using System.Linq;
 using System.Threading;
@@ -38,6 +39,12 @@ internal class CreateOrderCommandHandler(AppDbContextFactory appDbContextFactory
                 orderItemDto.Quantity,
                 orderItemDto.SupplierName,
                 orderItemDto.SupplierId);
+
+            foreach (OrderItemAttributeDto attributeDto in orderItemDto.Attributes ?? Enumerable.Empty<OrderItemAttributeDto>())
+            {
+                orderItem.AddAttribute(new OrderItemAttribute(attributeDto.Name, attributeDto.Value));
+            }
+
             order.AddOrderItem(orderItem);
         }
 
@@ -57,6 +64,7 @@ internal class CreateOrderCommandHandler(AppDbContextFactory appDbContextFactory
         }
 
         appDbContext.Orders.Add(order);
+        await OrderEntitySequenceManager.SyncAsync(appDbContext, order, cancellationToken);
         await appDbContext.SaveChangesAsync(cancellationToken);
         return Result<int>.Success(order.Id);
     }

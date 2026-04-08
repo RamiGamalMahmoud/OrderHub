@@ -37,6 +37,12 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasMany(o => o.EntitySequences)
+            .WithOne(sequence => sequence.Order)
+            .HasForeignKey(sequence => sequence.OrderId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.Property(o => o.DeliveryMethod)
             .HasConversion<string>()
             .IsRequired(false);

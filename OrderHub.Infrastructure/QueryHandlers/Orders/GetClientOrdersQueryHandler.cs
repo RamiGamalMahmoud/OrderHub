@@ -26,6 +26,7 @@ internal class GetClientOrdersQueryHandler(AppDbContextFactory appDbContextFacto
                 .Include(o => o.PaymentMethod)
                 .Include(o => o.OrderItems)
                 .Include(o => o.DeliverySteps)
+                .Include(o => o.EntitySequences)
                 .Include(o => o.OutboxMessages)
                 .Where(o => o.Client.Name.Value.Contains(request.ClientName))
                 .ToListAsync(cancellationToken: cancellationToken);
@@ -33,6 +34,7 @@ internal class GetClientOrdersQueryHandler(AppDbContextFactory appDbContextFacto
             return orders.Select(o => new OrderListDto(
                     o.Id,
                     o.OrderNumber,
+                    o.GetDisplayTitle(RecipientType.Client, o.ClientId),
                     o.Client.Name.Value,
                     o.Client.Phone.Number.FullNumber,
                     o.OrderItems.Count,

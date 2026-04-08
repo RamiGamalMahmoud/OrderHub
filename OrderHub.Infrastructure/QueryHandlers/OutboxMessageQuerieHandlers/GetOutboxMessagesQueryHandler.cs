@@ -16,6 +16,7 @@ internal class GetOutboxMessagesQueryHandler(AppDbContextFactory appDbContextFac
         return await appDbContext
             .OutboxMessages
             .Include(m => m.Order)
+                .ThenInclude(order => order.EntitySequences)
             .Include(m => m.Recipient)
             .ToListAsync();
     }

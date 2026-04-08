@@ -2,6 +2,8 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
+using OrderHub.Infrastructure.Helpers;
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,7 +24,9 @@ internal class UpdateOrderCommandHandler(AppDbContextFactory appDbContextFactory
 
         Order order = await appDbContext.Orders
             .Include(o => o.OrderItems)
+                .ThenInclude(item => item.Attributes)
             .Include(o => o.DeliverySteps)
+            .Include(o => o.EntitySequences)
             .SingleOrDefaultAsync(o => o.Id == request.UpdateDto.Id, cancellationToken);
 
         if (order is null)
@@ -36,6 +40,7 @@ internal class UpdateOrderCommandHandler(AppDbContextFactory appDbContextFactory
         order.ShippingCarrierId = request.UpdateDto.ShippingCarrierId;
         order.PaymentMethodId = request.UpdateDto.PaymentMothodId;
 
+        appDbContext.OrderItemAttributes.RemoveRange(order.OrderItems.SelectMany(item => item.Attributes));
         appDbContext.OrderItems.RemoveRange(order.OrderItems);
         appDbContext.OrderDeliverySteps.RemoveRange(order.DeliverySteps);
         order.ClearOrderItems();
@@ -43,14 +48,21 @@ internal class UpdateOrderCommandHandler(AppDbContextFactory appDbContextFactory
 
         foreach (OrderItemDto item in request.UpdateDto.OrderItems)
         {
-            order.AddOrderItem(new OrderItem(
+            OrderItem orderItem = new OrderItem(
                 item.ProductId,
                 item.ProductName,
                 order.Id,
                 item.UnitPrice,
                 item.Quantity,
                 item.SupplierName,
-                item.SupplierId));
+                item.SupplierId);
+
+            foreach (OrderItemAttributeDto attributeDto in item.Attributes ?? Enumerable.Empty<OrderItemAttributeDto>())
+            {
+                orderItem.AddAttribute(new OrderItemAttribute(attributeDto.Name, attributeDto.Value));
+            }
+
+            order.AddOrderItem(orderItem);
         }
 
         foreach (OrderDeliveryStepCreateDto step in request.UpdateDto.DeliverySteps ?? Enumerable.Empty<OrderDeliveryStepCreateDto>())
@@ -69,6 +81,7 @@ internal class UpdateOrderCommandHandler(AppDbContextFactory appDbContextFactory
             });
         }
 
+        await OrderEntitySequenceManager.SyncAsync(appDbContext, order, cancellationToken);
         await appDbContext.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }

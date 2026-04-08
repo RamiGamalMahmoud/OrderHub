@@ -22,6 +22,8 @@ internal class GetOrderForEditQueryHandler(AppDbContextFactory appDbContextFacto
         Order order = await appDbContext.Orders
             .AsNoTracking()
             .Include(o => o.OrderItems)
+                .ThenInclude(item => item.Attributes)
+            .Include(o => o.OrderItems)
                 .ThenInclude(item => item.Product)
                     .ThenInclude(product => product.Category)
             .Include(o => o.OrderItems)
@@ -54,7 +56,10 @@ internal class GetOrderForEditQueryHandler(AppDbContextFactory appDbContextFacto
                     item.Product?.Suppliers
                         .Select(supplier => new Application.DTOs.CommonDtos.SupplierInfoDto(supplier.Id, supplier.Name.Value))
                         .ToImmutableList()
-                    ?? ImmutableList<Application.DTOs.CommonDtos.SupplierInfoDto>.Empty))
+                    ?? ImmutableList<Application.DTOs.CommonDtos.SupplierInfoDto>.Empty,
+                    item.Attributes
+                        .Select(attribute => new OrderItemAttributeDto(attribute.Name, attribute.Value))
+                        .ToImmutableList()))
                 .ToImmutableList(),
             order.DeliverySteps
                 .OrderBy(step => step.StepOrder)

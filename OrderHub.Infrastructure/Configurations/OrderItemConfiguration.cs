@@ -49,6 +49,12 @@ namespace OrderHub.Infrastructure.Configurations
                 .HasMaxLength(100)
                 .IsRequired(false);
 
+            builder.HasMany(o => o.Attributes)
+                .WithOne(attribute => attribute.OrderItem)
+                .HasForeignKey(attribute => attribute.OrderItemId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
             builder.Ignore(o => o.SubTotal);
         }
     }

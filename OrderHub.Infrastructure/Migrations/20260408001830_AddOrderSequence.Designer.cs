@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OrderHub.Infrastructure;
 
@@ -10,9 +11,11 @@ using OrderHub.Infrastructure;
 namespace OrderHub.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260408001830_AddOrderSequence")]
+    partial class AddOrderSequence
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
@@ -412,46 +415,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasDatabaseName("ix_order_items_supplier_id");
 
                     b.ToTable("order_items", (string)null);
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.OrderItemAttribute", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("modified_at");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("VARCHAR(100)")
-                        .HasColumnName("name");
-
-                    b.Property<int>("OrderItemId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("order_item_id");
-
-                    b.Property<string>("Value")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("VARCHAR(500)")
-                        .HasColumnName("value");
-
-                    b.HasKey("Id")
-                        .HasName("pk_order_item_attributes");
-
-                    b.HasIndex("OrderItemId")
-                        .HasDatabaseName("ix_order_item_attributes_order_item_id");
-
-                    b.ToTable("order_item_attributes", (string)null);
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.OutboxMessage", b =>
@@ -1192,18 +1155,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("OrderHub.Domain.Models.OrderItemAttribute", b =>
-                {
-                    b.HasOne("OrderHub.Domain.Models.OrderItem", "OrderItem")
-                        .WithMany("Attributes")
-                        .HasForeignKey("OrderItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_order_item_attributes_order_items_order_item_id");
-
-                    b.Navigation("OrderItem");
-                });
-
             modelBuilder.Entity("OrderHub.Domain.Models.OutboxMessage", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.Order", "Order")
@@ -1564,11 +1515,6 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("OrderItems");
 
                     b.Navigation("OutboxMessages");
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.OrderItem", b =>
-                {
-                    b.Navigation("Attributes");
                 });
 #pragma warning restore 612, 618
         }
