@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
 namespace OrderHub.Infrastructure;
@@ -16,6 +16,7 @@ public static class ServiceCollectionExtensions
 
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
+        services.AddTransient<Orders.OrderWriteService>();
         services.AddSingleton<Services.WhatsappService>();
         services.AddSingleton<Application.Interfaces.Services.IWhatsappService>(s => s.GetRequiredService<Services.WhatsappService>());
         services.AddSingleton<Application.Interfaces.Services.IMessageSender>(s => s.GetRequiredService<Services.WhatsappService>());
