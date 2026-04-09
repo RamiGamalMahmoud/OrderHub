@@ -4,13 +4,9 @@ using MediatR;
 using OrderHub.Domain.Enums;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.DeliverymanDtos;
 using static OrderHub.Application.DTOs.OrderDtos;
 using static OrderHub.Application.DTOs.ShippingCarriersDtos;
@@ -19,14 +15,17 @@ namespace OrderHub.UI.Features.Orders.Editor;
 
 public partial class DeliveryMethodsViewModel : ObservableValidator
 {
-    private readonly IMediator _mediator;
-    private CancellationTokenSource _deliverymanSearchCts;
-    private CancellationTokenSource _shippingCarrierSearchCts;
+    private readonly DeliveryPartyLookupViewModel _lookup;
+    private readonly DeliveryChainEditorViewModel _chain;
 
     public DeliveryMethodsViewModel(IMediator mediator)
     {
-        _mediator = mediator;
-        DeliverySteps.CollectionChanged += DeliverySteps_CollectionChanged;
+        _lookup = new DeliveryPartyLookupViewModel(mediator);
+        _chain = new DeliveryChainEditorViewModel();
+
+        _lookup.PropertyChanged += Lookup_PropertyChanged;
+        _chain.PropertyChanged += Chain_PropertyChanged;
+        _chain.StepSelectionChanged += (_, _) => ValidateProperty(SelecteddDeliveryMethod, nameof(SelecteddDeliveryMethod));
         ValidateAllProperties();
     }
 
@@ -44,109 +43,55 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
 
     partial void OnSelecteddDeliveryMethodChanged(EnumItem<DeliveryMethod> oldValue, EnumItem<DeliveryMethod> newValue)
     {
-        SelectedDeliveryman = null;
-        SelectedShippingCarrier = null;
+        _lookup.ClearSelections();
         ValidateProperty(SelecteddDeliveryMethod, nameof(SelecteddDeliveryMethod));
     }
 
-    [ObservableProperty]
-    private ShippingCarrierListDto _selectedShippingCarrier;
-
-    partial void OnSelectedShippingCarrierChanged(ShippingCarrierListDto oldValue, ShippingCarrierListDto newValue)
+    public ShippingCarrierListDto SelectedShippingCarrier
     {
-        ValidateProperty(SelecteddDeliveryMethod, nameof(SelecteddDeliveryMethod));
+        get => _lookup.SelectedShippingCarrier;
+        set => _lookup.SelectedShippingCarrier = value;
     }
 
-    [ObservableProperty]
-    private DeliverymanListDto _selectedDeliveryman;
-
-    partial void OnSelectedDeliverymanChanged(DeliverymanListDto oldValue, DeliverymanListDto newValue)
+    public DeliverymanListDto SelectedDeliveryman
     {
-        ValidateProperty(SelecteddDeliveryMethod, nameof(SelecteddDeliveryMethod));
+        get => _lookup.SelectedDeliveryman;
+        set => _lookup.SelectedDeliveryman = value;
     }
 
-    [ObservableProperty]
-    private IEnumerable<DeliverymanListDto> _deliverymen = [];
+    public IEnumerable<DeliverymanListDto> Deliverymen => _lookup.Deliverymen;
+    public IEnumerable<ShippingCarrierListDto> ShippingCarriers => _lookup.ShippingCarriers;
 
-    [ObservableProperty]
-    private IEnumerable<ShippingCarrierListDto> _shippingCarriers = [];
+    public string DeliverymanSearchTerm
+    {
+        get => _lookup.DeliverymanSearchTerm;
+        set => _lookup.DeliverymanSearchTerm = value;
+    }
 
-    [ObservableProperty]
-    private string _deliverymanSearchTerm;
+    public string ShippingCarrierSearchTerm
+    {
+        get => _lookup.ShippingCarrierSearchTerm;
+        set => _lookup.ShippingCarrierSearchTerm = value;
+    }
 
-    [ObservableProperty]
-    private string _shippingCarrierSearchTerm;
+    public DeliveryStepViewModel SelectedDeliveryStep
+    {
+        get => _chain.SelectedDeliveryStep;
+        set => _chain.SelectedDeliveryStep = value;
+    }
 
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(MoveDeliveryStepDownCommand))]
-    [NotifyCanExecuteChangedFor(nameof(MoveDeliveryStepUpCommand))]
-    [NotifyCanExecuteChangedFor(nameof(RemoveDeliveryStepCommand))]
-    private DeliveryStepViewModel _selectedDeliveryStep;
-
-    public ObservableCollection<DeliveryStepViewModel> DeliverySteps { get; set; } = [];
+    public System.Collections.ObjectModel.ObservableCollection<DeliveryStepViewModel> DeliverySteps => _chain.DeliverySteps;
 
     public void SetDeliverymen(IEnumerable<DeliverymanListDto> deliverymen)
     {
-        Deliverymen = MergeSelectedItem(deliverymen, SelectedDeliveryman);
+        _lookup.SetDeliverymen(deliverymen);
+        _chain.RefreshDeliverymanHandlers(_lookup.Deliverymen);
     }
 
     public void SetShippingCarriers(IEnumerable<ShippingCarrierListDto> shippingCarriers)
     {
-        ShippingCarriers = MergeSelectedItem(shippingCarriers, SelectedShippingCarrier);
-    }
-
-    async partial void OnDeliverymanSearchTermChanged(string oldValue, string newValue)
-    {
-        _deliverymanSearchCts?.Cancel();
-        _deliverymanSearchCts = new CancellationTokenSource();
-        CancellationToken token = _deliverymanSearchCts.Token;
-
-        try
-        {
-            await Task.Delay(300, token);
-            IEnumerable<DeliverymanListDto> deliverymen = await _mediator.Send(
-                new Application.Queries.DeliverymanQueries.GetDeliverymenByNameQuery(newValue),
-                token);
-            SetDeliverymen(deliverymen);
-        }
-        catch (OperationCanceledException)
-        {
-        }
-    }
-
-    async partial void OnShippingCarrierSearchTermChanged(string oldValue, string newValue)
-    {
-        _shippingCarrierSearchCts?.Cancel();
-        _shippingCarrierSearchCts = new CancellationTokenSource();
-        CancellationToken token = _shippingCarrierSearchCts.Token;
-
-        try
-        {
-            await Task.Delay(300, token);
-            IEnumerable<ShippingCarrierListDto> shippingCarriers = await _mediator.Send(
-                new Application.Queries.ShippingCarriersQueries.GetShippingCarriersByNameQuery(newValue),
-                token);
-            SetShippingCarriers(shippingCarriers);
-        }
-        catch (OperationCanceledException)
-        {
-        }
-    }
-
-    partial void OnDeliverymenChanged(IEnumerable<DeliverymanListDto> oldValue, IEnumerable<DeliverymanListDto> newValue)
-    {
-        RefreshDeliveryStepHandlers(
-            DeliveryMethod.DeliveryMan,
-            (newValue ?? Enumerable.Empty<DeliverymanListDto>())
-                .Select(deliveryman => new Handler(deliveryman.Id, deliveryman.Name)));
-    }
-
-    partial void OnShippingCarriersChanged(IEnumerable<ShippingCarrierListDto> oldValue, IEnumerable<ShippingCarrierListDto> newValue)
-    {
-        RefreshDeliveryStepHandlers(
-            DeliveryMethod.ShippingCompany,
-            (newValue ?? Enumerable.Empty<ShippingCarrierListDto>())
-                .Select(carrier => new Handler(carrier.Id, carrier.Name)));
+        _lookup.SetShippingCarriers(shippingCarriers);
+        _chain.RefreshShippingCarrierHandlers(_lookup.ShippingCarriers);
     }
 
     public static ValidationResult ValidateDeliveryMethod(EnumItem<DeliveryMethod> deliveryMethod, ValidationContext context)
@@ -177,45 +122,31 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
     [RelayCommand]
     private void AddDeliverymanStep()
     {
-        DeliverySteps.Add(new DeliveryStepViewModel
-        {
-            Handlers = (Deliverymen ?? Enumerable.Empty<DeliverymanListDto>()).Select(d => new Handler(d.Id, d.Name)),
-            Method = DeliveryMethod.DeliveryMan,
-            Type = DeliveryMethod.DeliveryMan.GetDescription(),
-            StepOrder = DeliverySteps.Count + 1
-        });
+        _chain.AddDeliverymanStep((_lookup.Deliverymen ?? Enumerable.Empty<DeliverymanListDto>())
+            .Select(d => new Handler(d.Id, d.Name)));
+        ValidateProperty(SelecteddDeliveryMethod, nameof(SelecteddDeliveryMethod));
     }
 
     [RelayCommand]
     private void AddShippingCarrierStep()
     {
-        DeliverySteps.Add(new DeliveryStepViewModel
-        {
-            Handlers = (ShippingCarriers ?? Enumerable.Empty<ShippingCarrierListDto>()).Select(d => new Handler(d.Id, d.Name)),
-            Method = DeliveryMethod.ShippingCompany,
-            Type = DeliveryMethod.ShippingCompany.GetDescription(),
-            StepOrder = DeliverySteps.Count + 1
-        });
+        _chain.AddShippingCarrierStep((_lookup.ShippingCarriers ?? Enumerable.Empty<ShippingCarrierListDto>())
+            .Select(c => new Handler(c.Id, c.Name)));
+        ValidateProperty(SelecteddDeliveryMethod, nameof(SelecteddDeliveryMethod));
     }
 
     [RelayCommand(CanExecute = nameof(CanRemoveDeliveryStep))]
     private void RemoveDeliveryStep(DeliveryStepViewModel step)
     {
-        DeliverySteps.Remove(step);
-        ResetSelectedDeliveryStepsOrder();
-        if (ReferenceEquals(SelectedDeliveryStep, step))
-        {
-            SelectedDeliveryStep = null;
-        }
-
+        _chain.RemoveDeliveryStepCommand.Execute(step);
         ValidateProperty(SelecteddDeliveryMethod, nameof(SelecteddDeliveryMethod));
     }
 
     [RelayCommand(CanExecute = nameof(CanMoveDeliveryStepDown))]
-    private void MoveDeliveryStepDown(DeliveryStepViewModel step) => MoveStep(step, MoveDirection.Down);
+    private void MoveDeliveryStepDown(DeliveryStepViewModel step) => _chain.MoveDeliveryStepDownCommand.Execute(step);
 
     [RelayCommand(CanExecute = nameof(CanMoveDeliveryStepUp))]
-    private void MoveDeliveryStepUp(DeliveryStepViewModel step) => MoveStep(step, MoveDirection.Up);
+    private void MoveDeliveryStepUp(DeliveryStepViewModel step) => _chain.MoveDeliveryStepUpCommand.Execute(step);
 
     private bool CanRemoveDeliveryStep(DeliveryStepViewModel step) => step is not null;
 
@@ -235,99 +166,65 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
         return index > 0;
     }
 
-    private void MoveStep(DeliveryStepViewModel step, MoveDirection direction)
-    {
-        int index = DeliverySteps.IndexOf(step);
-        if (index == -1) return;
-
-        int newIndex = index + (int)direction;
-
-        if (newIndex < 0 || newIndex >= DeliverySteps.Count)
-            return;
-
-        DeliverySteps.Move(index, newIndex);
-        ResetSelectedDeliveryStepsOrder();
-
-        MoveDeliveryStepUpCommand.NotifyCanExecuteChanged();
-        MoveDeliveryStepDownCommand.NotifyCanExecuteChanged();
-    }
-
     public void ResetSelectedDeliveryStepsOrder()
     {
-        for (int i = 0; i < DeliverySteps.Count; i++)
-        {
-            DeliverySteps[i].StepOrder = i + 1;
-        }
+        _chain.ResetSelectedDeliveryStepsOrder();
     }
 
     public IEnumerable<OrderDeliveryStepCreateDto> BuildDeliverySteps()
     {
-        return DeliverySteps
-            .Where(step => step.SelectedHandler is not null)
-            .OrderBy(step => step.StepOrder)
-            .Select(step => new OrderDeliveryStepCreateDto(
-                step.StepOrder,
-                step.Method,
-                step.SelectedHandler.Id));
+        return _chain.BuildDeliverySteps();
     }
 
-    private void RefreshDeliveryStepHandlers(DeliveryMethod method, IEnumerable<Handler> handlers)
+    private void Lookup_PropertyChanged(object sender, PropertyChangedEventArgs e)
     {
-        Handler[] handlerOptions = handlers.ToArray();
-
-        foreach (DeliveryStepViewModel step in DeliverySteps.Where(step => step.Method == method))
+        if (e.PropertyName == nameof(DeliveryPartyLookupViewModel.Deliverymen))
         {
-            Handler selectedHandler = step.SelectedHandler;
-            step.Handlers = handlerOptions;
-            if (selectedHandler is not null)
-            {
-                step.SelectedHandler = step.Handlers.FirstOrDefault(handler => handler.Id == selectedHandler.Id);
-            }
+            _chain.RefreshDeliverymanHandlers(_lookup.Deliverymen);
         }
-    }
-
-    private static IEnumerable<TItem> MergeSelectedItem<TItem>(IEnumerable<TItem> items, TItem selectedItem)
-        where TItem : class
-    {
-        TItem[] results = (items ?? Enumerable.Empty<TItem>()).ToArray();
-
-        if (selectedItem is null || results.Contains(selectedItem))
-            return results;
-
-        return new[] { selectedItem }.Concat(results);
-    }
-
-    private void DeliverySteps_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-    {
-        if (e.NewItems is not null)
+        else if (e.PropertyName == nameof(DeliveryPartyLookupViewModel.ShippingCarriers))
         {
-            foreach (DeliveryStepViewModel step in e.NewItems)
-            {
-                step.PropertyChanged += DeliveryStep_PropertyChanged;
-            }
+            _chain.RefreshShippingCarrierHandlers(_lookup.ShippingCarriers);
         }
 
-        if (e.OldItems is not null)
-        {
-            foreach (DeliveryStepViewModel step in e.OldItems)
-            {
-                step.PropertyChanged -= DeliveryStep_PropertyChanged;
-            }
-        }
+        OnPropertyChanged(MapLookupPropertyName(e.PropertyName));
 
-        MoveDeliveryStepUpCommand.NotifyCanExecuteChanged();
-        MoveDeliveryStepDownCommand.NotifyCanExecuteChanged();
-        RemoveDeliveryStepCommand.NotifyCanExecuteChanged();
-        ValidateProperty(SelecteddDeliveryMethod, nameof(SelecteddDeliveryMethod));
-    }
-
-    private void DeliveryStep_PropertyChanged(object sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(DeliveryStepViewModel.SelectedHandler))
+        if (e.PropertyName is nameof(DeliveryPartyLookupViewModel.SelectedDeliveryman)
+            or nameof(DeliveryPartyLookupViewModel.SelectedShippingCarrier))
         {
             ValidateProperty(SelecteddDeliveryMethod, nameof(SelecteddDeliveryMethod));
         }
     }
+
+    private void Chain_PropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        OnPropertyChanged(MapChainPropertyName(e.PropertyName));
+
+        if (e.PropertyName == nameof(DeliveryChainEditorViewModel.SelectedDeliveryStep))
+        {
+            MoveDeliveryStepUpCommand.NotifyCanExecuteChanged();
+            MoveDeliveryStepDownCommand.NotifyCanExecuteChanged();
+            RemoveDeliveryStepCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    private static string MapLookupPropertyName(string propertyName) => propertyName switch
+    {
+        nameof(DeliveryPartyLookupViewModel.SelectedDeliveryman) => nameof(SelectedDeliveryman),
+        nameof(DeliveryPartyLookupViewModel.SelectedShippingCarrier) => nameof(SelectedShippingCarrier),
+        nameof(DeliveryPartyLookupViewModel.Deliverymen) => nameof(Deliverymen),
+        nameof(DeliveryPartyLookupViewModel.ShippingCarriers) => nameof(ShippingCarriers),
+        nameof(DeliveryPartyLookupViewModel.DeliverymanSearchTerm) => nameof(DeliverymanSearchTerm),
+        nameof(DeliveryPartyLookupViewModel.ShippingCarrierSearchTerm) => nameof(ShippingCarrierSearchTerm),
+        _ => propertyName
+    };
+
+    private static string MapChainPropertyName(string propertyName) => propertyName switch
+    {
+        nameof(DeliveryChainEditorViewModel.SelectedDeliveryStep) => nameof(SelectedDeliveryStep),
+        nameof(DeliveryChainEditorViewModel.DeliverySteps) => nameof(DeliverySteps),
+        _ => propertyName
+    };
 }
 
 public record Handler(int Id, string Name);
