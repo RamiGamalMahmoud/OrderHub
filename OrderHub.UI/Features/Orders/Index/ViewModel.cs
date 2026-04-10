@@ -358,6 +358,15 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
     }
 
     [RelayCommand]
+    private async Task SetDay(string day)
+    {
+        _ = int.TryParse(day, out int dayNumber);
+        FromDate = FromDate.Value.AddDays(dayNumber);
+        ToDate = ToDate.Value.AddDays(dayNumber);
+        await RefreshWithPagingAsync();
+    }
+
+    [RelayCommand]
     private async Task SetCurrentWeek()
     {
         DateTime today = DateTime.Today;

@@ -34,11 +34,6 @@ internal class ResendOutboxMessageCommandHandler(
             return Result.Failure("الرسالة غير موجودة.");
         }
 
-        if (message.Status != OutboxMessageStatus.Failed)
-        {
-            return Result.Failure("يمكن إعادة إرسال الرسائل الفاشلة فقط.");
-        }
-
         message.Status = OutboxMessageStatus.Pending;
         message.RetryCount = (message.RetryCount ?? 0) + 1;
         message.LastAttemptAt = null;

@@ -262,6 +262,7 @@ public partial class OutboxMessageViewModel : ObservableObject
     public string RecipientName { get; init; }
     public EnumItem<RecipientType> RecipientType { get; init; }
     public string Text { get; init; }
+    public string Title => Text?.Split("\n").FirstOrDefault() ?? string.Empty;
     public string PhoneNumber { get; init; }
     public DateTime CreatedAt { get; init; }
 }
