@@ -50,8 +50,6 @@ internal class ViewModel : Editor.ViewModel
         _messenger.Send(new Application.Messages.Orders.OrderCreatedMessage());
 
         await PublishSuccessNotification("تم انشاء الطلب بنجاح");
-
-        await _mediator.Send(new Application.Commands.OrderCommands.BroadcastOrderStatusCommand(orderId));
     }
 
     private async Task HandleOrderFailure()
