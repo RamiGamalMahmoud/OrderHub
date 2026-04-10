@@ -67,7 +67,7 @@ public partial class ViewModel : ObservableObject
                 Status = new EnumItem<OutboxMessageStatus>(m.Status, m.Status.GetDescription()),
                 RecipientName = m.Recipient.Name,
                 RecipientType = new EnumItem<RecipientType>(m.RecipientType, m.RecipientType.GetDescription()),
-                OrderNumber = GetDisplayTitle(m),
+                OrderNumber = m.Order.OrderNumber,
                 Text = m.Text,
                 PhoneNumber = m.Recipient.PhoneNumber,
                 CreatedAt = m.CreatedAt
