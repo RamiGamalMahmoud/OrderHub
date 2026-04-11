@@ -29,6 +29,14 @@ namespace OrderHub.UI.Features.Clients.Edit
             {
                 Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
             });
+            _messenger.Register<Application.Messages.Cities.CityUpdatedMessage>(this, async (r, m) =>
+            {
+                Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
+            });
+            _messenger.Register<Application.Messages.Cities.CityDeletedMessage>(this, async (r, m) =>
+            {
+                Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
+            });
             ValidateAllProperties();
         }   
 

@@ -39,7 +39,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<Features.Home.HomeViewModel>();
         services.AddTransient<Features.Settings.ClientCredentialsSettings.ClientCredentialsSettingsViewModel>();
         services.AddSingleton<Features.Suppliers.Index.SuppliersViewModel>();
+        services.AddSingleton<Features.Cities.Index.ViewModel>();
         services.AddTransient<Features.Cities.Create.CreateCityViewModel>();
+        services.AddTransient<Features.Cities.Edit.ViewModel>();
 
         services.AddTransient<Features.Suppliers.Create.ViewModel>();
         services.AddTransient<Features.Suppliers.Update.ViewModel>();
@@ -100,6 +102,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<Features.Suppliers.Create.View>();
         services.AddTransient<Features.Suppliers.Update.View>();
         services.AddTransient<Features.Cities.Create.CreateCityView>();
+        services.AddTransient<Features.Cities.Edit.EditCityView>();
 
         services.AddTransient<Features.Suppliers.Update.View>();
 
@@ -112,6 +115,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<Features.Categories.Index.View>();
         services.AddTransient<Features.Categories.Create.View>();
         services.AddTransient<Features.Categories.Update.View>();
+
+        // Cities
+        services.AddSingleton<Features.Cities.Index.View>();
 
         // Products
         services.AddSingleton<Features.Products.Index.View>();

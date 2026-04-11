@@ -33,6 +33,14 @@ public abstract partial class ViewModel : EditorViewModelBase
         {
             Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
         });
+        WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityUpdatedMessage>(this, async (r, m) =>
+        {
+            Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
+        });
+        WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityDeletedMessage>(this, async (r, m) =>
+        {
+            Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
+        });
         ValidateAllProperties();
     }
 

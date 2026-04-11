@@ -52,6 +52,7 @@ internal partial class MainWindowViewModel : ObservableObject
         NavigationCommands.Add(new NavigationCommand("الطلبات", "ListBox", () => _navigationService.NavigateTo<Features.Orders.Index.View>()));
         NavigationCommands.Add(new NavigationCommand("المنتجات", "Factory", () => _navigationService.NavigateTo<Features.Products.Index.View>()));
         NavigationCommands.Add(new NavigationCommand("الأقسام", "Factory", () => _navigationService.NavigateTo<Features.Categories.Index.View>()));
+        NavigationCommands.Add(new NavigationCommand("المدن", "MapMarker", () => _navigationService.NavigateTo<Features.Cities.Index.View>()));
         NavigationCommands.Add(new NavigationCommand("العملاء", "AccountTie", () => _navigationService.NavigateTo<Features.Clients.Index.View>()));
         NavigationCommands.Add(new NavigationCommand("الموردون", "BadgeAccount", () => _navigationService.NavigateTo<Features.Suppliers.Index.View>()));
         NavigationCommands.Add(new NavigationCommand("شركات الشحن", "Ship", () => _navigationService.NavigateTo<Features.ShippingCarriers.Index.View>()));

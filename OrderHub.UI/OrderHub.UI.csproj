@@ -8,17 +8,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Compile Remove="Features\Cities\Edit\**" />
-	  <Compile Remove="Features\Cities\Index\**" />
-	  <EmbeddedResource Remove="Features\Cities\Edit\**" />
-	  <EmbeddedResource Remove="Features\Cities\Index\**" />
-	  <None Remove="Features\Cities\Edit\**" />
-	  <None Remove="Features\Cities\Index\**" />
-	  <Page Remove="Features\Cities\Edit\**" />
-	  <Page Remove="Features\Cities\Index\**" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Noto\NotoSans-Bold.ttf" />
 		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Noto\NotoSans-BoldItalic.ttf" />
 		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Noto\NotoSans-Italic.ttf" />
