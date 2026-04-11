@@ -18,10 +18,12 @@ internal class GetProductsByNameQueryHandler(AppDbContextFactory appDbContextFac
     {
         using (AppDbContext dbContext = _appDbContextFactory.CreateDbContext())
         {
+            string searchTerm = request.SearchTerm.Trim();
+            if(string.IsNullOrEmpty(searchTerm)) return Enumerable.Empty<ProductListDto>();
             return await dbContext
                 .Products
                 .AsNoTracking()
-                .Where(p => p.Name.Value.Contains(request.SearchTerm.Trim()))
+                .Where(p => p.Name.Value.Contains(searchTerm) || p.Suppliers.Any(s => s.Name.Value.Contains(searchTerm)))
                 .Select(p => new ProductListDto(
                     p.Id,
                     p.Name.Value,
