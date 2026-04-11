@@ -34,7 +34,7 @@ internal class GetClientsByNameQueryHandler(AppDbContextFactory appDbContextFact
                 client.Id,
                 client.Name.Value,
                 $"{client.Address.City.Name.Value} - {client.Address.Street}",
-                client.Phone.Number.FullNumber))
+                client.Phone.Number.FullNumber, client.Location))
             .ToListAsync(cancellationToken);
     }
 }
@@ -52,7 +52,8 @@ internal class GetClientByIdQueryHandler(AppDbContextFactory appDbContextFactory
                 client.Id,
                 client.Name.Value,
                 $"{client.Address.City.Name.Value} - {client.Address.Street}",
-                client.Phone.Number.FullNumber))
+                client.Phone.Number.FullNumber,
+                client.Location))
             .FirstOrDefaultAsync(cancellationToken);
     }
 }

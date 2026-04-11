@@ -19,6 +19,8 @@ namespace OrderHub.Infrastructure.Configurations
                     .IsRequired();
             });
 
+            builder.Property(c => c.Location).HasColumnType("VARCHAR(255)").IsRequired(false);
+
             builder.HasOne(client => client.Address).WithMany().HasForeignKey("address_id");
 
             builder.HasOne(client => client.Phone).WithMany().HasForeignKey("phone_id");

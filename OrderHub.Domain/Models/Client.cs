@@ -15,6 +15,7 @@ namespace OrderHub.Domain.Models
         }
 
         public EntityName Name { get; private set; }
+        public string Location { get; set; }
         public void UpdateName(string name)
         {
             Name = new EntityName(name);

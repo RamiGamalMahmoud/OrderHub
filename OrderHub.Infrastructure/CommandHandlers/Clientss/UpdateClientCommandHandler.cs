@@ -27,6 +27,8 @@ internal class UpdateClientCommandHandler(AppDbContextFactory appDbContextFactor
             .Where(c => c.Id == request.Id)
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
 
+        client.Location = dto.Location;
+
         client.UpdateName(dto.Name);
         client.UpdatePhone(dto.CountryCode, dto.PhoneNumber);
         client.UpdateAddress(newCity, dto.Street);

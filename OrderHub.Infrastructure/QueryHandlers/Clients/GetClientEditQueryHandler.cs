@@ -30,6 +30,7 @@ internal class GetClientEditQueryHandler(AppDbContextFactory appDbContextFactory
             client.Address.Street, 
             client.Address.City.Id, 
             client.Phone?.Number?.NationalNumber,
-            client.Phone?.Number?.CountryCode);
+            client.Phone?.Number?.CountryCode,
+            client.Location);
     }
 }

@@ -23,6 +23,8 @@ internal class CreateClientCommandHandler(AppDbContextFactory appDbContextFactor
             request.Client.PhoneNumber,
             request.Client.CountryCode);
 
+        client.Location = request.Client.Location;
+
         appDbContext.Clients.Add(client);
 
         try

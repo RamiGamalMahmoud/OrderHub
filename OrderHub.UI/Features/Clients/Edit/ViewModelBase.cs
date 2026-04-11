@@ -20,7 +20,16 @@ namespace OrderHub.UI.Features.Clients.Edit
 
         protected ViewModelBase(IMediator mediator, IDialogService dialogService, IMessenger messenger)
         {
-            _notifyPropertiesNames = [nameof(Name), nameof(Street), nameof(SelectedCity), nameof(Number), nameof(CountryCode)];
+            _notifyPropertiesNames =
+                [
+                    nameof(Name),
+                    nameof(Street),
+                    nameof(SelectedCity),
+                    nameof(Number),
+                    nameof(CountryCode),
+                    nameof(Location)
+                ];
+
             _mediator = mediator;
             _dialogService = dialogService;
             _messenger = messenger;
@@ -38,7 +47,7 @@ namespace OrderHub.UI.Features.Clients.Edit
                 Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
             });
             ValidateAllProperties();
-        }   
+        }
 
         public virtual async Task LoadAsync()
         {
@@ -78,6 +87,9 @@ namespace OrderHub.UI.Features.Clients.Edit
         [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
         [MinLength(2, ErrorMessage = "مفتاح الدولة يجب ان يكون على الاقل 2 رقم")]
         private string _countryCode = "+966";
+
+        [ObservableProperty]
+        private string _location;
 
         [RelayCommand]
         private void ShowCreateCity() => _dialogService.ShowDialog<Features.Cities.Create.CreateCityView>();

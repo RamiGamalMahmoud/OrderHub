@@ -31,6 +31,7 @@
                 <RowDefinition Height="1*" />
                 <RowDefinition Height="1*" />
                 <RowDefinition Height="1*" />
+                <RowDefinition Height="1*" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
 
@@ -133,8 +134,29 @@
 
             </StackPanel>
 
+            <StackPanel Grid.Row="4">
+                <StackPanel Orientation="Horizontal">
+                    <icons:MaterialIcon
+                        Width="20"
+                        Foreground="{StaticResource Primary}"
+                        Kind="Location" />
+                    <TextBlock
+                        Margin="0,12,0,4"
+                        VerticalAlignment="Center"
+                        FontWeight="DemiBold"
+                        Text="الموقع" />
+                </StackPanel>
+
+                <hc:TextBox
+                    Height="32"
+                    hc:InfoElement.Necessary="True"
+                    hc:InfoElement.Placeholder="ادخل الموقع"
+                    hc:InfoElement.ShowClearButton="True"
+                    Text="{Binding Location, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+
             <StackPanel
-                Grid.Row="4"
+                Grid.Row="5"
                 Grid.ColumnSpan="2"
                 Margin="0,16,0,0"
                 HorizontalAlignment="Center"

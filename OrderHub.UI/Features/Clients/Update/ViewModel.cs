@@ -30,12 +30,13 @@ namespace OrderHub.UI.Features.Clients.Update
             SelectedCity = Cities.FirstOrDefault(c => c.Id == client.CityId);
             Number = client.PhoneNumber;
             CountryCode = client.CountryCode;
+            Location = client.Location;
             HasChanges = false;
         }
 
         protected override async Task Save()
         {
-            ClientFormDto client = new ClientFormDto(Name, Street, SelectedCity.Id, Number, CountryCode);
+            ClientFormDto client = new ClientFormDto(Name, Street, SelectedCity.Id, Number, CountryCode, Location);
             Result result = await _mediator.Send(new Application.Commands.ClienCommands.UpdateClientCommand(_selectionStore.Id, client));
 
             if (result.IsSuccess)

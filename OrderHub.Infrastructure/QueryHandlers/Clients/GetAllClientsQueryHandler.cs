@@ -24,7 +24,8 @@ internal class GetAllClientsQueryHandler(AppDbContextFactory appDbContextFactory
                 c.Id, 
                 c.Name.Value, 
                 $"{c.Address.City.Name.Value} - {c.Address.Street}",
-                c.Phone.Number.FullNumber)
+                c.Phone.Number.FullNumber,
+                c.Location)
             )
             .ToListAsync(cancellationToken: cancellationToken);
     }
