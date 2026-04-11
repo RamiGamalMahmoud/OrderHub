@@ -4,10 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
+using OrderHub.Infrastructure.CommandHandlers.Orders.MessageBulders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using static OrderHub.Application.Commands.OrderCommands;
@@ -79,20 +79,7 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
 
         private OutboxMessage NotifyClient(Order order)
         {
-            return new OutboxMessage
-            {
-                Order = order,
-                OrderId = order.Id,
-                RecipientType = RecipientType.Client,
-                Text = BuildClientMessage(order),
-                Status = OutboxMessageStatus.Pending,
-                Recipient = new ClientRecipient
-                {
-                    ClientId = order.Client.Id,
-                    Name = order.Client.Name.Value,
-                    PhoneNumber = order.Client.Phone.Number.FullNumber,
-                }
-            };
+            return new ClientMessageBuilder().Create(order, order.ClientId, order.Client.Name.Value, order.Client.Phone.Number.FullNumber);
         }
 
         private Result<IEnumerable<OutboxMessage>> NotifySuppliers(Order order)
@@ -111,21 +98,7 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
                 {
                     return Result<IEnumerable<OutboxMessage>>.Failure($"المورد {supplier.Key.Name.Value} ليس لديه رابط مجموعة واتساب.");
                 }
-
-                outboxMessages.Add(new OutboxMessage
-                {
-                    Order = order,
-                    OrderId = order.Id,
-                    RecipientType = RecipientType.Supplier,
-                    Text = BuildSupplierMessage(order, supplier.Key.Id, supplier.ToList()),
-                    Status = OutboxMessageStatus.Pending,
-                    Recipient = new SupplierRecipient
-                    {
-                        SupplierId = supplier.Key.Id,
-                        Name = supplier.Key.Name.Value,
-                        PhoneNumber = supplier.Key.WhatsappGroup.GroupLink
-                    }
-                });
+                outboxMessages.Add(new SupplierMessageBuilder().Create(order, supplier.Key.Id, supplier.Key.Name.Value, supplier.Key.WhatsappGroup.GroupLink));
             }
 
             return Result<IEnumerable<OutboxMessage>>.Success(outboxMessages);
@@ -133,74 +106,30 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
 
         private OutboxMessage NotifyDeliveryman(Order order)
         {
-            return new OutboxMessage
-            {
-                Order = order,
-                OrderId = order.Id,
-                RecipientType = RecipientType.Deliveryman,
-                Text = BuildDeliveryMessage(order, order.Deliveryman.Id, order.Deliveryman.Name.Value),
-                Status = OutboxMessageStatus.Pending,
-                Recipient = new DeliverymanRecipient
-                {
-                    DeliveryManId = order.Deliveryman.Id,
-                    Name = order.Deliveryman.Name.Value,
-                    PhoneNumber = order.Deliveryman.WhatsappGroup.GroupLink
-                }
-            };
+            return new DeliverymanMessageBuilder().Create(order, order.Deliveryman.Id, order.Deliveryman.Name.Value, order.Deliveryman.WhatsappGroup.GroupLink);
         }
 
         private OutboxMessage NotifyDeliveryman(Order order, Deliveryman deliveryman)
         {
-            return new OutboxMessage
-            {
-                Order = order,
-                OrderId = order.Id,
-                RecipientType = RecipientType.Deliveryman,
-                Text = BuildDeliveryMessage(order, deliveryman.Id, deliveryman.Name.Value),
-                Status = OutboxMessageStatus.Pending,
-                Recipient = new DeliverymanRecipient
-                {
-                    DeliveryManId = deliveryman.Id,
-                    Name = deliveryman.Name.Value,
-                    PhoneNumber = deliveryman.WhatsappGroup.GroupLink
-                }
-            };
+            return new DeliverymanMessageBuilder().Create(order, deliveryman.Id, deliveryman.Name.Value, deliveryman.WhatsappGroup.GroupLink);
         }
 
         private OutboxMessage NotifyShippingCarrier(Order order)
         {
-            return new OutboxMessage
-            {
-                Order = order,
-                OrderId = order.Id,
-                RecipientType = RecipientType.ShippingCarrier,
-                Text = BuildShippingCarrierMessage(order),
-                Status = OutboxMessageStatus.Pending,
-                Recipient = new ShippingCarrierRecipient
-                {
-                    ShippingCarrierId = order.ShippingCarrier.Id,
-                    Name = order.ShippingCarrier.Name.Value,
-                    PhoneNumber = order.ShippingCarrier.Phone.Number.FullNumber
-                }
-            };
+            return new ShippingCarrierMessageBuilder().Create(
+                order, 
+                order.ShippingCarrier.Id, 
+                order.ShippingCarrier.Name.Value, 
+                order.ShippingCarrier.Phone.Number.FullNumber);
         }
 
         private OutboxMessage NotifyShippingCarrier(Order order, ShippingCarrier shippingCarrier)
         {
-            return new OutboxMessage
-            {
-                Order = order,
-                OrderId = order.Id,
-                RecipientType = RecipientType.ShippingCarrier,
-                Text = BuildShippingCarrierMessage(order),
-                Status = OutboxMessageStatus.Pending,
-                Recipient = new ShippingCarrierRecipient
-                {
-                    ShippingCarrierId = shippingCarrier.Id,
-                    Name = shippingCarrier.Name.Value,
-                    PhoneNumber = shippingCarrier.Phone.Number.FullNumber
-                }
-            };
+            return new ShippingCarrierMessageBuilder().Create(
+                order,
+                shippingCarrier.Id,
+                shippingCarrier.Name.Value,
+                shippingCarrier.Phone.Number.FullNumber);
         }
 
         private Result<IEnumerable<OutboxMessage>> NotifyDeliveryRecipients(Order order, RecipientType? recipientType = null)
@@ -274,146 +203,5 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
                 && string.IsNullOrWhiteSpace(order.Deliveryman.WhatsappGroup?.GroupLink);
         }
 
-        private string BuildClientMessage(Order order)
-        {
-            StringBuilder sb = CreateMessageHeader(
-                order.GetDisplayTitle(RecipientType.Client, order.ClientId),
-                order.OrderNumber,
-                order);
-
-            sb.AppendLine("-----------------------------");
-            sb.AppendLine("*المنتجات*");
-            sb.AppendLine();
-
-            int index = 1;
-            foreach (OrderItem item in order.OrderItems)
-            {
-                AppendProductBlock(sb, index, item, includePrice: true);
-                index++;
-            }
-
-            sb.AppendLine("----------------------");
-            sb.AppendLine($"الإجمالي: {order.Total.Value:0.00}");
-            sb.AppendLine();
-            sb.AppendLine("----------------------");
-            sb.AppendLine("> ملاحظة : ");
-
-            return sb.ToString();
-        }
-
-        private string BuildSupplierMessage(Order order, int supplierId, IReadOnlyCollection<OrderItem> items)
-        {
-            StringBuilder sb = CreateMessageHeader(
-                order.GetDisplayTitle(RecipientType.Supplier, supplierId),
-                order.OrderNumber,
-                order);
-
-            sb.AppendLine();
-            sb.AppendLine("-----------------------------");
-            sb.AppendLine("*المنتجات*");
-            sb.AppendLine();
-
-            int index = 1;
-            foreach (OrderItem item in items)
-            {
-                AppendProductBlock(sb, index, item, includePrice: false);
-                index++;
-            }
-
-            sb.AppendLine("-----------------------------");
-            sb.AppendLine("> ملاحظة : ");
-
-            return sb.ToString();
-        }
-
-        private string BuildDeliveryMessage(Order order, int deliverymanId, string deliverymanName)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            sb.AppendLine($"*{order.GetDisplayTitle(RecipientType.Deliveryman, deliverymanId)}*");
-            sb.AppendLine();
-            sb.Append(BuildBaseDetails(order));
-            sb.AppendLine($"*اسم المندوب:* {deliverymanName}");
-            sb.AppendLine("-----------------------------");
-            sb.AppendLine("*المنتجات*");
-            sb.AppendLine();
-
-            int index = 1;
-            foreach (OrderItem item in order.OrderItems)
-            {
-                AppendProductBlock(sb, index, item, includePrice: false);
-                index++;
-            }
-
-            sb.AppendLine("----------------------");
-            sb.AppendLine(" ");
-            sb.AppendLine("> ملاحظة : ");
-
-            return sb.ToString();
-        }
-
-        private string BuildShippingCarrierMessage(Order order)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            sb.AppendLine($"*{order.GetDisplayTitle(RecipientType.Client, order.ClientId)}*");
-            sb.AppendLine();
-            sb.Append(BuildBaseDetails(order));
-            sb.AppendLine("-----------------------------");
-            sb.AppendLine("*المنتجات*");
-            sb.AppendLine();
-
-            int index = 1;
-            foreach (OrderItem item in order.OrderItems)
-            {
-                AppendProductBlock(sb, index, item, includePrice: false);
-                index++;
-            }
-
-            sb.AppendLine("----------------------");
-            sb.AppendLine(" ");
-            sb.AppendLine("> ملاحظة : ");
-
-            return sb.ToString();
-        }
-
-        private StringBuilder CreateMessageHeader(string title, string orderNumber, Order order)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"*{title}*");
-            sb.AppendLine();
-            sb.Append(BuildBaseDetails(order, orderNumber));
-            return sb;
-        }
-
-        private string BuildBaseDetails(Order order, string orderNumber = null)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"*رقم الطلب:* {orderNumber ?? order.OrderNumber}");
-            sb.AppendLine($"*التاريخ:* {order.CreatedAt:yyyy-MM-dd HH:mm}");
-            sb.AppendLine($"*العميل:* {order.Client.Name.Value}");
-            sb.AppendLine($"*رقم العميل:* {order.Client.Phone.Number.FullNumber}");
-            sb.AppendLine($"*العنوان:* {order.Client.Address.FullAddress}");
-            sb.AppendLine("*الموقع الخريطه*");
-            return sb.ToString();
-        }
-
-        private static void AppendProductBlock(StringBuilder sb, int index, OrderItem item, bool includePrice)
-        {
-            sb.AppendLine($"{index}) {item.ProductName}");
-            sb.AppendLine($"الكمية: {item.Quantity}");
-
-            foreach (OrderItemAttribute attribute in item.Attributes)
-            {
-                sb.AppendLine($"{attribute.Name} : {attribute.Value}");
-            }
-
-            if (includePrice)
-            {
-                sb.AppendLine($"السعر: {item.UnitPrice.Value:0.00}");
-            }
-
-            sb.AppendLine();
-        }
     }
 }
