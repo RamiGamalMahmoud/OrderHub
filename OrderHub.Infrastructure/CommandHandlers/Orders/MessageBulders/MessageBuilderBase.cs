@@ -37,13 +37,12 @@ internal abstract class MessageBuilderBase
         sb.AppendLine($"*العميل:* {order.Client.Name.Value}");
         sb.AppendLine($"*رقم العميل:* {order.Client.Phone.Number.FullNumber}");
         sb.AppendLine($"*العنوان:* {order.Client.Address.FullAddress}");
-        sb.AppendLine("*الموقع الخريطه*");
+        sb.AppendLine("*الموقع الخريطه:*");
+        sb.AppendLine(order.Client.Location);
     }
 
     protected virtual void AppendFooter(StringBuilder sb)
     {
         sb.AppendLine("----------------------");
-        sb.AppendLine(" ");
-        sb.AppendLine("> ملاحظة : ");
     }
 }
