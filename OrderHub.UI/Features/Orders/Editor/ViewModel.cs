@@ -28,6 +28,18 @@ internal abstract partial class ViewModel : EditorViewModelBase
     public OrderPartyPanelViewModel PartyPanel { get; }
     public DeliveryMethodsViewModel DeliveryMethodsViewModel { get; }
 
+    public Application.DTOs.ClientDtos.ClientListDto SelectedClient
+    {
+        get => PartyPanel.SelectedClient;
+        set => PartyPanel.SelectedClient = value;
+    }
+
+    public Application.DTOs.PaymentMothodsDtos.PaymentMethodListDto SelectedPaymentMethod
+    {
+        get => PartyPanel.SelectedPaymentMethod;
+        set => PartyPanel.SelectedPaymentMethod = value;
+    }
+
     public abstract string ActionName { get; }
 
     public ViewModel(IMediator mediator, IDialogService dialogService, IMessenger messenger)

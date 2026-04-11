@@ -16,6 +16,11 @@ internal class CreateOrderCommandHandler(AppDbContextFactory appDbContextFactory
     private readonly AppDbContextFactory _appDbContextFactory = appDbContextFactory;
     private readonly OrderWriteService _orderWriteService = orderWriteService;
 
+    public CreateOrderCommandHandler(AppDbContextFactory appDbContextFactory)
+        : this(appDbContextFactory, new OrderWriteService())
+    {
+    }
+
     public async Task<Result<int>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();

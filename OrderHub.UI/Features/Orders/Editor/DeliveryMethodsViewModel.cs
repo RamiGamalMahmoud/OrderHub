@@ -59,8 +59,17 @@ public partial class DeliveryMethodsViewModel : ObservableValidator
         set => _lookup.SelectedDeliveryman = value;
     }
 
-    public IEnumerable<DeliverymanListDto> Deliverymen => _lookup.Deliverymen;
-    public IEnumerable<ShippingCarrierListDto> ShippingCarriers => _lookup.ShippingCarriers;
+    public IEnumerable<DeliverymanListDto> Deliverymen
+    {
+        get => _lookup.Deliverymen;
+        set => SetDeliverymen(value);
+    }
+
+    public IEnumerable<ShippingCarrierListDto> ShippingCarriers
+    {
+        get => _lookup.ShippingCarriers;
+        set => SetShippingCarriers(value);
+    }
 
     public string DeliverymanSearchTerm
     {

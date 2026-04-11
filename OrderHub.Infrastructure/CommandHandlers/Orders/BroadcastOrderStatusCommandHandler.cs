@@ -35,6 +35,16 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
                 .Include(o => o.Client).ThenInclude(c => c.Address).ThenInclude(a => a.City)
                 .FirstOrDefaultAsync(o => o.Id == request.OrderId, cancellationToken);
 
+            if (order is null)
+            {
+                return Result.Failure("الطلب غير موجود.");
+            }
+
+            if (TryGetMissingClientPhone(order, request.RecipientType, out string clientName))
+            {
+                return Result.Failure($"العميل {clientName} ليس لديه رقم هاتف.");
+            }
+
             List<OutboxMessage> outboxMessages = new List<OutboxMessage>();
 
             if (request.RecipientType is null or RecipientType.Client)
@@ -98,6 +108,7 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
                 {
                     return Result<IEnumerable<OutboxMessage>>.Failure($"المورد {supplier.Key.Name.Value} ليس لديه رابط مجموعة واتساب.");
                 }
+
                 outboxMessages.Add(new SupplierMessageBuilder().Create(order, supplier.Key.Id, supplier.Key.Name.Value, supplier.Key.WhatsappGroup.GroupLink));
             }
 
@@ -117,9 +128,9 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
         private OutboxMessage NotifyShippingCarrier(Order order)
         {
             return new ShippingCarrierMessageBuilder().Create(
-                order, 
-                order.ShippingCarrier.Id, 
-                order.ShippingCarrier.Name.Value, 
+                order,
+                order.ShippingCarrier.Id,
+                order.ShippingCarrier.Name.Value,
                 order.ShippingCarrier.Phone.Number.FullNumber);
         }
 
@@ -137,6 +148,11 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
             if (TryGetMissingDeliverymanGroupName(order, recipientType, out string deliverymanName))
             {
                 return Result<IEnumerable<OutboxMessage>>.Failure($"مندوب التوصيل {deliverymanName} ليس لديه رابط مجموعة واتساب.");
+            }
+
+            if (TryGetMissingShippingCarrierPhone(order, recipientType, out string shippingCarrierName))
+            {
+                return Result<IEnumerable<OutboxMessage>>.Failure($"شركة الشحن {shippingCarrierName} ليس لديها رقم هاتف.");
             }
 
             if (order.DeliveryMethod == DeliveryMethod.DeliveryChain)
@@ -176,6 +192,14 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
             return Result<IEnumerable<OutboxMessage>>.Success(outboxMessages);
         }
 
+        private static bool TryGetMissingClientPhone(Order order, RecipientType? recipientType, out string clientName)
+        {
+            clientName = order.Client?.Name.Value;
+
+            return (recipientType is null or RecipientType.Client)
+                && string.IsNullOrWhiteSpace(order.Client?.Phone?.Number.FullNumber);
+        }
+
         private static bool TryGetMissingDeliverymanGroupName(Order order, RecipientType? recipientType, out string deliverymanName)
         {
             if (order.DeliveryMethod == DeliveryMethod.DeliveryChain)
@@ -203,5 +227,31 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
                 && string.IsNullOrWhiteSpace(order.Deliveryman.WhatsappGroup?.GroupLink);
         }
 
+        private static bool TryGetMissingShippingCarrierPhone(Order order, RecipientType? recipientType, out string shippingCarrierName)
+        {
+            if (order.DeliveryMethod == DeliveryMethod.DeliveryChain)
+            {
+                ShippingCarrier missingShippingCarrier = order.DeliverySteps
+                    .Where(step => step.DeliveryMethod == DeliveryMethod.ShippingCompany)
+                    .Select(step => step.ShippingCarrier)
+                    .FirstOrDefault(carrier =>
+                        carrier is not null
+                        && (recipientType is null or RecipientType.ShippingCarrier)
+                        && string.IsNullOrWhiteSpace(carrier.Phone?.Number.FullNumber));
+
+                shippingCarrierName = missingShippingCarrier?.Name.Value;
+                return missingShippingCarrier is not null;
+            }
+
+            if (recipientType is RecipientType.Deliveryman || order.ShippingCarrier is null)
+            {
+                shippingCarrierName = null;
+                return false;
+            }
+
+            shippingCarrierName = order.ShippingCarrier.Name.Value;
+            return (recipientType is null or RecipientType.ShippingCarrier)
+                && string.IsNullOrWhiteSpace(order.ShippingCarrier.Phone?.Number.FullNumber);
+        }
     }
 }

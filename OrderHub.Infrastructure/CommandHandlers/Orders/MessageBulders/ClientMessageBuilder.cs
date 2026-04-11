@@ -1,5 +1,6 @@
-﻿using OrderHub.Domain.Enums;
+using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
+using System.Text;
 
 namespace OrderHub.Infrastructure.CommandHandlers.Orders.MessageBulders;
 
@@ -25,28 +26,29 @@ internal class ClientMessageBuilder : MessageBuilderBase, IMessageBuilder
 
     public string CreateMessageText(Order order)
     {
+        StringBuilder sb = new StringBuilder();
+
         CreateMessageHeader(
+            sb,
             order.GetDisplayTitle(RecipientType.Client, order.ClientId),
             order.OrderNumber,
             order);
 
-        _sb.AppendLine("-----------------------------");
-        _sb.AppendLine("*المنتجات*");
-        _sb.AppendLine();
+        sb.AppendLine("-----------------------------");
+        sb.AppendLine("*المنتجات*");
+        sb.AppendLine();
 
         int index = 1;
         foreach (OrderItem item in order.OrderItems)
         {
-            AppendProductBlock(index, item, includePrice: true);
+            AppendProductBlock(sb, index, item, includePrice: true);
             index++;
         }
 
-        _sb.AppendLine("----------------------");
-        _sb.AppendLine($"الإجمالي: {order.Total.Value:0.00}");
-        _sb.AppendLine();
-        _sb.AppendLine("----------------------");
-        _sb.AppendLine("> ملاحظة : ");
+        sb.AppendLine("----------------------");
+        sb.AppendLine($"الإجمالي: {order.Total.Value:0.00}");
+        AppendFooter(sb);
 
-        return _sb.ToString();
+        return sb.ToString();
     }
 }

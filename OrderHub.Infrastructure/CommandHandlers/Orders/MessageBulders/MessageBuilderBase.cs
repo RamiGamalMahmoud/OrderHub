@@ -1,52 +1,49 @@
-﻿using OrderHub.Domain.Models;
+using OrderHub.Domain.Models;
 using System.Text;
 
 namespace OrderHub.Infrastructure.CommandHandlers.Orders.MessageBulders;
 
 internal abstract class MessageBuilderBase
 {
-    protected readonly StringBuilder _sb = new StringBuilder();
-    
-    protected virtual void CreateMessageHeader(string title, string orderNumber, Order order)
+    protected virtual void CreateMessageHeader(StringBuilder sb, string title, string orderNumber, Order order)
     {
-        _sb.Clear();
-        _sb.AppendLine($"*{title}*");
-        _sb.AppendLine();
-        BuildBaseDetails(order, orderNumber);
+        sb.AppendLine($"*{title}*");
+        sb.AppendLine();
+        BuildBaseDetails(sb, order, orderNumber);
     }
 
-    protected virtual void AppendProductBlock(int index, OrderItem item, bool includePrice)
+    protected virtual void AppendProductBlock(StringBuilder sb, int index, OrderItem item, bool includePrice)
     {
-        _sb.AppendLine($"{index}) {item.ProductName}");
-        _sb.AppendLine($"الكمية: {item.Quantity}");
+        sb.AppendLine($"{index}) {item.ProductName}");
+        sb.AppendLine($"الكمية: {item.Quantity}");
 
         foreach (OrderItemAttribute attribute in item.Attributes)
         {
-            _sb.AppendLine($"{attribute.Name} : {attribute.Value}");
+            sb.AppendLine($"{attribute.Name} : {attribute.Value}");
         }
 
         if (includePrice)
         {
-            _sb.AppendLine($"السعر: {item.UnitPrice.Value:0.00}");
+            sb.AppendLine($"السعر: {item.UnitPrice.Value:0.00}");
         }
 
-        _sb.AppendLine();
+        sb.AppendLine();
     }
 
-    protected virtual void BuildBaseDetails(Order order, string orderNumber = null)
+    protected virtual void BuildBaseDetails(StringBuilder sb, Order order, string orderNumber = null)
     {
-        _sb.AppendLine($"*رقم الطلب:* {orderNumber ?? order.OrderNumber}");
-        _sb.AppendLine($"*التاريخ:* {order.CreatedAt:yyyy-MM-dd HH:mm}");
-        _sb.AppendLine($"*العميل:* {order.Client.Name.Value}");
-        _sb.AppendLine($"*رقم العميل:* {order.Client.Phone.Number.FullNumber}");
-        _sb.AppendLine($"*العنوان:* {order.Client.Address.FullAddress}");
-        _sb.AppendLine("*الموقع الخريطه*");
+        sb.AppendLine($"*رقم الطلب:* {orderNumber ?? order.OrderNumber}");
+        sb.AppendLine($"*التاريخ:* {order.CreatedAt:yyyy-MM-dd HH:mm}");
+        sb.AppendLine($"*العميل:* {order.Client.Name.Value}");
+        sb.AppendLine($"*رقم العميل:* {order.Client.Phone.Number.FullNumber}");
+        sb.AppendLine($"*العنوان:* {order.Client.Address.FullAddress}");
+        sb.AppendLine("*الموقع الخريطه*");
     }
 
-    protected virtual void AppendFooter()
+    protected virtual void AppendFooter(StringBuilder sb)
     {
-        _sb.AppendLine("----------------------");
-        _sb.AppendLine(" ");
-        _sb.AppendLine("> ملاحظة : ");
+        sb.AppendLine("----------------------");
+        sb.AppendLine(" ");
+        sb.AppendLine("> ملاحظة : ");
     }
 }

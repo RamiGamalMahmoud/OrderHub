@@ -1,4 +1,4 @@
-﻿using OrderHub.Domain.Enums;
+using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,27 +28,29 @@ internal class SupplierMessageBuilder : MessageBuilderBase, IMessageBuilder
 
     public string CreateMessageText(Order order, int supplierId)
     {
+        StringBuilder sb = new StringBuilder();
+
         CreateMessageHeader(
+            sb,
             order.GetDisplayTitle(RecipientType.Supplier, supplierId),
             order.OrderNumber,
             order);
 
-        _sb.AppendLine();
-        _sb.AppendLine("-----------------------------");
-        _sb.AppendLine("*المنتجات*");
-        _sb.AppendLine();
+        sb.AppendLine();
+        sb.AppendLine("-----------------------------");
+        sb.AppendLine("*المنتجات*");
+        sb.AppendLine();
 
         int index = 1;
         IEnumerable<OrderItem> supplierItems = order.OrderItems.Where(i => i.SupplierId == supplierId);
         foreach (OrderItem item in supplierItems)
         {
-            AppendProductBlock(index, item, includePrice: false);
+            AppendProductBlock(sb, index, item, includePrice: false);
             index++;
         }
 
-        _sb.AppendLine("-----------------------------");
-        _sb.AppendLine("> ملاحظة : ");
+        AppendFooter(sb);
 
-        return _sb.ToString();
+        return sb.ToString();
     }
 }
