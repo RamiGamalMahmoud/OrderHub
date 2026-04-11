@@ -5,6 +5,7 @@ using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
+using OrderHub.UI.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,14 +17,16 @@ namespace OrderHub.UI.Features.Messages.Index;
 public partial class ViewModel : ObservableObject
 {
     private readonly IMediator _mediator;
+    private readonly IDialogService _dialogService;
     private List<OutboxMessageViewModel> _allOutboxMessages = [];
 
     [ObservableProperty]
     private ObservableCollection<MessageSummaryItemViewModel> _statusSummaries = [];
 
-    public ViewModel(IMediator mediator, IMessenger messenger)
+    public ViewModel(IMediator mediator, IMessenger messenger, IDialogService dialogService)
     {
         _mediator = mediator;
+        _dialogService = dialogService;
 
         messenger.Register<Application.Messages.OutboxMessages.MessageStatusChangedMessage>(this, (r, m) =>
         {
@@ -177,6 +180,31 @@ public partial class ViewModel : ObservableObject
         }
 
         await _mediator.Publish(new Application.Notifications.SuccessNotification("تمت إعادة جدولة الرسالة للإرسال."));
+    }
+
+    [RelayCommand]
+    private async Task DeleteMessage(OutboxMessageViewModel message)
+    {
+        if (message is null)
+        {
+            return;
+        }
+
+        if (!_dialogService.Confirm($"هل تريد حذف الرسالة للمستلم ({message.RecipientName})؟"))
+        {
+            return;
+        }
+
+        Result result = await _mediator.Send(new Application.Commands.OutboxMessageCommands.DeleteOutboxMessageCommand(message.Id));
+
+        if (!result.IsSuccess)
+        {
+            await _mediator.Publish(new Application.Notifications.ErrorNotification(result.ErrorMessage));
+            return;
+        }
+
+        await _mediator.Publish(new Application.Notifications.SuccessNotification("تم حذف الرسالة بنجاح."));
+        await LoadAsync();
     }
 
     [RelayCommand]

@@ -171,17 +171,30 @@
                 <DataGridTemplateColumn Header="إجراء">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Button
-                                Padding="10,4"
-                                Background="#f59e0b"
-                                BorderThickness="0"
-                                Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.ResendMessageCommand}"
-                                CommandParameter="{Binding}"
-                                Cursor="Hand"
-                                Foreground="White"
-                                IsEnabled="{Binding CanResend}">
-                                <TextBlock Text="إعادة إرسال" />
-                            </Button>
+                            <StackPanel Orientation="Horizontal">
+                                <Button
+                                    Margin="0,0,6,0"
+                                    Padding="10,4"
+                                    Background="#f59e0b"
+                                    BorderThickness="0"
+                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.ResendMessageCommand}"
+                                    CommandParameter="{Binding}"
+                                    Cursor="Hand"
+                                    Foreground="White"
+                                    IsEnabled="{Binding CanResend}">
+                                    <TextBlock Text="إعادة إرسال" />
+                                </Button>
+                                <Button
+                                    Padding="10,4"
+                                    Background="#dc2626"
+                                    BorderThickness="0"
+                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.DeleteMessageCommand}"
+                                    CommandParameter="{Binding}"
+                                    Cursor="Hand"
+                                    Foreground="White">
+                                    <TextBlock Text="حذف" />
+                                </Button>
+                            </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
