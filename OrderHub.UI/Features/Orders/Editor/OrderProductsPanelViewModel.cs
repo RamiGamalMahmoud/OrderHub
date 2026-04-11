@@ -136,7 +136,7 @@ internal partial class OrderProductsPanelViewModel : ObservableObject
         if (SelectedProduct is null)
             return;
 
-        OrderItemViewModel item = new OrderItemViewModel
+        OrderItemViewModel item = new OrderItemViewModel(_mediator)
         {
             ProductName = SelectedProduct.Name,
             ProductId = SelectedProduct.Id,

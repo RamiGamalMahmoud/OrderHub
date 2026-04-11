@@ -1,9 +1,11 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Domain.Common;
+using OrderHub.Domain.Models;
 using OrderHub.Infrastructure.Helpers;
 using OrderHub.Infrastructure.Orders;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,10 +28,11 @@ internal class CreateOrderCommandHandler(AppDbContextFactory appDbContextFactory
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
 
         string orderNumber = GenerateOrderNumber(await GetNextOrderNumber(appDbContext));
-        var order = _orderWriteService.Create(request.CreateDto, orderNumber);
+        Order order = _orderWriteService.Create(request.CreateDto, orderNumber);
 
         appDbContext.Orders.Add(order);
         await OrderEntitySequenceManager.SyncAsync(appDbContext, order, cancellationToken);
+        await _orderWriteService.SaveNewAttributeNames(order, appDbContext);
         await appDbContext.SaveChangesAsync(cancellationToken);
         return Result<int>.Success(order.Id);
     }

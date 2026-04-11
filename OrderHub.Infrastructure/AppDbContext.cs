@@ -27,6 +27,7 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<DeliverymanRecipient> DeliverymanRecipients { get; set; }
     public DbSet<ShippingCarrierRecipient> ShippingCarrierRecipients { get; set; }
     public DbSet<WhatsappGroup> WhatsappGroups { get; set; }
+    public DbSet<AttributeName> AttributeNames { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

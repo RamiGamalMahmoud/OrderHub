@@ -1,7 +1,9 @@
+using Microsoft.EntityFrameworkCore;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.OrderDtos;
 using static OrderHub.Application.DTOs.OrderItemDtos;
 
@@ -22,6 +24,14 @@ internal class OrderWriteService
         ApplyHeader(order, updateDto.ClientId, updateDto.DeliveryMethod, updateDto.DeliveryManId, updateDto.ShippingCarrierId, updateDto.PaymentMothodId);
         ResetDetails(appDbContext, order);
         PopulateDetails(order, updateDto.OrderItems, updateDto.DeliverySteps);
+    }
+
+    public async Task SaveNewAttributeNames(Order order, AppDbContext appDbContext)
+    {
+        IEnumerable<string> attributeNames = order.OrderItems.SelectMany(item => item.Attributes.Select(a => a.Name));
+        IEnumerable<string> exitstingAttributeNames = await appDbContext.AttributeNames.Select(a => a.Name).ToListAsync();
+        IEnumerable<string> newAttributeNames = attributeNames.Except(exitstingAttributeNames);
+        appDbContext.AttributeNames.AddRange(newAttributeNames.Select(name => new AttributeName(name)));
     }
 
     private static void ApplyHeader(

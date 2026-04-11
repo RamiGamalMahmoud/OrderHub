@@ -33,7 +33,7 @@ internal class UpdateOrderCommandHandler(AppDbContextFactory appDbContextFactory
         }
 
         _orderWriteService.Update(appDbContext, order, request.UpdateDto);
-
+        await _orderWriteService.SaveNewAttributeNames(order, appDbContext);
         await OrderEntitySequenceManager.SyncAsync(appDbContext, order, cancellationToken);
         await appDbContext.SaveChangesAsync(cancellationToken);
         return Result.Success();

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OrderHub.Infrastructure;
 
@@ -10,9 +11,11 @@ using OrderHub.Infrastructure;
 namespace OrderHub.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260411142903_AddAttributeName")]
+    partial class AddAttributeName
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
@@ -86,38 +89,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasDatabaseName("ix_attribute_names_name");
 
                     b.ToTable("attribute_names", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedAt = new DateTime(2026, 4, 11, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "القماش"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2026, 4, 11, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "الخشب"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CreatedAt = new DateTime(2026, 4, 11, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "الموديل"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            CreatedAt = new DateTime(2026, 4, 11, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "اللون"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            CreatedAt = new DateTime(2026, 4, 11, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "المقاس"
-                        });
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Category", b =>

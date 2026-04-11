@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MediatR;
 using OrderHub.Domain.Models;
 using System;
 using System.Collections.Generic;
@@ -7,6 +8,9 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Threading.Tasks;
+using static OrderHub.Application.DTOs.OrderDtos;
+using static OrderHub.Application.Queries.OrderQueries;
 
 namespace OrderHub.UI.Features.Orders;
 
@@ -20,6 +24,7 @@ public partial class OrderItemViewModel : ObservableValidator
         "اللون",
         "المقاس"
     ];
+    private readonly IMediator _mediator;
 
     public required string ProductName { get; init; }
     public required string CategoryName { get; init; }
@@ -46,17 +51,29 @@ public partial class OrderItemViewModel : ObservableValidator
     [Required(ErrorMessage = "Supplier must be selected")]
     private int? _supplierId;
 
+    // ---------------------------------------------
     [ObservableProperty]
-    private string _selectedHelperField;
+    private ObservableCollection<string> _attributeNames = [];
 
     [ObservableProperty]
-    private string _customFieldName;
+    private string _selectedAttributeName;
 
     [ObservableProperty]
-    private string _customFieldValue;
+    private string _selectedAttributeValue;
+    partial void OnSelectedAttributeNameChanged(string oldValue, string newValue)
+    {
+        if (string.IsNullOrEmpty(oldValue))
+            return;
 
-    [ObservableProperty]
-    private string _selectedHelperFieldValue;
+        _ = SearchAttributes(newValue);
+    }
+
+    private async Task SearchAttributes(string term)
+    {
+        AttributeNames = new ObservableCollection<string>((await _mediator.Send(new SearchAttributeNamesQuery(term))).Select(a => a.Name));
+    }
+
+    // ---------------------------------------------
 
     public ObservableCollection<OrderItemAttributeViewModel> Attributes { get; } = [];
 
@@ -72,9 +89,10 @@ public partial class OrderItemViewModel : ObservableValidator
     public IEnumerable<string> SuggestedFields => _helperFieldKeys.Except(Attributes.Select(attribute => attribute.Name), StringComparer.OrdinalIgnoreCase);
     public bool IsValid => !HasErrors;
 
-    public OrderItemViewModel()
+    public OrderItemViewModel(IMediator mediator)
     {
         Attributes.CollectionChanged += Attributes_CollectionChanged;
+        _mediator = mediator;
     }
 
     public void LoadAttributes(IEnumerable<OrderItemAttributeViewModel> attributes)
@@ -87,29 +105,11 @@ public partial class OrderItemViewModel : ObservableValidator
     }
 
     [RelayCommand]
-    private void AddSuggestedField()
+    private void AddField()
     {
-        if (string.IsNullOrWhiteSpace(SelectedHelperField))
-        {
-            return;
-        }
-
-        AddAttribute(SelectedHelperField.Trim(), SelectedHelperFieldValue?.ToString() ?? string.Empty);
-        SelectedHelperField = null;
-        SelectedHelperFieldValue = null;
-    }
-
-    [RelayCommand]
-    private void AddCustomField()
-    {
-        if (string.IsNullOrWhiteSpace(CustomFieldName))
-        {
-            return;
-        }
-
-        AddAttribute(CustomFieldName.Trim(), CustomFieldValue?.Trim() ?? string.Empty);
-        CustomFieldName = string.Empty;
-        CustomFieldValue = string.Empty;
+        AddAttribute(SelectedAttributeName, SelectedAttributeValue);
+        SelectedAttributeName = null;
+        SelectedAttributeValue = null;
     }
 
     [RelayCommand]

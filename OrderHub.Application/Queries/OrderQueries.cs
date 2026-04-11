@@ -26,4 +26,6 @@ public static class OrderQueries
         OrderStatus? OrderStatus = null) : IRequest<OrderSummaryDto>;
     public record GetClientOrdersQuery(string ClientName) : IRequest<IEnumerable<OrderListDto>>;
     public record GetOrderForEditQuery(int OrderId) : IRequest<OrderEditDto>;
+
+    public record SearchAttributeNamesQuery(string SearchTerm) : IRequest<IEnumerable<AttributeNameDto>>;
 }

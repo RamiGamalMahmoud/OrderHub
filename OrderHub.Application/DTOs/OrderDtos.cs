@@ -7,6 +7,8 @@ namespace OrderHub.Application.DTOs;
 
 public static class OrderDtos
 {
+    public record AttributeNameDto(string Name);
+
     public record OrderItemAttributeDto(
         string Name,
         string Value);

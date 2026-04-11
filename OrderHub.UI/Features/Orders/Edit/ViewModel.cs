@@ -76,7 +76,7 @@ internal class ViewModel : Editor.ViewModel
                     .Select(supplier => new OrderItemSupplier(supplier.Id, supplier.Name))
                     .ToArray();
 
-                var orderItem = new OrderItemViewModel
+                var orderItem = new OrderItemViewModel(_mediator)
                 {
                     ProductId = item.ProductId,
                     ProductName = item.ProductName,
