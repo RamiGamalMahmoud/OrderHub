@@ -66,10 +66,10 @@
                         DisplayMemberPath="Name"
                         FontSize="16"
                         FontWeight="DemiBold"
-                        ItemsSource="{Binding ProductsPanel.RootCategories}"
-                        SelectedItem="{Binding ProductsPanel.SelectedCategory}" />
+                        ItemsSource="{Binding ProductsPanel.CategorySelection.RootCategories}"
+                        SelectedItem="{Binding ProductsPanel.CategorySelection.SelectedCategory}" />
 
-                    <ItemsControl ItemsSource="{Binding ProductsPanel.SubCategories}">
+                    <ItemsControl ItemsSource="{Binding ProductsPanel.CategorySelection.SubCategories}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <StackPanel Orientation="Vertical" />
@@ -84,7 +84,7 @@
                                     FontSize="16"
                                     FontWeight="DemiBold"
                                     ItemsSource="{Binding Value}"
-                                    SelectedItem="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.ProductsPanel.SelectedCategory}" />
+                                    SelectedItem="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.ProductsPanel.CategorySelection.SelectedCategory}" />
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

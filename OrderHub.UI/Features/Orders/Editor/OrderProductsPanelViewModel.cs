@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MediatR;
+using OrderHub.UI.Common;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -23,13 +24,30 @@ internal partial class OrderProductsPanelViewModel : ObservableObject
     {
         _mediator = mediator;
         _orderBuilder = orderBuilder;
+        CategorySelection = new CategorySelection(mediator);
+        CategorySelection.SelectedCategoryChanged += CategorySelection_OnSelectedCategoryChanged;
     }
 
-    [ObservableProperty]
-    private IEnumerable<CategoryInfoDto> _rootCategories;
+    private async void CategorySelection_OnSelectedCategoryChanged(object sender, CategoryInfoDto e)
+    {
+        if (e is null)
+            return;
 
-    [ObservableProperty]
-    private ObservableCollection<KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>> _subCategories = [];
+        _categoryCts?.Cancel();
+        _categoryCts = new CancellationTokenSource();
+
+        try
+        {
+            Products = await _mediator.Send(
+                new Application.Queries.ProductQueries.GetProductsByCategoryQuery(e.Id),
+                _categoryCts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    public CategorySelection CategorySelection { get; }
 
     [ObservableProperty]
     private IEnumerable<ProductListDto> _products;
@@ -62,7 +80,7 @@ internal partial class OrderProductsPanelViewModel : ObservableObject
 
     public async Task ReloadRootCategoriesAsync()
     {
-        RootCategories = await _mediator.Send(new Application.Queries.CommonQueries.GetRootCategoriesQuery());
+        await CategorySelection.LoadRootCategoriesAsync();
     }
 
     async partial void OnSearchTermChanged(string oldValue, string newValue)
@@ -77,53 +95,6 @@ internal partial class OrderProductsPanelViewModel : ObservableObject
             Products = await _mediator.Send(
                 new Application.Queries.ProductQueries.GetProductsByNameQuery(newValue),
                 token);
-        }
-        catch (OperationCanceledException)
-        {
-        }
-    }
-
-    async partial void OnSelectedCategoryChanging(CategoryInfoDto oldValue, CategoryInfoDto newValue)
-    {
-        if (newValue is null)
-        {
-            SubCategories.Clear();
-            return;
-        }
-
-        if (newValue.ParentId is null)
-        {
-            SubCategories.Clear();
-        }
-        else
-        {
-            RemoveSubCategoriesAfterParent(newValue.ParentId.Value);
-        }
-
-        IEnumerable<CategoryInfoDto> subCategories = await _mediator.Send(
-            new Application.Queries.CommonQueries.GetSubCategoriesQuery(newValue.Id));
-
-        bool exists = SubCategories.Any(s => s.Key.Id == newValue.Id);
-
-        if (subCategories.Any() && !exists)
-        {
-            SubCategories.Add(new KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>(newValue, subCategories));
-        }
-    }
-
-    async partial void OnSelectedCategoryChanged(CategoryInfoDto oldValue, CategoryInfoDto newValue)
-    {
-        if (newValue is null)
-            return;
-
-        _categoryCts?.Cancel();
-        _categoryCts = new CancellationTokenSource();
-
-        try
-        {
-            Products = await _mediator.Send(
-                new Application.Queries.ProductQueries.GetProductsByCategoryQuery(newValue.Id),
-                _categoryCts.Token);
         }
         catch (OperationCanceledException)
         {
@@ -160,18 +131,4 @@ internal partial class OrderProductsPanelViewModel : ObservableObject
     private bool CanAddProduct() => SelectedProduct != null && SubTotal > 0;
 
     private void ClearSelection() => SelectedProduct = null;
-
-    private void RemoveSubCategoriesAfterParent(int parentId)
-    {
-        List<int> ids = SubCategories.Select(c => c.Key.Id).ToList();
-        int parentIndex = ids.IndexOf(parentId);
-
-        if (parentIndex + 1 >= ids.Count)
-            return;
-
-        for (int i = ids.Count - 1; i > parentIndex; i--)
-        {
-            SubCategories.RemoveAt(i);
-        }
-    }
 }
