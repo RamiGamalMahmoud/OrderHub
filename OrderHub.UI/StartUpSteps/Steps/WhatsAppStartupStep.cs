@@ -1,8 +1,7 @@
 ﻿using OrderHub.Application.Interfaces.Services;
 using System.Threading.Tasks;
-using System.Windows;
 
-namespace OrderHub.UI.StartUpSteps;
+namespace OrderHub.UI.StartUpSteps.Steps;
 
 public class WhatsAppStartupStep : IStartupStep
 {
@@ -17,8 +16,10 @@ public class WhatsAppStartupStep : IStartupStep
         _notifier = notifier;
     }
 
-    public int Order => 3;
+    public int Order => (int)StartUpdStepsOrder.WhatsAppStartup;
     public string DisplayName => "جاري تشغيل واتساب";
+
+    public bool IsEnabled => false;
 
     public async Task ExecuteAsync()
     {

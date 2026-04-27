@@ -46,6 +46,7 @@ public abstract partial class ViewModel : EditorViewModelBase
 
     [ObservableProperty]
     [Required(ErrorMessage = "اسم شركة الشحن مطلوب")]
+    [MinLength(2, ErrorMessage = "الاسم يجب أن يكون أكثر من 2 حرف")]
     [NotifyDataErrorInfo]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     private string _name;

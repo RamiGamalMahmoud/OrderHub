@@ -58,6 +58,7 @@ namespace OrderHub.UI.Features.Clients.Edit
 
         [ObservableProperty]
         [Required(ErrorMessage = "اسم العميل مطلوب")]
+        [MinLength(2, ErrorMessage = "الاسم يجب أن يكون أكثر من 2 حرف")]
         [NotifyDataErrorInfo]
         [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
         private string _name = string.Empty;

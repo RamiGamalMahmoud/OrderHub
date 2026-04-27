@@ -7,4 +7,5 @@ public interface IStartupStep
     Task ExecuteAsync();
     int Order { get; }
     string DisplayName { get; }
+    bool IsEnabled { get; }
 }

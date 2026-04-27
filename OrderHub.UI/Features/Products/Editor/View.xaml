@@ -15,7 +15,7 @@
     mc:Ignorable="d">
 
     <Border
-        Width="400"
+        Width="800"
         Margin="12"
         Padding="12"
         HorizontalAlignment="Center"
@@ -25,107 +25,125 @@
         CornerRadius="12"
         FlowDirection="RightToLeft">
         <Grid>
-
-            <Grid.RowDefinitions>
-                <RowDefinition Height="1*" />
-                <RowDefinition Height="1*" />
-                <RowDefinition Height="1*" />
-                <RowDefinition Height="1*" />
-                <RowDefinition Height="auto" />
-            </Grid.RowDefinitions>
-
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="1*" />
                 <ColumnDefinition Width="1*" />
             </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*" />
+                <RowDefinition Height="1*" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Grid.Column="0">
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1*" />
+                    <RowDefinition Height="1*" />
+                    <RowDefinition Height="1*" />
+                    <RowDefinition Height="1*" />
+                    <RowDefinition Height="auto" />
+                </Grid.RowDefinitions>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*" />
+                    <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel
+                    Grid.Row="0"
+                    Grid.ColumnSpan="2"
+                    Orientation="Vertical">
+                    <TextBlock
+                        Margin="0,12,0,4"
+                        FontWeight="Bold"
+                        Text="اسم المنتج" />
+                    <TextBox Height="32" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+
+                <StackPanel
+                    Grid.Row="1"
+                    Grid.ColumnSpan="2"
+                    Orientation="Vertical">
+                    <TextBlock
+                        Margin="0,12,0,4"
+                        FontWeight="Bold"
+                        Text="القسم" />
+
+                    <ComboBox
+                        Height="32"
+                        DisplayMemberPath="FullPath"
+                        IsEditable="False"
+                        ItemsSource="{Binding Categories}"
+                        SelectedItem="{Binding SelectedCategory}" />
+                </StackPanel>
+
+                <StackPanel
+                    Grid.Row="2"
+                    Grid.Column="0"
+                    Margin="0,0,5,0"
+                    Orientation="Vertical">
+                    <TextBlock
+                        Margin="0,12,0,4"
+                        FontWeight="Bold"
+                        Text="السعر" />
+                    <TextBox Height="32" Text="{Binding PriceText, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+
+                <StackPanel
+                    Grid.Row="2"
+                    Grid.Column="1"
+                    Margin="5,0,0,0"
+                    Orientation="Vertical">
+                    <TextBlock
+                        Margin="0,12,0,4"
+                        FontWeight="Bold"
+                        Text="الكود" />
+                    <TextBox Height="32" Text="{Binding Code, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+
+            </Grid>
 
             <StackPanel
                 Grid.Row="0"
-                Grid.ColumnSpan="2"
-                Orientation="Vertical">
-                <TextBlock
-                    Margin="0,12,0,4"
-                    FontWeight="Bold"
-                    Text="اسم المنتج" />
-                <TextBox Height="32" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
-            </StackPanel>
-
-            <StackPanel
-                Grid.Row="1"
-                Grid.ColumnSpan="2"
-                Orientation="Vertical">
-                <TextBlock
-                    Margin="0,12,0,4"
-                    FontWeight="Bold"
-                    Text="القسم" />
-
-                <ComboBox
-                    Height="32"
-                    DisplayMemberPath="FullPath"
-                    IsEditable="False"
-                    ItemsSource="{Binding Categories}"
-                    SelectedItem="{Binding SelectedCategory}" />
-            </StackPanel>
-
-            <StackPanel
-                Grid.Row="2"
-                Grid.Column="0"
-                Margin="0,0,5,0"
-                Orientation="Vertical">
-                <TextBlock
-                    Margin="0,12,0,4"
-                    FontWeight="Bold"
-                    Text="السعر" />
-                <TextBox Height="32" Text="{Binding PriceText, UpdateSourceTrigger=PropertyChanged}" />
-            </StackPanel>
-
-            <StackPanel
-                Grid.Row="2"
                 Grid.Column="1"
-                Margin="5,0,0,0"
-                Orientation="Vertical">
-                <TextBlock
-                    Margin="0,12,0,4"
-                    FontWeight="Bold"
-                    Text="الكود" />
-                <TextBox Height="32" Text="{Binding Code, UpdateSourceTrigger=PropertyChanged}" />
-            </StackPanel>
-
-            <StackPanel
-                Grid.Row="3"
-                Grid.ColumnSpan="2"
+                Margin="16,0,0,0"
                 Orientation="Vertical">
                 <TextBlock
                     Margin="0,12,0,4"
                     FontWeight="Bold"
                     Text="الموردون" />
-                <ItemsControl ItemsSource="{Binding Suppliers}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border
-                                Margin="5"
-                                Padding="10,0"
-                                Background="{StaticResource WhiteBrush}"
-                                CornerRadius="5">
-                                <CheckBox
-                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Path=DataContext.SelectSupplierCommand}"
-                                    Content="{Binding Value.Name}"
-                                    IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" />
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <ScrollViewer MinHeight="100" MaxHeight="250">
+                    <ItemsControl ItemsSource="{Binding Suppliers}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border
+                                    Margin="5"
+                                    Padding="10,0"
+                                    Background="{StaticResource WhiteBrush}"
+                                    CornerRadius="5">
+                                    <CheckBox
+                                        Width="150"
+                                        Height="30"
+                                        Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Path=DataContext.SelectSupplierCommand}"
+                                        Content="{Binding Value.Name}"
+                                        Cursor="Hand"
+                                        IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
             </StackPanel>
 
             <StackPanel
-                Grid.Row="4"
+                Grid.Row="1"
                 Grid.ColumnSpan="2"
-                Margin="0,16,0,0"
+                Margin="0,24,0,0"
                 HorizontalAlignment="Center"
                 Orientation="Horizontal">
 

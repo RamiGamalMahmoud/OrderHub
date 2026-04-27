@@ -12,7 +12,7 @@ public class StartupPipeline : IStartupPipeline
 
     public StartupPipeline(IEnumerable<IStartupStep> steps, StartupProgress startupProgress)
     {
-        _steps = steps.OrderBy(s => s.Order);
+        _steps = steps.OrderBy(s => s.Order).Where(s => s.IsEnabled);
         _startupProgress = startupProgress;
     }
 

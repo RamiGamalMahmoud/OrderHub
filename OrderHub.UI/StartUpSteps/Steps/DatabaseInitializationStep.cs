@@ -2,7 +2,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace OrderHub.UI.StartUpSteps;
+namespace OrderHub.UI.StartUpSteps.Steps;
 
 public class DatabaseInitializationStep : IStartupStep
 {
@@ -15,8 +15,10 @@ public class DatabaseInitializationStep : IStartupStep
         _notifier = notifier;
     }
 
-    public int Order => 2;
+    public int Order => (int)StartUpdStepsOrder.DatabaseInitialization;
     public string DisplayName => "جاري فحص قاعدة البيانات";
+
+    public bool IsEnabled => true;
 
     public async Task ExecuteAsync()
     {

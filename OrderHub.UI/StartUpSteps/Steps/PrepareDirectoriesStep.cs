@@ -1,7 +1,7 @@
 ﻿using OrderHub.Application.Interfaces.Services;
 using System.Threading.Tasks;
 
-namespace OrderHub.UI.StartUpSteps;
+namespace OrderHub.UI.StartUpSteps.Steps;
 
 public class PrepareDirectoriesStep : IStartupStep
 {
@@ -12,8 +12,10 @@ public class PrepareDirectoriesStep : IStartupStep
         _dirs = dirs;
     }
 
-    public int Order => 1;
+    public int Order => (int)StartUpdStepsOrder.PrepareDirectories;
     public string DisplayName => "جاري تجهيز المجلدات";
+
+    public bool IsEnabled => true;
 
     public Task ExecuteAsync()
     {

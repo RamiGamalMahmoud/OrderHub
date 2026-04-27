@@ -1,7 +1,7 @@
 ﻿using OrderHub.Application.Interfaces.Services;
 using System.Threading.Tasks;
 
-namespace OrderHub.UI.StartUpSteps;
+namespace OrderHub.UI.StartUpSteps.Steps;
 
 public class AuthenticationStep : IStartupStep
 {
@@ -22,8 +22,10 @@ public class AuthenticationStep : IStartupStep
         _session = session;
     }
 
-    public int Order => 4;
+    public int Order => (int)StartUpdStepsOrder.Authentication;
     public string DisplayName => "جاري التحقق من المصادقة";
+
+    public bool IsEnabled => true;
 
     public async Task ExecuteAsync()
     {

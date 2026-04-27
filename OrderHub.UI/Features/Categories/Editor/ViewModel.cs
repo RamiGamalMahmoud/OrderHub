@@ -39,6 +39,7 @@ public abstract partial class ViewModel : Common.EditorViewModelBase
 
     [ObservableProperty]
     [Required(ErrorMessage = "اسم القسم مطلوب")]
+    [MinLength(2, ErrorMessage = "الاسم يجب أن يكون أكثر من 2 حرف")]
     [NotifyDataErrorInfo]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     private string _name;

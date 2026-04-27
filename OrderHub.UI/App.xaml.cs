@@ -4,6 +4,8 @@ using Microsoft.Extensions.Hosting;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.UI.StartUpSteps;
 using System;
+using System.Globalization;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -29,6 +31,17 @@ public partial class App : System.Windows.Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        CultureInfo culture = new CultureInfo("en-US");
+
+        culture.DateTimeFormat.Calendar = new GregorianCalendar();
+        culture.DateTimeFormat.FirstDayOfWeek = DayOfWeek.Sunday;
+        culture.NumberFormat.DigitSubstitution = DigitShapes.None;
+
+        Thread.CurrentThread.CurrentCulture = culture;
+        Thread.CurrentThread.CurrentUICulture = culture;
+
+        CultureInfo.DefaultThreadCurrentCulture = culture;
+        CultureInfo.DefaultThreadCurrentUICulture = culture;
         base.OnStartup(e);
 
         ShowSplashScreen();

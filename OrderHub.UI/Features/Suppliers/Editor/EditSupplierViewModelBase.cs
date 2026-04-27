@@ -39,6 +39,7 @@ public abstract partial class EditSupplierViewModelBase : EditorViewModelBase
 
     [ObservableProperty]
     [Required(ErrorMessage = "اسم المورد مطلوب")]
+    [MinLength(2, ErrorMessage = "الاسم يجب أن يكون أكثر من 2 حرف")]
     [NotifyDataErrorInfo]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     private string _name = string.Empty;

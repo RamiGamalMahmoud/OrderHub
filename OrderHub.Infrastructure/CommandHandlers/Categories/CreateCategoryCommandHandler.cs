@@ -4,6 +4,7 @@ using OrderHub.Application.Common;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using static OrderHub.Application.Commands.CategoryCommands;
@@ -18,6 +19,13 @@ internal class CreateCategoryCommandHandler(AppDbContextFactory appDbContextFact
     public async Task<Result> Handle(CreateCategoryCommand request, CancellationToken cancellationToken)
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
+        bool isCategoryExists = await appDbContext.Categories
+            .Where(c => c.Name.Value == request.CategoryCreateDto.Name && c.ParentCategoryId == request.CategoryCreateDto.ParentId)
+            .AnyAsync(cancellationToken: cancellationToken);
+        if (isCategoryExists)
+        {
+            return Result.Failure("هذا القسم موجود بالفعل.");
+        }
         Category category = new Category(request.CategoryCreateDto.Name);
         category.ParentCategoryId = request.CategoryCreateDto.ParentId;
 
