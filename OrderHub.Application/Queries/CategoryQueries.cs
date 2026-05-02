@@ -8,5 +8,6 @@ public static class CategoryQueries
 {
     public record GetCategoryTreeQuery : IRequest<IEnumerable<CategoryTreeDto>>;
     public record GetCategoryListQuery(int? ParentId) : IRequest<IEnumerable<CategoryListDto>>;
-    public record GetCategoryForEditQuery(int Id) :IRequest<CategoryEditDto>;
+    public record GetCategoryForEditQuery(int Id) : IRequest<CategoryEditDto>;
+    public record GetCategoryParentIdsQuery(int CategoryId) : IRequest<IEnumerable<int>>;
 }

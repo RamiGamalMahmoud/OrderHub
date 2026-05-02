@@ -19,7 +19,7 @@ namespace OrderHub.UI.Features.Products.Create
         protected override async Task Save()
         {
             IEnumerable<int> selectedSupplierIds = Suppliers.Where(s => s.IsSelected).Select(s => s.Value.Id);
-            ProductFormDto product = new ProductFormDto(Name, Code, Price, SelectedCategory.Id, selectedSupplierIds);
+            ProductFormDto product = new ProductFormDto(Name, Code, Price, CategorySelection.SelectedCategory.Id, selectedSupplierIds);
             Result result = await _mediator.Send(new Application.Commands.ProductCommands.CreateProductCommand(product));
 
             if(result.IsSuccess)

@@ -32,14 +32,50 @@
 
                 <TextBox Height="32" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
 
-                <TextBlock Margin="0,12,0,4" Text="القسم الرئيسي (اختياري)" />
+                <StackPanel
+                    Grid.Row="1"
+                    Grid.ColumnSpan="2"
+                    Orientation="Vertical">
+                    <DockPanel>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            DockPanel.Dock="Right"
+                            Text="{Binding SelectedParent.FullPath}" />
+                        <TextBlock
+                            Margin="0,12,0,4"
+                            DockPanel.Dock="Left"
+                            Text="القسم الرئيسي (اختياري)" />
+                    </DockPanel>
 
-                <ComboBox
-                    Height="32"
-                    DisplayMemberPath="FullPath"
-                    IsEditable="False"
-                    ItemsSource="{Binding Categories}"
-                    SelectedItem="{Binding SelectedParent}" />
+                    <StackPanel Orientation="Vertical">
+                        <ComboBox
+                            Margin="0,5"
+                            DisplayMemberPath="Name"
+                            FontSize="16"
+                            FontWeight="DemiBold"
+                            ItemsSource="{Binding CategorySelection.RootCategories}"
+                            SelectedItem="{Binding SelectedParent}" />
+
+                        <ItemsControl ItemsSource="{Binding CategorySelection.SubCategories}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Vertical" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ComboBox
+                                        Margin="0,5"
+                                        DisplayMemberPath="Name"
+                                        FontSize="16"
+                                        FontWeight="DemiBold"
+                                        ItemsSource="{Binding Value}"
+                                        SelectedItem="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Path=DataContext.SelectedParent}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
 
                 <StackPanel
                     Grid.Row="4"

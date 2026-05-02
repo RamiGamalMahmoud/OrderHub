@@ -23,6 +23,7 @@ namespace OrderHub.UI.Features.Products.Editor
             _notifyPropertiesNames = [nameof(Name), nameof(SelectedCategory), nameof(PriceText), nameof(Code)];
             ValidateAllProperties();
             RegisterMessages();
+            CategorySelection = new CategorySelection(mediator);
         }
 
         private void RegisterMessages()
@@ -37,7 +38,11 @@ namespace OrderHub.UI.Features.Products.Editor
         {
             await RefreshCategoriesAsync();
             await RefreshSuppliersAsync();
+            await CategorySelection.LoadRootCategoriesAsync();
         }
+
+        public CategorySelection CategorySelection { get; }
+        public bool IsFullPathVisible => SelectedCategory is not null;
 
         private async Task RefreshCategoriesAsync()
             => Categories = await _mediator.Send(new Application.Queries.CommonQueries.GetCategoriesInfoQuery());
@@ -71,6 +76,11 @@ namespace OrderHub.UI.Features.Products.Editor
         [NotifyDataErrorInfo]
         [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
         private CategoryInfoDto _selectedCategory;
+
+        partial void OnSelectedCategoryChanged(CategoryInfoDto oldValue, CategoryInfoDto newValue)
+        {
+            CategorySelection.SelectedCategory = newValue;
+        }
 
         [ObservableProperty]
         [Required(ErrorMessage = "السعر مطلوب")]

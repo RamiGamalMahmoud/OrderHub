@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
 using OrderHub.UI.Stores.Markers;
 using System.Collections.Generic;
@@ -23,19 +24,15 @@ public abstract partial class ViewModel : Common.EditorViewModelBase
         _messenger = messenger;
         ValidateAllProperties();
         _notifyPropertiesNames = [nameof(Name), nameof(SelectedParent)];
+        CategorySelection = new CategorySelection(_mediator);
     }
 
     public virtual async Task LoadDataAsync()
     {
-        Categories = await _mediator.Send(new Application.Queries.CommonQueries.GetCategoriesInfoQuery());
+        await CategorySelection.LoadRootCategoriesAsync();
     }
 
-    private IEnumerable<CategoryInfoDto> _categories;
-    public IEnumerable<CategoryInfoDto> Categories
-    {
-        get => _categories;
-        private set => SetProperty(ref _categories, value);
-    }
+    public CategorySelection CategorySelection { get; }
 
     [ObservableProperty]
     [Required(ErrorMessage = "اسم القسم مطلوب")]
@@ -46,4 +43,9 @@ public abstract partial class ViewModel : Common.EditorViewModelBase
 
     [ObservableProperty]
     private CategoryInfoDto _selectedParent;
+
+    partial void OnSelectedParentChanged(CategoryInfoDto oldValue, CategoryInfoDto newValue)
+    {
+        CategorySelection.SelectedCategory = newValue;
+    }
 }

@@ -40,7 +40,6 @@
                     <RowDefinition Height="1*" />
                     <RowDefinition Height="1*" />
                     <RowDefinition Height="1*" />
-                    <RowDefinition Height="1*" />
                     <RowDefinition Height="auto" />
                 </Grid.RowDefinitions>
 
@@ -64,17 +63,47 @@
                     Grid.Row="1"
                     Grid.ColumnSpan="2"
                     Orientation="Vertical">
-                    <TextBlock
-                        Margin="0,12,0,4"
-                        FontWeight="Bold"
-                        Text="القسم" />
+                    <DockPanel>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Visibility="{Binding IsFullPathVisible, Converter={StaticResource Boolean2VisibilityConverter}}"
+                            DockPanel.Dock="Right"
+                            Text="{Binding SelectedCategory.FullPath}" />
+                        <TextBlock
+                            Margin="0,12,0,4"
+                            DockPanel.Dock="Left"
+                            FontWeight="Bold"
+                            Text="القسم" />
+                    </DockPanel>
 
-                    <ComboBox
-                        Height="32"
-                        DisplayMemberPath="FullPath"
-                        IsEditable="False"
-                        ItemsSource="{Binding Categories}"
-                        SelectedItem="{Binding SelectedCategory}" />
+                    <StackPanel Orientation="Vertical">
+                        <ComboBox
+                            Margin="0,5"
+                            DisplayMemberPath="Name"
+                            FontSize="16"
+                            FontWeight="DemiBold"
+                            ItemsSource="{Binding CategorySelection.RootCategories}"
+                            SelectedItem="{Binding SelectedCategory}" />
+
+                        <ItemsControl ItemsSource="{Binding CategorySelection.SubCategories}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Vertical" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ComboBox
+                                        Margin="0,5"
+                                        DisplayMemberPath="Name"
+                                        FontSize="16"
+                                        FontWeight="DemiBold"
+                                        ItemsSource="{Binding Value}"
+                                        SelectedItem="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Path=DataContext.SelectedCategory}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                 </StackPanel>
 
                 <StackPanel

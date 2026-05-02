@@ -1,11 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
+using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
 using OrderHub.UI.Stores.Markers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static OrderHub.Application.DTOs.CommonDtos;
 using static OrderHub.Application.DTOs.ProductDtos;
 
 namespace OrderHub.UI.Features.Products.Update;
@@ -30,7 +32,7 @@ public class ViewModel : Editor.ViewModel
         Name = product.Name;
         Code = product.Code;
         PriceText = product.Price.ToString();
-        SelectedCategory = Categories.Where(c => c.Id == product.CategoryId).FirstOrDefault();
+        SelectedCategory = (await _mediator.Send(new Application.Queries.CommonQueries.GetCategoriesInfoQuery())).Where(c => c.Id == product.CategoryId).FirstOrDefault();
 
         foreach (int supplierId in product.SelectedSuppliersIds)
         {
@@ -46,7 +48,7 @@ public class ViewModel : Editor.ViewModel
             .Where(supplier => supplier.IsSelected)
             .Select(supplier => supplier.Value.Id);
 
-        ProductFormDto product = new ProductFormDto(Name, Code, Price, SelectedCategory.Id, selectedSuppliersIds);
+        ProductFormDto product = new ProductFormDto(Name, Code, Price, CategorySelection.SelectedCategory.Id, selectedSuppliersIds);
         Result result = await _mediator.Send(new Application.Commands.ProductCommands.UpdateProductCommand(_selectionStore.Id, product));
 
         if (result.IsSuccess)

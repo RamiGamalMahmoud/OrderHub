@@ -22,7 +22,7 @@ public class ViewModel : Editor.ViewModel
         await base.LoadDataAsync();
         CategoryEditDto categoryEditDto = await _mediator.Send(new Application.Queries.CategoryQueries.GetCategoryForEditQuery(_selectionStore.Id));
         Name = categoryEditDto.Name;
-        SelectedParent = Categories.FirstOrDefault(c => c.Id == categoryEditDto.ParentId);
+        SelectedParent = (await _mediator.Send(new Application.Queries.CommonQueries.GetCategoriesInfoQuery())).FirstOrDefault(c => c.Id == categoryEditDto.ParentId);
     }
 
     protected override async Task Save()
