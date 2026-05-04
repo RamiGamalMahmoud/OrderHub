@@ -171,6 +171,11 @@ public partial class ViewModel : ObservableObject
     [RelayCommand]
     private async Task ResendMessage(OutboxMessageViewModel message)
     {
+        if(!_dialogService.Confirm("هل أنت متأكد أنك تريد إعادة إرسال هذه الرسالة؟"))
+        {
+            return;
+        }
+
         Result result = await _mediator.Send(new Application.Commands.OutboxMessageCommands.ResendOutboxMessageCommand(message.Id));
 
         if (!result.IsSuccess)
@@ -185,6 +190,11 @@ public partial class ViewModel : ObservableObject
     [RelayCommand]
     private async Task DeleteMessage(OutboxMessageViewModel message)
     {
+        if(!_dialogService.Confirm("هل أنت متأكد أنك تريد حذف هذه الرسالة؟"))
+        {
+            return;
+        }
+
         if (message is null)
         {
             return;
