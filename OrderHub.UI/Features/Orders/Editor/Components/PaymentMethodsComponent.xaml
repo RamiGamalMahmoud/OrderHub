@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:converters="clr-namespace:Hoax.WpfConverters;assembly=Hoax.WpfConverters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:local="clr-namespace:OrderHub.UI.Features.Orders.Editor.Components"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -31,41 +32,14 @@
                         Text="وسلة الدفع" />
                 </StackPanel>
 
-                <ListView
-                    Padding="0"
-                    Background="Transparent"
-                    BorderThickness="0"
+                <hc:ComboBox
+                    Height="40"
+                    hc:InfoElement.ShowClearButton="True"
+                    Cursor="Hand"
+                    DisplayMemberPath="DisplayName"
                     ItemsSource="{Binding PartyPanel.PaymentMethods}"
-                    SelectedItem="{Binding PartyPanel.SelectedPaymentMethod}"
-                    Validation.ErrorTemplate="{x:Null}">
-                    <ListView.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ListView.ItemsPanel>
-                    <ListView.ItemContainerStyle>
-                        <Style BasedOn="{StaticResource ListViewItemBaseStyle}" TargetType="ListViewItem">
-                            <Setter Property="Cursor" Value="Hand" />
-                            <Setter Property="Margin" Value="5" />
-                            <Setter Property="Padding" Value="10" />
-                            <Style.Triggers>
-                                <Trigger Property="IsSelected" Value="False">
-                                    <Setter Property="Background" Value="{StaticResource WhiteBrush}" />
-                                </Trigger>
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="{StaticResource Primary}" />
-                                    <Setter Property="Foreground" Value="White" />
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ListView.ItemContainerStyle>
+                    SelectedItem="{Binding PartyPanel.SelectedPaymentMethod}" />
 
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding DisplayName}" />
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
 
             </StackPanel>
 
