@@ -196,7 +196,10 @@ internal abstract partial class ViewModel : EditorViewModelBase
 
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     private void RemoveOrderItem(OrderItemViewModel item)
-        => OrderBuilder.RemoveItem(item);
+    {
+        if (_dialogService.Confirm("Â·  —Ìœ Õ–› Â–« «·⁄‰’— ø"))
+            OrderBuilder.RemoveItem(item);
+    }
 
     private void OrderItems_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
     {
