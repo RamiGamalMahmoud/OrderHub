@@ -21,17 +21,20 @@
     WindowState="Maximized"
     mc:Ignorable="d">
 
-    <Border Background="{StaticResource WhiteBrush}" FlowDirection="RightToLeft">
+    <Border
+        Padding="4"
+        Background="{StaticResource WhiteBrush}"
+        FlowDirection="RightToLeft">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="1*" />
-                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="3*" />
                 <ColumnDefinition Width="1*" />
             </Grid.ColumnDefinitions>
 
             <editorComponents:ProductsComponent Grid.Column="0" />
 
-            <Grid Grid.Column="1" Margin="12">
+            <Grid Grid.Column="1" Margin="6,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto" />
                     <RowDefinition Height="1*" />
@@ -41,7 +44,7 @@
                 <Border
                     Grid.Row="0"
                     Height="50"
-                    Padding="10"
+                    Padding="12"
                     Background="White"
                     BorderBrush="LightGray"
                     BorderThickness="1,1,1,0"
@@ -76,13 +79,13 @@
                 <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Visible">
                     <StackPanel Grid.Row="0">
 
-                        <editorComponents:ClientsComponetn Margin="12" />
-                        <editorComponents:PaymentMethodsComponent Margin="12" />
-                        <editorComponents:DeliveryMethodComponent Margin="12" />
+                        <editorComponents:ClientsComponetn Margin="0,0,0,6" />
+                        <editorComponents:PaymentMethodsComponent Margin="0,0,0,6" />
+                        <editorComponents:DeliveryMethodComponent Margin="0,0,0,6" />
 
                     </StackPanel>
                 </ScrollViewer>
-                <editorComponents:OrderSummaryComponent Grid.Row="1" Margin="12" />
+                <editorComponents:OrderSummaryComponent Grid.Row="1" />
             </Grid>
 
 

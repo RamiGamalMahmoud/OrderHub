@@ -49,7 +49,7 @@
 
         </Border>
 
-        <ContentControl Margin="0,12,0,0" Content="{Binding DeliveryMethodsViewModel}">
+        <ContentControl Margin="6" Content="{Binding DeliveryMethodsViewModel}">
             <ContentControl.Style>
                 <Style TargetType="ContentControl">
 

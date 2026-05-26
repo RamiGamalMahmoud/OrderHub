@@ -23,7 +23,6 @@
     </UserControl.Resources>
 
     <Border
-        Margin="12"
         Padding="12"
         Background="White"
         BorderBrush="LightGray"
