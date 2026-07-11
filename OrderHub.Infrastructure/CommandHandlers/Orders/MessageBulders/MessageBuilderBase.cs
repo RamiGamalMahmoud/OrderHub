@@ -17,11 +17,6 @@ internal abstract class MessageBuilderBase
         sb.AppendLine($"{index}) {item.ProductName}");
         sb.AppendLine($"الكمية: {item.Quantity}");
 
-        foreach (OrderItemAttribute attribute in item.Attributes)
-        {
-            sb.AppendLine($"{attribute.Name} : {attribute.Value}");
-        }
-
         if (includePrice)
         {
             sb.AppendLine($"السعر: {item.UnitPrice.Value:0.00}");

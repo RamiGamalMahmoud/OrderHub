@@ -66,8 +66,7 @@ public static class OrderDtos
         int Quantity,
         int? SupplierId,
         string SupplierName,
-        IReadOnlyCollection<CommonDtos.SupplierInfoDto> Suppliers,
-        IReadOnlyCollection<OrderItemAttributeDto> Attributes);
+        IReadOnlyCollection<CommonDtos.SupplierInfoDto> Suppliers);
 
     public record OrderEditDto(
         int Id,
@@ -109,6 +108,5 @@ public static class OrderItemDtos
         int Quantity,
         decimal UnitPrice,
         string SupplierName,
-        int? SupplierId,
-        IReadOnlyCollection<OrderDtos.OrderItemAttributeDto> Attributes);
+        int? SupplierId);
 }

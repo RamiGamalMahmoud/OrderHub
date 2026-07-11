@@ -5,7 +5,6 @@ using OrderHub.Domain.Models;
 using OrderHub.Infrastructure.Helpers;
 using OrderHub.Infrastructure.Orders;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,7 +31,6 @@ internal class CreateOrderCommandHandler(AppDbContextFactory appDbContextFactory
 
         appDbContext.Orders.Add(order);
         await OrderEntitySequenceManager.SyncAsync(appDbContext, order, cancellationToken);
-        await _orderWriteService.SaveNewAttributeNames(order, appDbContext);
         await appDbContext.SaveChangesAsync(cancellationToken);
         return Result<int>.Success(order.Id);
     }

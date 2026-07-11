@@ -121,11 +121,7 @@ public partial class OrderBuilder : ObservableObject
                 (int)item.Quantity,
                 item.Price,
                 item.SupplierName,
-                item.SupplierId,
-                item.Attributes
-                    .Where(attribute => !string.IsNullOrWhiteSpace(attribute.Name) && !string.IsNullOrWhiteSpace(attribute.Value))
-                    .Select(attribute => new OrderItemAttributeDto(attribute.Name.Trim(), attribute.Value.Trim()))
-                    .ToArray()
+                item.SupplierId
             ));
 
         var deliverySteps = _deliveryMethod == DeliveryMethod.DeliveryChain

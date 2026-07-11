@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using OrderHub.Domain.Models;
-using System.Numerics;
 
 namespace OrderHub.Infrastructure.Configurations
 {
@@ -48,12 +47,6 @@ namespace OrderHub.Infrastructure.Configurations
                 .HasColumnType("VARCHAR(100)")
                 .HasMaxLength(100)
                 .IsRequired(false);
-
-            builder.HasMany(o => o.Attributes)
-                .WithOne(attribute => attribute.OrderItem)
-                .HasForeignKey(attribute => attribute.OrderItemId)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Cascade);
 
             builder.Ignore(o => o.SubTotal);
         }

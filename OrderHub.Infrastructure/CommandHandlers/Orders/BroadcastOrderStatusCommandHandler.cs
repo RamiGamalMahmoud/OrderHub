@@ -30,7 +30,6 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
                 .Include(o => o.DeliverySteps).ThenInclude(step => step.ShippingCarrier).ThenInclude(carrier => carrier.Phone)
                 .Include(o => o.OrderItems).ThenInclude(oi => oi.Supplier).ThenInclude(s => s.Phone)
                 .Include(o => o.OrderItems).ThenInclude(oi => oi.Supplier).ThenInclude(s => s.WhatsappGroup)
-                .Include(o => o.OrderItems).ThenInclude(oi => oi.Attributes)
                 .Include(o => o.Client).ThenInclude(c => c.Phone)
                 .Include(o => o.Client).ThenInclude(c => c.Address).ThenInclude(a => a.City)
                 .FirstOrDefaultAsync(o => o.Id == request.OrderId, cancellationToken);

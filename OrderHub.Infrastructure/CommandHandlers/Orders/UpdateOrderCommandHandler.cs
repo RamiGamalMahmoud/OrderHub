@@ -22,7 +22,6 @@ internal class UpdateOrderCommandHandler(AppDbContextFactory appDbContextFactory
 
         Order order = await appDbContext.Orders
             .Include(o => o.OrderItems)
-                .ThenInclude(item => item.Attributes)
             .Include(o => o.DeliverySteps)
             .Include(o => o.EntitySequences)
             .SingleOrDefaultAsync(o => o.Id == request.UpdateDto.Id, cancellationToken);
@@ -33,7 +32,6 @@ internal class UpdateOrderCommandHandler(AppDbContextFactory appDbContextFactory
         }
 
         _orderWriteService.Update(appDbContext, order, request.UpdateDto);
-        await _orderWriteService.SaveNewAttributeNames(order, appDbContext);
         await OrderEntitySequenceManager.SyncAsync(appDbContext, order, cancellationToken);
         await appDbContext.SaveChangesAsync(cancellationToken);
         return Result.Success();

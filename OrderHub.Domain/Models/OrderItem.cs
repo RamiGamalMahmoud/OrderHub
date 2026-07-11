@@ -7,7 +7,6 @@ namespace OrderHub.Domain.Models;
 
 public class OrderItem : ModelBase
 {
-    private readonly List<OrderItemAttribute> _attributes = [];
     private OrderItem() { }
     public OrderItem(int productId, string productName, int orderId, decimal unitPrice, int quantity, string supplierName, int? supplierId)
     {
@@ -28,7 +27,6 @@ public class OrderItem : ModelBase
     public int? SupplierId { get; private set; }
 
     public Supplier Supplier { get; private set; }
-    public IReadOnlyCollection<OrderItemAttribute> Attributes => _attributes.AsReadOnly();
 
     public Money UnitPrice { get; private set; }
     public Money SubTotal => UnitPrice * Quantity;
@@ -78,7 +76,4 @@ public class OrderItem : ModelBase
         return Result.Success();
     }
 
-    public void AddAttribute(OrderItemAttribute attribute) => _attributes.Add(attribute);
-
-    public void ClearAttributes() => _attributes.Clear();
 }

@@ -87,11 +87,6 @@ internal class ViewModel : Editor.ViewModel
                 };
 
                 orderItem.Supplier = suppliers.FirstOrDefault(supplier => supplier.Id == item.SupplierId);
-                orderItem.LoadAttributes(item.Attributes.Select(attribute => new OrderItemAttributeViewModel
-                {
-                    Name = attribute.Name,
-                    Value = attribute.Value
-                }));
                 OrderBuilder.Items.Add(orderItem);
             }
 

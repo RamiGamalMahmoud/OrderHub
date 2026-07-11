@@ -15,7 +15,6 @@
         BorderThickness="1,0,1,1"
         GridLinesVisibility="Vertical"
         ItemsSource="{Binding OrderBuilder.Items}"
-        RowDetailsVisibilityMode="VisibleWhenSelected"
         RowHeight="70"
         VerticalGridLinesBrush="{StaticResource WhiteBrush}">
         <DataGrid.Columns>
@@ -81,95 +80,6 @@
             </DataGridTemplateColumn>
 
         </DataGrid.Columns>
-
-        <DataGrid.RowDetailsTemplate>
-            <DataTemplate>
-                <Border
-                    Margin="8"
-                    Padding="10"
-                    Background="#f8fafc"
-                    BorderBrush="#e2e8f0"
-                    BorderThickness="1"
-                    CornerRadius="8">
-                    <StackPanel>
-                        <TextBlock
-                            Margin="0,0,0,8"
-                            FontWeight="DemiBold"
-                            Text="خصائص المنتج" />
-
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-
-                            <Grid>
-                                <TextBox
-                                    Grid.Column="0"
-                                    Height="35"
-                                    Margin="3,0"
-                                    VerticalAlignment="Top"
-                                    hc:InfoElement.Placeholder="اسم الحقل"
-                                    Text="{Binding SelectedAttributeName, UpdateSourceTrigger=PropertyChanged}" />
-
-                                <ListBox
-                                    Margin="0,50,0,0"
-                                    ItemsSource="{Binding AttributeNames}"
-                                    SelectedItem="{Binding SelectedAttributeName, UpdateSourceTrigger=PropertyChanged}" />
-                            </Grid>
-
-                            <TextBox
-                                Grid.Column="1"
-                                Height="35"
-                                Margin="3,0"
-                                VerticalAlignment="Top"
-                                hc:InfoElement.Placeholder="القيمة"
-                                Text="{Binding SelectedAttributeValue, UpdateSourceTrigger=PropertyChanged}" />
-
-                            <Button
-                                Grid.Column="2"
-                                Width="150"
-                                Height="35"
-                                Margin="3,0,0,0"
-                                VerticalAlignment="Top"
-                                Command="{Binding AddFieldCommand}"
-                                Content="إضافة" />
-                        </Grid>
-
-                        <ItemsControl ItemsSource="{Binding Attributes}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Margin="0,0,0,6">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="1.2*" />
-                                            <ColumnDefinition Width="1.8*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-
-                                        <TextBox
-                                            Grid.Column="0"
-                                            Margin="0,0,8,0"
-                                            Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
-
-                                        <TextBox
-                                            Grid.Column="1"
-                                            Margin="0,0,8,0"
-                                            Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
-
-                                        <Button
-                                            Grid.Column="2"
-                                            Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGridRow}, Path=DataContext.RemoveAttributeCommand}"
-                                            CommandParameter="{Binding}"
-                                            Content="حذف" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </Border>
-            </DataTemplate>
-        </DataGrid.RowDetailsTemplate>
 
     </DataGrid>
 

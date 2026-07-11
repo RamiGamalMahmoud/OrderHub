@@ -1,9 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.OrderDtos;
 using static OrderHub.Application.DTOs.OrderItemDtos;
 
@@ -26,14 +24,6 @@ internal class OrderWriteService
         PopulateDetails(order, updateDto.OrderItems, updateDto.DeliverySteps);
     }
 
-    public async Task SaveNewAttributeNames(Order order, AppDbContext appDbContext)
-    {
-        IEnumerable<string> attributeNames = order.OrderItems.SelectMany(item => item.Attributes.Select(a => a.Name));
-        IEnumerable<string> exitstingAttributeNames = await appDbContext.AttributeNames.Select(a => a.Name).ToListAsync();
-        IEnumerable<string> newAttributeNames = attributeNames.Except(exitstingAttributeNames);
-        appDbContext.AttributeNames.AddRange(newAttributeNames.Select(name => new AttributeName(name)));
-    }
-
     private static void ApplyHeader(
         Order order,
         int clientId,
@@ -51,7 +41,6 @@ internal class OrderWriteService
 
     private static void ResetDetails(AppDbContext appDbContext, Order order)
     {
-        appDbContext.OrderItemAttributes.RemoveRange(order.OrderItems.SelectMany(item => item.Attributes));
         appDbContext.OrderItems.RemoveRange(order.OrderItems);
         appDbContext.OrderDeliverySteps.RemoveRange(order.DeliverySteps);
 
@@ -85,11 +74,6 @@ internal class OrderWriteService
             orderItemDto.Quantity,
             orderItemDto.SupplierName,
             orderItemDto.SupplierId);
-
-        foreach (OrderItemAttributeDto attributeDto in orderItemDto.Attributes ?? Enumerable.Empty<OrderItemAttributeDto>())
-        {
-            orderItem.AddAttribute(new OrderItemAttribute(attributeDto.Name, attributeDto.Value));
-        }
 
         return orderItem;
     }
