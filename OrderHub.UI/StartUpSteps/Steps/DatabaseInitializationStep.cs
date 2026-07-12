@@ -28,6 +28,8 @@ public class DatabaseInitializationStep : IStartupStep
             throw new Exception("DB connection failed");
         }
 
+        await _db.FixCategoriesAsync();
+
         if (await _db.HasPendingMigrationsAsync())
         {
             await _db.MigrateAsync();

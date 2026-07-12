@@ -40,5 +40,13 @@ namespace OrderHub.Infrastructure.Services
                 await context.Database.MigrateAsync();
             }
         }
+
+        public async Task FixCategoriesAsync()
+        {
+            using (AppDbContext context = _appDbContextFactory.CreateDbContext())
+            {
+                await context.Database.ExecuteSqlRawAsync("UPDATE categories SET parent_category_id = NULL WHERE id = parent_category_id");
+            }
+        }
     }
 }
