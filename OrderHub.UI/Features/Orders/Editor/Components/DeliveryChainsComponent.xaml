@@ -33,18 +33,20 @@
                     Text="سلسلة التوصيل" />
 
                 <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                    <Menu>
-                        <MenuItem Cursor="Hand">
-                            <MenuItem.Header>
-                                <icons:MaterialIcon
-                                    Width="20"
-                                    Foreground="{StaticResource Primary}"
-                                    Kind="PlusCircle" />
-                            </MenuItem.Header>
-                            <MenuItem Command="{Binding AddShippingCarrierStepCommand}" Header="شركة شحن" />
-                            <MenuItem Command="{Binding AddDeliverymanStepCommand}" Header="مندوب" />
-                        </MenuItem>
-                    </Menu>
+
+                    <Button
+                        Height="30"
+                        Margin="5,0"
+                        Padding="5,0"
+                        Command="{Binding AddDeliverymanStepCommand}"
+                        Content="إضافة مندوب"
+                        Cursor="Hand" />
+                    <Button
+                        Height="30"
+                        Margin="5,0"
+                        Padding="5,0"
+                        Command="{Binding AddShippingCarrierStepCommand}"
+                        Content="إضافة شركة شحن" />
 
                     <Button Command="{Binding MoveDeliveryStepDownCommand}" CommandParameter="{Binding ElementName=StespListBox, Path=SelectedItem}">
                         <icons:MaterialIcon Kind="ChevronDown" />
@@ -55,10 +57,6 @@
                         Command="{Binding MoveDeliveryStepUpCommand}"
                         CommandParameter="{Binding ElementName=StespListBox, Path=SelectedItem}">
                         <icons:MaterialIcon Kind="ChevronUp" />
-                    </Button>
-
-                    <Button Command="{Binding RemoveDeliveryStepCommand}" CommandParameter="{Binding ElementName=StespListBox, Path=SelectedItem}">
-                        <icons:MaterialIcon Foreground="{StaticResource DangerBrush}" Kind="TrashCanOutline" />
                     </Button>
 
                 </StackPanel>
@@ -92,7 +90,13 @@
                                     DisplayMemberPath="Name"
                                     ItemsSource="{Binding Handlers}"
                                     SelectedItem="{Binding SelectedHandler}" />
-                                <StackPanel Grid.Column="2" />
+
+                                <Button
+                                    Grid.Column="2"
+                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.RemoveDeliveryStepCommand}"
+                                    CommandParameter="{Binding}">
+                                    <icons:MaterialIcon Kind="Close" />
+                                </Button>
                             </Grid>
                         </DataTemplate>
                     </ListBox.ItemTemplate>

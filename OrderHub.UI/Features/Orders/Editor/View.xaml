@@ -17,76 +17,103 @@
     x:ClassModifier="internal"
     FontFamily="{StaticResource FontFamily}"
     FontSize="14"
+    PreviewKeyDown="Window_PreviewKeyDown"
     WindowStartupLocation="CenterScreen"
     WindowState="Maximized"
     mc:Ignorable="d">
 
-    <Border
-        Padding="4"
-        Background="{StaticResource WhiteBrush}"
-        FlowDirection="RightToLeft">
+    <Border Background="{StaticResource WhiteBrush}" FlowDirection="RightToLeft">
         <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*" />
-                <ColumnDefinition Width="3*" />
-                <ColumnDefinition Width="1*" />
-            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*" />
+                <RowDefinition Height="auto" />
+            </Grid.RowDefinitions>
+            <hc:TabControl
+                x:Name="TabControl"
+                Padding="0"
+                BorderThickness="0"
+                IsTabFillEnabled="True"
+                Style="{StaticResource TabControlInLine}">
 
-            <editorComponents:ProductsComponent Grid.Column="0" />
+                <hc:TabItem Header="المنتجات (F1)">
 
-            <Grid Grid.Column="1" Margin="6,0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="auto" />
-                    <RowDefinition Height="1*" />
-                    <RowDefinition Height="auto" />
-                </Grid.RowDefinitions>
+                    <Grid Grid.Column="1" Margin="6,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="400" />
+                            <ColumnDefinition Width="1*" />
+                        </Grid.ColumnDefinitions>
 
-                <Border
-                    Grid.Row="0"
-                    Height="50"
-                    Padding="12"
-                    Background="White"
-                    BorderBrush="LightGray"
-                    BorderThickness="1,1,1,0"
-                    CornerRadius="10 10 0 0">
-                    <StackPanel Orientation="Horizontal">
-                        <icons:MaterialIcon
-                            Width="20"
-                            Foreground="{StaticResource BlueBrush}"
-                            Kind="ListBoxOutline" />
-                        <TextBlock
-                            Margin="10,0,0,0"
-                            VerticalAlignment="Center"
-                            FontSize="16"
-                            FontWeight="Bold"
-                            Text="قائمة المنتجات المضافة" />
-                    </StackPanel>
-                </Border>
+                        <StackPanel Grid.Column="1" Orientation="Vertical">
+                            <Border
+                                Grid.Row="0"
+                                Height="50"
+                                Padding="12"
+                                Background="White"
+                                BorderBrush="LightGray"
+                                BorderThickness="1,1,1,0"
+                                CornerRadius="10 10 0 0">
+                                <StackPanel Orientation="Horizontal">
+                                    <icons:MaterialIcon
+                                        Width="20"
+                                        Foreground="{StaticResource BlueBrush}"
+                                        Kind="ListBoxOutline" />
+                                    <TextBlock
+                                        Margin="10,0,0,0"
+                                        VerticalAlignment="Center"
+                                        FontSize="16"
+                                        FontWeight="Bold"
+                                        Text="قائمة المنتجات المضافة" />
+                                </StackPanel>
+                            </Border>
 
-                <editorComponents:OrderItemsComponent Grid.Row="1" />
-            </Grid>
+                            <editorComponents:OrderItemsComponent Grid.Row="1" />
+                        </StackPanel>
+                        <editorComponents:ProductsComponent Grid.Column="0" Margin="0,0,6,0" />
+                    </Grid>
 
-            <Grid
-                Grid.Row="0"
-                Grid.RowSpan="3"
-                Grid.Column="2">
+                </hc:TabItem>
 
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="1*" />
-                    <RowDefinition Height="auto" />
-                </Grid.RowDefinitions>
+                <hc:TabItem Header="تفاصيل الطلب (F2)">
+                    <Grid
+                        Grid.Row="0"
+                        Grid.RowSpan="3"
+                        Grid.Column="2"
+                        Background="{StaticResource WhiteBrush}">
 
-                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Visible">
-                    <StackPanel Grid.Row="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="1*" />
+                            <RowDefinition Height="1*" />
+                        </Grid.RowDefinitions>
 
-                        <editorComponents:ClientsComponetn Margin="0,0,0,6" />
-                        <editorComponents:PaymentMethodsComponent Margin="0,0,0,6" />
-                        <editorComponents:DeliveryMethodComponent Margin="0,0,0,6" />
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1*" />
+                            <ColumnDefinition Width="1*" />
+                        </Grid.ColumnDefinitions>
 
-                    </StackPanel>
-                </ScrollViewer>
-                <editorComponents:OrderSummaryComponent Grid.Row="1" />
-            </Grid>
+                        <editorComponents:ClientsComponetn
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            Margin="6" />
+                        <editorComponents:PaymentMethodsComponent
+                            Grid.Row="1"
+                            Grid.Column="0"
+                            Margin="6" />
+                        <editorComponents:DeliveryMethodComponent
+                            Grid.Row="0"
+                            Grid.RowSpan="2"
+                            Grid.Column="1"
+                            Margin="6" />
+
+                    </Grid>
+                </hc:TabItem>
+
+            </hc:TabControl>
+
+            <editorComponents:OrderSummaryComponent Grid.Row="1" />
+
+
+
+
 
 
 

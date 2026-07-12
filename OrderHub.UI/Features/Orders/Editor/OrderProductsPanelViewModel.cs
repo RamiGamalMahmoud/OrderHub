@@ -71,7 +71,7 @@ internal partial class OrderProductsPanelViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddProductCommand))]
     [NotifyPropertyChangedFor(nameof(SubTotal))]
-    private decimal _quantity = 1;
+    private decimal _quantity = 0;
 
     public decimal SubTotal => Price * Quantity;
 
@@ -130,5 +130,9 @@ internal partial class OrderProductsPanelViewModel : ObservableObject
 
     private bool CanAddProduct() => SelectedProduct != null && SubTotal > 0;
 
-    private void ClearSelection() => SelectedProduct = null;
+    private void ClearSelection()
+    {
+        SelectedProduct = null;
+        Quantity = 0;
+    }
 }

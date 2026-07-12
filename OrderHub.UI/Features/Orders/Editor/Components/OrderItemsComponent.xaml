@@ -27,28 +27,32 @@
                 Binding="{Binding CategoryName}"
                 Header="القسم"
                 IsReadOnly="True" />
-            <DataGridTextColumn
-                Width="100"
-                Binding="{Binding Quantity}"
-                Header="الكمية"
-                IsReadOnly="False" />
-
-            <DataGridTemplateColumn Header="تفاصيل">
+            <DataGridTemplateColumn Header="الكمية">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                        <StackPanel Orientation="Vertical">
-                            <TextBlock>
-                                <Run Text="السعر : " />
-                                <Run Text="{Binding Price}" />
-                            </TextBlock>
-                            <TextBlock>
-                                <Run Text="الاجمالي : " />
-                                <Run Text="{Binding SubTotal, Mode=OneWay}" />
-                            </TextBlock>
-                        </StackPanel>
+                        <TextBox
+                            Width="50"
+                            Margin="5,0"
+                            Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}"
+                            TextAlignment="Center" />
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
+
+
+            <DataGridTemplateColumn Header="السعر">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <TextBox Width="100" Text="{Binding Price, UpdateSourceTrigger=PropertyChanged}" />
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+
+            <DataGridTextColumn
+                Width="100"
+                Binding="{Binding SubTotal}"
+                Header="الإجمال"
+                IsReadOnly="True" />
 
             <DataGridTemplateColumn Width="200" Header="المورد">
                 <DataGridTemplateColumn.CellTemplate>

@@ -14,44 +14,65 @@
         Grid.Row="2"
         Grid.Column="2"
         Padding="12"
-        Background="White"
+        Background="#f0f5fe"
         BorderBrush="LightGray"
         BorderThickness="1"
         CornerRadius="12">
-        <StackPanel HorizontalAlignment="Stretch" Orientation="Vertical">
+        <Grid>
 
-            <StackPanel Height="40" Orientation="Horizontal">
-                <icons:MaterialIcon
-                    Width="20"
-                    Foreground="{StaticResource BlueBrush}"
-                    Kind="ReceiptTextOutline" />
-                <TextBlock
-                    Margin="10,0,0,0"
-                    VerticalAlignment="Center"
-                    FontSize="16"
-                    FontWeight="DemiBold"
-                    Text="ملخص الطلب" />
-            </StackPanel>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
 
-            <Grid Margin="0,10">
-                <TextBlock Text="عدد المنتجات" />
-                <TextBlock
-                    HorizontalAlignment="Right"
-                    FontSize="16"
-                    Text="{Binding OrderBuilder.ItemsCount}" />
-            </Grid>
+            <Border
+                Grid.Column="0"
+                Padding="6"
+                BorderBrush="LightGray"
+                BorderThickness="1"
+                CornerRadius="6">
+                <StackPanel HorizontalAlignment="Center" Orientation="Vertical">
+                    <TextBlock
+                        FontWeight="DemiBold"
+                        Foreground="{StaticResource SecondaryTextBrush}"
+                        Text="عدد المنتجات" />
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        FontSize="16"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource PrimaryBrush}"
+                        Text="{Binding OrderBuilder.ItemsCount}" />
+                </StackPanel>
+            </Border>
 
-            <Grid Margin="0,10">
-                <TextBlock Text="المجموع" />
-                <TextBlock
-                    HorizontalAlignment="Right"
-                    FontSize="16"
-                    Text="{Binding OrderBuilder.TotalPrice, StringFormat='{}{0} ر.س '}" />
-            </Grid>
+            <Border
+                Grid.Column="1"
+                Margin="12,0"
+                Padding="6"
+                BorderBrush="LightGray"
+                BorderThickness="1"
+                CornerRadius="6">
+                <StackPanel HorizontalAlignment="Center" Orientation="Vertical">
+                    <TextBlock
+                        FontWeight="DemiBold"
+                        Foreground="{StaticResource SecondaryTextBrush}"
+                        Text="المجموع" />
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        FontSize="16"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource PrimaryBrush}"
+                        Text="{Binding OrderBuilder.TotalPrice, StringFormat='{}{0} ر.س '}" />
+                </StackPanel>
+            </Border>
+
             <Button
-                Height="40"
-                Margin="0,10,0,0"
+                Grid.Column="2"
+                Width="200"
+                Height="auto"
                 HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
                 Command="{Binding SaveCommand}"
                 Cursor="Hand"
                 FontSize="16"
@@ -64,11 +85,11 @@
                     <TextBlock
                         Margin="10,0,0,0"
                         VerticalAlignment="Center"
-                        Text="{Binding ActionName}" />
+                        Text="{Binding ActionName, StringFormat='{}{0} (F12)'}" />
                 </StackPanel>
             </Button>
 
-        </StackPanel>
+        </Grid>
     </Border>
 
 </UserControl>
