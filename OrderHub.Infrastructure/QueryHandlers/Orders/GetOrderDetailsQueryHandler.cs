@@ -17,6 +17,7 @@ internal class GetOrderDetailsQueryHandler(AppDbContextFactory dbContextFactory)
         {
             var order = await dbContext.Orders
                 .AsNoTracking()
+                .Include(o => o.OrderItems)
                 .Where(o => o.Id == request.OrderId)
                 .Select(o => new OrderDetailsDto(
                     new OrderHeaderDto(
