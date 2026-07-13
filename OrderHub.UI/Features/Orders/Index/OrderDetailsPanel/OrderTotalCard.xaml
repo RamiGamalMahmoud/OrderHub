@@ -63,50 +63,52 @@
 
             <!--  Shipping  -->
 
-            <Grid Margin="0,0,0,6">
+            <!--<Grid Margin="0,0,0,6">
 
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+            <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
-                <TextBlock
-                    FontSize="12"
-                    Foreground="#4B5563"
-                    Text="تكلفة الشحن" />
+            <TextBlock
+            FontSize="12"
+            Foreground="#4B5563"
+            Text="تكلفة الشحن" />
 
-                <TextBlock
-                    Grid.Column="1"
-                    FontSize="12"
-                    FontWeight="SemiBold"
-                    Text="{Binding ShippingCost, StringFormat={}{0:N0} ج}" />
+            <TextBlock
+            Grid.Column="1"
+            FontSize="12"
+            FontWeight="SemiBold"
+            Text="{Binding ShippingCost, StringFormat={}{0:N0} ج}" />
 
             </Grid>
 
+            -->
             <!--  Discount  -->
+            <!--
 
             <Grid Margin="0,0,0,10">
 
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+            <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
-                <TextBlock
-                    FontSize="12"
-                    Foreground="#4B5563"
-                    Text="الخصم" />
+            <TextBlock
+            FontSize="12"
+            Foreground="#4B5563"
+            Text="الخصم" />
 
-                <TextBlock
-                    Grid.Column="1"
-                    FontSize="12"
-                    FontWeight="SemiBold"
-                    Foreground="#DC2626"
-                    Text="{Binding Discount, StringFormat=-{0:N0} ج}" />
+            <TextBlock
+            Grid.Column="1"
+            FontSize="12"
+            FontWeight="SemiBold"
+            Foreground="#DC2626"
+            Text="{Binding Discount, StringFormat=-{0:N0} ج}" />
 
             </Grid>
 
-            <Separator Margin="0,0,0,10" />
+            <Separator Margin="0,0,0,10" />-->
 
             <!--  Grand Total  -->
 
