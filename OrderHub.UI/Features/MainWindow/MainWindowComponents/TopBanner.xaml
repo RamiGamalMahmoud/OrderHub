@@ -9,48 +9,63 @@
     mc:Ignorable="d">
 
     <Border
-        Padding="5"
+        Padding="8,6"
         Background="White"
-        CornerRadius="5">
+        BorderBrush="#E5E7EB"
+        BorderThickness="1"
+        CornerRadius="6">
+
         <Grid>
-            <StackPanel Orientation="Horizontal">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!--  Current Page  -->
+
+            <TextBlock
+                VerticalAlignment="Center"
+                FontSize="15"
+                FontWeight="SemiBold"
+                Foreground="#374151"
+                Text="{Binding NavigationCommand.Name}" />
+
+            <!--  Right Section  -->
+
+            <StackPanel
+                Grid.Column="1"
+                VerticalAlignment="Center"
+                Orientation="Horizontal">
+
+                <Button
+                    Width="30"
+                    Height="30"
+                    Margin="0,0,8,0"
+                    Padding="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Cursor="Hand">
+
+                    <icons:MaterialIcon
+                        Width="18"
+                        Height="18"
+                        Foreground="{StaticResource DangerBrush}"
+                        Kind="NotificationsNone" />
+
+                </Button>
+
                 <TextBlock
                     VerticalAlignment="Center"
-                    FontSize="16"
-                    FontWeight="Bold"
-                    Foreground="Gray"
-                    Text="{Binding NavigationCommand.Name}" />
+                    FontSize="12"
+                    FontWeight="Medium"
+                    Foreground="#4B5563"
+                    Text="Username" />
 
             </StackPanel>
 
-            <Grid HorizontalAlignment="Right" VerticalAlignment="Center">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1*" />
-                    <ColumnDefinition Width="1*" />
-                </Grid.ColumnDefinitions>
-
-                <Button
-                    Grid.Column="0"
-                    Width="auto"
-                    Height="auto"
-                    Margin="10,0"
-                    Padding="2"
-                    Cursor="Hand"
-                    Foreground="{StaticResource DangerBrush}">
-                    <icons:MaterialIcon
-                        Grid.Column="0"
-                        Width="20"
-                        Height="20"
-                        Cursor="Hand"
-                        Kind="NotificationsNone" />
-                </Button>
-                <TextBlock
-                    Grid.Column="1"
-                    VerticalAlignment="Center"
-                    Text="Username" />
-            </Grid>
-
         </Grid>
+
     </Border>
 
 </UserControl>

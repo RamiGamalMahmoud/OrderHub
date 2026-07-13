@@ -12,73 +12,110 @@
     mc:Ignorable="d">
 
     <UserControl.Resources>
+
         <Style x:Key="SallaConnectionIcon" TargetType="icons:MaterialIcon">
+            <Setter Property="Width" Value="16"/>
+            <Setter Property="Height" Value="16"/>
+
             <Style.Triggers>
+
                 <DataTrigger Binding="{Binding IsAuthenticated}" Value="True">
                     <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
                     <Setter Property="ToolTip" Value="Connected to Salla" />
                     <Setter Property="Kind" Value="Basket" />
                 </DataTrigger>
+
                 <DataTrigger Binding="{Binding IsAuthenticated}" Value="False">
-                    <Setter Property="ToolTip" Value="Not connected to Salla" />
                     <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                    <Setter Property="ToolTip" Value="Not connected to Salla" />
                     <Setter Property="Kind" Value="BasketOff" />
                 </DataTrigger>
+
             </Style.Triggers>
+
         </Style>
+
     </UserControl.Resources>
 
     <Border
-        Margin="0,5,0,0"
-        Padding="5"
+        Margin="0,4,0,0"
+        Padding="8,4"
         Background="White"
-        CornerRadius="5">
+        BorderBrush="#E5E7EB"
+        BorderThickness="1,1,1,0"
+        CornerRadius="6,6,0,0">
+
         <Grid>
+
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*" />
-                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
+
+            <!-- Status Icons -->
+
             <StackPanel
-                Grid.Row="1"
-                Grid.Column="0"
-                Orientation="Horizontal">
+                Orientation="Horizontal"
+                VerticalAlignment="Center">
+
                 <Button
-                    Padding="5,0"
-                    VerticalAlignment="Center"
+                    Width="26"
+                    Height="26"
+                    Padding="0"
+                    Margin="0,0,4,0"
                     BorderThickness="0"
-                    Command="{Binding LoginSallaCommand}"
+                    Background="Transparent"
                     Cursor="Hand"
-                    Foreground="Green"
+                    Command="{Binding LoginSallaCommand}"
                     Visibility="{Binding IsAppInDebug, Converter={converters:BoolToVisibilityConverter}}">
-                    <icons:MaterialIcon
-                        Width="20"
-                        Height="20"
-                        Style="{StaticResource SallaConnectionIcon}" />
+
+                    <icons:MaterialIcon Style="{StaticResource SallaConnectionIcon}" />
+
                 </Button>
 
-                <TextBlock VerticalAlignment="Center">
-                    <icons:MaterialIcon
-                        Width="20"
-                        Height="20"
-                        Kind="Internet">
-                        <icons:MaterialIcon.Style>
-                            <Style TargetType="icons:MaterialIcon">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding AppState.IsConnected}" Value="True">
-                                        <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding AppState.IsConnected}" Value="False">
-                                        <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </icons:MaterialIcon.Style>
-                    </icons:MaterialIcon>
-                </TextBlock>
+                <icons:MaterialIcon
+                    Width="16"
+                    Height="16"
+                    VerticalAlignment="Center"
+                    Kind="Internet">
+
+                    <icons:MaterialIcon.Style>
+
+                        <Style TargetType="icons:MaterialIcon">
+
+                            <Style.Triggers>
+
+                                <DataTrigger Binding="{Binding AppState.IsConnected}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                </DataTrigger>
+
+                                <DataTrigger Binding="{Binding AppState.IsConnected}" Value="False">
+                                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                </DataTrigger>
+
+                            </Style.Triggers>
+
+                        </Style>
+
+                    </icons:MaterialIcon.Style>
+
+                </icons:MaterialIcon>
 
             </StackPanel>
-            <TextBlock Grid.Column="1" Text="{Binding Message}" />
+
+            <!-- Status Message -->
+
+            <TextBlock
+                Grid.Column="2"
+                VerticalAlignment="Center"
+                FontSize="12"
+                Foreground="#4B5563"
+                Text="{Binding Message}"
+                TextTrimming="CharacterEllipsis" />
+
         </Grid>
+
     </Border>
 
 </UserControl>

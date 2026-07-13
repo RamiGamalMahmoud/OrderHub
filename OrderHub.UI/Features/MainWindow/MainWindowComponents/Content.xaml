@@ -8,7 +8,7 @@
     mc:Ignorable="d">
 
     <Border
-        Padding="5"
+        Padding="10 5"
         Background="White"
         CornerRadius="5">
 

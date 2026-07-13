@@ -12,50 +12,71 @@
         Grid.Row="0"
         Grid.RowSpan="4"
         Grid.Column="0"
-        Padding="5"
+        Margin="0"
+        Padding="8"
         Background="White"
-        CornerRadius="5">
-        <Grid Grid.Column="0">
+        BorderBrush="#E5E7EB"
+        BorderThickness="1"
+        CornerRadius="6">
+
+        <Grid>
+
             <Grid.RowDefinitions>
-                <RowDefinition Height="50" />
-                <RowDefinition Height="1" />
-                <RowDefinition Height="1*" />
-                <RowDefinition Height="auto" />
+                <RowDefinition Height="44" />
+                <RowDefinition Height="8" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" VerticalAlignment="Center">
+            <!--  Logo  -->
+
+            <Grid Grid.Row="0">
+
                 <Image
-                    Height="30"
+                    Height="24"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
                     Cursor="Hand"
-                    Opacity="0.7"
+                    Opacity="0.8"
                     Source="/Resources/Images/order-hub-banner.png" />
-            </StackPanel>
+
+            </Grid>
+
+            <!--  Navigation  -->
 
             <local:Nav Grid.Row="2" />
 
+            <!--  WhatsApp  -->
+
             <Button
                 Grid.Row="3"
-                Height="auto"
-                Margin="0,5"
+                Height="38"
+                Margin="0,8,0,0"
                 HorizontalAlignment="Stretch"
                 Background="{StaticResource SuccessBrush}"
                 Command="{Binding OpenWhatappCommand}"
                 Cursor="Hand"
+                FontSize="13"
+                FontWeight="SemiBold"
                 Foreground="White"
                 IsEnabled="{Binding AppState.IsConnected}">
-                <StackPanel Orientation="Horizontal">
+
+                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+
                     <icons:MaterialIcon
-                        Width="20"
-                        Margin="5,0"
+                        Width="18"
+                        Height="18"
+                        Margin="0,0,6,0"
                         Kind="Whatsapp" />
-                    <TextBlock
-                        FontSize="14"
-                        FontWeight="DemiBold"
-                        Text="فتح واتساب" />
+
+                    <TextBlock VerticalAlignment="Center" Text="فتح واتساب" />
+
                 </StackPanel>
+
             </Button>
 
         </Grid>
+
     </Border>
 
 </UserControl>

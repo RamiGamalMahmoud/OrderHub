@@ -19,45 +19,57 @@
 
         <ListBox.ItemContainerStyle>
             <Style BasedOn="{StaticResource ListBoxItemBaseStyle}" TargetType="ListBoxItem">
+
                 <Setter Property="Cursor" Value="Hand" />
-                <Setter Property="Margin" Value="5" />
-                <Setter Property="Padding" Value="10" />
+                <Setter Property="Margin" Value="4,2" />
+                <Setter Property="Padding" Value="8,6" />
+                <Setter Property="MinHeight" Value="38" />
 
                 <Style.Triggers>
+
                     <DataTrigger Binding="{Binding IsEnabled}" Value="False">
                         <Setter Property="Visibility" Value="Collapsed" />
                     </DataTrigger>
+
                     <DataTrigger Binding="{Binding IsEnabled}" Value="True">
                         <Setter Property="Visibility" Value="Visible" />
                     </DataTrigger>
+
                 </Style.Triggers>
+
             </Style>
         </ListBox.ItemContainerStyle>
 
         <ListBox.ItemTemplate>
+
             <DataTemplate>
+
                 <Grid>
 
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="1*" />
-                        <ColumnDefinition Width="5*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
                     <icons:MaterialIcon
-                        Grid.Column="0"
-                        Width="22"
-                        Height="22"
+                        Width="18"
+                        Height="18"
+                        VerticalAlignment="Center"
                         Kind="{Binding Icon}" />
 
                     <TextBlock
                         Grid.Column="1"
-                        Margin="10,0,0,0"
+                        Margin="8,0,0,0"
                         VerticalAlignment="Center"
-                        Cursor="Hand"
-                        FontSize="16"
-                        Text="{Binding Name}" />
+                        FontSize="13"
+                        FontWeight="SemiBold"
+                        Text="{Binding Name}"
+                        TextTrimming="CharacterEllipsis" />
+
                 </Grid>
+
             </DataTemplate>
+
         </ListBox.ItemTemplate>
 
     </ListBox>

@@ -13,7 +13,7 @@
             x:Key="QuickActionButtonStyle"
             BasedOn="{StaticResource ButtonDefault}"
             TargetType="Button">
-            <Setter Property="Margin" Value="2" />
+            <Setter Property="Margin" Value="0" />
             <Setter Property="Padding" Value="6" />
             <Setter Property="Height" Value="56" />
             <Setter Property="Cursor" Value="Hand" />
@@ -26,35 +26,9 @@
 
     </UserControl.Resources>
 
-    <Border
-        Margin="0,0,0,8"
-        Padding="10"
-        Background="White"
-        BorderBrush="#E5E7EB"
-        BorderThickness="1"
-        CornerRadius="6">
+    <Border Padding="10">
 
         <StackPanel>
-
-            <!--  Header  -->
-
-            <DockPanel Margin="0,0,0,10">
-
-                <icons:MaterialIcon
-                    Width="16"
-                    Height="16"
-                    DockPanel.Dock="Right"
-                    Foreground="#2563EB"
-                    Kind="LightningBoltOutline" />
-
-                <TextBlock
-                    Margin="6,0,0,0"
-                    DockPanel.Dock="Right"
-                    FontSize="13"
-                    FontWeight="SemiBold"
-                    Text="إجراءات سريعة" />
-
-            </DockPanel>
 
             <!--  Actions  -->
 
@@ -74,7 +48,6 @@
                             Kind="Pencil" />
 
                         <TextBlock
-                            Margin="0,4,0,0"
                             HorizontalAlignment="Center"
                             FontSize="10"
                             Text="تعديل" />
@@ -97,7 +70,6 @@
                             Kind="Printer" />
 
                         <TextBlock
-                            Margin="0,4,0,0"
                             HorizontalAlignment="Center"
                             FontSize="10"
                             Text="طباعة" />
@@ -120,7 +92,6 @@
                             Kind="ContentCopy" />
 
                         <TextBlock
-                            Margin="0,4,0,0"
                             HorizontalAlignment="Center"
                             FontSize="10"
                             Text="نسخ العنوان" />
@@ -143,7 +114,6 @@
                             Kind="Phone" />
 
                         <TextBlock
-                            Margin="0,4,0,0"
                             HorizontalAlignment="Center"
                             FontSize="10"
                             Text="اتصال" />
@@ -166,7 +136,6 @@
                             Kind="Whatsapp" />
 
                         <TextBlock
-                            Margin="0,4,0,0"
                             HorizontalAlignment="Center"
                             FontSize="10"
                             Text="واتساب" />

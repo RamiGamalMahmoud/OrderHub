@@ -39,8 +39,6 @@
                 Grid.RowSpan="4"
                 Grid.Column="0" />
 
-            <mainWindowComponents:TopBanner Grid.Column="2" />
-
             <mainWindowComponents:Content Grid.Row="0" Grid.Column="2" />
 
             <mainWindowComponents:BottomBanner Grid.Row="4" Grid.Column="2" />

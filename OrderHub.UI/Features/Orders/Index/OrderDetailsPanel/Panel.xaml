@@ -46,7 +46,6 @@
                 </StackPanel>
 
             </ScrollViewer>
-            <local:QuickActionsCard Grid.Row="2" />
 
         </Grid>
 
