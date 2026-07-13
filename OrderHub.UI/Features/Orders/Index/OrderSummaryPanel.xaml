@@ -7,62 +7,95 @@
     mc:Ignorable="d">
 
     <Border
-        Width="250"
-        Padding="12"
-        Background="#f8fafc"
-        BorderBrush="#e2e8f0"
+        Width="220"
+        Padding="10"
+        Background="#F8FAFC"
+        BorderBrush="#E2E8F0"
         BorderThickness="1"
-        CornerRadius="10">
+        CornerRadius="6">
+
         <ScrollViewer VerticalScrollBarVisibility="Auto">
+
             <StackPanel>
+
+                <!--  Title  -->
+
                 <TextBlock
-                    Margin="0,0,0,10"
-                    FontSize="16"
-                    FontWeight="DemiBold"
+                    Margin="0,0,0,8"
+                    FontSize="15"
+                    FontWeight="SemiBold"
                     Text="ملخص الطلبات" />
 
-                <TextBlock
-                    Margin="0,0,0,6"
-                    FontSize="14"
-                    FontWeight="DemiBold"
-                    Text="الحالات" />
-                <ItemsControl ItemsSource="{Binding StatusSummaries}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border
-                                Margin="0,0,0,6"
-                                Padding="10,8"
-                                Background="{StaticResource LightBlueBrush}"
-                                CornerRadius="8">
-                                <TextBlock
-                                    FontWeight="DemiBold"
-                                    Text="{Binding MenuText}" />
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <!--  Status  -->
 
                 <TextBlock
-                    Margin="0,10,0,6"
-                    FontSize="14"
-                    FontWeight="DemiBold"
-                    Text="وسائل الدفع" />
-                <ItemsControl ItemsSource="{Binding PaymentMethodSummaries}">
+                    Margin="0,0,0,4"
+                    FontSize="12"
+                    FontWeight="SemiBold"
+                    Text="الحالات" />
+
+                <ItemsControl ItemsSource="{Binding StatusSummaries}">
+
                     <ItemsControl.ItemTemplate>
+
                         <DataTemplate>
+
                             <Border
-                                Margin="0,0,0,6"
-                                Padding="10,8"
+                                Margin="0,0,0,4"
+                                Padding="8,6"
                                 Background="{StaticResource LightBlueBrush}"
-                                CornerRadius="8">
+                                CornerRadius="5">
+
                                 <TextBlock
-                                    FontWeight="DemiBold"
+                                    FontSize="12"
+                                    FontWeight="SemiBold"
                                     Text="{Binding MenuText}" />
+
                             </Border>
+
                         </DataTemplate>
+
                     </ItemsControl.ItemTemplate>
+
                 </ItemsControl>
+
+                <!--  Payment  -->
+
+                <TextBlock
+                    Margin="0,8,0,4"
+                    FontSize="12"
+                    FontWeight="SemiBold"
+                    Text="وسائل الدفع" />
+
+                <ItemsControl ItemsSource="{Binding PaymentMethodSummaries}">
+
+                    <ItemsControl.ItemTemplate>
+
+                        <DataTemplate>
+
+                            <Border
+                                Margin="0,0,0,4"
+                                Padding="8,6"
+                                Background="{StaticResource LightBlueBrush}"
+                                CornerRadius="5">
+
+                                <TextBlock
+                                    FontSize="12"
+                                    FontWeight="SemiBold"
+                                    Text="{Binding MenuText}" />
+
+                            </Border>
+
+                        </DataTemplate>
+
+                    </ItemsControl.ItemTemplate>
+
+                </ItemsControl>
+
             </StackPanel>
+
         </ScrollViewer>
+
     </Border>
+
 </UserControl>

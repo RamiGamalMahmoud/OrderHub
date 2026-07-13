@@ -2,8 +2,8 @@
     <Style BasedOn="{StaticResource DataGridColumnHeaderStyle}" TargetType="DataGridColumnHeader">
 
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FontWeight" Value="Bold" />
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontSize" Value="12" />
     </Style>
 
     <Style BasedOn="{StaticResource DataGridBaseStyle}" TargetType="DataGrid" />

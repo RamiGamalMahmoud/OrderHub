@@ -9,6 +9,7 @@
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:local="clr-namespace:OrderHub.UI.Features.Orders.Index"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:orderDetailsPanel="clr-namespace:OrderHub.UI.Features.Orders.Index.OrderDetailsPanel"
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
     d:Background="White"
     d:DataContext="{d:DesignInstance Type=local:ViewModel}"
@@ -70,7 +71,7 @@
 
             <StackPanel Grid.Column="2" Orientation="Horizontal">
                 <Button
-                    Height="40"
+                    Height="30"
                     Margin="0,0,8,0"
                     Command="{Binding ToggleSummaryCommand}"
                     Cursor="Hand">
@@ -88,7 +89,7 @@
                 </Button>
                 <Button
                     Grid.Column="2"
-                    Height="40"
+                    Height="30"
                     hc:BorderElement.CornerRadius="7"
                     Background="#facc15"
                     Command="{Binding ShowCreateCommand}"
@@ -124,29 +125,40 @@
             </Grid.ColumnDefinitions>
 
             <DataGrid
-                Grid.Column="0"
                 d:ItemsSource="{d:SampleData}"
                 AutoGenerateColumns="False"
+                CanUserAddRows="False"
+                CanUserDeleteRows="False"
+                CanUserResizeRows="False"
+                ColumnHeaderHeight="34"
+                FontSize="12"
                 GridLinesVisibility="Vertical"
+                HeadersVisibility="Column"
+                HorizontalScrollBarVisibility="Auto"
                 IsReadOnly="True"
                 ItemsSource="{Binding Orders, IsAsync=True}"
-                VerticalGridLinesBrush="LightGray">
+                RowHeight="40"
+                SelectedValue="{Binding OrderDetailsPanelViewModel.SelectedOrderId}"
+                SelectedValuePath="Id"
+                SelectionMode="Single"
+                VerticalGridLinesBrush="#E5E7EB"
+                VerticalScrollBarVisibility="Auto">
 
                 <DataGrid.Columns>
 
                     <DataGridTextColumn
+                        Width="150"
                         Binding="{Binding OrderNumber}"
-                        FontWeight="DemiBold"
-                        Header="رقم الطلب"
-                        IsReadOnly="False" />
+                        FontWeight="SemiBold"
+                        Header="رقم الطلب" />
 
                     <DataGridTextColumn
+                        Width="180"
                         Binding="{Binding ClientName}"
-                        Header="اسم العميل"
-                        IsReadOnly="True" />
+                        Header="اسم العميل" />
 
                     <DataGridTemplateColumn
-                        Width="200"
+                        Width="150"
                         Header="حالة الطلب"
                         SortMemberPath="DisplayName">
                         <DataGridTemplateColumn.CellTemplate>
@@ -157,45 +169,53 @@
                     </DataGridTemplateColumn>
 
                     <DataGridTemplateColumn
-                        Width="200"
+                        Width="150"
                         Header="وسيلة الدفع"
                         SortMemberPath="DisplayName">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <ComboBox
+                                    Height="28"
                                     Cursor="Hand"
                                     DisplayMemberPath="DisplayName"
+                                    FontSize="12"
                                     ItemsSource="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.PaymentMethods}"
                                     SelectedItem="{Binding PaymentMethod, UpdateSourceTrigger=PropertyChanged}" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTextColumn Binding="{Binding TotalPrice}" Header="إجمالي الطلب" />
+                    <DataGridTextColumn
+                        Width="90"
+                        Binding="{Binding TotalPrice}"
+                        Header="الإجمالي" />
 
-                    <DataGridTemplateColumn Header="رقم الهاتف">
+                    <DataGridTemplateColumn Width="130" Header="الهاتف">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock
+                                    HorizontalAlignment="Left"
                                     VerticalAlignment="Center"
                                     FlowDirection="LeftToRight"
-                                    FontWeight="DemiBold"
+                                    FontSize="12"
+                                    FontWeight="SemiBold"
                                     Text="{Binding ClientPhoneNumber}" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
                     <DataGridTextColumn
-                        Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd hh:mm tt}}"
+                        Width="115"
+                        Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd}}"
                         Header="التاريخ"
                         IsReadOnly="True" />
 
-                    <DataGridTemplateColumn Header="خيارات">
+                    <DataGridTemplateColumn Width="80" Header="خيارات">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
                                     <buttons:ButtonEdit />
-                                    <buttons:ButtonDelete Margin="5,0" />
+                                    <buttons:ButtonDelete Margin="3,0,0,0" />
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
@@ -205,12 +225,15 @@
                         <DataGridTemplateColumn.Header>
                             <StackPanel Orientation="Horizontal">
                                 <icons:MaterialIcon
-                                    Width="20"
+                                    Width="18"
+                                    Height="18"
                                     Foreground="{StaticResource SuccessBrush}"
                                     Kind="Whatsapp" />
                                 <TextBlock
                                     Margin="5,0,0,0"
                                     VerticalAlignment="Center"
+                                    FontSize="12"
+                                    FontWeight="SemiBold"
                                     Foreground="{StaticResource SuccessBrush}"
                                     Text="ارسال" />
                             </StackPanel>
@@ -226,39 +249,53 @@
 
             <DockPanel
                 Grid.Row="1"
-                Margin="0,10,0,0"
+                Margin="0,6,0,0"
                 LastChildFill="True">
+
+                <TextBlock
+                    VerticalAlignment="Center"
+                    DockPanel.Dock="Left"
+                    FontSize="12"
+                    FontWeight="SemiBold"
+                    Foreground="#6B7280"
+                    Text="{Binding PaginationSummary}" />
+
                 <StackPanel
-                    HorizontalAlignment="Right"
                     DockPanel.Dock="Right"
                     FlowDirection="LeftToRight"
                     Orientation="Horizontal">
+
                     <Button
-                        Height="auto"
-                        Margin="0,0,8,0"
+                        Height="30"
+                        MinWidth="70"
+                        Margin="0,0,6,0"
+                        Padding="10,2"
                         Command="{Binding PreviousPageCommand}"
-                        Content="السابق" />
+                        Content="السابق"
+                        Cursor="Hand" />
+
                     <Button
-                        Height="auto"
+                        Height="30"
+                        MinWidth="70"
+                        Padding="10,2"
                         Command="{Binding NextPageCommand}"
-                        Content="التالي" />
+                        Content="التالي"
+                        Cursor="Hand" />
+
                 </StackPanel>
 
-                <TextBlock
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Center"
-                    DockPanel.Dock="Left"
-                    FontWeight="DemiBold"
-                    Text="{Binding PaginationSummary}" />
             </DockPanel>
 
-            <StackPanel
+            <Border
                 Grid.RowSpan="2"
                 Grid.Column="1"
-                Margin="12,0,0,0"
+                Margin="8,0,0,0"
+                Background="Transparent"
                 Visibility="{Binding IsSummaryExpanded, Converter={converters:BoolToVisibilityConverter}}">
-                <local:OrderSummaryPanel />
-            </StackPanel>
+
+                <orderDetailsPanel:Panel DataContext="{Binding OrderDetailsPanelViewModel}" />
+
+            </Border>
         </Grid>
 
 

@@ -7,99 +7,140 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <StackPanel Margin="0,0,0,8" Orientation="Horizontal">
+    <StackPanel Orientation="Horizontal"
+                Margin="0,0,0,6"
+                VerticalAlignment="Center">
+
+        <!-- Payment -->
+
         <TextBlock
-            Margin="0,0,8,0"
+            Margin="0,0,6,0"
             VerticalAlignment="Center"
-            FontWeight="DemiBold"
-            Text="الدفع" />
+            FontSize="12"
+            FontWeight="SemiBold"
+            Text="الدفع"/>
+
         <ComboBox
-            Width="160"
-            Margin="0,0,12,0"
-            VerticalAlignment="Center"
+            Width="145"
+            Height="30"
+            Margin="0,0,10,0"
             Cursor="Hand"
             DisplayMemberPath="DisplayName"
             ItemsSource="{Binding PaymentMethodFilters}"
-            SelectedItem="{Binding SelectedPaymentMethod}" />
+            SelectedItem="{Binding SelectedPaymentMethod}"/>
+
+        <!-- Status -->
+
         <TextBlock
-            Margin="0,0,8,0"
+            Margin="0,0,6,0"
             VerticalAlignment="Center"
-            FontWeight="DemiBold"
-            Text="الحالة" />
+            FontSize="12"
+            FontWeight="SemiBold"
+            Text="الحالة"/>
+
         <ComboBox
-            Width="160"
-            Margin="0,0,12,0"
-            VerticalAlignment="Center"
+            Width="145"
+            Height="30"
+            Margin="0,0,10,0"
             Cursor="Hand"
             DisplayMemberPath="DisplayName"
             ItemsSource="{Binding OrderStatusFilters}"
-            SelectedItem="{Binding SelectedOrderStatus}" />
+            SelectedItem="{Binding SelectedOrderStatus}"/>
+
+        <!-- Date -->
+
         <TextBlock
-            Margin="0,0,8,0"
+            Margin="0,0,6,0"
             VerticalAlignment="Center"
-            FontWeight="DemiBold"
-            Text="من" />
+            FontSize="12"
+            FontWeight="SemiBold"
+            Text="من"/>
+
         <DatePicker
-            Width="140"
-            Margin="0,0,12,0"
-            VerticalAlignment="Center"
+            Width="125"
+            Height="30"
+            Margin="0,0,10,0"
             Cursor="Hand"
-            SelectedDate="{Binding FromDate}" />
+            SelectedDate="{Binding FromDate}"/>
+
         <TextBlock
-            Margin="0,0,8,0"
+            Margin="0,0,6,0"
             VerticalAlignment="Center"
-            FontWeight="DemiBold"
-            Text="إلى" />
+            FontSize="12"
+            FontWeight="SemiBold"
+            Text="إلى"/>
+
         <DatePicker
-            Width="140"
-            VerticalAlignment="Center"
+            Width="125"
+            Height="30"
             Cursor="Hand"
-            SelectedDate="{Binding ToDate}" />
-        <StackPanel Margin="12,0,0,0" Orientation="Horizontal">
+            SelectedDate="{Binding ToDate}"/>
+
+        <!-- Quick Navigation -->
+
+        <StackPanel Orientation="Horizontal"
+                    Margin="10,0,0,0">
+
             <Button
-                Height="auto"
+                Width="28"
+                Height="28"
                 Padding="0"
                 BorderThickness="0"
+                Cursor="Hand"
                 Command="{Binding SetDayCommand}"
-                CommandParameter="-1"
-                Cursor="Hand">
+                CommandParameter="-1">
+
                 <icons:MaterialIcon
-                    Width="20"
-                    Height="20"
-                    Kind="ChevronRight" />
+                    Width="16"
+                    Height="16"
+                    Kind="ChevronRight"/>
+
             </Button>
 
             <Button
-                Height="auto"
-                Margin="5,0"
+                Height="28"
+                Margin="4,0"
+                Padding="10,2"
+                Cursor="Hand"
                 Command="{Binding SetTodayCommand}"
-                Content="اليوم"
-                Cursor="Hand" />
+                Content="اليوم"/>
 
             <Button
-                Height="auto"
+                Width="28"
+                Height="28"
                 Padding="0"
                 BorderThickness="0"
+                Cursor="Hand"
                 Command="{Binding SetDayCommand}"
-                CommandParameter="1"
-                Cursor="Hand">
+                CommandParameter="1">
+
                 <icons:MaterialIcon
-                    Width="20"
-                    Height="20"
-                    Kind="ChevronLeft" />
+                    Width="16"
+                    Height="16"
+                    Kind="ChevronLeft"/>
+
             </Button>
+
         </StackPanel>
+
+        <!-- Quick Filters -->
+
         <Button
-            Height="auto"
-            Margin="8,0,0,0"
+            Height="28"
+            Margin="6,0,0,0"
+            Padding="10,2"
+            Cursor="Hand"
             Command="{Binding SetCurrentWeekCommand}"
-            Content="الأسبوع الحالي"
-            Cursor="Hand" />
+            Content="الأسبوع الحالي"/>
+
         <Button
-            Height="auto"
-            Margin="8,0,0,0"
+            Height="28"
+            Margin="6,0,0,0"
+            Padding="10,2"
+            Cursor="Hand"
             Command="{Binding SetCurrentMonthCommand}"
-            Content="الشهر الحالي"
-            Cursor="Hand" />
+            Content="الشهر الحالي"/>
+
     </StackPanel>
+
 </UserControl>

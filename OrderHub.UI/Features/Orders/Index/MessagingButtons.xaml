@@ -4,115 +4,167 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:converters="clr-namespace:Hoax.WpfConverters;assembly=Hoax.WpfConverters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="clr-namespace:OrderHub.UI.Features.Orders.Index"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     d:DesignHeight="450"
     d:DesignWidth="800"
     mc:Ignorable="d">
 
     <UserControl.Resources>
+
         <Style
             x:Key="MessageRecipientButtonStyle"
             BasedOn="{StaticResource ButtonBaseStyle}"
             TargetType="Button">
-            <Setter Property="Height" Value="28" />
-            <Setter Property="Margin" Value="5,0" />
-            <Setter Property="Padding" Value="10,4" />
+
+            <Setter Property="MinWidth" Value="48" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="Margin" Value="3,0" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="12" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Background" Value="#e5e7eb" />
+
+            <Setter Property="Background" Value="#E5E7EB" />
             <Setter Property="Foreground" Value="#111827" />
+
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Opacity" Value="1" />
+
             <Style.Triggers>
+
                 <Trigger Property="IsEnabled" Value="False">
                     <Setter Property="Opacity" Value="0.45" />
                     <Setter Property="Cursor" Value="Arrow" />
                 </Trigger>
+
             </Style.Triggers>
+
         </Style>
+
     </UserControl.Resources>
 
-    <StackPanel Orientation="Horizontal">
+    <WrapPanel VerticalAlignment="Center" Orientation="Horizontal">
+
+        <!--  الكل  -->
         <Button
-            Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl, AncestorLevel=2}, Path=DataContext.BroadcastOrderCommand}"
+            Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl, AncestorLevel=2}, Path=DataContext.BroadcastOrderCommand}"
             CommandParameter="{Binding}"
             Content="الكل"
             Visibility="{Binding CanBroadcastAll, Converter={converters:BoolToVisibilityConverter}}">
+
             <Button.Style>
                 <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
+
                     <Style.Triggers>
+
                         <DataTrigger Binding="{Binding IsAllMessageSent}" Value="True">
-                            <Setter Property="Background" Value="#16a34a" />
+                            <Setter Property="Background" Value="#16A34A" />
                             <Setter Property="Foreground" Value="White" />
                         </DataTrigger>
+
                     </Style.Triggers>
+
                 </Style>
             </Button.Style>
+
         </Button>
+
+        <!--  العميل  -->
         <Button
-            Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl, AncestorLevel=2}, Path=DataContext.BroadcastClientCommand}"
+            Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl, AncestorLevel=2}, Path=DataContext.BroadcastClientCommand}"
             CommandParameter="{Binding}"
             Content="عميل"
             Visibility="{Binding HasClientRecipient, Converter={converters:BoolToVisibilityConverter}}">
+
             <Button.Style>
                 <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
+
                     <Style.Triggers>
+
                         <DataTrigger Binding="{Binding IsClientMessageSent}" Value="True">
-                            <Setter Property="Background" Value="#16a34a" />
+                            <Setter Property="Background" Value="#16A34A" />
                             <Setter Property="Foreground" Value="White" />
                         </DataTrigger>
+
                     </Style.Triggers>
+
                 </Style>
             </Button.Style>
+
         </Button>
+
+        <!--  المورد  -->
         <Button
-            Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl, AncestorLevel=2}, Path=DataContext.BroadcastSupplierCommand}"
+            Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl, AncestorLevel=2}, Path=DataContext.BroadcastSupplierCommand}"
             CommandParameter="{Binding}"
             Content="مورد"
             Visibility="{Binding HasSupplierRecipient, Converter={converters:BoolToVisibilityConverter}}">
+
             <Button.Style>
                 <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
+
                     <Style.Triggers>
+
                         <DataTrigger Binding="{Binding IsSupplierMessageSent}" Value="True">
-                            <Setter Property="Background" Value="#16a34a" />
+                            <Setter Property="Background" Value="#16A34A" />
                             <Setter Property="Foreground" Value="White" />
                         </DataTrigger>
+
                     </Style.Triggers>
+
                 </Style>
             </Button.Style>
+
         </Button>
+
+        <!--  شركة الشحن  -->
         <Button
-            Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl, AncestorLevel=2}, Path=DataContext.BroadcastShippingCarrierCommand}"
+            Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl, AncestorLevel=2}, Path=DataContext.BroadcastShippingCarrierCommand}"
             CommandParameter="{Binding}"
             Content="شركة شحن"
             Visibility="{Binding HasShippingCarrierRecipient, Converter={converters:BoolToVisibilityConverter}}">
+
             <Button.Style>
                 <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
+
                     <Style.Triggers>
+
                         <DataTrigger Binding="{Binding IsShippingCarrierMessageSent}" Value="True">
-                            <Setter Property="Background" Value="#16a34a" />
+                            <Setter Property="Background" Value="#16A34A" />
                             <Setter Property="Foreground" Value="White" />
                         </DataTrigger>
+
                     </Style.Triggers>
+
                 </Style>
             </Button.Style>
+
         </Button>
+
+        <!--  المندوب  -->
         <Button
-            Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl, AncestorLevel=2}, Path=DataContext.BroadcastDeliverymanCommand}"
+            Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl, AncestorLevel=2}, Path=DataContext.BroadcastDeliverymanCommand}"
             CommandParameter="{Binding}"
             Content="مندوب"
             Visibility="{Binding HasDeliverymanRecipient, Converter={converters:BoolToVisibilityConverter}}">
+
             <Button.Style>
                 <Style BasedOn="{StaticResource MessageRecipientButtonStyle}" TargetType="Button">
+
                     <Style.Triggers>
+
                         <DataTrigger Binding="{Binding IsDeliverymanMessageSent}" Value="True">
-                            <Setter Property="Background" Value="#16a34a" />
+                            <Setter Property="Background" Value="#16A34A" />
                             <Setter Property="Foreground" Value="White" />
                         </DataTrigger>
+
                     </Style.Triggers>
+
                 </Style>
             </Button.Style>
+
         </Button>
-    </StackPanel>
+
+    </WrapPanel>
 
 </UserControl>

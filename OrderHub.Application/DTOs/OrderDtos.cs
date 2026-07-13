@@ -98,6 +98,66 @@ public static class OrderDtos
         IEnumerable<OrderItemDtos.OrderItemDto> OrderItems,
         IEnumerable<OrderDeliveryStepCreateDto> DeliverySteps,
         int? PaymentMothodId);
+
+    public record OrderDetailsDto(
+        OrderHeaderDto Header,
+        CustomerInfoDto Customer,
+        DeliveryInfoDto Delivery,
+        OrderItemsInfoDto Products,
+        OrderPaymentInfoDto Payment);
+
+    #region Header
+
+    public record OrderHeaderDto(
+        int Id,
+        string OrderNumber,
+        DateTime CreatedAt,
+        string OrderStatus);
+
+    #endregion
+
+    #region Customer
+
+    public record CustomerInfoDto(
+        string Name,
+        string PhoneNumber,
+        string Address);
+
+    #endregion
+
+    #region Delivery
+
+    public record DeliveryInfoDto(
+        string DeliveryMethod,
+        string DeliverymanName,
+        string ShippingCarrierName);
+
+    #endregion
+
+    #region Products
+
+    public record OrderItemsInfoDto(
+        IReadOnlyCollection<OrderItemInfoDto> Items);
+
+    public record OrderItemInfoDto(
+        int ProductId,
+        string ProductName,
+        decimal UnitPrice,
+        int Quantity,
+        decimal Total);
+
+    #endregion
+
+    #region Payment
+
+    public record OrderPaymentInfoDto(
+        string PaymentMethod,
+        decimal ProductsTotal,
+        decimal ShippingCost,
+        decimal Discount,
+        decimal GrandTotal);
+
+    #endregion
 }
 
 public static class OrderItemDtos

@@ -1,0 +1,55 @@
+﻿<UserControl
+    x:Class="OrderHub.UI.Features.Orders.Index.OrderDetailsPanel.Panel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:OrderHub.UI.Features.Orders.Index.OrderDetailsPanel"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:OrderHub.UI.Features.Orders.Index"
+    mc:Ignorable="d">
+
+    <Border
+        Background="White"
+        BorderBrush="#E5E7EB"
+        BorderThickness="1"
+        CornerRadius="8">
+
+        <Grid>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!--  Header  -->
+
+            <local:OrderDetailsHeader DataContext="{Binding SelectedOrderDetails.Header}" />
+
+            <!--  Content  -->
+
+            <ScrollViewer
+                Grid.Row="1"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+
+                <StackPanel Margin="10">
+
+                    <local:CustomerInfoCard DataContext="{Binding SelectedOrderDetails.Customer}" />
+
+                    <local:DeliveryInfoCard DataContext="{Binding SelectedOrderDetails.Delivery}" />
+
+                    <local:ProductsSummaryCard DataContext="{Binding SelectedOrderDetails.Products}" />
+
+                    <local:OrderTotalCard DataContext="{Binding SelectedOrderDetails.Payment}" />
+
+                </StackPanel>
+
+            </ScrollViewer>
+            <local:QuickActionsCard Grid.Row="2" />
+
+        </Grid>
+
+    </Border>
+
+</UserControl>

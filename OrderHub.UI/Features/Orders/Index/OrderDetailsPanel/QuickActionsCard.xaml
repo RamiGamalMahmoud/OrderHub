@@ -1,0 +1,184 @@
+﻿<UserControl
+    x:Class="OrderHub.UI.Features.Orders.Index.OrderDetailsPanel.QuickActionsCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <UserControl.Resources>
+
+        <Style
+            x:Key="QuickActionButtonStyle"
+            BasedOn="{StaticResource ButtonDefault}"
+            TargetType="Button">
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="Height" Value="56" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="BorderBrush" Value="#E5E7EB" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+    </UserControl.Resources>
+
+    <Border
+        Margin="0,0,0,8"
+        Padding="10"
+        Background="White"
+        BorderBrush="#E5E7EB"
+        BorderThickness="1"
+        CornerRadius="6">
+
+        <StackPanel>
+
+            <!--  Header  -->
+
+            <DockPanel Margin="0,0,0,10">
+
+                <icons:MaterialIcon
+                    Width="16"
+                    Height="16"
+                    DockPanel.Dock="Right"
+                    Foreground="#2563EB"
+                    Kind="LightningBoltOutline" />
+
+                <TextBlock
+                    Margin="6,0,0,0"
+                    DockPanel.Dock="Right"
+                    FontSize="13"
+                    FontWeight="SemiBold"
+                    Text="إجراءات سريعة" />
+
+            </DockPanel>
+
+            <!--  Actions  -->
+
+            <UniformGrid Columns="5">
+
+                <!--  Edit  -->
+
+                <Button Command="{Binding EditOrderCommand}" Style="{StaticResource QuickActionButtonStyle}">
+
+                    <StackPanel HorizontalAlignment="Center">
+
+                        <icons:MaterialIcon
+                            Width="18"
+                            Height="18"
+                            HorizontalAlignment="Center"
+                            Foreground="#2563EB"
+                            Kind="Pencil" />
+
+                        <TextBlock
+                            Margin="0,4,0,0"
+                            HorizontalAlignment="Center"
+                            FontSize="10"
+                            Text="تعديل" />
+
+                    </StackPanel>
+
+                </Button>
+
+                <!--  Print  -->
+
+                <Button Command="{Binding PrintInvoiceCommand}" Style="{StaticResource QuickActionButtonStyle}">
+
+                    <StackPanel HorizontalAlignment="Center">
+
+                        <icons:MaterialIcon
+                            Width="18"
+                            Height="18"
+                            HorizontalAlignment="Center"
+                            Foreground="#374151"
+                            Kind="Printer" />
+
+                        <TextBlock
+                            Margin="0,4,0,0"
+                            HorizontalAlignment="Center"
+                            FontSize="10"
+                            Text="طباعة" />
+
+                    </StackPanel>
+
+                </Button>
+
+                <!--  Copy Address  -->
+
+                <Button Command="{Binding CopyAddressCommand}" Style="{StaticResource QuickActionButtonStyle}">
+
+                    <StackPanel HorizontalAlignment="Center">
+
+                        <icons:MaterialIcon
+                            Width="18"
+                            Height="18"
+                            HorizontalAlignment="Center"
+                            Foreground="#374151"
+                            Kind="ContentCopy" />
+
+                        <TextBlock
+                            Margin="0,4,0,0"
+                            HorizontalAlignment="Center"
+                            FontSize="10"
+                            Text="نسخ العنوان" />
+
+                    </StackPanel>
+
+                </Button>
+
+                <!--  Call  -->
+
+                <Button Command="{Binding CallClientCommand}" Style="{StaticResource QuickActionButtonStyle}">
+
+                    <StackPanel HorizontalAlignment="Center">
+
+                        <icons:MaterialIcon
+                            Width="18"
+                            Height="18"
+                            HorizontalAlignment="Center"
+                            Foreground="#374151"
+                            Kind="Phone" />
+
+                        <TextBlock
+                            Margin="0,4,0,0"
+                            HorizontalAlignment="Center"
+                            FontSize="10"
+                            Text="اتصال" />
+
+                    </StackPanel>
+
+                </Button>
+
+                <!--  WhatsApp  -->
+
+                <Button Command="{Binding SendWhatsAppCommand}" Style="{StaticResource QuickActionButtonStyle}">
+
+                    <StackPanel HorizontalAlignment="Center">
+
+                        <icons:MaterialIcon
+                            Width="18"
+                            Height="18"
+                            HorizontalAlignment="Center"
+                            Foreground="#16A34A"
+                            Kind="Whatsapp" />
+
+                        <TextBlock
+                            Margin="0,4,0,0"
+                            HorizontalAlignment="Center"
+                            FontSize="10"
+                            Text="واتساب" />
+
+                    </StackPanel>
+
+                </Button>
+
+            </UniformGrid>
+
+        </StackPanel>
+
+    </Border>
+
+</UserControl>

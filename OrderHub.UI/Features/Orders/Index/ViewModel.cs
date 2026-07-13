@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using OrderHub.Application.Common;
 using static OrderHub.Application.DTOs.OrderDtos;
 using static OrderHub.Application.DTOs.PaymentMothodsDtos;
+using OrderHub.UI.Features.Orders.Index.OrderDetailsPanel;
 
 namespace OrderHub.UI.Features.Orders.Index;
 
@@ -23,6 +24,8 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 {
     private readonly IDialogService _dialogService;
     private readonly ISelectionStore<IOrderMarker, int> _selectionStore;
+
+    public OrderDetailsPanelViewModel OrderDetailsPanelViewModel { get; }
 
     private readonly ObservableCollection<OrderViewModel> _orders = new();
     public ObservableCollection<OrderViewModel> Orders => _orders;
@@ -98,6 +101,8 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
     {
         _dialogService = dialogService;
         _selectionStore = selectionStore;
+
+        OrderDetailsPanelViewModel = new OrderDetailsPanelViewModel(mediator);
 
         messenger.Register<Application.Messages.Orders.OrderCreatedMessage>(
             this,

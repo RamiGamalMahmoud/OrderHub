@@ -4,59 +4,75 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:enums="clr-namespace:OrderHub.Domain.Enums;assembly=OrderHub.Domain"
-    xmlns:hs="https://handyorg.github.io/handycontrol"
-    xmlns:local="clr-namespace:OrderHub.UI.Features.Orders.Index"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <UserControl.Resources>
-        <Style TargetType="ComboBoxItem" />
-    </UserControl.Resources>
-
     <ComboBox
+        Height="28"
+        MinWidth="120"
+        Padding="6,2"
+        BorderThickness="0"
         Cursor="Hand"
         DisplayMemberPath="DisplayName"
+        FontSize="12"
+        FontWeight="SemiBold"
         ItemsSource="{Binding OrderStatuses}"
         SelectedItem="{Binding OrderStatus, UpdateSourceTrigger=PropertyChanged}">
+
         <ComboBox.Style>
+
             <Style BasedOn="{StaticResource ComboBoxExtendBaseStyle}" TargetType="ComboBox">
 
                 <Setter Property="BorderThickness" Value="0" />
+
                 <Style.Triggers>
 
                     <DataTrigger Binding="{Binding OrderStatus.Value}" Value="{x:Static enums:OrderStatus.Pending}">
+
                         <Setter Property="Foreground" Value="#616161" />
-                        <Setter Property="Background" Value="#eceff1" />
+                        <Setter Property="Background" Value="#ECEFF1" />
                         <Setter Property="BorderBrush" Value="#616161" />
+
                     </DataTrigger>
 
                     <DataTrigger Binding="{Binding OrderStatus.Value}" Value="{x:Static enums:OrderStatus.Processing}">
-                        <Setter Property="Foreground" Value="#512da8" />
-                        <Setter Property="Background" Value="#ede7f6" />
-                        <Setter Property="BorderBrush" Value="#512da8" />
+
+                        <Setter Property="Foreground" Value="#512DA8" />
+                        <Setter Property="Background" Value="#EDE7F6" />
+                        <Setter Property="BorderBrush" Value="#512DA8" />
+
                     </DataTrigger>
 
                     <DataTrigger Binding="{Binding OrderStatus.Value}" Value="{x:Static enums:OrderStatus.Cancelled}">
-                        <Setter Property="Foreground" Value="#b71c1c" />
-                        <Setter Property="Background" Value="#fce4ec" />
-                        <Setter Property="BorderBrush" Value="DarkRed" />
+
+                        <Setter Property="Foreground" Value="#B71C1C" />
+                        <Setter Property="Background" Value="#FCE4EC" />
+                        <Setter Property="BorderBrush" Value="#B71C1C" />
+
                     </DataTrigger>
 
                     <DataTrigger Binding="{Binding OrderStatus.Value}" Value="{x:Static enums:OrderStatus.Delivered}">
-                        <Setter Property="Foreground" Value="#0d47a1" />
-                        <Setter Property="Background" Value="#bbdefb" />
-                        <Setter Property="BorderBrush" Value="#0d47a1" />
+
+                        <Setter Property="Foreground" Value="#0D47A1" />
+                        <Setter Property="Background" Value="#BBDEFB" />
+                        <Setter Property="BorderBrush" Value="#0D47A1" />
+
                     </DataTrigger>
 
                     <DataTrigger Binding="{Binding OrderStatus.Value}" Value="{x:Static enums:OrderStatus.Shipped}">
-                        <Setter Property="Foreground" Value="#1b5e20" />
-                        <Setter Property="Background" Value="#e8f5e9" />
-                        <Setter Property="BorderBrush" Value="#1b5e20" />
+
+                        <Setter Property="Foreground" Value="#1B5E20" />
+                        <Setter Property="Background" Value="#E8F5E9" />
+                        <Setter Property="BorderBrush" Value="#1B5E20" />
+
                     </DataTrigger>
 
                 </Style.Triggers>
+
             </Style>
+
         </ComboBox.Style>
+
     </ComboBox>
 
 </UserControl>

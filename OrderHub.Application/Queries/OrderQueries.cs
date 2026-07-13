@@ -28,4 +28,6 @@ public static class OrderQueries
     public record GetOrderForEditQuery(int OrderId) : IRequest<OrderEditDto>;
 
     public record SearchAttributeNamesQuery(string SearchTerm) : IRequest<IEnumerable<AttributeNameDto>>;
+
+    public record GetOrderDetailsQuery(int OrderId) : IRequest<OrderDetailsDto>;
 }
