@@ -6,9 +6,9 @@ public class OrderItemProperty : ModelBase
 
     public int PropertyId { get; set; }
 
-    public string Value { get; set; } = null!;
+    public string Value { get; set; }
 
-    public OrderItem OrderItem { get; set; } = null!;
+    public OrderItem OrderItem { get; set; }
 
-    public Property Property { get; set; } = null!;
+    public Property Property { get; set; }
 }
