@@ -11,7 +11,7 @@ using OrderHub.Infrastructure;
 namespace OrderHub.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260715182559_AddProductProperties")]
+    [Migration("20260715202131_AddProductProperties")]
     partial class AddProductProperties
     {
         /// <inheritdoc />
@@ -450,16 +450,16 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnName("value");
 
                     b.HasKey("Id")
-                        .HasName("pk_order_item_property");
+                        .HasName("pk_order_item_properties");
 
                     b.HasIndex("PropertyId")
-                        .HasDatabaseName("ix_order_item_property_property_id");
+                        .HasDatabaseName("ix_order_item_properties_property_id");
 
                     b.HasIndex("OrderItemId", "PropertyId")
                         .IsUnique()
-                        .HasDatabaseName("ix_order_item_property_order_item_id_property_id");
+                        .HasDatabaseName("ix_order_item_properties_order_item_id_property_id");
 
-                    b.ToTable("order_item_property", (string)null);
+                    b.ToTable("order_item_properties", (string)null);
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.OutboxMessage", b =>
@@ -753,15 +753,15 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnName("property_id");
 
                     b.HasKey("Id")
-                        .HasName("pk_product_property");
+                        .HasName("pk_product_properties");
 
                     b.HasIndex("PropertyId")
-                        .HasDatabaseName("ix_product_property_property_id");
+                        .HasDatabaseName("ix_product_properties_property_id");
 
                     b.HasIndex("ProductId", "PropertyId")
-                        .HasDatabaseName("ix_product_property_product_id_property_id");
+                        .HasDatabaseName("ix_product_properties_product_id_property_id");
 
-                    b.ToTable("product_property", (string)null);
+                    b.ToTable("product_properties", (string)null);
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Property", b =>
@@ -791,13 +791,13 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnName("property_type");
 
                     b.HasKey("Id")
-                        .HasName("pk_property");
+                        .HasName("pk_properties");
 
                     b.HasIndex("Name")
                         .IsUnique()
-                        .HasDatabaseName("ix_property_name");
+                        .HasDatabaseName("ix_properties_name");
 
-                    b.ToTable("property", (string)null);
+                    b.ToTable("properties", (string)null);
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.PropertyOption", b =>
@@ -825,13 +825,13 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnName("value");
 
                     b.HasKey("Id")
-                        .HasName("pk_property_option");
+                        .HasName("pk_property_options");
 
                     b.HasIndex("PropertyId", "Value")
                         .IsUnique()
-                        .HasDatabaseName("ix_property_option_property_id_value");
+                        .HasDatabaseName("ix_property_options_property_id_value");
 
-                    b.ToTable("property_option", (string)null);
+                    b.ToTable("property_options", (string)null);
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.ShippingCarrier", b =>
@@ -1316,14 +1316,14 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasForeignKey("OrderItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_order_item_property_order_items_order_item_id");
+                        .HasConstraintName("fk_order_item_properties_order_items_order_item_id");
 
                     b.HasOne("OrderHub.Domain.Models.Property", "Property")
                         .WithMany()
                         .HasForeignKey("PropertyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_order_item_property_property_property_id");
+                        .HasConstraintName("fk_order_item_properties_properties_property_id");
 
                     b.Navigation("OrderItem");
 
@@ -1446,14 +1446,14 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_product_property_products_product_id");
+                        .HasConstraintName("fk_product_properties_products_product_id");
 
                     b.HasOne("OrderHub.Domain.Models.Property", "Property")
                         .WithMany()
                         .HasForeignKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_product_property_property_property_id");
+                        .HasConstraintName("fk_product_properties_properties_property_id");
 
                     b.Navigation("Product");
 
@@ -1467,7 +1467,7 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasForeignKey("PropertyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_property_option_property_property_id");
+                        .HasConstraintName("fk_property_options_properties_property_id");
 
                     b.Navigation("Property");
                 });

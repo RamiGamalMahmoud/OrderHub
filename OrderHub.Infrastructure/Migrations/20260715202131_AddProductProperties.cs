@@ -12,7 +12,7 @@ namespace OrderHub.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "property",
+                name: "properties",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "INTEGER", nullable: false)
@@ -24,11 +24,11 @@ namespace OrderHub.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_property", x => x.id);
+                    table.PrimaryKey("pk_properties", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "order_item_property",
+                name: "order_item_properties",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "INTEGER", nullable: false)
@@ -41,23 +41,23 @@ namespace OrderHub.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_order_item_property", x => x.id);
+                    table.PrimaryKey("pk_order_item_properties", x => x.id);
                     table.ForeignKey(
-                        name: "fk_order_item_property_order_items_order_item_id",
+                        name: "fk_order_item_properties_order_items_order_item_id",
                         column: x => x.order_item_id,
                         principalTable: "order_items",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "fk_order_item_property_property_property_id",
+                        name: "fk_order_item_properties_properties_property_id",
                         column: x => x.property_id,
-                        principalTable: "property",
+                        principalTable: "properties",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "product_property",
+                name: "product_properties",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "INTEGER", nullable: false)
@@ -70,23 +70,23 @@ namespace OrderHub.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_product_property", x => x.id);
+                    table.PrimaryKey("pk_product_properties", x => x.id);
                     table.ForeignKey(
-                        name: "fk_product_property_products_product_id",
+                        name: "fk_product_properties_products_product_id",
                         column: x => x.product_id,
                         principalTable: "products",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_product_property_property_property_id",
+                        name: "fk_product_properties_properties_property_id",
                         column: x => x.property_id,
-                        principalTable: "property",
+                        principalTable: "properties",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
-                name: "property_option",
+                name: "property_options",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "INTEGER", nullable: false)
@@ -98,45 +98,45 @@ namespace OrderHub.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_property_option", x => x.id);
+                    table.PrimaryKey("pk_property_options", x => x.id);
                     table.ForeignKey(
-                        name: "fk_property_option_property_property_id",
+                        name: "fk_property_options_properties_property_id",
                         column: x => x.property_id,
-                        principalTable: "property",
+                        principalTable: "properties",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "ix_order_item_property_order_item_id_property_id",
-                table: "order_item_property",
+                name: "ix_order_item_properties_order_item_id_property_id",
+                table: "order_item_properties",
                 columns: new[] { "order_item_id", "property_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_order_item_property_property_id",
-                table: "order_item_property",
+                name: "ix_order_item_properties_property_id",
+                table: "order_item_properties",
                 column: "property_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_product_property_product_id_property_id",
-                table: "product_property",
+                name: "ix_product_properties_product_id_property_id",
+                table: "product_properties",
                 columns: new[] { "product_id", "property_id" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_product_property_property_id",
-                table: "product_property",
+                name: "ix_product_properties_property_id",
+                table: "product_properties",
                 column: "property_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_property_name",
-                table: "property",
+                name: "ix_properties_name",
+                table: "properties",
                 column: "name",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_property_option_property_id_value",
-                table: "property_option",
+                name: "ix_property_options_property_id_value",
+                table: "property_options",
                 columns: new[] { "property_id", "value" },
                 unique: true);
         }
@@ -145,16 +145,16 @@ namespace OrderHub.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "order_item_property");
+                name: "order_item_properties");
 
             migrationBuilder.DropTable(
-                name: "product_property");
+                name: "product_properties");
 
             migrationBuilder.DropTable(
-                name: "property_option");
+                name: "property_options");
 
             migrationBuilder.DropTable(
-                name: "property");
+                name: "properties");
         }
     }
 }
