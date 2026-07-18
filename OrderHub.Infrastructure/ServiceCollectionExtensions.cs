@@ -16,6 +16,7 @@ public static class ServiceCollectionExtensions
 
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
+        services.AddStore();
         services.AddTransient<Orders.OrderWriteService>();
         services.AddSingleton<Services.WhatsappService>();
         services.AddSingleton<Application.Interfaces.Services.IWhatsappService>(s => s.GetRequiredService<Services.WhatsappService>());
@@ -33,6 +34,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<Application.Interfaces.Services.ITokenStorageService, Services.FieTokenStorageService>();
         services.AddTransient<Application.Interfaces.Services.IAuthService, Services.SalaAuthService>();
         services.AddSingleton<Application.Interfaces.Services.ICacheService, Services.CacheService>();
+        return services;
+    }
+
+    private static IServiceCollection AddStore(this IServiceCollection services)
+    {
+        services.AddSingleton<Application.Interfaces.Stores.IPropertyStore, Stores.PropertyStore>();
         return services;
     }
 }

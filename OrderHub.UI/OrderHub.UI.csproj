@@ -82,6 +82,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Folder Include="Features\Properties\" />
 	  <Folder Include="Resources\Fonts\Tajawal\" />
 	</ItemGroup>
 
