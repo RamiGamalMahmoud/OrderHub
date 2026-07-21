@@ -26,6 +26,12 @@ public partial class OrderItemViewModel : ObservableValidator
     [ObservableProperty]
     private OrderItemSupplier _supplier;
 
+    partial void OnSupplierChanged(OrderItemSupplier oldValue, OrderItemSupplier newValue)
+    {
+        SupplierName = newValue.Name;
+        SupplierId = newValue.Id;
+    }
+
     [ObservableProperty]
     [Required(ErrorMessage = "Supplier is required")]
     private string _supplierName;
