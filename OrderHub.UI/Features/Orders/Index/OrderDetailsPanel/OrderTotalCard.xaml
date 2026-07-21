@@ -57,7 +57,7 @@
                     Grid.Column="1"
                     FontSize="12"
                     FontWeight="SemiBold"
-                    Text="{Binding ProductsTotal, StringFormat={}{0:N0} ج}" />
+                    Text="{Binding ProductsTotal, StringFormat={}{0:N0} ر.س}" />
 
             </Grid>
 
@@ -104,7 +104,7 @@
             FontSize="12"
             FontWeight="SemiBold"
             Foreground="#DC2626"
-            Text="{Binding Discount, StringFormat=-{0:N0} ج}" />
+            Text="{Binding Discount, StringFormat=-{0:N0} ر.س}" />
 
             </Grid>
 
@@ -129,7 +129,7 @@
                     FontSize="14"
                     FontWeight="Bold"
                     Foreground="#2563EB"
-                    Text="{Binding GrandTotal, StringFormat={}{0:N0} ج}" />
+                    Text="{Binding GrandTotal, StringFormat={}{0:N0} ر.س}" />
 
             </Grid>
 
