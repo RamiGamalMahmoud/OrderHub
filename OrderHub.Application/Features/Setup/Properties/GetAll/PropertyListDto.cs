@@ -2,4 +2,4 @@
 
 namespace OrderHub.Application.Features.Setup.Properties.GetAll;
 
-public record PropertyListDto(int Id, string Name, PropertyType Type);
+public record PropertyListDto(int Id, string Name, string Description, PropertyType Type);

@@ -46,7 +46,7 @@ internal class PropertyStore(AppDbContextFactory dbContextFactory) : IPropertySt
         using (AppDbContext dbContext = dbContextFactory.CreateDbContext())
         {
             return await dbContext.Properties
-                .Select(x => new PropertyListDto(x.Id, x.Name, x.PropertyType))
+                .Select(x => new PropertyListDto(x.Id, x.Name, x.Description, x.PropertyType))
                 .ToListAsync(cancellationToken);
         }
     }
@@ -60,6 +60,7 @@ internal class PropertyStore(AppDbContextFactory dbContextFactory) : IPropertySt
                     x.Id,
                     x.Name,
                     x.PropertyType,
+                    x.Description,
                     x.Options.Select(o => new PropertyOptionDto(
                         o.Id,
                         o.Value)).ToList()

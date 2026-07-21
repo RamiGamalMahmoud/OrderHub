@@ -22,6 +22,9 @@ internal class PropertyConfiguration : ModelConfigurationBase<Property>
             .HasMaxLength(20)
             .IsRequired();
 
+        builder.Property(x => x.Description)
+            .IsRequired(false);
+
         builder.HasMany(x => x.Options)
             .WithOne(x => x.Property)
             .HasForeignKey(x => x.PropertyId)

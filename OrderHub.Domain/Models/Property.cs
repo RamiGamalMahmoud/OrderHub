@@ -14,6 +14,8 @@ public class Property : ModelBase
 
     public PropertyType PropertyType { get; private set; }
 
+    public string Description { get; private set; }
+
     public IReadOnlyCollection<PropertyOption> Options => _options;
 
     private Property()

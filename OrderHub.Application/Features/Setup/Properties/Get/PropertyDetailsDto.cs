@@ -7,4 +7,5 @@ public sealed record PropertyDetailsDto(
     int Id,
     string Name,
     PropertyType PropertyType,
+    string Description,
     IReadOnlyCollection<PropertyOptionDto> Options);
