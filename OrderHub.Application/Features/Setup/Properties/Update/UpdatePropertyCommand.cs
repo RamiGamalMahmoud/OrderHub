@@ -12,6 +12,5 @@ internal sealed class UpdatePropertyCommandHandler(IPropertyStore propertyStore)
     public async Task Handle(UpdatePropertyCommand request, CancellationToken cancellationToken)
     {
         await propertyStore.UpdateAsync(request.Dto, cancellationToken);
-        throw new System.NotImplementedException();
     }
 }

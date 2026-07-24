@@ -22,14 +22,15 @@ public class Property : ModelBase
     {
     }
 
-    public static Property Create(string name, PropertyType propertyType, IEnumerable<string> options = null)
+    public static Property Create(string name, PropertyType propertyType, string description = null, IEnumerable<string> options = null)
     {
         ValidateName(name);
 
         Property property = new()
         {
             Name = name.Trim(),
-            PropertyType = propertyType
+            PropertyType = propertyType,
+            Description = description
         };
 
         if (propertyType == PropertyType.List)
@@ -54,6 +55,11 @@ public class Property : ModelBase
         ValidateName(name);
 
         Name = name.Trim();
+    }
+
+    public void ChangeDescription(string description)
+    {
+        Description = description.Trim();
     }
 
     public void ChangeType(PropertyType propertyType)

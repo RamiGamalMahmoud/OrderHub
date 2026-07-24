@@ -1,0 +1,374 @@
+﻿<UserControl
+    x:Class="OrderHub.UI.Features.Settings.Properties.PropertyEditor.PropertyEditorView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:Hoax.WpfConverters;assembly=Hoax.WpfConverters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:enums="clr-namespace:OrderHub.Domain.Enums;assembly=OrderHub.Domain"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
+    xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
+    xmlns:local="clr-namespace:OrderHub.UI.Features.Settings.Properties.PropertyEditor"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    d:DataContext="{d:DesignInstance Type=local:PropertyEditorViewModel}"
+    Validation.ErrorTemplate="{x:Null}"
+    mc:Ignorable="d">
+
+    <UserControl.Style>
+        <Style TargetType="UserControl">
+            <Setter Property="IsEnabled" Value="False" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Mode}" Value="{x:Static local:Mode.Create}">
+                    <Setter Property="IsEnabled" Value="True" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Mode}" Value="{x:Static local:Mode.Update}">
+                    <Setter Property="IsEnabled" Value="True" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Style>
+
+    <Border Padding="20" Background="White">
+
+        <Grid>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="16" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="20" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!--  Header  -->
+
+            <StackPanel>
+
+                <TextBlock
+                    FontSize="20"
+                    FontWeight="SemiBold"
+                    Text="تفاصيل الخاصية" />
+
+                <Border
+                    Width="40"
+                    Height="3"
+                    Margin="0,6,0,0"
+                    HorizontalAlignment="Left"
+                    Background="#2563EB" />
+
+            </StackPanel>
+
+            <!--  Content  -->
+
+            <ScrollViewer
+                Grid.Row="2"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+
+                <StackPanel>
+
+                    <!--  Name + Type  -->
+
+                    <Grid Height="60" Margin="0,0,0,14">
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+
+                        <hc:TextBox
+                            hc:InfoElement.Necessary="True"
+                            hc:InfoElement.Placeholder="اسم الخاصية"
+                            hc:InfoElement.ShowClearButton="True"
+                            hc:InfoElement.Title="اسم الخاصية"
+                            Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+
+                        <hc:ComboBox
+                            Grid.Column="2"
+                            hc:InfoElement.Necessary="True"
+                            hc:InfoElement.Placeholder="نوع الخاصية"
+                            hc:InfoElement.ShowClearButton="True"
+                            hc:InfoElement.Title="النوع"
+                            Cursor="Hand"
+                            DisplayMemberPath="DisplayName"
+                            ItemsSource="{Binding PropertyTypes}"
+                            SelectedItem="{Binding SelectedPropertyType, UpdateSourceTrigger=PropertyChanged}" />
+
+                    </Grid>
+
+                    <!--  Description  -->
+
+                    <hc:TextBox
+                        MinHeight="90"
+                        MaxHeight="200"
+                        Margin="0,0,0,16"
+                        Padding="10"
+                        VerticalContentAlignment="Top"
+                        hc:InfoElement.Placeholder="اكتب وصف للخاصية ( اختياري )"
+                        hc:InfoElement.ShowClearButton="True"
+                        hc:InfoElement.Title="الوصف"
+                        AcceptsReturn="True"
+                        Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
+                        TextWrapping="Wrap"
+                        VerticalScrollBarVisibility="Auto" />
+
+                    <!--  =========================================  -->
+                    <!--  List Options  -->
+                    <!--  تظهر فقط عندما يكون النوع = قائمة  -->
+                    <!--  =========================================  -->
+
+                    <StackPanel Margin="0,6,0,0">
+
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedPropertyType.Value}" Value="{x:Static enums:PropertyType.List}">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+
+                        <!--  Section Header  -->
+
+                        <TextBlock
+                            Margin="0,0,0,10"
+                            VerticalAlignment="Center"
+                            FontSize="15"
+                            FontWeight="SemiBold"
+                            Text="خيارات القائمة" />
+
+                        <!--  Quick Add  -->
+
+                        <Border
+                            Margin="0,0,0,10"
+                            Padding="10"
+                            Background="#FAFAFA"
+                            BorderBrush="#E5E7EB"
+                            BorderThickness="1"
+                            CornerRadius="8">
+
+                            <Grid>
+
+                                <Grid.ColumnDefinitions>
+
+                                    <ColumnDefinition />
+
+                                    <ColumnDefinition Width="8" />
+
+                                    <ColumnDefinition Width="auto" />
+
+                                </Grid.ColumnDefinitions>
+
+                                <hc:TextBox
+                                    hc:InfoElement.Placeholder="اكتب قيمة الخيار و إضغط Enter للإضافة"
+                                    hc:InfoElement.ShowClearButton="True"
+                                    KeyDown="TextBox_KeyDown"
+                                    Text="{Binding NewOptionValue, UpdateSourceTrigger=PropertyChanged}" />
+
+                                <Button
+                                    Grid.Column="2"
+                                    Height="30"
+                                    Command="{Binding AddOptionCommand}"
+                                    Cursor="Hand"
+                                    Style="{StaticResource ButtonDefault.Small}">
+
+                                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+
+                                        <icons:MaterialIcon
+                                            Width="16"
+                                            Height="16"
+                                            Margin="0,0,6,0"
+                                            Kind="Plus" />
+
+                                        <TextBlock
+                                            VerticalAlignment="Center"
+                                            FontSize="10"
+                                            Text="إضافة" />
+
+                                    </StackPanel>
+
+                                </Button>
+
+                            </Grid>
+
+                        </Border>
+
+                        <!--  Options Container  -->
+
+                        <Border
+                            MaxHeight="300"
+                            BorderBrush="#E5E7EB"
+                            BorderThickness="1,1,1,0"
+                            CornerRadius="8">
+
+                            <ListBox
+                                BorderThickness="0"
+                                ItemsSource="{Binding Options}"
+                                SelectedItem="{Binding SelectedOption, UpdateSourceTrigger=PropertyChanged}">
+
+                                <ListBox.ItemContainerStyle>
+
+                                    <Style TargetType="ListBoxItem">
+
+                                        <Setter Property="Padding" Value="0" />
+
+                                        <Setter Property="Margin" Value="0" />
+
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+
+                                    </Style>
+
+                                </ListBox.ItemContainerStyle>
+
+                                <ListBox.ItemTemplate>
+
+                                    <DataTemplate>
+
+                                        <Border
+                                            Padding="10"
+                                            BorderBrush="#ECECEC"
+                                            BorderThickness="0,0,0,1">
+
+                                            <Grid>
+
+                                                <Grid.ColumnDefinitions>
+
+                                                    <!--  Value  -->
+
+                                                    <ColumnDefinition />
+
+                                                    <ColumnDefinition Width="8" />
+
+                                                    <!--  Delete  -->
+
+                                                    <ColumnDefinition Width="36" />
+
+                                                </Grid.ColumnDefinitions>
+
+                                                <!--  Option Value  -->
+
+                                                <hc:TextBox
+                                                    Grid.Column="0"
+                                                    Margin="0"
+                                                    hc:InfoElement.Placeholder="اكتب قيمة الخيار..."
+                                                    hc:InfoElement.ShowClearButton="True"
+                                                    Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
+
+                                                <!--  Delete  -->
+
+                                                <Button
+                                                    Grid.Column="4"
+                                                    Width="32"
+                                                    Height="32"
+                                                    Background="Transparent"
+                                                    BorderThickness="0"
+                                                    Command="{Binding DataContext.RemoveOptionCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                    CommandParameter="{Binding}"
+                                                    Cursor="Hand">
+
+                                                    <icons:MaterialIcon
+                                                        Width="18"
+                                                        Height="18"
+                                                        Foreground="#E53935"
+                                                        Kind="DeleteOutline" />
+
+                                                </Button>
+
+                                            </Grid>
+
+                                        </Border>
+
+                                    </DataTemplate>
+
+                                </ListBox.ItemTemplate>
+
+                            </ListBox>
+
+                        </Border>
+
+                    </StackPanel>
+
+                </StackPanel>
+
+            </ScrollViewer>
+
+            <!--  Footer  -->
+
+            <Grid Grid.Row="4" Margin="0,8,0,0">
+
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Mode}" Value="{x:Static local:Mode.Create}">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Mode}" Value="{x:Static local:Mode.Update}">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+
+                <Grid.ColumnDefinitions>
+
+                    <ColumnDefinition />
+
+                    <ColumnDefinition Width="Auto" />
+
+                    <ColumnDefinition Width="8" />
+
+                    <ColumnDefinition Width="Auto" />
+
+                </Grid.ColumnDefinitions>
+
+                <Button
+                    Grid.Column="1"
+                    Width="120"
+                    Height="38"
+                    Command="{Binding SaveCommand}"
+                    Cursor="Hand"
+                    Style="{StaticResource ButtonPrimary}">
+
+                    <StackPanel Orientation="Horizontal">
+
+                        <icons:MaterialIcon
+                            Width="18"
+                            Height="18"
+                            Margin="0,0,6,0"
+                            Kind="ContentSaveOutline" />
+
+                        <TextBlock Text="حفظ" />
+
+                    </StackPanel>
+
+                </Button>
+
+                <Button
+                    Grid.Column="3"
+                    Width="120"
+                    Height="38"
+                    Command="{Binding CancelCommand}"
+                    Cursor="Hand">
+                    <StackPanel Orientation="Horizontal">
+
+                        <icons:MaterialIcon
+                            Width="18"
+                            Height="18"
+                            Margin="0,0,6,0"
+                            Kind="Close" />
+
+                        <TextBlock Text="إلغاء" />
+
+                    </StackPanel>
+                </Button>
+
+            </Grid>
+
+        </Grid>
+
+    </Border>
+
+</UserControl>

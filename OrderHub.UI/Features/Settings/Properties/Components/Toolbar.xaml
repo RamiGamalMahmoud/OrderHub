@@ -1,0 +1,88 @@
+﻿<UserControl
+    x:Class="OrderHub.UI.Features.Settings.Properties.Components.Toolbar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
+    xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Border
+        Padding="12,8"
+        Background="White"
+        BorderBrush="#E5E7EB"
+        BorderThickness="0,0,0,1">
+
+        <StackPanel Orientation="Horizontal">
+
+            <Button
+                Height="30"
+                Margin="0,0,8,0"
+                Padding="14,0"
+                Command="{Binding CreateCommand}"
+                Style="{StaticResource ButtonPrimary}">
+
+                <StackPanel Orientation="Horizontal">
+
+                    <icons:MaterialIcon
+                        Width="18"
+                        Height="18"
+                        Margin="0,0,6,0"
+                        Kind="Plus" />
+
+                    <TextBlock VerticalAlignment="Center" Text="إضافة" />
+
+                </StackPanel>
+
+            </Button>
+
+            <Button
+                Height="30"
+                Margin="0,0,8,0"
+                Padding="14,0"
+                Command="{Binding EditCommand}"
+                CommandParameter="{Binding SelectedProperty.Id}">
+
+                <StackPanel Orientation="Horizontal">
+
+                    <icons:MaterialIcon
+                        Width="18"
+                        Height="18"
+                        Margin="0,0,6,0"
+                        Kind="PencilOutline" />
+
+                    <TextBlock VerticalAlignment="Center" Text="تعديل" />
+
+                </StackPanel>
+
+            </Button>
+
+            <Button
+                Height="30"
+                Padding="14,0"
+                BorderBrush="{StaticResource DangerBrush}"
+                BorderThickness="0.4"
+                Command="{Binding DeleteCommand}"
+                CommandParameter="{Binding SelectedProperty.Id}"
+                Foreground="{StaticResource DangerBrush}">
+
+                <StackPanel Orientation="Horizontal">
+
+                    <icons:MaterialIcon
+                        Width="18"
+                        Height="18"
+                        Margin="0,0,6,0"
+                        Kind="DeleteOutline" />
+
+                    <TextBlock VerticalAlignment="Center" Text="حذف" />
+
+                </StackPanel>
+
+            </Button>
+
+        </StackPanel>
+
+    </Border>
+
+</UserControl>

@@ -12,7 +12,7 @@
     d:DataContext="{d:DesignInstance Type=local:MainWindowViewModel}"
     x:ClassModifier="internal"
     Background="{StaticResource WhiteBrush}"
-    FontFamily="{StaticResource Tajawal}"
+    FontFamily="{StaticResource Cairo}"
     WindowStartupLocation="CenterScreen"
     WindowState="Maximized"
     mc:Ignorable="d">

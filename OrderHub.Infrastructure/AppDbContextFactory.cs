@@ -18,7 +18,7 @@ internal class AppDbContextFactory
         _options = options;
     }
 
-    public AppDbContext CreateDbContext()
+    public virtual AppDbContext CreateDbContext()
     {
         if (_options != null)
             return new AppDbContext(_options);

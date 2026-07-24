@@ -1,0 +1,66 @@
+﻿<UserControl
+    x:Class="OrderHub.UI.Features.Settings.Properties.PropertiesView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:components="clr-namespace:OrderHub.UI.Features.Settings.Properties.Components"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:editor="clr-namespace:OrderHub.UI.Features.Settings.Properties.PropertyEditor"
+    xmlns:local="clr-namespace:OrderHub.UI.Features.Settings.Properties"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    d:DataContext="{d:DesignInstance Type=local:PropertiesViewModel}"
+    mc:Ignorable="d">
+
+    <Grid Background="#F7F8FA">
+
+        <Grid.RowDefinitions>
+
+            <RowDefinition Height="Auto" />
+
+            <RowDefinition Height="*" />
+
+        </Grid.RowDefinitions>
+
+        <components:Header />
+
+        <Grid Grid.Row="1">
+
+            <Grid.ColumnDefinitions>
+
+                <ColumnDefinition Width="3*" />
+
+                <ColumnDefinition Width="10" />
+
+                <ColumnDefinition Width="420" />
+
+            </Grid.ColumnDefinitions>
+
+            <!--  Left  -->
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto" />
+                    <RowDefinition Height="1*" />
+                </Grid.RowDefinitions>
+                <components:Toolbar Grid.Row="0" />
+
+                <components:DataView Grid.Row="1" />
+            </Grid>
+
+            <!--  Right  -->
+
+            <Border
+                Grid.Column="2"
+                Background="White"
+                BorderBrush="#E5E7EB"
+                BorderThickness="1"
+                CornerRadius="8">
+
+                <editor:PropertyEditorView DataContext="{Binding PropertyEditorViewModel}" />
+
+            </Border>
+
+        </Grid>
+
+    </Grid>
+
+</UserControl>

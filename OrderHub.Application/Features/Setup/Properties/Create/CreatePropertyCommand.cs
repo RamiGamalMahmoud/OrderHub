@@ -13,6 +13,7 @@ namespace OrderHub.Application.Features.Setup.Properties.Create;
 public sealed record CreatePropertyCommand(
     string Name,
     PropertyType PropertyType,
+    string desctiption,
     IReadOnlyCollection<PropertyOptionCreateDto> Options)
     : IRequest<int>;
 
@@ -26,7 +27,8 @@ internal sealed class CreatePropertyCommandHandler(IPropertyStore propertyStore)
         Property property = Property.Create(
             request.Name,
             request.PropertyType,
-            request.Options.Select(x => x.Value));
+            description: request.desctiption,
+            options: request.Options.Select(x => x.Value));
 
         return await propertyStore.CreateAsync(property, cancellationToken);
     }

@@ -26,9 +26,10 @@ public class PropertyTests
         var command = new CreatePropertyCommand(
             "Color",
             OrderHub.Domain.Enums.PropertyType.List,
+            "Description", 
             [
-                new PropertyOptionCreateDto("Red"),
-                new PropertyOptionCreateDto("Blue")
+                new PropertyOptionCreateDto(1, "Red"),
+                new PropertyOptionCreateDto(2, "Blue")
             ]);
 
         int id = await handler.Handle(command, CancellationToken.None);

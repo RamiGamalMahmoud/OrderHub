@@ -85,6 +85,10 @@ public static class ServiceCollectionExtensions
         services.AddTransient<Features.WhatsappGroups.Create.ViewModel>();
         services.AddTransient<Features.WhatsappGroups.Update.ViewModel>();
 
+        // Settings
+        services.AddSingleton<Features.Settings.Home.SettingsHomeViewModel>();
+        services.AddSingleton<Features.Settings.Properties.PropertiesViewModel>();
+
         return services;
     }
 
@@ -147,6 +151,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<Features.WhatsappGroups.Index.View>();
         services.AddTransient<Features.WhatsappGroups.Create.View>();
         services.AddTransient<Features.WhatsappGroups.Update.View>();
+
+        // Settings
+        services.AddTransient<Features.Settings.Home.SettingsHomeView>();
+        services.AddSingleton<Features.Settings.Properties.PropertiesView>();
 
         return services;
     }

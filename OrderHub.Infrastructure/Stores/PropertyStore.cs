@@ -56,6 +56,8 @@ internal class PropertyStore(AppDbContextFactory dbContextFactory) : IPropertySt
         using (AppDbContext dbContext = dbContextFactory.CreateDbContext())
         {
             return await dbContext.Properties
+                .AsNoTracking()
+                .Where(x => x.Id == id)
                 .Select(x => new PropertyDetailsDto(
                     x.Id,
                     x.Name,
@@ -65,7 +67,7 @@ internal class PropertyStore(AppDbContextFactory dbContextFactory) : IPropertySt
                         o.Id,
                         o.Value)).ToList()
                     ))
-                .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+                .FirstOrDefaultAsync(cancellationToken);
         }
     }
 
@@ -77,21 +79,11 @@ internal class PropertyStore(AppDbContextFactory dbContextFactory) : IPropertySt
             .FirstOrDefaultAsync(x => x.Id == dto.Id, cancellationToken)
             ?? throw new Domain.Exceptions.DomainException("Property not found.");
 
+        var options = await dbContext.PropertyOptions.Where(x => x.PropertyId == dto.Id).ToListAsync();
+
         property.Rename(dto.Name);
         property.ChangeType(dto.PropertyType);
-
-        foreach (PropertyOptionUpdateDto optionUpdateDto in dto.Options)
-        {
-            if (optionUpdateDto.Id.HasValue)
-            {
-                property.RemoveOption(optionUpdateDto.Id.Value);
-            }
-
-            else
-            {
-                property.AddOption(optionUpdateDto.Value);
-            }
-        }
+        property.ChangeDescription(dto.Description);
 
         HashSet<int> optionIds = dto.Options
             .Where(x => x.Id.HasValue)
@@ -103,6 +95,23 @@ internal class PropertyStore(AppDbContextFactory dbContextFactory) : IPropertySt
             if (!optionIds.Contains(option.Id))
             {
                 property.RemoveOption(option.Id);
+            }
+        }
+
+        foreach (PropertyOptionUpdateDto optionUpdateDto in dto.Options)
+        {
+            if (!optionUpdateDto.Id.HasValue)
+            {
+                property.AddOption(optionUpdateDto.Value);
+            }
+
+            if(optionUpdateDto.Id.HasValue && property.Options.Any(x => x.Id == optionUpdateDto.Id.Value))
+            {
+                PropertyOption propertyOption = property.Options.First(x => x.Id == optionUpdateDto.Id.Value);
+                if(propertyOption.Value != optionUpdateDto.Value)
+                {
+                    propertyOption.Rename(optionUpdateDto.Value);
+                }
             }
         }
 

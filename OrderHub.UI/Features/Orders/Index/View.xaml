@@ -121,7 +121,8 @@
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="300" />
             </Grid.ColumnDefinitions>
 
             <DataGrid
@@ -288,9 +289,7 @@
 
             <Border
                 Grid.RowSpan="2"
-                Grid.Column="1"
-                MaxWidth="300"
-                Margin="8,0,0,0"
+                Grid.Column="2"
                 Background="Transparent"
                 Visibility="{Binding IsSummaryExpanded, Converter={converters:BoolToVisibilityConverter}}">
 

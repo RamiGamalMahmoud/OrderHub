@@ -1,0 +1,37 @@
+﻿<UserControl
+    x:Class="OrderHub.UI.Features.Settings.Home.Components.SettingsCardsGrid"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:components="clr-namespace:OrderHub.UI.Features.Settings.Home.Components"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ItemsControl ItemsSource="{Binding Items}">
+
+        <ItemsControl.ItemsPanel>
+
+            <ItemsPanelTemplate>
+
+                <WrapPanel
+                    ItemHeight="190"
+                    ItemWidth="320"
+                    Orientation="Horizontal" />
+
+            </ItemsPanelTemplate>
+
+        </ItemsControl.ItemsPanel>
+
+        <ItemsControl.ItemTemplate>
+
+            <DataTemplate>
+
+                <components:SettingsCard />
+
+            </DataTemplate>
+
+        </ItemsControl.ItemTemplate>
+
+    </ItemsControl>
+
+</UserControl>
