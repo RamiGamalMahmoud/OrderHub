@@ -29,6 +29,17 @@ public class Product : ModelBase
 
     private readonly List<ProductProperty> _properties = [];
     public IReadOnlyCollection<ProductProperty> Properties => _properties;
+    public void AddProperty(ProductProperty property)
+    {
+        if (!_properties.Select(x => x.Id).Contains(property.Id))
+            _properties.Add(property);
+    }
+
+    public void RemoveProperty(ProductProperty property)
+    {
+        if (_properties.Select(x => x.Id).Contains(property.Id))
+            _properties.Remove(property);
+    }
 
     public IReadOnlyCollection<Supplier> Suppliers => _suppliers.AsReadOnly();
 

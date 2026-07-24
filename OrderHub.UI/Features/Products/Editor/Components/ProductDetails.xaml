@@ -3,6 +3,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
+    xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:local="clr-namespace:OrderHub.UI.Features.Products.Editor.Components"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
@@ -22,11 +24,19 @@
 
         <StackPanel>
 
-            <TextBlock
-                Margin="0,0,0,18"
-                FontSize="18"
-                FontWeight="SemiBold"
-                Text="بيانات المنتج" />
+            <StackPanel Margin="0,0,0,18" Orientation="Horizontal">
+                <icons:MaterialIcon
+                    Width="18"
+                    Height="18"
+                    VerticalAlignment="Center"
+                    Foreground="{StaticResource Primary}"
+                    Kind="PackageVariantClosed" />
+                <TextBlock
+                    Margin="8,0,0,0"
+                    FontSize="18"
+                    FontWeight="SemiBold"
+                    Text="بيانات المنتج" />
+            </StackPanel>
 
             <!--  Product Name  -->
 
@@ -35,7 +45,11 @@
                 FontWeight="SemiBold"
                 Text="اسم المنتج" />
 
-            <TextBox Height="36" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+            <hc:TextBox
+                Height="36"
+                hc:InfoElement.Placeholder="اسم المنتج"
+                hc:InfoElement.ShowClearButton="True"
+                Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
 
             <!--  Price + Code  -->
 
@@ -56,7 +70,10 @@
                         FontWeight="SemiBold"
                         Text="السعر" />
 
-                    <TextBox Height="36" Text="{Binding PriceText, UpdateSourceTrigger=PropertyChanged}" />
+                    <hc:TextBox
+                        Height="36"
+                        hc:InfoElement.Placeholder="سعر المنتج"
+                        Text="{Binding PriceText, UpdateSourceTrigger=PropertyChanged}" />
 
                 </StackPanel>
 
@@ -69,7 +86,10 @@
                         FontWeight="SemiBold"
                         Text="الكود" />
 
-                    <TextBox Height="36" Text="{Binding Code, UpdateSourceTrigger=PropertyChanged}" />
+                    <hc:TextBox
+                        Height="36"
+                        hc:InfoElement.Placeholder="كود المنتج"
+                        Text="{Binding Code, UpdateSourceTrigger=PropertyChanged}" />
 
                 </StackPanel>
 
@@ -102,9 +122,11 @@
 
             <!--  Root Category  -->
 
-            <ComboBox
+            <hc:ComboBox
                 Height="36"
                 Margin="0,0,0,10"
+                hc:InfoElement.Placeholder="القسم الرئيسي"
+                hc:InfoElement.ShowClearButton="True"
                 DisplayMemberPath="Name"
                 FontSize="15"
                 FontWeight="SemiBold"
@@ -125,9 +147,11 @@
 
                     <DataTemplate>
 
-                        <ComboBox
+                        <hc:ComboBox
                             Height="36"
                             Margin="0,0,0,10"
+                            hc:InfoElement.Placeholder="القسم الفرعي"
+                            hc:InfoElement.ShowClearButton="True"
                             DisplayMemberPath="Name"
                             FontSize="15"
                             FontWeight="SemiBold"
