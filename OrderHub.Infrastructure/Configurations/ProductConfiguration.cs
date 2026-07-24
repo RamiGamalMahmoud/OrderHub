@@ -42,5 +42,10 @@ internal class ProductConfiguration : ModelConfigurationBase<Product>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(product => product.Suppliers).WithMany();
+
+        builder.HasMany(x => x.Properties)
+            .WithOne(x => x.Product)
+            .HasForeignKey(x => x.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

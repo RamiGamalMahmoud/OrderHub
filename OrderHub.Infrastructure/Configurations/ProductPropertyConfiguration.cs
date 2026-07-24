@@ -11,7 +11,7 @@ internal class ProductPropertyConfiguration : ModelConfigurationBase<ProductProp
         base.Configure(builder);
 
         builder.HasOne(x => x.Product)
-            .WithMany()
+            .WithMany(x => x.Properties)
             .HasForeignKey(x => x.ProductId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired();

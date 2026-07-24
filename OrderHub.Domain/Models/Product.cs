@@ -27,6 +27,9 @@ public class Product : ModelBase
 
     public Category Category { get; private set; }
 
+    private readonly List<ProductProperty> _properties = [];
+    public IReadOnlyCollection<ProductProperty> Properties => _properties;
+
     public IReadOnlyCollection<Supplier> Suppliers => _suppliers.AsReadOnly();
 
     public void Rename(string name)
