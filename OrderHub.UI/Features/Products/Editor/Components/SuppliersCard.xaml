@@ -1,0 +1,74 @@
+﻿<UserControl
+    x:Class="OrderHub.UI.Features.Products.Editor.Components.SuppliersCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:OrderHub.UI.Features.Products.Editor.Components"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <Border
+        Grid.Column="2"
+        Padding="20"
+        Background="White"
+        BorderBrush="#E5E7EB"
+        BorderThickness="1"
+        CornerRadius="12">
+
+        <Border.Effect>
+            <DropShadowEffect
+                BlurRadius="15"
+                Opacity="0.08"
+                ShadowDepth="1" />
+        </Border.Effect>
+
+        <Grid>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <TextBlock
+                Margin="0,0,0,16"
+                FontSize="18"
+                FontWeight="SemiBold"
+                Text="الموردون" />
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+
+                <ItemsControl ItemsSource="{Binding Suppliers}">
+
+                    <ItemsControl.ItemTemplate>
+
+                        <DataTemplate>
+
+                            <Border
+                                Height="40"
+                                Margin="4"
+                                Padding="10,6"
+                                Background="#FAFAFA"
+                                BorderBrush="#E5E7EB"
+                                BorderThickness="1"
+                                CornerRadius="6">
+
+                                <CheckBox
+                                    MinWidth="130"
+                                    Command="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=DataContext.SelectSupplierCommand}"
+                                    Content="{Binding Value.Name}"
+                                    Cursor="Hand"
+                                    IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" />
+
+                            </Border>
+
+                        </DataTemplate>
+
+                    </ItemsControl.ItemTemplate>
+
+                </ItemsControl>
+
+            </ScrollViewer>
+
+        </Grid>
+
+    </Border>
+</UserControl>
