@@ -49,14 +49,14 @@
                 <hc:SearchBar
                     Height="35"
                     Margin="0,0,0,8"
-                    hc:InfoElement.Placeholder="البحث عن خاصية"
+                    hc:InfoElement.Placeholder="البحث عن خاصية ..."
                     hc:InfoElement.ShowClearButton="True"
                     Style="{StaticResource SearchBarPlus}" />
             </StackPanel>
 
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
 
-                <ItemsControl ItemsSource="{Binding Suppliers}">
+                <ItemsControl ItemsSource="{Binding Properties}">
 
                     <ItemsControl.ItemTemplate>
 
@@ -83,14 +83,14 @@
                                             Cursor="Hand"
                                             FontSize="12"
                                             FontWeight="DemiBold"
-                                            Text="{Binding Value.Name}" />
+                                            Text="{Binding Name}" />
 
                                         <TextBlock
                                             HorizontalAlignment="Left"
                                             Cursor="Hand"
                                             FontSize="10"
                                             Foreground="{StaticResource Primary}"
-                                            Text="قائمة" />
+                                            Text="{Binding PropertyType}" />
                                     </StackPanel>
 
                                     <hc:ComboBox
@@ -99,15 +99,17 @@
                                         Margin="5,0"
                                         hc:InfoElement.Placeholder="حالة الخاصية"
                                         Cursor="Hand"
-                                        FontSize="10">
-                                        <ComboBoxItem Content="مطلوبة" />
-                                        <ComboBoxItem Content="اختيارية" />
-                                    </hc:ComboBox>
+                                        DisplayMemberPath="DisplayName"
+                                        FontSize="10"
+                                        ItemsSource="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext. PropertyRequirements}"
+                                        SelectedItem="{Binding PropertyRequirement}" />
 
                                     <Button
                                         Grid.Column="2"
                                         Padding="5"
                                         BorderThickness="0"
+                                        Command="{Binding AddPropertyCommane}"
+                                        CommandParameter="{Binding}"
                                         Cursor="Hand">
                                         <icons:MaterialIcon Foreground="{StaticResource Primary}" Kind="PlusBox" />
                                     </Button>
@@ -116,6 +118,8 @@
                                         Grid.Column="2"
                                         Padding="5"
                                         BorderThickness="0"
+                                        Command="{Binding RemovePropertyCommand}"
+                                        CommandParameter="{Binding}"
                                         Cursor="Hand">
                                         <icons:MaterialIcon Foreground="{StaticResource DangerBrush}" Kind="Trash" />
                                     </Button>
