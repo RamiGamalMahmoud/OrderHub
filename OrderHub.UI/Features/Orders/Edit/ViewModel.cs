@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.UI.Features.Orders.Editor;
@@ -19,7 +20,8 @@ internal class ViewModel : Editor.ViewModel
         IMediator mediator,
         IDialogService dialogService,
         IMessenger messenger,
-        ISelectionStore<IOrderMarker, int> selectionStore) : base(mediator, dialogService, messenger)
+        ISelectionStore<IOrderMarker, int> selectionStore,
+        IProductStore productStore) : base(mediator, dialogService, messenger, productStore)
     {
         _selectionStore = selectionStore;
     }

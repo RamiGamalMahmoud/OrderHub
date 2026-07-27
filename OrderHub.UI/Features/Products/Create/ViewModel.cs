@@ -1,10 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Application.Features.Products.Create;
 using OrderHub.Domain.Common;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using static OrderHub.Application.DTOs.ProductDtos;
 
 namespace OrderHub.UI.Features.Products.Create
 {
@@ -19,8 +19,15 @@ namespace OrderHub.UI.Features.Products.Create
         protected override async Task Save()
         {
             IEnumerable<int> selectedSupplierIds = Suppliers.Where(s => s.IsSelected).Select(s => s.Value.Id);
-            ProductFormDto product = new ProductFormDto(Name, Code, Price, CategorySelection.SelectedCategory.Id, selectedSupplierIds);
-            Result result = await _mediator.Send(new Application.Commands.ProductCommands.CreateProductCommand(product));
+            CreateProduct.ProductDto product = new CreateProduct.ProductDto(
+                Name, 
+                Code, 
+                Price, 
+                CategorySelection.SelectedCategory.Id, 
+                selectedSupplierIds,
+                new List<CreateProduct.ProductPropertiesDto>());
+            
+            Result result = await _mediator.Send(new CreateProduct.Command(product));
 
             if(result.IsSuccess)
             {

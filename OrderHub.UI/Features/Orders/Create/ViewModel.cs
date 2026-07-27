@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Features.Orders.Editor;
 using OrderHub.UI.Interfaces;
@@ -10,8 +11,8 @@ namespace OrderHub.UI.Features.Orders.Create;
 
 internal class ViewModel : Editor.ViewModel
 {
-    public ViewModel(IMediator mediator, IMessenger messenger, IDialogService dialogService)
-        : base(mediator, dialogService, messenger)
+    public ViewModel(IMediator mediator, IMessenger messenger, IDialogService dialogService, IProductStore productStore)
+        : base(mediator, dialogService, messenger, productStore)
     {
         HasChanges = true;
     }

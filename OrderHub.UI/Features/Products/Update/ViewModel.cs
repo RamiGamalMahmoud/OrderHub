@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Application.Features.Products.Get;
+using OrderHub.Application.Features.Products.Update;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
@@ -7,8 +9,6 @@ using OrderHub.UI.Stores.Markers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using static OrderHub.Application.DTOs.CommonDtos;
-using static OrderHub.Application.DTOs.ProductDtos;
 
 namespace OrderHub.UI.Features.Products.Update;
 
@@ -27,7 +27,7 @@ public class ViewModel : Editor.ViewModel
     {
         await base.LoadDataAsync();
 
-        ProductFormDto product = await _mediator.Send(new Application.Queries.ProductQueries.GetProductForEditQuery(_selectionStore.Id));
+        GetProduct.ProductDetails product = await _mediator.Send(new GetProduct.Query(_selectionStore.Id));
 
         Name = product.Name;
         Code = product.Code;
@@ -48,8 +48,15 @@ public class ViewModel : Editor.ViewModel
             .Where(supplier => supplier.IsSelected)
             .Select(supplier => supplier.Value.Id);
 
-        ProductFormDto product = new ProductFormDto(Name, Code, Price, CategorySelection.SelectedCategory.Id, selectedSuppliersIds);
-        Result result = await _mediator.Send(new Application.Commands.ProductCommands.UpdateProductCommand(_selectionStore.Id, product));
+        UpdateProduct.ProductDto product = new UpdateProduct.ProductDto(
+            Name, 
+            Code, 
+            Price, 
+            CategorySelection.SelectedCategory.Id, 
+            selectedSuppliersIds,
+            new List<UpdateProduct.ProductPropertiesDto>());
+
+        Result result = await _mediator.Send(new UpdateProduct.Command(_selectionStore.Id, product));
 
         if (result.IsSuccess)
         {

@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
 using System;
@@ -19,7 +20,6 @@ internal abstract partial class ViewModel : EditorViewModelBase
     protected readonly IMediator _mediator;
     protected readonly IDialogService _dialogService;
     protected readonly IMessenger _messenger;
-
     private bool _suspendChangeTracking;
 
     public OrderBuilder OrderBuilder { get; }
@@ -42,14 +42,13 @@ internal abstract partial class ViewModel : EditorViewModelBase
 
     public abstract string ActionName { get; }
 
-    public ViewModel(IMediator mediator, IDialogService dialogService, IMessenger messenger)
+    public ViewModel(IMediator mediator, IDialogService dialogService, IMessenger messenger, IProductStore productStore)
     {
         _mediator = mediator;
         _dialogService = dialogService;
         _messenger = messenger;
-
         OrderBuilder = new OrderBuilder();
-        ProductsPanel = new OrderProductsPanelViewModel(mediator, OrderBuilder);
+        ProductsPanel = new OrderProductsPanelViewModel(mediator, OrderBuilder, productStore);
         PartyPanel = new OrderPartyPanelViewModel(mediator, dialogService);
         DeliveryMethodsViewModel = new DeliveryMethodsViewModel(mediator);
         _notifyPropertiesNames = [];

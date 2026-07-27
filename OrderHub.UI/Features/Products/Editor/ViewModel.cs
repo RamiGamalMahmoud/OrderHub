@@ -42,6 +42,7 @@ public abstract partial class ViewModel : EditorViewModelBase
         await RefreshCategoriesAsync();
         await RefreshSuppliersAsync();
         await CategorySelection.LoadRootCategoriesAsync();
+
         Properties = (await _mediator.Send(new Application.Features.Setup.Properties.GetAll.GetPropertiesQuery()))
             .Select(x => new PropertyItem()
             {

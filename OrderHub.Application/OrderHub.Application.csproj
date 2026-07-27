@@ -23,4 +23,11 @@
 	  <ProjectReference Include="..\OrderHub.Domain\OrderHub.Domain.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Features\Orders\Create\" />
+	  <Folder Include="Features\Orders\List\" />
+	  <Folder Include="Features\Orders\Delete\" />
+	  <Folder Include="Features\Orders\Update\" />
+	</ItemGroup>
+
 </Project>

@@ -1,4 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
+using OrderHub.Application.Features.Products.Contracts;
+using OrderHub.Application.Interfaces.Services;
 using System.Reflection;
 
 namespace OrderHub.Infrastructure;
@@ -19,27 +21,28 @@ public static class ServiceCollectionExtensions
         services.AddStore();
         services.AddTransient<Orders.OrderWriteService>();
         services.AddSingleton<Services.WhatsappService>();
-        services.AddSingleton<Application.Interfaces.Services.IWhatsappService>(s => s.GetRequiredService<Services.WhatsappService>());
-        services.AddSingleton<Application.Interfaces.Services.IMessageSender>(s => s.GetRequiredService<Services.WhatsappService>());
-        services.AddSingleton<Application.Interfaces.Services.IMessageService, Services.MessageService>();
-        services.AddSingleton<Application.Interfaces.Services.IConnectionService, Services.ConnectionService>();
+        services.AddSingleton<IWhatsappService>(s => s.GetRequiredService<Services.WhatsappService>());
+        services.AddSingleton<IMessageSender>(s => s.GetRequiredService<Services.WhatsappService>());
+        services.AddSingleton<IMessageService, Services.MessageService>();
+        services.AddSingleton<IConnectionService, Services.ConnectionService>();
 
-        services.AddSingleton<Application.Interfaces.Services.IDatabaseService, Services.DatabaseService>();
-        services.AddHttpClient<Application.Interfaces.Services.IAuthService>();
-        services.AddSingleton<Application.Interfaces.Services.IOrderService, Services.OrderService>();
-        services.AddSingleton<Application.Interfaces.Services.IApplicationDirectoriesService, Services.ApplicationDirectoriesService>();
-        services.AddSingleton<Application.Interfaces.Services.IAppLogger, Services.FileAppLogger>();
-        services.AddSingleton<Application.Interfaces.Services.IEncryptionService, Services.EncryptionService>();
-        services.AddSingleton<Application.Interfaces.Services.ICredentialsService, Services.FileCredentialsService>();
-        services.AddSingleton<Application.Interfaces.Services.ITokenStorageService, Services.FieTokenStorageService>();
-        services.AddTransient<Application.Interfaces.Services.IAuthService, Services.SalaAuthService>();
-        services.AddSingleton<Application.Interfaces.Services.ICacheService, Services.CacheService>();
+        services.AddSingleton<IDatabaseService, Services.DatabaseService>();
+        services.AddHttpClient<IAuthService>();
+        services.AddSingleton<IOrderService, Services.OrderService>();
+        services.AddSingleton<IApplicationDirectoriesService, Services.ApplicationDirectoriesService>();
+        services.AddSingleton<IAppLogger, Services.FileAppLogger>();
+        services.AddSingleton<IEncryptionService, Services.EncryptionService>();
+        services.AddSingleton<ICredentialsService, Services.FileCredentialsService>();
+        services.AddSingleton<ITokenStorageService, Services.FieTokenStorageService>();
+        services.AddTransient<IAuthService, Services.SalaAuthService>();
+        services.AddSingleton<ICacheService, Services.CacheService>();
         return services;
     }
 
     private static IServiceCollection AddStore(this IServiceCollection services)
     {
         services.AddSingleton<Application.Interfaces.Stores.IPropertyStore, Stores.PropertyStore>();
+        services.AddSingleton<IProductStore, Stores.ProductStore>();
         return services;
     }
 }

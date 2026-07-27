@@ -144,9 +144,11 @@
                             Foreground="{StaticResource Primary}"
                             Text="القسم" />
                     </Border>
-                    <ComboBox
+                    <hc:ComboBox
                         Height="40"
                         Margin="0,5"
+                        hc:InfoElement.Placeholder="القسم الرئيسي"
+                        hc:InfoElement.ShowClearButton="True"
                         DisplayMemberPath="Name"
                         FontSize="16"
                         FontWeight="DemiBold"
@@ -161,9 +163,11 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <ComboBox
+                                <hc:ComboBox
                                     Height="40"
                                     Margin="0,5"
+                                    hc:InfoElement.Placeholder="القسم الفرعي"
+                                    hc:InfoElement.ShowClearButton="True"
                                     DisplayMemberPath="Name"
                                     FontSize="16"
                                     FontWeight="DemiBold"

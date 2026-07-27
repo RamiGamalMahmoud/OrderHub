@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Notification.Wpf;
 using OrderHub.Application;
+using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain;
 using OrderHub.Infrastructure;
 using OrderHub.UI.StartUpSteps;
@@ -14,13 +15,13 @@ public static class ServiceCollectionExtensions
     {
         // Services
         services.AddStartUpSteps();
-        services.AddSingleton<Application.Interfaces.Services.INotifier, Services.Notifier>();
-        services.AddSingleton<Application.Interfaces.Services.IAppState, Services.AppState>();
+        services.AddSingleton<INotifier, Services.Notifier>();
+        services.AddSingleton<IAppState, Services.AppState>();
         services.AddSingleton<Services.StartupProgress>();
         services.AddSingleton<Interfaces.INavigationService, Services.NavigationService>();
         services.AddSingleton<Interfaces.IDialogService, Services.DialogService>();
         services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
-        services.AddSingleton<Application.Interfaces.Services.INotificationService, Services.NotificationService>();
+        services.AddSingleton<INotificationService, Services.NotificationService>();
         services.AddSingleton<Properties.Settings>();
 
         services.AddSingleton<INotificationManager, NotificationManager>();

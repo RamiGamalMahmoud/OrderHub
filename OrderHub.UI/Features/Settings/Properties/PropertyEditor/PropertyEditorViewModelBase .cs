@@ -40,7 +40,7 @@ public abstract partial class PropertyEditorViewModelBase : ObservableValidator
     [NotifyDataErrorInfo]
     [StringLength(500)]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
-    private string? _description;
+    private string _description;
 
     [ObservableProperty]
     [Required]
@@ -52,7 +52,7 @@ public abstract partial class PropertyEditorViewModelBase : ObservableValidator
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddOptionCommand))]
-    private string? _newOptionValue;
+    private string _newOptionValue;
 
     public ObservableCollection<OptionViewModel> Options { get; } = [];
 
