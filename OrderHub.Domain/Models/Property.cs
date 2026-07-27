@@ -59,7 +59,7 @@ public class Property : ModelBase
 
     public void ChangeDescription(string description)
     {
-        Description = description.Trim();
+        Description = description?.Trim();
     }
 
     public void ChangeType(PropertyType propertyType)
