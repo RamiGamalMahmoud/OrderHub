@@ -25,7 +25,9 @@ namespace OrderHub.UI.Features.Products.Create
                 Price, 
                 CategorySelection.SelectedCategory.Id, 
                 selectedSupplierIds,
-                new List<CreateProduct.ProductPropertiesDto>());
+                Properties
+                    .Where(x => x.IsAssigned)
+                    .Select(p => new CreateProduct.ProductPropertiesDto(p.Id, p.PropertyRequirement.Value == Editor.PropertyRequirement.Required)));
             
             Result result = await _mediator.Send(new CreateProduct.Command(product));
 

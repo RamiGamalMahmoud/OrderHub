@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Features.Setup.Properties.GetAll;
+using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.UI.Features.Settings.Properties.PropertyEditor;
@@ -18,6 +19,7 @@ public partial class PropertiesViewModel : ObservableObject
     private readonly ObservableCollection<PropertyViewModel> _propertyItems = [];
     private readonly IMediator _mediator;
     private readonly IMessenger _messenger;
+    private readonly INotificationService _notificationService;
 
     public ReadOnlyObservableCollection<PropertyViewModel> PropertyItems { get; }
 
@@ -38,11 +40,12 @@ public partial class PropertiesViewModel : ObservableObject
     [ObservableProperty]
     private PropertyEditorViewModelBase _propertyEditorViewModel;
 
-    public PropertiesViewModel(IMediator mediator, IMessenger messenger)
+    public PropertiesViewModel(IMediator mediator, IMessenger messenger, INotificationService notificationService)
     {
         PropertyItems = new ReadOnlyObservableCollection<PropertyViewModel>(_propertyItems);
         _mediator = mediator;
         _messenger = messenger;
+        _notificationService = notificationService;
     }
 
     public async Task LoadAsync()
@@ -78,10 +81,15 @@ public partial class PropertiesViewModel : ObservableObject
     [RelayCommand]
     private async Task Delete(int id)
     {
-        Result result = await _mediator.Send(new Application.Features.Setup.Properties.Delete.DeletePropertyCommand(id));
+        Result result = await _mediator.Send(new Application.Features.Setup.Properties.Delete.DeleteProperty.Command(id));
         if (result.IsSuccess)
         {
             _propertyItems.Remove(_propertyItems.Where(x => x.Id == id).First());
+            _notificationService.ShowSuccess("تم حذف الخاصية");
+        }
+        else
+        {
+            _notificationService.ShowError("لم يتم حذف الخاصية , الخاصية مرتبطة ببيانات أخرى");
         }
     }
 }

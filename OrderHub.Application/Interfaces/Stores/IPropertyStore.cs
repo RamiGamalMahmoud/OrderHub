@@ -1,6 +1,7 @@
 ﻿using OrderHub.Application.Features.Setup.Properties.Get;
 using OrderHub.Application.Features.Setup.Properties.GetAll;
 using OrderHub.Application.Features.Setup.Properties.Update;
+using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using System.Collections.Generic;
 using System.Threading;
@@ -23,7 +24,7 @@ public interface IPropertyStore
     Task<int> CreateAsync(Property property, CancellationToken cancellationToken = default);
     Task UpdateAsync(PropertyUpdateDto dto, CancellationToken cancellationToken = default);
 
-    Task DeleteAsync(int id, CancellationToken cancellationToken = default);
+    Task<Result> DeleteAsync(int id, CancellationToken cancellationToken = default);
 
 
 }

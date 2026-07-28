@@ -6,6 +6,7 @@ using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -43,7 +44,7 @@ public abstract partial class ViewModel : EditorViewModelBase
         await RefreshSuppliersAsync();
         await CategorySelection.LoadRootCategoriesAsync();
 
-        Properties = (await _mediator.Send(new Application.Features.Setup.Properties.GetAll.GetPropertiesQuery()))
+        var properties = (await _mediator.Send(new Application.Features.Setup.Properties.GetAll.GetPropertiesQuery()))
             .Select(x => new PropertyItem()
             {
                 Id = x.Id,
@@ -51,9 +52,21 @@ public abstract partial class ViewModel : EditorViewModelBase
                 PropertyType = x.Type.ToString()
             });
 
+        _properties.Clear();
+        foreach(var property in properties)
+        {
+            _properties.Add(property);
+            property.PropertyChanged += OnPropertyChanged;
+        }
+
         PropertyRequirements = Enum.GetValues<PropertyRequirement>()
         .Select(x => new EnumItem<PropertyRequirement>(x, x.GetDescription()));
         OnPropertyChanged(nameof(Properties));
+    }
+
+    private void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        HasChanges = true;
     }
 
     public CategorySelection CategorySelection { get; }
@@ -119,8 +132,15 @@ public abstract partial class ViewModel : EditorViewModelBase
     [ObservableProperty]
     private IEnumerable<CategoryInfoDto> _categories;
 
-    public IEnumerable<PropertyItem> Properties { get; private set; }
-    public IEnumerable<EnumItem<PropertyRequirement>> PropertyRequirements { get; private set; } 
+    private Collection<PropertyItem> _properties = [];
+    public IReadOnlyCollection<PropertyItem> Properties => _properties.AsReadOnly();
+    public IEnumerable<EnumItem<PropertyRequirement>> PropertyRequirements { get; private set; }
+
+    [RelayCommand]
+    private static void AddProperty(PropertyItem property) => property.IsAssigned = true;
+
+    [RelayCommand]
+    private static void RemoveProperty(PropertyItem property) => property.IsAssigned = false;
 }
 
 public partial class PropertyItem : ObservableObject
@@ -130,11 +150,13 @@ public partial class PropertyItem : ObservableObject
     public string PropertyType { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanBeAdded))]
     private EnumItem<PropertyRequirement> _propertyRequirement;
 
     [ObservableProperty]
     private bool _isAssigned;
 
+    public bool CanBeAdded => PropertyRequirement is not null;
 }
 
 public enum PropertyRequirement

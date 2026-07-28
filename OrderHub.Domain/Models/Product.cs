@@ -29,16 +29,34 @@ public class Product : ModelBase
 
     private readonly List<ProductProperty> _properties = [];
     public IReadOnlyCollection<ProductProperty> Properties => _properties;
-    public void AddProperty(ProductProperty property)
+    public void AddProperty(int propertyId, bool isRequired)
     {
-        if (!_properties.Select(x => x.Id).Contains(property.Id))
-            _properties.Add(property);
+        if (_properties.Any(x => x.PropertyId == propertyId))
+            return;
+
+        _properties.Add(new ProductProperty()
+        {
+            PropertyId = propertyId,
+            IsRequired = isRequired
+        });
     }
 
-    public void RemoveProperty(ProductProperty property)
+    public void RemoveProperty(int propertyId)
     {
-        if (_properties.Select(x => x.Id).Contains(property.Id))
+        ProductProperty property = _properties.Where(p => p.PropertyId == propertyId).SingleOrDefault();
+        if(property is not null)
+        {
             _properties.Remove(property);
+        }
+    }
+
+    public void ChangePropertyRquirement(int propertyId, bool isRequired)
+    {
+        ProductProperty property = _properties.Where(p => p.PropertyId == propertyId).SingleOrDefault();
+        if( property is not null)
+        {
+            property.IsRequired = isRequired;
+        }
     }
 
     public IReadOnlyCollection<Supplier> Suppliers => _suppliers.AsReadOnly();

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using OpenQA.Selenium.DevTools.V145.Page;
 using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Features.Products.Create;
 using OrderHub.Application.Features.Products.Get;
@@ -10,6 +11,7 @@ using OrderHub.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,6 +34,11 @@ internal class ProductStore(AppDbContextFactory contextFactory) : IProductStore
             category,
             new Money(productDto.Price));
 
+        foreach (CreateProduct.ProductPropertiesDto productProperties in productDto.ProductProperties)
+        {
+            product.AddProperty(productProperties.PropertyId, productProperties.IsRequired);
+        }
+
         if (productDto.SelectedSuppliersIds.Any())
         {
             IEnumerable<Supplier> suppliers = await dbContext
@@ -48,8 +55,8 @@ internal class ProductStore(AppDbContextFactory contextFactory) : IProductStore
 
         try
         {
-            int result = await dbContext.SaveChangesAsync();
-            return Result<int>.Success(result);
+            await dbContext.SaveChangesAsync();
+            return Result<int>.Success(product.Id);
         }
 
         catch (Exception ex)
@@ -115,7 +122,7 @@ internal class ProductStore(AppDbContextFactory contextFactory) : IProductStore
                 p.Price.Value,
                 p.Category.Id,
                 p.Suppliers.Select(s => s.Id),
-                new List<GetProduct.ProductProperty>()))
+                p.Properties.Select(p => new GetProduct.ProductProperty(p.PropertyId, p.IsRequired))))
             .FirstOrDefaultAsync(cancellationToken);
     }
 
@@ -189,18 +196,12 @@ internal class ProductStore(AppDbContextFactory contextFactory) : IProductStore
             .Where(p => p.Id == productId)
             .Include(p => p.Category)
             .Include(p => p.Suppliers)
+            .Include(p => p.Properties)
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
 
-        product.ClearSuppliers();
-        IEnumerable<Supplier> selectedSuppliers = await appDbContext
-            .Suppliers
-            .Where(s => productDto.SelectedSuppliersIds.Contains(s.Id))
-            .ToListAsync(cancellationToken: cancellationToken);
+        SynchronizeProperties(productDto, product);
 
-        foreach (Supplier supplier in selectedSuppliers)
-        {
-            product.AddSupplier(supplier);
-        }
+        await SynchronizeSuppliers(productDto, appDbContext, product, cancellationToken);
 
         try
         {
@@ -213,7 +214,9 @@ internal class ProductStore(AppDbContextFactory contextFactory) : IProductStore
                 return Result<int>.Failure($"Category with Id {productDto.CategoryId} not found.");
             }
             product.UpdateCategory(category);
+
             await appDbContext.SaveChangesAsync(cancellationToken);
+            
             return Result<int>.Success(product.Id);
         }
         catch (Exception)
@@ -222,7 +225,47 @@ internal class ProductStore(AppDbContextFactory contextFactory) : IProductStore
         }
     }
 
-    // By Name (For Orders)
+    private static async Task SynchronizeSuppliers(UpdateProduct.ProductDto productDto, AppDbContext appDbContext, Product product, CancellationToken cancellationToken)
+    {
+        product.ClearSuppliers();
+        IEnumerable<Supplier> selectedSuppliers = await appDbContext
+            .Suppliers
+            .Where(s => productDto.SelectedSuppliersIds.Contains(s.Id))
+            .ToListAsync(cancellationToken: cancellationToken);
 
-    // By Category Id (For Orders)
+        foreach (Supplier supplier in selectedSuppliers)
+        {
+            product.AddSupplier(supplier);
+        }
+    }
+
+    private static void SynchronizeProperties(UpdateProduct.ProductDto productDto, Product product)
+    {
+        var existedProperties = product.Properties.ToDictionary(p => p.PropertyId);
+        var requestedProperties = productDto.ProductProperties.ToDictionary(p => p.PropertyId);
+
+        // Remove
+        foreach (var property in existedProperties.Values)
+        {
+            if (!requestedProperties.ContainsKey(property.PropertyId))
+            {
+                product.RemoveProperty(property.PropertyId);
+            }
+        }
+
+        // Add & Update
+        foreach (var item in requestedProperties.Values)
+        {
+            if (!existedProperties.TryGetValue(item.PropertyId, out var currentProperty))
+            {
+                product.AddProperty(item.PropertyId, item.IsRequired);
+                continue;
+            }
+
+            if (currentProperty.IsRequired != item.IsRequired)
+            {
+                product.ChangePropertyRquirement(item.PropertyId, item.IsRequired);
+            }
+        }
+    }
 }

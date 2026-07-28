@@ -18,7 +18,7 @@ public static class GetProduct
         IEnumerable<int> SelectedSuppliersIds,
         IEnumerable<ProductProperty> ProductProperties);
 
-    public record ProductProperty();
+    public record ProductProperty(int PropertyId, bool isRequired);
 
     internal class Handler : IRequestHandler<Query, ProductDetails>
     {

@@ -3,7 +3,7 @@ using OrderHub.Application.Features.Setup.Properties.Get;
 using OrderHub.Application.Features.Setup.Properties.GetAll;
 using OrderHub.Application.Features.Setup.Properties.Update;
 using OrderHub.Application.Interfaces.Stores;
-using OrderHub.Domain.Enums;
+using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,11 +18,11 @@ internal class PropertyStore(AppDbContextFactory dbContextFactory) : IPropertySt
     {
         using AppDbContext dbContext = dbContextFactory.CreateDbContext();
         dbContext.Properties.Add(property);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(cancellationToken);
         return property.Id;
     }
 
-    public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<Result> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
         using AppDbContext dbContext = dbContextFactory.CreateDbContext();
         Property property = await dbContext.Properties.FindAsync(id);
@@ -30,8 +30,17 @@ internal class PropertyStore(AppDbContextFactory dbContextFactory) : IPropertySt
         if (property is not null)
         {
             dbContext.Properties.Remove(property);
-            await dbContext.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+                return Result.Success();
+            }
+            catch (System.Exception)
+            {
+                return Result.Failure();
+            }
         }
+        return Result.Failure();
     }
 
     public async Task<bool> ExistsByNameAsync(string name, CancellationToken cancellationToken = default)
@@ -105,10 +114,10 @@ internal class PropertyStore(AppDbContextFactory dbContextFactory) : IPropertySt
                 property.AddOption(optionUpdateDto.Value);
             }
 
-            if(optionUpdateDto.Id.HasValue && property.Options.Any(x => x.Id == optionUpdateDto.Id.Value))
+            if (optionUpdateDto.Id.HasValue && property.Options.Any(x => x.Id == optionUpdateDto.Id.Value))
             {
                 PropertyOption propertyOption = property.Options.First(x => x.Id == optionUpdateDto.Id.Value);
-                if(propertyOption.Value != optionUpdateDto.Value)
+                if (propertyOption.Value != optionUpdateDto.Value)
                 {
                     propertyOption.Rename(optionUpdateDto.Value);
                 }
