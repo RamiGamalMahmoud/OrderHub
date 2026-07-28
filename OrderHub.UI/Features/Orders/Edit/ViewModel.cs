@@ -78,17 +78,16 @@ internal class ViewModel : Editor.ViewModel
                     .Select(supplier => new OrderItemSupplier(supplier.Id, supplier.Name))
                     .ToArray();
 
-                var orderItem = new OrderItemViewModel(_mediator)
+                OrderItemViewModel orderItem = new()
                 {
                     ProductId = item.ProductId,
                     ProductName = item.ProductName,
                     CategoryName = item.CategoryName,
                     Price = item.UnitPrice,
                     Quantity = item.Quantity,
-                    Suppliers = suppliers
+                    Suppliers = suppliers,
+                    Supplier = suppliers.FirstOrDefault(supplier => supplier.Id == item.SupplierId)
                 };
-
-                orderItem.Supplier = suppliers.FirstOrDefault(supplier => supplier.Id == item.SupplierId);
                 OrderBuilder.Items.Add(orderItem);
             }
 
@@ -103,7 +102,7 @@ internal class ViewModel : Editor.ViewModel
                     _ => Enumerable.Empty<Handler>()
                 };
 
-                var stepViewModel = new DeliveryStepViewModel
+                DeliveryStepViewModel stepViewModel = new()
                 {
                     StepOrder = step.StepOrder,
                     Method = step.DeliveryMethod,

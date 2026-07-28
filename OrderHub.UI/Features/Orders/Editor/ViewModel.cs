@@ -28,6 +28,9 @@ internal abstract partial class ViewModel : EditorViewModelBase
     public OrderPartyPanelViewModel PartyPanel { get; }
     public DeliveryMethodsViewModel DeliveryMethodsViewModel { get; }
 
+    [ObservableProperty]
+    private OrderItemViewModel _selectedOrderItem;
+
     public Application.DTOs.ClientDtos.ClientListDto SelectedClient
     {
         get => PartyPanel.SelectedClient;

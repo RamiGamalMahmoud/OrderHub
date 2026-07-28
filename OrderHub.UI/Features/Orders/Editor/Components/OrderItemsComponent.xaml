@@ -9,65 +9,95 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <DataGrid
-        hc:BorderElement.CornerRadius="0 0 5 5"
-        AutoGenerateColumns="False"
-        BorderThickness="1,0,1,1"
-        GridLinesVisibility="Vertical"
-        ItemsSource="{Binding OrderBuilder.Items}"
-        VerticalGridLinesBrush="{StaticResource WhiteBrush}">
-        <DataGrid.Columns>
-            <DataGridTextColumn
-                Width="300"
-                Binding="{Binding ProductName}"
-                Header="المنتج"
-                IsReadOnly="True" />
-            <DataGridTextColumn
-                Width="100"
-                Binding="{Binding CategoryName}"
-                Header="القسم"
-                IsReadOnly="True" />
-            <DataGridTemplateColumn Header="الكمية">
-                <DataGridTemplateColumn.CellTemplate>
-                    <DataTemplate>
-                        <TextBox
-                            Width="50"
-                            Margin="5,0"
-                            Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}"
-                            TextAlignment="Center" />
-                    </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-            </DataGridTemplateColumn>
+    <StackPanel Orientation="Vertical">
 
+        <Border
+            Grid.Row="0"
+            Height="50"
+            Padding="12"
+            Background="White"
+            BorderBrush="LightGray"
+            BorderThickness="1,1,1,0"
+            CornerRadius="10 10 0 0">
+            <StackPanel Orientation="Horizontal">
+                <icons:MaterialIcon
+                    Width="20"
+                    Foreground="{StaticResource BlueBrush}"
+                    Kind="ListBoxOutline" />
+                <TextBlock
+                    Margin="10,0,0,0"
+                    VerticalAlignment="Center"
+                    FontSize="16"
+                    FontWeight="Bold"
+                    Text="قائمة المنتجات المضافة" />
+            </StackPanel>
+        </Border>
 
-            <DataGridTemplateColumn Header="السعر">
-                <DataGridTemplateColumn.CellTemplate>
-                    <DataTemplate>
-                        <TextBox Width="100" Text="{Binding Price, UpdateSourceTrigger=PropertyChanged}" />
-                    </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-            </DataGridTemplateColumn>
+        <DataGrid
+            hc:BorderElement.CornerRadius="0 0 5 5"
+            AutoGenerateColumns="False"
+            BorderThickness="1,0,1,1"
+            GridLinesVisibility="Vertical"
+            ItemsSource="{Binding OrderBuilder.Items}"
+            SelectedItem="{Binding SelectedOrderItem}"
+            VerticalGridLinesBrush="{StaticResource WhiteBrush}">
 
-            <DataGridTextColumn
-                Width="100"
-                Binding="{Binding SubTotal}"
-                Header="الإجمال"
-                IsReadOnly="True" />
+            <DataGrid.Columns>
 
-            <DataGridTemplateColumn Header="الحالة">
-                <DataGridTemplateColumn.CellTemplate>
-                    <DataTemplate>
-                        <icons:MaterialIcon
-                            Width="20"
-                            Height="20"
-                            Foreground="{StaticResource WarningBrush}"
-                            Kind="Alert" />
-                    </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-            </DataGridTemplateColumn>
+                <DataGridTextColumn
+                    Width="300"
+                    Binding="{Binding ProductName}"
+                    Header="المنتج"
+                    IsReadOnly="True" />
 
-        </DataGrid.Columns>
+                <DataGridTextColumn
+                    MinWidth="150"
+                    Binding="{Binding CategoryName}"
+                    Header="القسم"
+                    IsReadOnly="True" />
 
-    </DataGrid>
+                <DataGridTemplateColumn Header="الكمية">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox
+                                Width="50"
+                                Margin="5,0"
+                                Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}"
+                                TextAlignment="Center" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="السعر">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Width="100" Text="{Binding Price, UpdateSourceTrigger=PropertyChanged}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn
+                    Width="100"
+                    Binding="{Binding SubTotal}"
+                    Header="الإجمال"
+                    IsReadOnly="True" />
+
+                <DataGridTemplateColumn Header="الحالة">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <icons:MaterialIcon
+                                Width="20"
+                                Height="20"
+                                Foreground="{StaticResource WarningBrush}"
+                                Kind="Alert" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+            </DataGrid.Columns>
+
+        </DataGrid>
+    </StackPanel>
 
 </UserControl>

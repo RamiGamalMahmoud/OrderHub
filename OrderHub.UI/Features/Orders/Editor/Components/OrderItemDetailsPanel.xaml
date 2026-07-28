@@ -5,13 +5,13 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:hc="https://handyorg.github.io/handycontrol"
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
-    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     d:DesignHeight="700"
     d:DesignWidth="340"
     mc:Ignorable="d">
 
     <Border
+        Width="400"
         Padding="16"
         Background="White"
         BorderBrush="#E5E5E5"
@@ -65,7 +65,7 @@
 
                         <StackPanel Margin="12">
 
-                            <TextBlock FontWeight="SemiBold" Text="تكيات أرضية بدون كرسي" />
+                            <TextBlock FontWeight="SemiBold" Text="{Binding SelectedOrderItem.ProductName}" />
 
                             <Border
                                 Margin="0,5,0,0"
@@ -73,7 +73,7 @@
                                 HorizontalAlignment="Left"
                                 Background="{StaticResource WhiteBrush}"
                                 CornerRadius="3">
-                                <TextBlock Foreground="Gray" Text="تكيات" />
+                                <TextBlock Foreground="Gray" Text="{Binding SelectedOrderItem.CategoryName}" />
                             </Border>
 
                         </StackPanel>
@@ -98,8 +98,9 @@
 
                             <ComboBox
                                 Height="36"
-                                ItemsSource="{Binding Suppliers}"
-                                SelectedItem="{Binding SelectedSupplier}" />
+                                DisplayMemberPath="Name"
+                                ItemsSource="{Binding SelectedOrderItem.Suppliers}"
+                                SelectedItem="{Binding SelectedOrderItem.Supplier}" />
 
                         </StackPanel>
 
@@ -124,7 +125,7 @@
                                 <TextBlock FontWeight="SemiBold" Text="خصائص المنتج" />
                             </StackPanel>
 
-                            <ItemsControl ItemsSource="{Binding Properties}">
+                            <ItemsControl ItemsSource="{Binding SelectedOrderItem.Properties}">
 
                                 <ItemsControl.ItemTemplate>
 
@@ -172,7 +173,8 @@
                 Margin="0,16,0,0"
                 HorizontalAlignment="Stretch"
                 BorderBrush="{StaticResource DangerBrush}"
-                Command="{Binding RemoveCommand}"
+                Command="{Binding RemoveOrderItemCommand}"
+                CommandParameter="{Binding SelectedOrderItem}"
                 FontSize="14"
                 Foreground="{StaticResource DangerBrush}">
 

@@ -20,6 +20,12 @@
             TargetType="ListViewItem">
             <Setter Property="Background" Value="#f1f5f9" />
             <Setter Property="Cursor" Value="Hand" />
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource LightBlueBrush}" />
+                    <Setter Property="Foreground" Value="{StaticResource BlackBrush}" />
+                </Trigger>
+            </Style.Triggers>
         </Style>
     </UserControl.Resources>
 
@@ -102,20 +108,18 @@
                 ItemContainerStyle="{StaticResource MyStye}"
                 ItemsSource="{Binding ProductsPanel.Products}"
                 SelectedItem="{Binding ProductsPanel.SelectedProduct}">
-                <ListView.Resources />
+
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Grid.Column="1" Orientation="Vertical">
                             <TextBlock
                                 FontSize="14"
                                 FontWeight="Bold"
-                                Foreground="{StaticResource Primary}"
                                 Text="{Binding Name}" />
                             <TextBlock
                                 Margin="0,3"
                                 FontSize="10"
                                 FontWeight="Bold"
-                                Foreground="{StaticResource DangerBrush}"
                                 Text="{Binding CategoryName}" />
                             <StackPanel
                                 Margin="0,10,0,0"

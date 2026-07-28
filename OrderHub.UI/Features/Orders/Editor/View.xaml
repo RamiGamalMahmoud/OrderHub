@@ -40,37 +40,16 @@
                     <Grid Grid.Column="1" Margin="6,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="350" />
+                            <ColumnDefinition Width="10" />
                             <ColumnDefinition Width="1*" />
                             <ColumnDefinition Width="10" />
-                            <ColumnDefinition Width="400" />
+                            <ColumnDefinition Width="auto" />
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="1" Orientation="Vertical">
-                            <Border
-                                Grid.Row="0"
-                                Height="50"
-                                Padding="12"
-                                Background="White"
-                                BorderBrush="LightGray"
-                                BorderThickness="1,1,1,0"
-                                CornerRadius="10 10 0 0">
-                                <StackPanel Orientation="Horizontal">
-                                    <icons:MaterialIcon
-                                        Width="20"
-                                        Foreground="{StaticResource BlueBrush}"
-                                        Kind="ListBoxOutline" />
-                                    <TextBlock
-                                        Margin="10,0,0,0"
-                                        VerticalAlignment="Center"
-                                        FontSize="16"
-                                        FontWeight="Bold"
-                                        Text="قائمة المنتجات المضافة" />
-                                </StackPanel>
-                            </Border>
+                        <editorComponents:ProductsComponent Grid.Column="0" />
 
-                            <editorComponents:OrderItemsComponent />
-                        </StackPanel>
-                        <editorComponents:ProductsComponent Grid.Column="0" Margin="0,0,6,0" />
+                        <editorComponents:OrderItemsComponent Grid.Column="2" />
+
                         <editorComponents:OrderItemDetailsPanel Grid.Column="4" />
                     </Grid>
 
@@ -113,12 +92,6 @@
             </hc:TabControl>
 
             <editorComponents:OrderSummaryComponent Grid.Row="1" />
-
-
-
-
-
-
 
         </Grid>
     </Border>
