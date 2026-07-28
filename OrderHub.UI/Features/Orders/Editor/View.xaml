@@ -39,8 +39,10 @@
 
                     <Grid Grid.Column="1" Margin="6,0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="400" />
+                            <ColumnDefinition Width="350" />
                             <ColumnDefinition Width="1*" />
+                            <ColumnDefinition Width="10" />
+                            <ColumnDefinition Width="400" />
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="1" Orientation="Vertical">
@@ -66,9 +68,10 @@
                                 </StackPanel>
                             </Border>
 
-                            <editorComponents:OrderItemsComponent Grid.Row="1" />
+                            <editorComponents:OrderItemsComponent />
                         </StackPanel>
                         <editorComponents:ProductsComponent Grid.Column="0" Margin="0,0,6,0" />
+                        <editorComponents:OrderItemDetailsPanel Grid.Column="4" />
                     </Grid>
 
                 </hc:TabItem>

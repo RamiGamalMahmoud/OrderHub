@@ -15,15 +15,15 @@
         BorderThickness="1,0,1,1"
         GridLinesVisibility="Vertical"
         ItemsSource="{Binding OrderBuilder.Items}"
-        RowHeight="70"
         VerticalGridLinesBrush="{StaticResource WhiteBrush}">
         <DataGrid.Columns>
             <DataGridTextColumn
-                Width="200"
+                Width="300"
                 Binding="{Binding ProductName}"
                 Header="المنتج"
                 IsReadOnly="True" />
             <DataGridTextColumn
+                Width="100"
                 Binding="{Binding CategoryName}"
                 Header="القسم"
                 IsReadOnly="True" />
@@ -54,31 +54,14 @@
                 Header="الإجمال"
                 IsReadOnly="True" />
 
-            <DataGridTemplateColumn Width="200" Header="المورد">
+            <DataGridTemplateColumn Header="الحالة">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                        <hc:ComboBox
-                            hc:InfoElement.ShowClearButton="True"
-                            Cursor="Hand"
-                            DisplayMemberPath="Name"
-                            ItemsSource="{Binding Suppliers}"
-                            SelectedItem="{Binding Supplier, UpdateSourceTrigger=PropertyChanged}" />
-                    </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-            </DataGridTemplateColumn>
-
-            <DataGridTemplateColumn Header="إجراءات">
-                <DataGridTemplateColumn.CellTemplate>
-                    <DataTemplate>
-                        <Button
-                            Padding="0"
-                            BorderThickness="0"
-                            Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Path=DataContext.RemoveOrderItemCommand}"
-                            CommandParameter="{Binding}"
-                            Cursor="Hand"
-                            Foreground="{StaticResource DangerBrush}">
-                            <icons:MaterialIcon Height="20" Kind="TrashCanOutline" />
-                        </Button>
+                        <icons:MaterialIcon
+                            Width="20"
+                            Height="20"
+                            Foreground="{StaticResource WarningBrush}"
+                            Kind="Alert" />
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
