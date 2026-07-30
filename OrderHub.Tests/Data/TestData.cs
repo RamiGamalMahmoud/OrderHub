@@ -1,6 +1,11 @@
-﻿using OrderHub.Domain.Models;
+﻿using OrderHub.Application.Features.Setup.Properties.Create;
+using OrderHub.Domain.Models;
+using OrderHub.Infrastructure;
+using OrderHub.Infrastructure.Stores;
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 public static class TestData
 {
@@ -42,37 +47,22 @@ public static class TestData
         return new Supplier(name, open, close, address, phone);
     }
 
-    public static OrderItem CreateOrderItem(int productId, string productName, int orderId, decimal unitPrice, int quantity, Supplier supplier)
-    {
-        return new OrderItem(
-            productId,
-            productName,
-            orderId,
-            unitPrice,
-            quantity,
-            supplier.Name.Value,
-            supplier.Id
-        );
-    }
-
     public static Order CreateOrder(Client client = null, Deliveryman deliveryman = null, ShippingCarrier carrier = null)
     {
         client ??= CreateClient();
         deliveryman ??= CreateDeliveryman();
         carrier ??= CreateShippingCarrier();
 
-        var order = new Order(clientId: client.Id, orderNumber: Guid.NewGuid().ToString().Substring(0, 8))
-        {
-            Deliveryman = deliveryman,
-            ShippingCarrier = carrier,
-        };
+        var order = new Order(clientId: client.Id, orderNumber: Guid.NewGuid().ToString().Substring(0, 8));
+        order.ChangeDeliveryman(deliveryman.Id);
+        order.ChangeShippingCarrier(carrier.Id);
 
         // Add sample order items
         var supplier1 = CreateSupplier("Supplier 1");
         var supplier2 = CreateSupplier("Supplier 2");
 
-        order.AddOrderItem(CreateOrderItem(1, "Product A", order.Id, 50, 2, supplier1));
-        order.AddOrderItem(CreateOrderItem(2, "Product B", order.Id, 100, 1, supplier2));
+        order.AddOrderItem(1, "Product A", order.Id, 50, supplier1.Name.Value, 2);
+        order.AddOrderItem(2, "Product B", order.Id, 100, supplier2.Name.Value, 1);
 
         return order;
     }
@@ -85,5 +75,20 @@ public static class TestData
             orders.Add(CreateOrder());
         }
         return orders;
+    }
+
+    internal static async Task<Property> CreateProperty(AppDbContextFactory dbContextFactory)
+    {
+        var property = Property.Create(
+            "Color",
+            OrderHub.Domain.Enums.PropertyType.List,
+            "Description",
+            ["Red", "Blue"]);
+
+        using AppDbContext appDbContext = dbContextFactory.CreateDbContext();
+        appDbContext.Properties.Add(property);
+        await appDbContext.SaveChangesAsync();
+
+        return property;
     }
 }

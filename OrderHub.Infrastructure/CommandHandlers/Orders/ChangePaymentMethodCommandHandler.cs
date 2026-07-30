@@ -17,7 +17,7 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
         {
             using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
             Order order = await appDbContext.Orders.Where(o => o.Id == request.OrderId).FirstOrDefaultAsync();
-            order.PaymentMethodId = request.PaymentMethodId;
+            order.ChangePaymentMethod(request.PaymentMethodId);
             await appDbContext.SaveChangesAsync();
             return Result.Success();
         }

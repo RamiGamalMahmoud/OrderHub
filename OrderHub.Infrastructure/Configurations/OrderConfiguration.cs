@@ -26,7 +26,7 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
         builder.Ignore(o => o.Total);
 
         builder.HasMany(o => o.OrderItems)
-            .WithOne()
+            .WithOne(i => i.Order)
             .HasForeignKey(o => o.OrderId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);

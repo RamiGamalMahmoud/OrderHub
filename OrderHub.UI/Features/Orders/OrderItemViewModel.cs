@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using OrderHub.Domain.Enums;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -8,7 +9,7 @@ public partial class OrderItemViewModel : ObservableValidator
 {
     public required string ProductName { get; init; }
     public required string CategoryName { get; init; }
-    public int ProductId { get; init; }
+    public required int ProductId { get; init; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SubTotal))]
@@ -39,9 +40,41 @@ public partial class OrderItemViewModel : ObservableValidator
     [Required(ErrorMessage = "Supplier must be selected")]
     private int? _supplierId;
 
+    [ObservableProperty]
+    private IEnumerable<OrderItemProperty> _properties;
+
     public IEnumerable<OrderItemSupplier> Suppliers { get; init; } = [];
     public bool IsValid => !HasErrors;
 }
 
 public record OrderItemSupplier(int Id, string Name);
-public record OrderItemProperty();
+public partial class OrderItemProperty : ObservableObject
+{
+        public int Id {get; init; }
+        public string Name {get; init; }
+        public bool IsRequired {get; init; }
+        public PropertyType PropertyType {get; init; }
+        public IEnumerable<OrderItemPropertyOption> Options { get; init; }
+
+    [ObservableProperty]
+    private string _selectedOptionValue;
+
+    partial void OnSelectedOptionValueChanged(string oldValue, string newValue)
+    {
+        
+    }
+
+    public OrderItemProperty(int id,
+                             string name,
+                             bool isRequired,
+                             PropertyType propertyType,
+                             IEnumerable<OrderItemPropertyOption> options)
+    {
+        Id = id;
+        Name = name;
+        IsRequired = isRequired;
+        PropertyType = propertyType;
+        Options = options;
+    }
+}
+public record OrderItemPropertyOption(int Id, string Value);

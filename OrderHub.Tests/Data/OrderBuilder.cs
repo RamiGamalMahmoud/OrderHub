@@ -72,19 +72,19 @@ public class OrderBuilder
         return this;
     }
 
-    public Order Build()
-    {
-        var order = new Order(_clientId, _orderNumber);
-        foreach (var item in _items)
-        {
-            order.AddOrderItem(item);
-        }
+    //public Order Build()
+    //{
+    //    var order = new Order(_clientId, _orderNumber);
+    //    foreach (var item in _items)
+    //    {
+    //        order.AddOrderItem(item);
+    //    }
 
-        order.ChangeOrderStatus(_orderStatus);
-        order.ShippingCarrier = _shippingCarrier;
-        order.Deliveryman = _deliveryman;
-        order.DeliveryMethod = _deliveryMethod;
-        order.PaymentMethod = _paymentMethod;
-        return order;
-    }
+    //    order.ChangeOrderStatus(_orderStatus);
+    //    order.ShippingCarrier = _shippingCarrier;
+    //    order.Deliveryman = _deliveryman;
+    //    order.DeliveryMethod = _deliveryMethod;
+    //    order.PaymentMethod = _paymentMethod;
+    //    return order;
+    //}
 }

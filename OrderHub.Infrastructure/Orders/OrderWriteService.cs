@@ -32,11 +32,11 @@ internal class OrderWriteService
         int? shippingCarrierId,
         int? paymentMethodId)
     {
+        order.ChangeDeliveryMethod(deliveryMethod);
         order.ChangeClient(clientId);
-        order.DeliveryMethod = deliveryMethod;
-        order.DeliverymanId = deliverymanId;
-        order.ShippingCarrierId = shippingCarrierId;
-        order.PaymentMethodId = paymentMethodId;
+        order.ChangeDeliveryman(deliverymanId);
+        order.ChangeShippingCarrier(shippingCarrierId);
+        order.ChangePaymentMethod(paymentMethodId);
     }
 
     private static void ResetDetails(AppDbContext appDbContext, Order order)
@@ -55,27 +55,19 @@ internal class OrderWriteService
     {
         foreach (OrderItemDto orderItemDto in orderItems ?? Enumerable.Empty<OrderItemDto>())
         {
-            order.AddOrderItem(BuildOrderItem(orderItemDto, order.Id));
+            order.AddOrderItem(
+                orderItemDto.ProductId,
+                orderItemDto.ProductName,
+                orderItemDto.UnitPrice,
+                orderItemDto.Quantity,
+                orderItemDto.SupplierName,
+                orderItemDto.SupplierId);
         }
 
         foreach (OrderDeliveryStepCreateDto deliveryStepDto in deliverySteps ?? Enumerable.Empty<OrderDeliveryStepCreateDto>())
         {
             order.AddDeliveryStep(BuildDeliveryStep(order.Id, deliveryStepDto));
         }
-    }
-
-    private static OrderItem BuildOrderItem(OrderItemDto orderItemDto, int orderId)
-    {
-        OrderItem orderItem = new OrderItem(
-            orderItemDto.ProductId,
-            orderItemDto.ProductName,
-            orderId,
-            orderItemDto.UnitPrice,
-            orderItemDto.Quantity,
-            orderItemDto.SupplierName,
-            orderItemDto.SupplierId);
-
-        return orderItem;
     }
 
     private static OrderDeliveryStep BuildDeliveryStep(int orderId, OrderDeliveryStepCreateDto deliveryStepDto)

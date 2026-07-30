@@ -14,20 +14,18 @@ namespace OrderHub.UI.Features.Orders.Editor;
 
 internal partial class OrderProductsPanelViewModel : ObservableObject
 {
-    private readonly IMediator _mediator;
-    private readonly OrderBuilder _orderBuilder;
     private readonly IProductStore _productStore;
     private CancellationTokenSource _searchCts;
     private CancellationTokenSource _categoryCts;
 
-    public OrderProductsPanelViewModel(IMediator mediator, OrderBuilder orderBuilder, IProductStore productStore)
+    public OrderProductsPanelViewModel(IMediator mediator, IProductStore productStore)
     {
-        _mediator = mediator;
-        _orderBuilder = orderBuilder;
         CategorySelection = new CategorySelection(mediator);
         CategorySelection.SelectedCategoryChanged += CategorySelection_OnSelectedCategoryChanged;
         _productStore = productStore;
     }
+
+    public event Action<ProductSelectedEventArgs> ProductSelected;
 
     private async void CategorySelection_OnSelectedCategoryChanged(object sender, CategoryInfoDto e)
     {
@@ -107,18 +105,13 @@ internal partial class OrderProductsPanelViewModel : ObservableObject
         if (SelectedProduct is null)
             return;
 
-        OrderItemViewModel item = new()
-        {
-            ProductName = SelectedProduct.Name,
-            ProductId = SelectedProduct.Id,
-            Price = Price,
-            Quantity = Quantity,
-            CategoryName = SelectedProduct.CategoryName,
-            Suppliers = SelectedProduct.Suppliers.Select(s => new OrderItemSupplier(s.Id, s.Name))
-        };
-
-        _orderBuilder.AddItem(item);
+        OnProductSelected(new ProductSelectedEventArgs(SelectedProduct.Id, Price, Quantity));
         ClearSelection();
+    }
+
+    private void OnProductSelected(ProductSelectedEventArgs e)
+    {
+        ProductSelected?.Invoke(e);
     }
 
     [RelayCommand]
@@ -139,3 +132,19 @@ internal partial class OrderProductsPanelViewModel : ObservableObject
 
 public record ProductItem(int Id, string Name,decimal Price, string CategoryName, IEnumerable<ProductSupplierItem> Suppliers);
 public record ProductSupplierItem(int Id, string Name);
+
+public class ProductSelectedEventArgs : EventArgs
+{
+    public ProductSelectedEventArgs(int id, decimal price, decimal quantity)
+    {
+        Id = id;
+        Price = price;
+        Quantity = quantity;
+    }
+
+    public int Id { get;private set; }
+    public decimal Price { get; private set; }
+    public decimal Quantity { get; private set; }
+}
+
+public delegate void ProductSelectedEventHandler(object sender, ProductSelectedEventArgs e);

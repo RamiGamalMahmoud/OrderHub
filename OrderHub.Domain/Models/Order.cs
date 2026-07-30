@@ -1,4 +1,5 @@
-﻿using OrderHub.Domain.Enums;
+﻿using OrderHub.Domain.Common;
+using OrderHub.Domain.Enums;
 using OrderHub.Domain.ValueObjects;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,10 +11,11 @@ public class Order : ModelBase
     private readonly List<OrderItem> _orderItems = [];
     private readonly List<OrderDeliveryStep> _deliverySteps = [];
     private readonly List<OrderEntitySequence> _entitySequences = [];
-    private Order() { }
+    private readonly List<OutboxMessage> _outboxMessages = [];
 
-    public int ClientId { get; private set; }
-    public Client Client { get; private set; }
+    private Order()
+    {
+    }
 
     public Order(int clientId, string orderNumber)
     {
@@ -21,59 +23,136 @@ public class Order : ModelBase
         OrderNumber = orderNumber;
     }
 
+    public int ClientId { get; private set; }
+    public Client Client { get; private set; }
+
     public string OrderNumber { get; private set; }
+
+    public DeliveryMethod? DeliveryMethod { get; private set; }
+
+    public OrderStatus OrderStatus { get; private set; }
+
+    public int? ShippingCarrierId { get; private set; }
+    public ShippingCarrier ShippingCarrier { get; private set; }
+
+    public int? DeliverymanId { get; private set; }
+    public Deliveryman Deliveryman { get; private set; }
+
+    public int? PaymentMethodId { get; private set; }
+    public PaymentMethod PaymentMethod { get; private set; }
+
+    public Money Total => new(_orderItems.Sum(i => i.SubTotal.Value));
 
     public IReadOnlyCollection<OrderItem> OrderItems => _orderItems.AsReadOnly();
     public IReadOnlyCollection<OrderDeliveryStep> DeliverySteps => _deliverySteps.AsReadOnly();
     public IReadOnlyCollection<OrderEntitySequence> EntitySequences => _entitySequences.AsReadOnly();
-
-    private readonly List<OutboxMessage> _outboxMessages = [];
     public IReadOnlyCollection<OutboxMessage> OutboxMessages => _outboxMessages.AsReadOnly();
 
-    public Money Total => new Money(_orderItems.Sum(i => i.SubTotal.Value));
-    public DeliveryMethod? DeliveryMethod { get; set; }
-    public OrderStatus OrderStatus { get; private set; }
-    public int? ShippingCarrierId { get; set; }
-    public ShippingCarrier ShippingCarrier { get; set; }
-    public int? DeliverymanId { get; set; }
-    public Deliveryman Deliveryman { get; set; }
-    public int? PaymentMethodId { get; set; }
-    public PaymentMethod PaymentMethod { get; set; }
+    public void UpdateHeader(
+        int clientId,
+        DeliveryMethod deliveryMethod,
+        int? deliverymanId,
+        int? shippingCarrierId,
+        int? paymentMethodId)
+    {
+        ClientId = clientId;
+        DeliveryMethod = deliveryMethod;
+        DeliverymanId = deliverymanId;
+        ShippingCarrierId = shippingCarrierId;
+        PaymentMethodId = paymentMethodId;
+    }
 
-    public void AddOrderItem(OrderItem orderItem) => _orderItems.Add(orderItem);
+    public Result<OrderItem> AddOrderItem(
+        int productId,
+        string productName,
+        decimal unitPrice,
+        int quantity,
+        string supplierName,
+        int? supplierId)
+    {
+        Result<OrderItem> result = OrderItem.Create(
+            productId,
+            productName,
+            unitPrice,
+            quantity,
+            supplierName,
+            supplierId);
 
-    public void AddDeliveryStep(OrderDeliveryStep deliveryStep) => _deliverySteps.Add(deliveryStep);
+        if (result.IsSuccess)
+        {
+            _orderItems.Add(result.Value);
+        }
 
-    public void AddEntitySequence(OrderEntitySequence entitySequence) => _entitySequences.Add(entitySequence);
-
-    public void ChangeClient(int clientId) => ClientId = clientId;
+        return result;
+    }
 
     public void RemoveOrderItem(OrderItem orderItem)
     {
-        OrderItem item = _orderItems.FirstOrDefault(i => i == orderItem);
-        if (item is not null)
-        {
-            _orderItems.Remove(item);
-        }
         _orderItems.Remove(orderItem);
     }
 
-    public void ClearOrderItems() => _orderItems.Clear();
+    public void ClearOrderItems()
+    {
+        _orderItems.Clear();
+    }
 
-    public void ClearDeliverySteps() => _deliverySteps.Clear();
+    public void AddDeliveryStep(OrderDeliveryStep deliveryStep)
+    {
+        _deliverySteps.Add(deliveryStep);
+    }
+
+    public Result ChangeClient(int clientId)
+    {
+        ClientId = clientId;
+
+        return Result.Success();
+    }
+
+    public Result ChangeDeliveryman(int? deliverymanId)
+    {
+        DeliverymanId = deliverymanId;
+        return Result.Success();
+    }
+
+    public Result ChangeShippingCarrier(int? shippingCarrierId)
+    {
+        ShippingCarrierId = shippingCarrierId;
+        return Result.Success();
+    }
+
+    public Result ChangePaymentMethod(int? paymentMethodId)
+    {
+        if (PaymentMethodId == paymentMethodId)
+            return Result.Success();
+
+        PaymentMethodId = paymentMethodId;
+
+        return Result.Success();
+    }
+
+    public void ClearDeliverySteps()
+    {
+        _deliverySteps.Clear();
+    }
+
+    public void AddEntitySequence(OrderEntitySequence entitySequence)
+    {
+        _entitySequences.Add(entitySequence);
+    }
 
     public void RemoveEntitySequence(OrderEntitySequence entitySequence)
     {
-        OrderEntitySequence sequence = _entitySequences.FirstOrDefault(current => current == entitySequence);
-        if (sequence is not null)
-        {
-            _entitySequences.Remove(sequence);
-        }
+        _entitySequences.Remove(entitySequence);
     }
 
-    public void ChangeOrderStatus(OrderStatus orderStatus) => OrderStatus = orderStatus;
+    public void ChangeOrderStatus(OrderStatus orderStatus)
+    {
+        OrderStatus = orderStatus;
+    }
 
-    public string GetDisplayTitle(RecipientType recipientType, int? entityId = null)
+    public string GetDisplayTitle(
+        RecipientType recipientType,
+        int? entityId = null)
     {
         int resolvedEntityId = entityId ?? recipientType switch
         {
@@ -83,15 +162,18 @@ public class Order : ModelBase
         };
 
         if (resolvedEntityId <= 0)
-        {
             return OrderNumber;
-        }
 
         return _entitySequences
             .FirstOrDefault(sequence =>
-                sequence.RecipientType == recipientType
-                && sequence.EntityId == resolvedEntityId)
+                sequence.RecipientType == recipientType &&
+                sequence.EntityId == resolvedEntityId)
             ?.DisplayTitle
             ?? OrderNumber;
+    }
+
+    public void ChangeDeliveryMethod(DeliveryMethod deliveryMethod)
+    {
+        DeliveryMethod = deliveryMethod;
     }
 }

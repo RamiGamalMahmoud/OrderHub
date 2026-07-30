@@ -78,22 +78,9 @@
                 </DataGridTemplateColumn>
 
                 <DataGridTextColumn
-                    Width="100"
                     Binding="{Binding SubTotal}"
                     Header="الإجمال"
                     IsReadOnly="True" />
-
-                <DataGridTemplateColumn Header="الحالة">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <icons:MaterialIcon
-                                Width="20"
-                                Height="20"
-                                Foreground="{StaticResource WarningBrush}"
-                                Kind="Alert" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
 
             </DataGrid.Columns>
 

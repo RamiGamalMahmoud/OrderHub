@@ -121,7 +121,8 @@ public partial class OrderBuilder : ObservableObject
                 (int)item.Quantity,
                 item.Price,
                 item.SupplierName,
-                item.SupplierId
+                item.SupplierId,
+                item.Properties.Select(p => new OrderItemPropertyDto(p.Id, p.SelectedOptionValue))
             ));
 
         var deliverySteps = _deliveryMethod == DeliveryMethod.DeliveryChain

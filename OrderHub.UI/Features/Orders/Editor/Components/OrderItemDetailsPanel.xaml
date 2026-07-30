@@ -2,13 +2,18 @@
     x:Class="OrderHub.UI.Features.Orders.Editor.Components.OrderItemDetailsPanel"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:Hoax.WpfConverters;assembly=Hoax.WpfConverters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:enums="clr-namespace:OrderHub.Domain.Enums;assembly=OrderHub.Domain"
     xmlns:hc="https://handyorg.github.io/handycontrol"
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    d:DesignHeight="700"
-    d:DesignWidth="340"
+    xmlns:myConverters="clr-namespace:OrderHub.UI.Converters"
     mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <myConverters:StringBoolConverter x:Key="StringBoolConverter" />
+    </UserControl.Resources>
 
     <Border
         Width="400"
@@ -28,26 +33,47 @@
 
             <!--  Header  -->
 
-            <StackPanel Margin="0,0,0,16" Orientation="Horizontal">
+            <DockPanel Margin="0,0,0,16" LastChildFill="False">
 
                 <icons:MaterialIcon
                     Width="20"
                     Height="20"
                     Margin="6,0,0,0"
-                    DockPanel.Dock="Right"
+                    DockPanel.Dock="Left"
                     Foreground="#3F6FF6"
                     Kind="PackageVariantClosed" />
 
                 <TextBlock
                     Margin="5,0,0,0"
+                    DockPanel.Dock="Left"
                     FontSize="18"
                     FontWeight="SemiBold"
                     Foreground="{StaticResource Primary}"
                     Text="تفاصيل المنتج" />
 
-                <Separator Margin="0,10,0,0" />
+                <StackPanel
+                    HorizontalAlignment="Stretch"
+                    DockPanel.Dock="Right"
+                    Orientation="Horizontal">
 
-            </StackPanel>
+                    <Button
+                        Margin="0,0,5,0"
+                        Command="{Binding SelectePrevOrderItemCommand}"
+                        Cursor="Hand"
+                        ToolTip="السابق">
+                        <icons:MaterialIcon Kind="ArrowRightThin" />
+                    </Button>
+
+                    <Button
+                        Command="{Binding SelecteNextOrderItemCommand}"
+                        Cursor="Hand"
+                        ToolTip="التالي">
+                        <icons:MaterialIcon Kind="ArrowLeftThin" />
+                    </Button>
+
+                </StackPanel>
+
+            </DockPanel>
 
             <!--  Content  -->
 
@@ -65,7 +91,10 @@
 
                         <StackPanel Margin="12">
 
-                            <TextBlock FontWeight="SemiBold" Text="{Binding SelectedOrderItem.ProductName}" />
+                            <TextBlock
+                                FontSize="16"
+                                FontWeight="SemiBold"
+                                Text="{Binding SelectedOrderItem.ProductName}" />
 
                             <Border
                                 Margin="0,5,0,0"
@@ -73,7 +102,10 @@
                                 HorizontalAlignment="Left"
                                 Background="{StaticResource WhiteBrush}"
                                 CornerRadius="3">
-                                <TextBlock Foreground="Gray" Text="{Binding SelectedOrderItem.CategoryName}" />
+                                <TextBlock
+                                    FontSize="12"
+                                    Foreground="Gray"
+                                    Text="{Binding SelectedOrderItem.CategoryName}" />
                             </Border>
 
                         </StackPanel>
@@ -125,29 +157,93 @@
                                 <TextBlock FontWeight="SemiBold" Text="خصائص المنتج" />
                             </StackPanel>
 
-                            <ItemsControl ItemsSource="{Binding SelectedOrderItem.Properties}">
+                            <ItemsControl HorizontalAlignment="Stretch" ItemsSource="{Binding SelectedOrderItem.Properties}">
 
                                 <ItemsControl.ItemTemplate>
 
                                     <DataTemplate>
 
-                                        <Grid Margin="0,0,0,10">
+                                        <Grid Margin="0,0,0,10" HorizontalAlignment="Stretch">
 
                                             <Grid.ColumnDefinitions>
 
-                                                <ColumnDefinition Width="120" />
-
+                                                <ColumnDefinition Width="80" />
+                                                <ColumnDefinition Width="5" />
                                                 <ColumnDefinition Width="*" />
 
                                             </Grid.ColumnDefinitions>
 
-                                            <TextBlock VerticalAlignment="Center" Text="{Binding Name}" />
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                                <TextBlock
+                                                    VerticalAlignment="Center"
+                                                    FontSize="12"
+                                                    Foreground="{StaticResource Primary}"
+                                                    Text="{Binding Name}" />
+                                                <icons:MaterialIcon
+                                                    Foreground="{StaticResource DangerBrush}"
+                                                    Kind="Dot"
+                                                    Visibility="{Binding IsRequired, Converter={converters:BoolToVisibilityConverter}}" />
+                                            </StackPanel>
 
-                                            <ComboBox
-                                                Grid.Column="1"
-                                                Height="34"
-                                                ItemsSource="{Binding Options}"
-                                                SelectedItem="{Binding SelectedOption}" />
+                                            <ContentControl
+                                                Grid.Column="2"
+                                                Content="{Binding}"
+                                                FontSize="12">
+
+                                                <ContentControl.Style>
+
+                                                    <Style TargetType="ContentControl">
+
+                                                        <Style.Triggers>
+
+                                                            <DataTrigger Binding="{Binding PropertyType}" Value="{x:Static enums:PropertyType.Text}">
+                                                                <Setter Property="ContentTemplate">
+
+                                                                    <Setter.Value>
+                                                                        <DataTemplate>
+                                                                            <hc:TextBox
+                                                                                hc:InfoElement.Placeholder="ادخل قيمة الخاصية"
+                                                                                hc:InfoElement.ShowClearButton="True"
+                                                                                Text="{Binding SelectedOptionValue, UpdateSourceTrigger=PropertyChanged}" />
+                                                                        </DataTemplate>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                            </DataTrigger>
+
+                                                            <DataTrigger Binding="{Binding PropertyType}" Value="{x:Static enums:PropertyType.List}">
+                                                                <Setter Property="ContentTemplate">
+                                                                    <Setter.Value>
+                                                                        <DataTemplate>
+                                                                            <hc:ComboBox
+                                                                                hc:InfoElement.Placeholder="اختر قيمة الخاصية من القائمة"
+                                                                                hc:InfoElement.ShowClearButton="True"
+                                                                                Cursor="Hand"
+                                                                                DisplayMemberPath="Value"
+                                                                                ItemsSource="{Binding Options}"
+                                                                                SelectedValue="{Binding SelectedOptionValue}"
+                                                                                SelectedValuePath="Value" />
+                                                                        </DataTemplate>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                            </DataTrigger>
+
+                                                            <DataTrigger Binding="{Binding PropertyType}" Value="{x:Static enums:PropertyType.Boolean}">
+                                                                <Setter Property="ContentTemplate">
+                                                                    <Setter.Value>
+                                                                        <DataTemplate>
+                                                                            <CheckBox IsChecked="{Binding SelectedOptionValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource StringBoolConverter}}" />
+                                                                        </DataTemplate>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                            </DataTrigger>
+
+                                                        </Style.Triggers>
+
+                                                    </Style>
+
+                                                </ContentControl.Style>
+
+                                            </ContentControl>
 
                                         </Grid>
 

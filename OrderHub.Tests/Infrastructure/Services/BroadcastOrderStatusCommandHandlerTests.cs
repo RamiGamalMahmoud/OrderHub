@@ -1,44 +1,26 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
+using FluentAssertions;
 using Moq;
-using OrderHub.Application.Commands;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using OrderHub.Domain.ValueObjects;
-using OrderHub.Infrastructure;
 using OrderHub.Infrastructure.CommandHandlers.Orders;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Xunit;
 using static OrderHub.Application.Commands.OrderCommands;
 
 namespace OrderHub.Tests.Infrastructure.Services;
 
 public class BroadcastOrderStatusCommandHandlerTests
 {
-    private (AppDbContext Context, DbContextOptions<AppDbContext> Options) CreateInMemoryDb()
-    {
-        var connection = new SqliteConnection("Filename=:memory:");
-        connection.Open();
-
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(connection)
-            .Options;
-
-        var context = new AppDbContext(options);
-        context.Database.EnsureCreated();
-        return (context, options);
-    }
-
     [Fact]
     public async Task Handle_Should_Add_OutboxMessages_For_All_Recipients()
     {
+        var dbContextFactory = TestDb.CreateFactory();
         // Arrange
-        var (dbContext, options) = CreateInMemoryDb();
-        using (dbContext)
+        using var dbContext = dbContextFactory.CreateDbContext();
         {
 
             var client = TestData.CreateClient();
@@ -81,10 +63,8 @@ public class BroadcastOrderStatusCommandHandlerTests
             dbContext.Products.AddRange(product1, product2);
             await dbContext.SaveChangesAsync();
 
-            var order = new Order(client.Id, "ORD-001")
-            {
-                DeliveryMethod = DeliveryMethod.DeliveryChain
-            };
+            var order = new Order(client.Id, "ORD-001");
+            order.ChangeDeliveryMethod(DeliveryMethod.DeliveryChain);
 
             order.AddDeliveryStep(new OrderDeliveryStep
             {
@@ -101,15 +81,27 @@ public class BroadcastOrderStatusCommandHandlerTests
                 ShippingCarrier = carrier
             });
 
-            order.AddOrderItem(TestData.CreateOrderItem(product1.Id, product1.Name.Value, order.Id, 50, 2, supplier1));
-            order.AddOrderItem(TestData.CreateOrderItem(product2.Id, product2.Name.Value, order.Id, 100, 1, supplier2));
+            var result1 = order.AddOrderItem(
+                product1.Id, 
+                product1.Name.Value, 
+                200, 
+                50, 
+                supplier1.Name.Value, 
+                supplier1.Id);
+
+            order.AddOrderItem(
+                product2.Id, 
+                product2.Name.Value, 
+                199, 
+                100, 
+                supplier2.Name.Value, 
+                supplier2.Id);
 
             dbContext.Orders.Add(order);
             await dbContext.SaveChangesAsync();
 
-            AppDbContextFactory factory = new AppDbContextFactory(options);
             Mock<IMessenger> mock = new Mock<IMessenger>();
-            BroadcastOrderStatusCommandHandler handler = new BroadcastOrderStatusCommandHandler(factory, mock.Object);
+            BroadcastOrderStatusCommandHandler handler = new BroadcastOrderStatusCommandHandler(dbContextFactory, mock.Object);
 
             BroadcastOrderStatusCommand command = new BroadcastOrderStatusCommand(order.Id);
 
@@ -120,7 +112,10 @@ public class BroadcastOrderStatusCommandHandlerTests
             Assert.True(result.IsSuccess);
 
             var outboxMessages = dbContext.OutboxMessages.ToList();
-            Assert.Equal(5, outboxMessages.Count);
+            outboxMessages.Count.Should().Be(5);
+
+            order.OrderItems.Select(i => i.Supplier).Count().Should().Be(2);
+            order.OrderItems.Count().Should().Be(2);
 
             Assert.Contains(outboxMessages, m => m.RecipientType == OrderHub.Domain.Enums.RecipientType.Client);
             Assert.Contains(outboxMessages, m => m.RecipientType == OrderHub.Domain.Enums.RecipientType.Deliveryman);

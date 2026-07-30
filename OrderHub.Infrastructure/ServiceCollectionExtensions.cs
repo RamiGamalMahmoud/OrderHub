@@ -43,6 +43,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton<Application.Interfaces.Stores.IPropertyStore, Stores.PropertyStore>();
         services.AddSingleton<IProductStore, Stores.ProductStore>();
+        services.AddTransient<Application.Features.Orders.GetOrderItemEditor.IOrderItemEditorReader, Features.Orders.OrderItemEditorReader>();
         return services;
     }
 }

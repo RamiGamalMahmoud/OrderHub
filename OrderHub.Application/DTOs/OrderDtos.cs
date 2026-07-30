@@ -1,6 +1,7 @@
 ﻿using OrderHub.Domain.Enums;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using static OrderHub.Application.DTOs.PaymentMothodsDtos;
 
 namespace OrderHub.Application.DTOs;
@@ -162,11 +163,14 @@ public static class OrderDtos
 
 public static class OrderItemDtos
 {
+    public record OrderItemPropertyDto(int PropertyId, string Value);
+
     public record OrderItemDto(
         int ProductId,
         string ProductName,
         int Quantity,
         decimal UnitPrice,
         string SupplierName,
-        int? SupplierId);
+        int? SupplierId,
+        IEnumerable<OrderItemPropertyDto> Properties);
 }

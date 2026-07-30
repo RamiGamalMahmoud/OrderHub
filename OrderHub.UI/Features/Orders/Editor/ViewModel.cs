@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Features.Products.Contracts;
@@ -29,6 +30,8 @@ internal abstract partial class ViewModel : EditorViewModelBase
     public DeliveryMethodsViewModel DeliveryMethodsViewModel { get; }
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SelecteNextOrderItemCommand))]
+    [NotifyCanExecuteChangedFor(nameof(SelectePrevOrderItemCommand))]
     private OrderItemViewModel _selectedOrderItem;
 
     public Application.DTOs.ClientDtos.ClientListDto SelectedClient
@@ -51,9 +54,15 @@ internal abstract partial class ViewModel : EditorViewModelBase
         _dialogService = dialogService;
         _messenger = messenger;
         OrderBuilder = new OrderBuilder();
-        ProductsPanel = new OrderProductsPanelViewModel(mediator, OrderBuilder, productStore);
+
+        ProductsPanel = new OrderProductsPanelViewModel(mediator, productStore);
+
+        ProductsPanel.ProductSelected += ProductsPanel_ProductSelected;
+
         PartyPanel = new OrderPartyPanelViewModel(mediator, dialogService);
+
         DeliveryMethodsViewModel = new DeliveryMethodsViewModel(mediator);
+
         _notifyPropertiesNames = [];
 
         OrderBuilder.PropertyChanged += (_, e) =>
@@ -84,6 +93,67 @@ internal abstract partial class ViewModel : EditorViewModelBase
         };
 
         RegisterMessages();
+    }
+
+    private void ProductsPanel_ProductSelected(ProductSelectedEventArgs e)
+    {
+        _ = LoadProducDetails(e.Id, e.Price, e.Quantity);
+    }
+
+    private async Task LoadProducDetails(int productId, decimal price, decimal quantity)
+    {
+        var product = await _mediator.Send(new Application.Features.Orders.GetOrderItemEditor.Query(productId));
+        decimal priceDecimal = price == 0 || price != product.Price ? product.Price : price;
+        OrderItemViewModel orderItemViewModel = new OrderItemViewModel()
+        {
+            ProductId = product.ProductId,
+            ProductName = product.Name,
+            CategoryName = product.CategoryName,
+            Price = price,
+            Quantity = quantity,
+
+            Suppliers = product.Suppliers
+            .Select(s => new OrderItemSupplier(
+                s.Id,
+                s.Name)),
+
+            Properties = product.Properties
+            .Select(p => new OrderItemProperty(
+                p.Id,
+                p.Name,
+                p.IsRequired,
+                p.PropertyType,
+                p.Options.Select(o => new OrderItemPropertyOption(o.Id, o.Name))))
+        };
+
+        OrderItems.Add(orderItemViewModel);
+        SelectedOrderItem = orderItemViewModel;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSelectNextOrderItem))]
+    private void SelecteNextOrderItem()
+    {
+        int selectedOrderItemIndex = SelectedOrderItem is null || OrderItems.Count == 0 ? -1 : OrderItems.IndexOf(SelectedOrderItem);
+        SelectedOrderItem = OrderItems.ElementAt(selectedOrderItemIndex + 1);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSelectPrevOrderItem))]
+    private void SelectePrevOrderItem()
+    {
+        int selectedOrderItemIndex = SelectedOrderItem is null || OrderItems.Count == 0 ? -1 : OrderItems.IndexOf(SelectedOrderItem);
+        SelectedOrderItem = OrderItems.ElementAt(selectedOrderItemIndex - 1);
+    }
+
+    private bool CanSelectNextOrderItem()
+    {
+        int selectedOrderItemIndex = SelectedOrderItem is null || OrderItems.Count == 0 ? -1 : OrderItems.IndexOf(SelectedOrderItem);
+        return selectedOrderItemIndex != -1 && OrderItems.Count - 1 > selectedOrderItemIndex;
+    }
+
+    private bool CanSelectPrevOrderItem()
+    {
+        int selectedOrderItemIndex = SelectedOrderItem is null || OrderItems.Count == 0 ? -1 : OrderItems.IndexOf(SelectedOrderItem);
+        return selectedOrderItemIndex != -1 && selectedOrderItemIndex > 0;
     }
 
     private void RegisterMessages()
