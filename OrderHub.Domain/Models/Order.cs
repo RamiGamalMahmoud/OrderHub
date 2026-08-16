@@ -68,7 +68,8 @@ public class Order : ModelBase
         decimal unitPrice,
         int quantity,
         string supplierName,
-        int? supplierId)
+        int? supplierId,
+        IReadOnlyCollection<OrderItemPropertyData> properties)
     {
         Result<OrderItem> result = OrderItem.Create(
             productId,
@@ -76,7 +77,8 @@ public class Order : ModelBase
             unitPrice,
             quantity,
             supplierName,
-            supplierId);
+            supplierId,
+            properties);
 
         if (result.IsSuccess)
         {

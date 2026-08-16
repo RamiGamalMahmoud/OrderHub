@@ -6,7 +6,6 @@
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="clr-namespace:OrderHub.UI.Features.Orders.Index"
-    d:DataContext="{d:DesignInstance Type=vm:ViewModel}"
     mc:Ignorable="d">
 
     <Border
@@ -19,6 +18,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <Grid.ColumnDefinitions>
@@ -26,35 +26,30 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <!--  Close  -->
-
-            <Button
-                Width="26"
-                Height="26"
-                Padding="0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Top"
-                Background="Transparent"
-                BorderThickness="0"
-                Cursor="Hand">
-
-                <icons:MaterialIcon
-                    Width="18"
-                    Height="18"
-                    Foreground="#64748B"
-                    Kind="Close" />
-
-            </Button>
-
             <!--  Title  -->
+            <Border
+                Grid.Column="1"
+                Margin="8,0,0,0"
+                Padding="8,3"
+                HorizontalAlignment="Right"
+                Background="#DCFCE7"
+                CornerRadius="6">
+
+                <TextBlock
+                    FontSize="11"
+                    FontWeight="SemiBold"
+                    Foreground="#16A34A"
+                    Text="{Binding SelectedOrderDetails.Header.OrderStatus}" />
+
+            </Border>
 
             <TextBlock
-                Grid.Column="1"
-                HorizontalAlignment="Right"
+                HorizontalAlignment="Left"
                 FontSize="15"
                 FontWeight="SemiBold"
                 Foreground="#1E3A8A"
                 Text="تفاصيل الطلب" />
+
 
             <!--  Order Info  -->
 
@@ -64,39 +59,25 @@
                 Margin="0,10,0,0"
                 Orientation="Horizontal">
 
-                <DockPanel LastChildFill="False">
 
-                    <TextBlock
-                        DockPanel.Dock="Left"
-                        FontSize="12"
-                        FontWeight="SemiBold"
-                        Foreground="#374151"
-                        Text="رقم الطلب :" />
+                <TextBlock
+                    VerticalAlignment="Center"
+                    DockPanel.Dock="Left"
+                    FontSize="12"
+                    FontWeight="SemiBold"
+                    Foreground="#374151"
+                    Text="رقم الطلب :" />
 
-                    <TextBlock
-                        Margin="4,0,0,0"
-                        DockPanel.Dock="Right"
-                        FontSize="12"
-                        FontWeight="Bold"
-                        Foreground="#1F2937"
-                        Text="{Binding OrderNumber}" />
+                <TextBlock
+                    Margin="4,0,0,0"
+                    VerticalAlignment="Center"
+                    DockPanel.Dock="Right"
+                    FontSize="12"
+                    FontWeight="Bold"
+                    Foreground="#1F2937"
+                    Text="{Binding SelectedOrderDetails.Header.OrderNumber}" />
 
-                </DockPanel>
 
-                <Border
-                    Margin="0,8,0,0"
-                    Padding="8,3"
-                    HorizontalAlignment="Right"
-                    Background="#DCFCE7"
-                    CornerRadius="6">
-
-                    <TextBlock
-                        FontSize="11"
-                        FontWeight="SemiBold"
-                        Foreground="#16A34A"
-                        Text="{Binding OrderStatus}" />
-
-                </Border>
 
             </StackPanel>
 

@@ -1,7 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
 using System;
-using System.Windows;
+using System.Windows.Controls;
 
 namespace OrderHub.UI.Services
 {
@@ -17,6 +18,13 @@ namespace OrderHub.UI.Services
         public void ShowDialog<TView>(object parameter = null) where TView : IDialog
         {
             TView view = _serviceProvider.GetRequiredService<TView>();
+            if(view is Control control)
+            {
+                if(control.DataContext is IParameterizedViewModel viewModel)
+                {
+                    viewModel.Initialize(parameter);
+                }
+            }
             view.Show();
         }
 

@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using OrderHub.Application.Common.Lookups;
 using OrderHub.Domain.Enums;
 using System;
 using System.Collections.ObjectModel;
@@ -13,9 +14,7 @@ public abstract partial class PropertyEditorViewModelBase : ObservableValidator
 {
     protected PropertyEditorViewModelBase()
     {
-        PropertyTypes = new ObservableCollection<EnumItem<PropertyType>>(
-            Enum.GetValues<PropertyType>()
-                .Select(x => new EnumItem<PropertyType>(x, x.GetDescription())));
+        PropertyTypes = new ObservableCollection<EnumItem<PropertyType>>(EnumItems.For<PropertyType>());
 
         SelectedPropertyType = PropertyTypes.First();
 

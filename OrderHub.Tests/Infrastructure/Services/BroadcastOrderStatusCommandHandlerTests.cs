@@ -87,7 +87,8 @@ public class BroadcastOrderStatusCommandHandlerTests
                 200, 
                 50, 
                 supplier1.Name.Value, 
-                supplier1.Id);
+                supplier1.Id,
+                []);
 
             order.AddOrderItem(
                 product2.Id, 
@@ -95,7 +96,8 @@ public class BroadcastOrderStatusCommandHandlerTests
                 199, 
                 100, 
                 supplier2.Name.Value, 
-                supplier2.Id);
+                supplier2.Id,
+                []);
 
             dbContext.Orders.Add(order);
             await dbContext.SaveChangesAsync();

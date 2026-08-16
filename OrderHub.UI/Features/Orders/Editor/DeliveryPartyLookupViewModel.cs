@@ -5,14 +5,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using static OrderHub.Application.DTOs.DeliverymanDtos;
-using static OrderHub.Application.DTOs.ShippingCarriersDtos;
 
 namespace OrderHub.UI.Features.Orders.Editor;
 
 internal partial class DeliveryPartyLookupViewModel : ObservableObject
 {
     private readonly IMediator _mediator;
+
     private CancellationTokenSource _deliverymanSearchCts;
     private CancellationTokenSource _shippingCarrierSearchCts;
 
@@ -22,16 +21,16 @@ internal partial class DeliveryPartyLookupViewModel : ObservableObject
     }
 
     [ObservableProperty]
-    private ShippingCarrierListDto _selectedShippingCarrier;
+    private ShippingCarrier _selectedShippingCarrier;
 
     [ObservableProperty]
-    private DeliverymanListDto _selectedDeliveryman;
+    private Deliveryman _selectedDeliveryman;
 
     [ObservableProperty]
-    private IEnumerable<DeliverymanListDto> _deliverymen = [];
+    private IEnumerable<Deliveryman> _deliverymen = [];
 
     [ObservableProperty]
-    private IEnumerable<ShippingCarrierListDto> _shippingCarriers = [];
+    private IEnumerable<ShippingCarrier> _shippingCarriers = [];
 
     [ObservableProperty]
     private string _deliverymanSearchTerm;
@@ -45,12 +44,12 @@ internal partial class DeliveryPartyLookupViewModel : ObservableObject
         SelectedShippingCarrier = null;
     }
 
-    public void SetDeliverymen(IEnumerable<DeliverymanListDto> deliverymen)
+    public void SetDeliverymen(IEnumerable<Deliveryman> deliverymen)
     {
         Deliverymen = MergeSelectedItem(deliverymen, SelectedDeliveryman);
     }
 
-    public void SetShippingCarriers(IEnumerable<ShippingCarrierListDto> shippingCarriers)
+    public void SetShippingCarriers(IEnumerable<ShippingCarrier> shippingCarriers)
     {
         ShippingCarriers = MergeSelectedItem(shippingCarriers, SelectedShippingCarrier);
     }
@@ -59,14 +58,24 @@ internal partial class DeliveryPartyLookupViewModel : ObservableObject
     {
         _deliverymanSearchCts?.Cancel();
         _deliverymanSearchCts = new CancellationTokenSource();
+
         CancellationToken token = _deliverymanSearchCts.Token;
 
         try
         {
             await Task.Delay(300, token);
-            IEnumerable<DeliverymanListDto> deliverymen = await _mediator.Send(
-                new Application.Queries.DeliverymanQueries.GetDeliverymenByNameQuery(newValue),
-                token);
+
+            IEnumerable<Deliveryman> deliverymen =
+                (await _mediator.Send(
+                    new Application.Queries.DeliverymanQueries.GetDeliverymenByNameQuery(newValue),
+                    token))
+                .Select(x => new Deliveryman(
+                    x.Id,
+                    x.Name,
+                    x.CityName,
+                    x.PhoneNumber,
+                    x.WhatsappGroupName));
+
             SetDeliverymen(deliverymen);
         }
         catch (OperationCanceledException)
@@ -78,14 +87,24 @@ internal partial class DeliveryPartyLookupViewModel : ObservableObject
     {
         _shippingCarrierSearchCts?.Cancel();
         _shippingCarrierSearchCts = new CancellationTokenSource();
+
         CancellationToken token = _shippingCarrierSearchCts.Token;
 
         try
         {
             await Task.Delay(300, token);
-            IEnumerable<ShippingCarrierListDto> shippingCarriers = await _mediator.Send(
-                new Application.Queries.ShippingCarriersQueries.GetShippingCarriersByNameQuery(newValue),
-                token);
+
+            IEnumerable<ShippingCarrier> shippingCarriers =
+                (await _mediator.Send(
+                    new Application.Queries.ShippingCarriersQueries.GetShippingCarriersByNameQuery(newValue),
+                    token))
+                .Select(x => new ShippingCarrier(
+                    x.Id,
+                    x.Name,
+                    x.ShippingCost,
+                    x.PhoneNumber,
+                    x.Address));
+
             SetShippingCarriers(shippingCarriers);
         }
         catch (OperationCanceledException)
@@ -93,7 +112,9 @@ internal partial class DeliveryPartyLookupViewModel : ObservableObject
         }
     }
 
-    private static IEnumerable<TItem> MergeSelectedItem<TItem>(IEnumerable<TItem> items, TItem selectedItem)
+    private static IEnumerable<TItem> MergeSelectedItem<TItem>(
+        IEnumerable<TItem> items,
+        TItem selectedItem)
         where TItem : class
     {
         TItem[] results = (items ?? Enumerable.Empty<TItem>()).ToArray();

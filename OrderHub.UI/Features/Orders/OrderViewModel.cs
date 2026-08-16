@@ -1,14 +1,12 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Application.Common.Lookups;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using static OrderHub.Application.DTOs.CommonDtos;
-using static OrderHub.Application.DTOs.PaymentMothodsDtos;
 
 namespace OrderHub.UI.Features.Orders;
 
@@ -33,7 +31,7 @@ public partial class OrderViewModel : ObservableObject
         int itemsCount,
         decimal totalPrice,
         DateTime createdAt,
-        PaymentMethodListDto paymentMethodListDto,
+        PaymentMethod paymentMethodListDto,
         EnumItem<OrderStatus> orderStatus,
         bool hasClientRecipient,
         bool hasSupplierRecipient,
@@ -77,16 +75,16 @@ public partial class OrderViewModel : ObservableObject
     public decimal TotalPrice { get; init; }
 
     [ObservableProperty]
-    private IEnumerable<SupplierInfoDto> _suppliers;
+    private IEnumerable<Supplier> _suppliers;
 
     [ObservableProperty]
-    private PaymentMethodListDto _paymentMethod;
+    private PaymentMethod _paymentMethod;
 
-    async partial void OnPaymentMethodChanged(PaymentMethodListDto oldValue, PaymentMethodListDto newValue)
+    partial void OnPaymentMethodChanged(PaymentMethod value)
     {
-        if (newValue != null)
+        if (value != null)
         {
-            await ChangePaymentMethod(newValue.Id);
+            _ = ChangePaymentMethod(value.Id);
         }
     }
 
@@ -144,10 +142,7 @@ public partial class OrderViewModel : ObservableObject
         await ChangeOrderStatus(newValue.Value);
     }
 
-    public IEnumerable<EnumItem<OrderStatus>> OrderStatuses =>
-        Enum.GetValues<OrderStatus>()
-        .Cast<OrderStatus>()
-        .Select(e => new EnumItem<OrderStatus>(e, e.GetDescription()));
+    public IEnumerable<EnumItem<OrderStatus>> OrderStatuses => EnumItems.For<OrderStatus>();
 
     private bool _canEdit = true;
     public bool CanEdit { get => _canEdit; private set => SetProperty(ref _canEdit, value); }
@@ -211,3 +206,6 @@ public partial class OrderViewModel : ObservableObject
         }
     }
 }
+
+public record Supplier(int Id, string Name);
+public record PaymentMethod(int Id, string DisplayName, string Description, bool IsActive);

@@ -47,6 +47,7 @@
 		<PackageReference Include="Material.Icons.WPF" Version="2.4.1" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
 		<PackageReference Include="Notification.Wpf" Version="8.0.0" />
+		<PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
 	</ItemGroup>
 
 	<ItemGroup>

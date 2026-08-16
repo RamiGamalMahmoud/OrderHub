@@ -9,10 +9,28 @@
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:myConverters="clr-namespace:OrderHub.UI.Converters"
+    xmlns:vm="clr-namespace:OrderHub.UI.Features.Orders.Editor"
+    d:DataContext="{d:DesignInstance Type=vm:ViewModel}"
     mc:Ignorable="d">
 
     <UserControl.Resources>
         <myConverters:StringBoolConverter x:Key="StringBoolConverter" />
+
+        <ControlTemplate x:Key="ValidationErrorTemplate">
+            <StackPanel>
+                <Border BorderBrush="White" BorderThickness="1">
+                    <AdornedElementPlaceholder x:Name="adorner" />
+                </Border>
+
+                <TextBlock
+                    Margin="2,2,0,0"
+                    FontSize="10"
+                    FontWeight="SemiBold"
+                    Foreground="{StaticResource DangerBrush}"
+                    Text="{Binding AdornedElement.(Validation.Errors)[0].ErrorContent, ElementName=adorner}" />
+            </StackPanel>
+        </ControlTemplate>
+
     </UserControl.Resources>
 
     <Border
@@ -58,14 +76,14 @@
 
                     <Button
                         Margin="0,0,5,0"
-                        Command="{Binding SelectePrevOrderItemCommand}"
+                        Command="{Binding Items.SelectPreviousCommand}"
                         Cursor="Hand"
                         ToolTip="السابق">
                         <icons:MaterialIcon Kind="ArrowRightThin" />
                     </Button>
 
                     <Button
-                        Command="{Binding SelecteNextOrderItemCommand}"
+                        Command="{Binding Items.SelectNextCommand}"
                         Cursor="Hand"
                         ToolTip="التالي">
                         <icons:MaterialIcon Kind="ArrowLeftThin" />
@@ -94,7 +112,7 @@
                             <TextBlock
                                 FontSize="16"
                                 FontWeight="SemiBold"
-                                Text="{Binding SelectedOrderItem.ProductName}" />
+                                Text="{Binding Items.SelectedItem.ProductName}" />
 
                             <Border
                                 Margin="0,5,0,0"
@@ -105,7 +123,7 @@
                                 <TextBlock
                                     FontSize="12"
                                     Foreground="Gray"
-                                    Text="{Binding SelectedOrderItem.CategoryName}" />
+                                    Text="{Binding Items.SelectedItem.CategoryName}" />
                             </Border>
 
                         </StackPanel>
@@ -131,8 +149,8 @@
                             <ComboBox
                                 Height="36"
                                 DisplayMemberPath="Name"
-                                ItemsSource="{Binding SelectedOrderItem.Suppliers}"
-                                SelectedItem="{Binding SelectedOrderItem.Supplier}" />
+                                ItemsSource="{Binding Items.SelectedItem.Suppliers}"
+                                SelectedItem="{Binding Items.SelectedItem.Supplier}" />
 
                         </StackPanel>
 
@@ -157,7 +175,7 @@
                                 <TextBlock FontWeight="SemiBold" Text="خصائص المنتج" />
                             </StackPanel>
 
-                            <ItemsControl HorizontalAlignment="Stretch" ItemsSource="{Binding SelectedOrderItem.Properties}">
+                            <ItemsControl HorizontalAlignment="Stretch" ItemsSource="{Binding Items.SelectedItem.Properties}">
 
                                 <ItemsControl.ItemTemplate>
 
@@ -204,7 +222,8 @@
                                                                             <hc:TextBox
                                                                                 hc:InfoElement.Placeholder="ادخل قيمة الخاصية"
                                                                                 hc:InfoElement.ShowClearButton="True"
-                                                                                Text="{Binding SelectedOptionValue, UpdateSourceTrigger=PropertyChanged}" />
+                                                                                Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
+                                                                                Validation.ErrorTemplate="{StaticResource ValidationErrorTemplate}" />
                                                                         </DataTemplate>
                                                                     </Setter.Value>
                                                                 </Setter>
@@ -220,8 +239,9 @@
                                                                                 Cursor="Hand"
                                                                                 DisplayMemberPath="Value"
                                                                                 ItemsSource="{Binding Options}"
-                                                                                SelectedValue="{Binding SelectedOptionValue}"
-                                                                                SelectedValuePath="Value" />
+                                                                                SelectedValue="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
+                                                                                SelectedValuePath="Value"
+                                                                                Validation.ErrorTemplate="{StaticResource ValidationErrorTemplate}" />
                                                                         </DataTemplate>
                                                                     </Setter.Value>
                                                                 </Setter>
@@ -231,7 +251,7 @@
                                                                 <Setter Property="ContentTemplate">
                                                                     <Setter.Value>
                                                                         <DataTemplate>
-                                                                            <CheckBox IsChecked="{Binding SelectedOptionValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource StringBoolConverter}}" />
+                                                                            <CheckBox IsChecked="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource StringBoolConverter}}" />
                                                                         </DataTemplate>
                                                                     </Setter.Value>
                                                                 </Setter>
@@ -270,7 +290,7 @@
                 HorizontalAlignment="Stretch"
                 BorderBrush="{StaticResource DangerBrush}"
                 Command="{Binding RemoveOrderItemCommand}"
-                CommandParameter="{Binding SelectedOrderItem}"
+                CommandParameter="{Binding Items.SelectedItem}"
                 FontSize="14"
                 Foreground="{StaticResource DangerBrush}">
 

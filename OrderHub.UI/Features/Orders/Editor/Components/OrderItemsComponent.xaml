@@ -7,6 +7,8 @@
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:local="clr-namespace:OrderHub.UI.Features.Orders.Editor.Components"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:OrderHub.UI.Features.Orders.Editor"
+    d:DataContext="{d:DesignInstance Type=vm:ViewModel}"
     mc:Ignorable="d">
 
     <StackPanel Orientation="Vertical">
@@ -38,8 +40,8 @@
             AutoGenerateColumns="False"
             BorderThickness="1,0,1,1"
             GridLinesVisibility="Vertical"
-            ItemsSource="{Binding OrderBuilder.Items}"
-            SelectedItem="{Binding SelectedOrderItem}"
+            ItemsSource="{Binding Items.Items}"
+            SelectedItem="{Binding Items.SelectedItem}"
             VerticalGridLinesBrush="{StaticResource WhiteBrush}">
 
             <DataGrid.Columns>

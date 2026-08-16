@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    IsEnabled="{Binding HasSelectedOrder}"
     mc:Ignorable="d">
 
     <UserControl.Resources>
@@ -14,12 +15,12 @@
             BasedOn="{StaticResource ButtonDefault}"
             TargetType="Button">
             <Setter Property="Margin" Value="0" />
+            <Setter Property="Width" Value="50" />
             <Setter Property="Padding" Value="6" />
             <Setter Property="Height" Value="56" />
             <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Background" Value="White" />
-            <Setter Property="BorderBrush" Value="#E5E7EB" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="{StaticResource WhiteBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
@@ -34,9 +35,38 @@
 
             <UniformGrid Columns="5">
 
+                <!--  Delete  -->
+
+                <Button
+                    Background="{StaticResource DangerBrush}"
+                    Command="{Binding ShowEditCommand}"
+                    Foreground="White"
+                    Style="{StaticResource QuickActionButtonStyle}">
+
+                    <StackPanel HorizontalAlignment="Center">
+
+                        <icons:MaterialIcon
+                            Width="20"
+                            Height="20"
+                            HorizontalAlignment="Center"
+                            Kind="Delete" />
+
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            FontSize="10"
+                            Text="حذف" />
+
+                    </StackPanel>
+
+                </Button>
+
                 <!--  Edit  -->
 
-                <Button Command="{Binding EditOrderCommand}" Style="{StaticResource QuickActionButtonStyle}">
+                <Button
+                    Background="{StaticResource Primary}"
+                    Command="{Binding ShowEditCommand}"
+                    Foreground="White"
+                    Style="{StaticResource QuickActionButtonStyle}">
 
                     <StackPanel HorizontalAlignment="Center">
 
@@ -44,7 +74,6 @@
                             Width="18"
                             Height="18"
                             HorizontalAlignment="Center"
-                            Foreground="#2563EB"
                             Kind="Pencil" />
 
                         <TextBlock

@@ -18,7 +18,6 @@ namespace OrderHub.UI.Features.Products.Index;
 public partial class ViewModel : IndexViewModelBase<ProductItem>
 {
     private readonly IDialogService _dialogService;
-    private readonly ISelectionStore<IProductMarker, int> _selectionStore;
     private ObservableCollection<KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>> _subCategories = new();
     private readonly IProductStore _productStore;
     public ObservableCollection<KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>> SubCategories
@@ -26,10 +25,9 @@ public partial class ViewModel : IndexViewModelBase<ProductItem>
         get => _subCategories;
         set => SetProperty(ref _subCategories, value);
     }
-    public ViewModel(IMediator mediator, IDialogService dialogService, ISelectionStore<IProductMarker, int> selectionStore, IMessenger messenger, IProductStore productStore) : base(mediator, messenger)
+    public ViewModel(IMediator mediator, IDialogService dialogService, IMessenger messenger, IProductStore productStore) : base(mediator, messenger)
     {
         _dialogService = dialogService;
-        _selectionStore = selectionStore;
 
         _messenger.Register<Application.Messages.Products.ProductedCreatedMessage>(this, async (r, m) => await ReloadAsync());
         _messenger.Register<Application.Messages.Products.ProductedDeletedMessage>(this, async (r, m) => await ReloadAsync());
@@ -172,8 +170,7 @@ public partial class ViewModel : IndexViewModelBase<ProductItem>
 
     protected override Task ShowEditAsync(ProductItem model)
     {
-        _selectionStore.Id = model.Id;
-        _dialogService.ShowDialog<Update.View>();
+        _dialogService.ShowDialog<Update.View>(model.Id);
         return Task.CompletedTask;
     }
 

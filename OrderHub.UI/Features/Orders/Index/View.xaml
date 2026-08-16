@@ -17,287 +17,139 @@
     FontFamily="{StaticResource FontFamily}"
     mc:Ignorable="d">
 
-
-
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="50" />
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="1*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-
+    <hc:SimplePanel>
         <Grid>
-
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto" />
-                <ColumnDefinition Width="1*" />
-                <ColumnDefinition Width="auto" />
-            </Grid.ColumnDefinitions>
-
-            <TextBlock
-                Grid.Column="0"
-                VerticalAlignment="Center"
-                FontSize="16"
-                FontWeight="DemiBold"
-                Text="إدارة الطلبات" />
-
-            <StackPanel
-                Grid.Column="1"
-                HorizontalAlignment="Center"
-                Orientation="Horizontal">
-                <hc:SearchBar
-                    Width="300"
-                    VerticalAlignment="Center"
-                    hc:InfoElement.Placeholder="ابحث عن طلب باسم العميل ..."
-                    hc:InfoElement.ShowClearButton="True"
-                    Style="{StaticResource SearchBarPlus}"
-                    Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}" />
-
-                <Button
-                    Margin="5,0"
-                    VerticalAlignment="Center"
-                    Cursor="Hand">
-                    <StackPanel Orientation="Horizontal">
-                        <icons:MaterialIcon Width="20" Kind="FilterVariant" />
-                        <TextBlock
-                            Margin="5,0,0,0"
-                            VerticalAlignment="Center"
-                            Text="تصفية" />
-                    </StackPanel>
-                </Button>
-
-            </StackPanel>
-
-            <StackPanel Grid.Column="2" Orientation="Horizontal">
-                <Button
-                    Height="30"
-                    Margin="0,0,8,0"
-                    Command="{Binding ToggleSummaryCommand}"
-                    Cursor="Hand">
-                    <StackPanel Orientation="Horizontal">
-                        <icons:MaterialIcon
-                            Width="20"
-                            Margin="5,0"
-                            Kind="HamburgerMenu" />
-                        <TextBlock
-                            VerticalAlignment="Center"
-                            FontSize="12"
-                            FontWeight="DemiBold"
-                            Text="{Binding SummaryToggleText}" />
-                    </StackPanel>
-                </Button>
-                <Button
-                    Grid.Column="2"
-                    Height="30"
-                    hc:BorderElement.CornerRadius="7"
-                    Background="#facc15"
-                    Command="{Binding ShowCreateCommand}"
-                    Cursor="Hand"
-                    Foreground="Black">
-                    <StackPanel Orientation="Horizontal">
-                        <icons:MaterialIcon
-                            Width="20"
-                            Margin="5,0"
-                            Kind="Plus" />
-                        <TextBlock
-                            VerticalAlignment="Center"
-                            FontSize="12"
-                            FontWeight="DemiBold"
-                            Text="إنشاء طلب جديد" />
-                    </StackPanel>
-                </Button>
-            </StackPanel>
-        </Grid>
-
-
-        <local:OrderFiltersBar Grid.Row="1" />
-
-        <Grid Grid.Row="2">
             <Grid.RowDefinitions>
-                <RowDefinition Height="1*" />
+                <RowDefinition Height="50" />
                 <RowDefinition Height="auto" />
+                <RowDefinition Height="1*" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="8" />
-                <ColumnDefinition Width="300" />
-            </Grid.ColumnDefinitions>
+            <Grid>
 
-            <DataGrid
-                d:ItemsSource="{d:SampleData}"
-                AutoGenerateColumns="False"
-                CanUserAddRows="False"
-                CanUserDeleteRows="False"
-                CanUserResizeRows="False"
-                ColumnHeaderHeight="34"
-                FontSize="12"
-                GridLinesVisibility="Vertical"
-                HeadersVisibility="Column"
-                HorizontalScrollBarVisibility="Auto"
-                IsReadOnly="True"
-                ItemsSource="{Binding Orders, IsAsync=True}"
-                RowHeight="40"
-                SelectedValue="{Binding OrderDetailsPanelViewModel.SelectedOrderId}"
-                SelectedValuePath="Id"
-                SelectionMode="Single"
-                VerticalGridLinesBrush="#E5E7EB"
-                VerticalScrollBarVisibility="Auto">
-
-                <DataGrid.Columns>
-
-                    <DataGridTextColumn
-                        Width="150"
-                        Binding="{Binding OrderNumber}"
-                        FontWeight="SemiBold"
-                        Header="رقم الطلب" />
-
-                    <DataGridTextColumn
-                        Width="180"
-                        Binding="{Binding ClientName}"
-                        Header="اسم العميل" />
-
-                    <DataGridTemplateColumn
-                        Width="150"
-                        Header="حالة الطلب"
-                        SortMemberPath="DisplayName">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <local:OrderStatusComponent IsEnabled="{Binding CanEdit}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <DataGridTemplateColumn
-                        Width="150"
-                        Header="وسيلة الدفع"
-                        SortMemberPath="DisplayName">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ComboBox
-                                    Height="28"
-                                    Cursor="Hand"
-                                    DisplayMemberPath="DisplayName"
-                                    FontSize="12"
-                                    ItemsSource="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.PaymentMethods}"
-                                    SelectedItem="{Binding PaymentMethod, UpdateSourceTrigger=PropertyChanged}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <DataGridTextColumn
-                        Width="90"
-                        Binding="{Binding TotalPrice}"
-                        Header="الإجمالي" />
-
-                    <DataGridTemplateColumn Width="130" Header="الهاتف">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock
-                                    HorizontalAlignment="Left"
-                                    VerticalAlignment="Center"
-                                    FlowDirection="LeftToRight"
-                                    FontSize="12"
-                                    FontWeight="SemiBold"
-                                    Text="{Binding ClientPhoneNumber}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <DataGridTextColumn
-                        Width="115"
-                        Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd}}"
-                        Header="التاريخ"
-                        IsReadOnly="True" />
-
-                    <DataGridTemplateColumn Width="80" Header="خيارات">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <buttons:ButtonEdit />
-                                    <buttons:ButtonDelete Margin="3,0,0,0" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <DataGridTemplateColumn>
-                        <DataGridTemplateColumn.Header>
-                            <StackPanel Orientation="Horizontal">
-                                <icons:MaterialIcon
-                                    Width="18"
-                                    Height="18"
-                                    Foreground="{StaticResource SuccessBrush}"
-                                    Kind="Whatsapp" />
-                                <TextBlock
-                                    Margin="5,0,0,0"
-                                    VerticalAlignment="Center"
-                                    FontSize="12"
-                                    FontWeight="SemiBold"
-                                    Foreground="{StaticResource SuccessBrush}"
-                                    Text="ارسال" />
-                            </StackPanel>
-                        </DataGridTemplateColumn.Header>
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <local:MessagingButtons />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
-
-            <DockPanel
-                Grid.Row="1"
-                Margin="0,6,0,0"
-                LastChildFill="True">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto" />
+                    <ColumnDefinition Width="1*" />
+                    <ColumnDefinition Width="auto" />
+                </Grid.ColumnDefinitions>
 
                 <TextBlock
+                    Grid.Column="0"
                     VerticalAlignment="Center"
-                    DockPanel.Dock="Left"
-                    FontSize="12"
-                    FontWeight="SemiBold"
-                    Foreground="#6B7280"
-                    Text="{Binding PaginationSummary}" />
+                    FontSize="16"
+                    FontWeight="DemiBold"
+                    Text="إدارة الطلبات" />
 
                 <StackPanel
-                    DockPanel.Dock="Right"
-                    FlowDirection="LeftToRight"
+                    Grid.Column="1"
+                    HorizontalAlignment="Center"
                     Orientation="Horizontal">
+                    <hc:SearchBar
+                        Width="300"
+                        VerticalAlignment="Center"
+                        hc:InfoElement.Placeholder="ابحث عن طلب باسم العميل ..."
+                        hc:InfoElement.ShowClearButton="True"
+                        Style="{StaticResource SearchBarPlus}"
+                        Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}" />
 
                     <Button
-                        Height="30"
-                        MinWidth="70"
-                        Margin="0,0,6,0"
-                        Padding="10,2"
-                        Command="{Binding PreviousPageCommand}"
-                        Content="السابق"
-                        Cursor="Hand" />
-
-                    <Button
-                        Height="30"
-                        MinWidth="70"
-                        Padding="10,2"
-                        Command="{Binding NextPageCommand}"
-                        Content="التالي"
-                        Cursor="Hand" />
+                        Margin="5,0"
+                        VerticalAlignment="Center"
+                        Cursor="Hand">
+                        <StackPanel Orientation="Horizontal">
+                            <icons:MaterialIcon Width="20" Kind="FilterVariant" />
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                Text="تصفية" />
+                        </StackPanel>
+                    </Button>
 
                 </StackPanel>
 
-            </DockPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button
+                        Height="30"
+                        Margin="0,0,8,0"
+                        Command="{Binding ShowDraftsOrdersCommand}"
+                        Cursor="Hand">
+                        <StackPanel Orientation="Horizontal">
+                            <icons:MaterialIcon
+                                Width="20"
+                                Margin="5,0"
+                                Kind="ReceiptClockOutline" />
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontSize="12"
+                                FontWeight="DemiBold"
+                                Text="الطلبات المعلقة" />
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                FontWeight="SemiBold"
+                                Foreground="{StaticResource DangerBrush}"
+                                Text="{Binding OrderDraftsDrawerViewModel.Drafts.Count}" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Grid.Column="2"
+                        Height="30"
+                        hc:BorderElement.CornerRadius="7"
+                        Background="#facc15"
+                        Command="{Binding ShowCreateCommand}"
+                        Cursor="Hand"
+                        Foreground="Black">
+                        <StackPanel Orientation="Horizontal">
+                            <icons:MaterialIcon
+                                Width="20"
+                                Margin="5,0"
+                                Kind="Plus" />
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontSize="12"
+                                FontWeight="DemiBold"
+                                Text="إنشاء طلب جديد" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
 
-            <Border
-                Grid.RowSpan="2"
-                Grid.Column="2"
-                Background="Transparent"
-                Visibility="{Binding IsSummaryExpanded, Converter={converters:BoolToVisibilityConverter}}">
 
-                <orderDetailsPanel:Panel DataContext="{Binding OrderDetailsPanelViewModel}" />
+            <local:OrderFiltersBar Grid.Row="1" />
 
-            </Border>
+            <Grid Grid.Row="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1*" />
+                    <RowDefinition Height="auto" />
+                </Grid.RowDefinitions>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="auto" />
+                </Grid.ColumnDefinitions>
+
+                <local:OrdersTable />
+
+                <local:Paginator Grid.Row="1" Margin="0,6,0,0" />
+
+                <orderDetailsPanel:Panel
+                    Grid.RowSpan="2"
+                    Grid.Column="2"
+                    DataContext="{Binding OrderDetailsPanelViewModel}" />
+
+            </Grid>
+
+
         </Grid>
-
-
-    </Grid>
+        <hc:Drawer
+            Margin="0,200,0,0"
+            Dock="Left"
+            IsOpen="{Binding IsDraftsOrderOpened}"
+            OpacityMask="{StaticResource Primary}"
+            ShowMode="Cover">
+            <local:OrderDraftsPanel />
+        </hc:Drawer>
+    </hc:SimplePanel>
 </UserControl>

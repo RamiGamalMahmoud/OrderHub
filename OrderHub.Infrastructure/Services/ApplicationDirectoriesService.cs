@@ -26,6 +26,8 @@ namespace OrderHub.Infrastructure.Services
         public string DefaultWhatAppProfilePath => Path.Combine(WhatAppProfilesPath, "Default");
         public string LogsPath => Path.Combine(StoragePath, "Logs");
 
+        public string DraftsPath => Path.Combine(AppPath, "Drafts");
+
         public void EnsureDatabaseFileCreated()
         {
             if (!Directory.Exists(DataPath))
@@ -37,7 +39,13 @@ namespace OrderHub.Infrastructure.Services
                 File.Copy("./Data/order_hub.db", DatabaseFilePath);
             }
         }
-
+        public void EnsureDraftsDirectoryCreated()
+        {
+            if (!Directory.Exists(DraftsPath))
+            {
+                Directory.CreateDirectory(DraftsPath);
+            }
+        }
         public void EnsureAppDirectoryCreated()
         {
             if (!Directory.Exists(AppPath)) Directory.CreateDirectory(AppPath);

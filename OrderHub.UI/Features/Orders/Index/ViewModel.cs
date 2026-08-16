@@ -1,59 +1,73 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using AutoMapper.Internal;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Application.Common.Lookups;
+using OrderHub.Application.Features.OrderDrafts.Contracts;
+using OrderHub.Application.Features.Orders.Queries;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
+using OrderHub.UI.Features.Orders.Index.OrderDetailsPanel;
 using OrderHub.UI.Interfaces;
-using OrderHub.UI.Stores.Markers;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using OrderHub.Application.Common;
-using static OrderHub.Application.DTOs.OrderDtos;
-using static OrderHub.Application.DTOs.PaymentMothodsDtos;
-using OrderHub.UI.Features.Orders.Index.OrderDetailsPanel;
 
 namespace OrderHub.UI.Features.Orders.Index;
 
 internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 {
     private readonly IDialogService _dialogService;
-    private readonly ISelectionStore<IOrderMarker, int> _selectionStore;
+    public OrderDraftsDrawerViewModel OrderDraftsDrawerViewModel { get; }
+
+    [ObservableProperty]
+    private bool _isDraftsOrderOpened;
+
+    [RelayCommand]
+    private async Task ShowDraftsOrders()
+    {
+        IsDraftsOrderOpened = !IsDraftsOrderOpened;
+        if(IsDraftsOrderOpened)
+            await OrderDraftsDrawerViewModel.LoadAsync();
+    }
 
     public OrderDetailsPanelViewModel OrderDetailsPanelViewModel { get; }
 
     private readonly ObservableCollection<OrderViewModel> _orders = new();
     public ObservableCollection<OrderViewModel> Orders => _orders;
 
-    private readonly ObservableCollection<OrderSummaryItemViewModel> _statusSummaries = new();
-    public ObservableCollection<OrderSummaryItemViewModel> StatusSummaries => _statusSummaries;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelectedOrder))]
+    private OrderViewModel _selectedOrder;
 
-    private readonly ObservableCollection<OrderSummaryItemViewModel> _paymentMethodSummaries = new();
-    public ObservableCollection<OrderSummaryItemViewModel> PaymentMethodSummaries => _paymentMethodSummaries;
+    partial void OnSelectedOrderChanged(OrderViewModel value)
+    {
+        OrderDetailsPanelViewModel.SelectedOrderId = value?.Id;
+    }
+
+    public bool HasSelectedOrder => SelectedOrder is not null;
 
     [ObservableProperty]
     private bool _isLoading;
 
     [ObservableProperty]
-    private IEnumerable<PaymentMethodListDto> _paymentMethods;
+    private IEnumerable<PaymentMethod> _paymentMethods;
 
     [ObservableProperty]
-    private PaymentMethodListDto _selectedPaymentMethod;
+    private PaymentMethod _selectedPaymentMethod;
 
-    public IEnumerable<PaymentMethodListDto> PaymentMethodFilters =>
-        new[] { new PaymentMethodListDto(0, "الكل", string.Empty, true) }
-        .Concat(PaymentMethods ?? Enumerable.Empty<PaymentMethodListDto>());
+    public IEnumerable<PaymentMethod> PaymentMethodFilters =>
+        new[] { new PaymentMethod(0, "الكل", string.Empty, true) }
+        .Concat(PaymentMethods ?? Enumerable.Empty<PaymentMethod>());
 
     public IEnumerable<EnumItem<OrderStatus>> OrderStatusFilters =>
         new[] { new EnumItem<OrderStatus>(default, "الكل") }
-        .Concat(Enum.GetValues(typeof(OrderStatus))
-            .Cast<OrderStatus>()
-            .Select(status => new EnumItem<OrderStatus>(status, status.GetDescription())));
+        .Concat(EnumItems.For<OrderStatus>());
 
     [ObservableProperty]
     private string _searchTerm;
@@ -87,22 +101,17 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         ? "لا توجد طلبات"
         : $"الصفحة {CurrentPage} من {TotalPages} - إجمالي {TotalCount}";
 
-    [ObservableProperty]
-    private bool _isSummaryExpanded = true;
-
-    public string SummaryToggleText => IsSummaryExpanded ? "إخفاء الملخص" : "إظهار الملخص";
-
     public ViewModel(
         IMediator mediator,
         IMessenger messenger,
-        IDialogService dialogService,
-        ISelectionStore<IOrderMarker, int> selectionStore)
+        IDraftService draftService,
+        IDialogService dialogService)
         : base(mediator, messenger)
     {
         _dialogService = dialogService;
-        _selectionStore = selectionStore;
+        OrderDraftsDrawerViewModel = new OrderDraftsDrawerViewModel(draftService, dialogService, messenger);
 
-        OrderDetailsPanelViewModel = new OrderDetailsPanelViewModel(mediator);
+        OrderDetailsPanelViewModel = new OrderDetailsPanelViewModel(mediator, dialogService);
 
         messenger.Register<Application.Messages.Orders.OrderCreatedMessage>(
             this,
@@ -123,11 +132,17 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
                 OrderViewModel order = Orders.FirstOrDefault(item => item.Id == m.OrderId);
                 order?.UpdateRecipientStatus(m.RecipientType, m.NewStatus == Domain.Enums.OutboxMessageStatus.Sent);
             });
-    }
 
-    // =========================
-    // 🔄 Lifecycle
-    // =========================
+        _messenger.Register<ViewModel, Messages.DraftSavedMessage>(this, (r, m) =>
+        {
+            OnPropertyChanged(nameof(OrderDraftsDrawerViewModel.Drafts.Count));
+        });
+
+        _messenger.Register<ViewModel, Messages.DraftDeletedMessage>(this, (r, m) =>
+        {
+            OnPropertyChanged(nameof(OrderDraftsDrawerViewModel.Drafts.Count));
+        });
+    }
 
     protected override async Task LoadAsync()
     {
@@ -135,9 +150,15 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         {
             IsLoading = true;
 
-            PaymentMethods = await _mediator.Send(
-                new Application.Queries.PaymentMothodQueries.GetPaymentMethodListQuery());
+            PaymentMethods = (await _mediator.Send(
+                new Application.Queries.PaymentMothodQueries.GetPaymentMethodListQuery()))
+                .Select(method => new PaymentMethod(
+                    method.Id,
+                    method.DisplayName,
+                    method.Description,
+                    method.IsActive));
 
+            OnPropertyChanged(nameof(PaymentMethodFilters));
             SelectedPaymentMethod ??= PaymentMethodFilters.FirstOrDefault();
             SelectedOrderStatus ??= OrderStatusFilters.FirstOrDefault();
 
@@ -162,14 +183,15 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
     async partial void OnSearchTermChanged(string oldValue, string newValue)
     {
-        await RefreshWithPagingAsync();
+        //await Task.Delay(300);
+        await RefreshWithPagingAsync(300);
     }
 
     async partial void OnFromDateChanged(DateTime? oldValue, DateTime? newValue) => await RefreshWithPagingAsync();
 
     async partial void OnToDateChanged(DateTime? oldValue, DateTime? newValue) => await RefreshWithPagingAsync();
 
-    async partial void OnSelectedPaymentMethodChanged(PaymentMethodListDto oldValue, PaymentMethodListDto newValue) => await RefreshWithPagingAsync();
+    async partial void OnSelectedPaymentMethodChanged(PaymentMethod value) => await RefreshWithPagingAsync();
 
     async partial void OnSelectedOrderStatusChanged(EnumItem<OrderStatus> oldValue, EnumItem<OrderStatus> newValue) => await RefreshWithPagingAsync();
 
@@ -190,9 +212,6 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
     }
 
     partial void OnTotalCountChanged(int oldValue, int newValue) => OnPropertyChanged(nameof(PaginationSummary));
-
-    partial void OnIsSummaryExpandedChanged(bool oldValue, bool newValue) => OnPropertyChanged(nameof(SummaryToggleText));
-
 
     protected override Task ShowCreateAsync()
     {
@@ -252,8 +271,7 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
     protected override Task ShowEditAsync(OrderViewModel model)
     {
-        _selectionStore.Id = model.Id;
-        _dialogService.ShowDialog<Edit.View>();
+        _dialogService.ShowDialog<Edit.View>(model.Id);
         return Task.CompletedTask;
     }
 
@@ -265,7 +283,7 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         }
 
         Result result = await _mediator.Send(
-            new Application.Commands.OrderCommands.DeleteOrderCommand(model.Id));
+            new Application.Features.Orders.Delete.DeleteOrder.Command(model.Id));
 
         if (!result.IsSuccess)
         {
@@ -289,45 +307,32 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         }
     }
 
-    private void UpdateSummaries(OrderSummaryDto summary)
-    {
-        _statusSummaries.Clear();
-        foreach (OrderStatusSummaryDto item in summary.StatusSummaries)
-        {
-            _statusSummaries.Add(new OrderSummaryItemViewModel(
-                item.EnumItem.DisplayName,
-                item.Count));
-        }
-
-        _paymentMethodSummaries.Clear();
-        foreach (OrderPaymentMethodSummaryDto item in summary.PaymentMethodSummaries)
-        {
-            _paymentMethodSummaries.Add(new OrderSummaryItemViewModel(
-                item.PaymentMethodName,
-                item.Count));
-        }
-    }
-
-    private OrderViewModel Map(OrderListDto o) => new(
+    private OrderViewModel Map(GetOrderPaged.Order order) => new(
         _mediator,
         _messenger,
-        o.Id,
-        o.OrderNumber,
-        o.ClientName,
-        o.ClientPhoneNumber,
-        o.ItemsCount,
-        o.Total,
-        o.CreatedAt,
-        o.PaymentMethod,
-        o.EnumItem,
-        o.HasClientRecipient,
-        o.HasSupplierRecipient,
-        o.HasShippingCarrierRecipient,
-        o.HasDeliverymanRecipient,
-        o.IsClientMessageSent,
-        o.IsSupplierMessageSent,
-        o.IsShippingCarrierMessageSent,
-        o.IsDeliverymanMessageSent
+        order.Id,
+        order.OrderNumber,
+        order.ClientName,
+        order.ClientPhoneNumber,
+        order.ItemsCount,
+        order.Total,
+        order.CreatedAt,
+
+        new PaymentMethod(
+            order.PaymentMethod.Id,
+            order.PaymentMethod.DisplayName,
+            order.PaymentMethod.Description,
+            order.PaymentMethod.IsActive),
+
+        order.EnumItem,
+        order.HasClientRecipient,
+        order.HasSupplierRecipient,
+        order.HasShippingCarrierRecipient,
+        order.HasDeliverymanRecipient,
+        order.IsClientMessageSent,
+        order.IsSupplierMessageSent,
+        order.IsShippingCarrierMessageSent,
+        order.IsDeliverymanMessageSent
     );
 
     [RelayCommand(CanExecute = nameof(CanGoPreviousPage))]
@@ -395,23 +400,19 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         await RefreshWithPagingAsync();
     }
 
-    [RelayCommand]
-    private void ToggleSummary()
-    {
-        IsSummaryExpanded = !IsSummaryExpanded;
-    }
-
-    private async Task RefreshWithPagingAsync()
+    private async Task RefreshWithPagingAsync(int delay = 100)
     {
         CurrentPage = 1;
 
         _searchCts?.Cancel();
+        _searchCts?.Dispose();
+
         _searchCts = new CancellationTokenSource();
-        CancellationToken token = _searchCts.Token;
 
         try
         {
-            await LoadOrdersPageAsync(token);
+            await Task.Delay(delay, _searchCts.Token);
+            await LoadOrdersPageAsync(_searchCts.Token);
         }
         catch (OperationCanceledException)
         {
@@ -431,8 +432,8 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
                 ? null
                 : SelectedOrderStatus.Value;
 
-            Task<PagedResult<OrderListDto>> pagedOrdersTask = _mediator.Send(
-                new Application.Queries.OrderQueries.GetOrdersPagedQuery(
+            var pagedOrders = await _mediator.Send(
+                new GetOrderPaged.Query(
                     CurrentPage,
                     PageSize,
                     SearchTerm,
@@ -442,28 +443,13 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
                     selectedOrderStatus),
                 cancellationToken);
 
-            Task<OrderSummaryDto> summaryTask = _mediator.Send(
-                new Application.Queries.OrderQueries.GetOrdersSummaryQuery(
-                    SearchTerm,
-                    FromDate,
-                    ToDate,
-                    selectedPaymentMethodId,
-                    selectedOrderStatus),
-                cancellationToken);
-
-            await Task.WhenAll(pagedOrdersTask, summaryTask);
-
-            PagedResult<OrderListDto> pagedOrders = await pagedOrdersTask;
-            OrderSummaryDto summary = await summaryTask;
-
             TotalPages = pagedOrders.TotalPages;
             TotalCount = pagedOrders.TotalCount;
             CurrentPage = pagedOrders.PageNumber;
 
             UpdateOrders(pagedOrders.Items.Select(Map));
-            UpdateSummaries(summary);
-            OnPropertyChanged(nameof(PaymentMethodFilters));
-            OnPropertyChanged(nameof(OrderStatusFilters));
+            //OnPropertyChanged(nameof(PaymentMethodFilters));
+            //OnPropertyChanged(nameof(OrderStatusFilters));
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -479,21 +465,4 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         }
     }
 
-}
-
-internal sealed class OrderSummaryItemViewModel
-{
-    public OrderSummaryItemViewModel(string title, int count)
-    {
-        Title = title;
-        Count = count;
-    }
-
-    public string Title { get; }
-
-    public int Count { get; }
-
-    public string DisplayText => $"{Title}: {Count}";
-
-    public string MenuText => $"{Title} - {Count}";
 }

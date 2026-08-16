@@ -1,27 +1,19 @@
+using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using System.Collections.Generic;
 using System.Linq;
-using static OrderHub.Application.DTOs.OrderDtos;
-using static OrderHub.Application.DTOs.OrderItemDtos;
 
 namespace OrderHub.Infrastructure.Orders;
 
 internal class OrderWriteService
 {
-    public Order Create(OrderCreateDto createDto, string orderNumber)
-    {
-        Order order = new Order(createDto.ClientId, orderNumber);
-        ApplyHeader(order, createDto.ClientId, createDto.DeliveryMethod, createDto.DeliveryManId, createDto.ShippingCarrierId, createDto.PaymentMothodId);
-        PopulateDetails(order, createDto.OrderItems, createDto.DeliverySteps);
-        return order;
-    }
 
-    public void Update(AppDbContext appDbContext, Order order, OrderUpdateDto updateDto)
+    public void Update(AppDbContext appDbContext, Order order, OrderDetails.Order orderDetials)
     {
-        ApplyHeader(order, updateDto.ClientId, updateDto.DeliveryMethod, updateDto.DeliveryManId, updateDto.ShippingCarrierId, updateDto.PaymentMothodId);
+        ApplyHeader(order, orderDetials.ClientId, orderDetials.DeliveryMethod, orderDetials.DeliveryManId, orderDetials.ShippingCarrierId, orderDetials.PaymentMothodId);
         ResetDetails(appDbContext, order);
-        PopulateDetails(order, updateDto.OrderItems, updateDto.DeliverySteps);
+        PopulateDetails(order, orderDetials.OrderItems, orderDetials.DeliverySteps);
     }
 
     private static void ApplyHeader(
@@ -50,10 +42,10 @@ internal class OrderWriteService
 
     private static void PopulateDetails(
         Order order,
-        IEnumerable<OrderItemDto> orderItems,
-        IEnumerable<OrderDeliveryStepCreateDto> deliverySteps)
+        IEnumerable<OrderDetails.Item> orderItems,
+        IEnumerable<OrderDetails.DeliveryStep> deliverySteps)
     {
-        foreach (OrderItemDto orderItemDto in orderItems ?? Enumerable.Empty<OrderItemDto>())
+        foreach (OrderDetails.Item orderItemDto in orderItems ?? Enumerable.Empty<OrderDetails.Item>())
         {
             order.AddOrderItem(
                 orderItemDto.ProductId,
@@ -61,27 +53,30 @@ internal class OrderWriteService
                 orderItemDto.UnitPrice,
                 orderItemDto.Quantity,
                 orderItemDto.SupplierName,
-                orderItemDto.SupplierId);
+                orderItemDto.SupplierId,
+                orderItemDto.Properties.Select(property => new OrderItemPropertyData(property.PropertyId, property.Value))
+                    .ToList()
+                    .AsReadOnly());
         }
 
-        foreach (OrderDeliveryStepCreateDto deliveryStepDto in deliverySteps ?? Enumerable.Empty<OrderDeliveryStepCreateDto>())
+        foreach (OrderDetails.DeliveryStep deliveryStep in deliverySteps ?? Enumerable.Empty<OrderDetails.DeliveryStep>())
         {
-            order.AddDeliveryStep(BuildDeliveryStep(order.Id, deliveryStepDto));
+            order.AddDeliveryStep(BuildDeliveryStep(order.Id, deliveryStep));
         }
     }
 
-    private static OrderDeliveryStep BuildDeliveryStep(int orderId, OrderDeliveryStepCreateDto deliveryStepDto)
+    private static OrderDeliveryStep BuildDeliveryStep(int orderId, OrderDetails.DeliveryStep deliveryStep)
     {
         return new OrderDeliveryStep
         {
             OrderId = orderId,
-            StepOrder = deliveryStepDto.StepOrder,
-            DeliveryMethod = deliveryStepDto.DeliveryMethod,
-            DeliverymanId = deliveryStepDto.DeliveryMethod == DeliveryMethod.DeliveryMan
-                ? deliveryStepDto.HandlerId
+            StepOrder = deliveryStep.StepOrder,
+            DeliveryMethod = deliveryStep.DeliveryMethod,
+            DeliverymanId = deliveryStep.DeliveryMethod == DeliveryMethod.DeliveryMan
+                ? deliveryStep.HandlerId
                 : null,
-            ShippingCarrierId = deliveryStepDto.DeliveryMethod == DeliveryMethod.ShippingCompany
-                ? deliveryStepDto.HandlerId
+            ShippingCarrierId = deliveryStep.DeliveryMethod == DeliveryMethod.ShippingCompany
+                ? deliveryStep.HandlerId
                 : null
         };
     }

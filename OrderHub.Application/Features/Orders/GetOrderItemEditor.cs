@@ -17,13 +17,17 @@ public static class GetOrderItemEditor
         string CategoryName,
         IEnumerable<OrderItemSupplier> Suppliers,
         IEnumerable<OrderItemProperty> Properties);
+
     public record OrderItemSupplier(int Id, string Name);
+
     public record OrderItemProperty(int Id,
         string Name,
         bool IsRequired,
         PropertyType PropertyType,
         IEnumerable<OrderItemPropertyOption> Options);
+
     public record OrderItemPropertyOption(int Id, string Name);
+
     internal class Handler : IRequestHandler<Query, OrderItemEditorDto>
     {
         private readonly IOrderItemEditorReader _reader;

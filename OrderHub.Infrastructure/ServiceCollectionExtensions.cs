@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
-using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Interfaces.Services;
+using OrderHub.Infrastructure.Features.OrderDrafts;
+using OrderHub.Infrastructure.ReadServices;
+using OrderHub.Infrastructure.Stores;
 using System.Reflection;
 
 namespace OrderHub.Infrastructure;
@@ -19,6 +21,8 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
         services.AddStore();
+        services.AddReadServices();
+        services.AddDrafts();
         services.AddTransient<Orders.OrderWriteService>();
         services.AddSingleton<Services.WhatsappService>();
         services.AddSingleton<IWhatsappService>(s => s.GetRequiredService<Services.WhatsappService>());
@@ -36,14 +40,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ITokenStorageService, Services.FieTokenStorageService>();
         services.AddTransient<IAuthService, Services.SalaAuthService>();
         services.AddSingleton<ICacheService, Services.CacheService>();
-        return services;
-    }
-
-    private static IServiceCollection AddStore(this IServiceCollection services)
-    {
-        services.AddSingleton<Application.Interfaces.Stores.IPropertyStore, Stores.PropertyStore>();
-        services.AddSingleton<IProductStore, Stores.ProductStore>();
-        services.AddTransient<Application.Features.Orders.GetOrderItemEditor.IOrderItemEditorReader, Features.Orders.OrderItemEditorReader>();
         return services;
     }
 }

@@ -1,4 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using OrderHub.Application.Common.Extensions;
+using OrderHub.Application.Common.Lookups;
 using OrderHub.Domain.Enums;
 using static OrderHub.Application.DTOs.WhatsappGroupDtos;
 

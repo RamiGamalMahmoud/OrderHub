@@ -24,6 +24,7 @@ public class PrepareDirectoriesStep : IStartupStep
         _dirs.EnsureDatabaseFileCreated();
         _dirs.EnsureWhatsAppProfilesDirectoryCreated();
         _dirs.EnsureLogsDirectoryCreated();
+        _dirs.EnsureDraftsDirectoryCreated();
 
         return Task.CompletedTask;
     }

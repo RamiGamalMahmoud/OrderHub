@@ -1,4 +1,5 @@
-﻿using OrderHub.Domain.Enums;
+﻿using OrderHub.Application.Common.Lookups;
+using OrderHub.Domain.Enums;
 
 namespace OrderHub.UI.Features.Settings.Properties;
 

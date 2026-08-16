@@ -42,7 +42,7 @@
                         FontSize="16"
                         FontWeight="Bold"
                         Foreground="{StaticResource PrimaryBrush}"
-                        Text="{Binding OrderBuilder.ItemsCount}" />
+                        Text="{Binding Items.ItemsCount}" />
                 </StackPanel>
             </Border>
 
@@ -63,7 +63,7 @@
                         FontSize="16"
                         FontWeight="Bold"
                         Foreground="{StaticResource PrimaryBrush}"
-                        Text="{Binding OrderBuilder.TotalPrice, StringFormat='{}{0} ر.س '}" />
+                        Text="{Binding Items.TotalPrice, StringFormat='{}{0} ر.س '}" />
                 </StackPanel>
             </Border>
 

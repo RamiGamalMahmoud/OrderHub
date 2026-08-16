@@ -2,6 +2,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Application.Common.Extensions;
+using OrderHub.Application.Common.Lookups;
 using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
 using System;

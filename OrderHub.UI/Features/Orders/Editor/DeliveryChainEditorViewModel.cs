@@ -1,14 +1,12 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using OrderHub.Application.Common.Extensions;
 using OrderHub.Domain.Enums;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
-using static OrderHub.Application.DTOs.OrderDtos;
-using static OrderHub.Application.DTOs.DeliverymanDtos;
-using static OrderHub.Application.DTOs.ShippingCarriersDtos;
 
 namespace OrderHub.UI.Features.Orders.Editor;
 
@@ -29,31 +27,20 @@ internal partial class DeliveryChainEditorViewModel : ObservableObject
 
     public event PropertyChangedEventHandler StepSelectionChanged;
 
-    public void RefreshDeliverymanHandlers(IEnumerable<DeliverymanListDto> deliverymen)
+    public void RefreshDeliverymanHandlers(IEnumerable<Deliveryman> deliverymen)
     {
         RefreshDeliveryStepHandlers(
             DeliveryMethod.DeliveryMan,
-            (deliverymen ?? Enumerable.Empty<DeliverymanListDto>())
-                .Select(deliveryman => new Handler(deliveryman.Id, deliveryman.Name)));
+            (deliverymen ?? Enumerable.Empty<Deliveryman>())
+                .Select(x => new Handler(x.Id, x.Name)));
     }
 
-    public void RefreshShippingCarrierHandlers(IEnumerable<ShippingCarrierListDto> shippingCarriers)
+    public void RefreshShippingCarrierHandlers(IEnumerable<ShippingCarrier> shippingCarriers)
     {
         RefreshDeliveryStepHandlers(
             DeliveryMethod.ShippingCompany,
-            (shippingCarriers ?? Enumerable.Empty<ShippingCarrierListDto>())
-                .Select(carrier => new Handler(carrier.Id, carrier.Name)));
-    }
-
-    [RelayCommand]
-    private void AddDeliverymanStep()
-    {
-        DeliverySteps.Add(new DeliveryStepViewModel
-        {
-            Method = DeliveryMethod.DeliveryMan,
-            Type = DeliveryMethod.DeliveryMan.GetDescription(),
-            StepOrder = DeliverySteps.Count + 1
-        });
+            (shippingCarriers ?? Enumerable.Empty<ShippingCarrier>())
+                .Select(x => new Handler(x.Id, x.Name)));
     }
 
     public void AddDeliverymanStep(IEnumerable<Handler> handlers)
@@ -69,17 +56,6 @@ internal partial class DeliveryChainEditorViewModel : ObservableObject
         DeliverySteps.Add(step);
     }
 
-    [RelayCommand]
-    private void AddShippingCarrierStep()
-    {
-        DeliverySteps.Add(new DeliveryStepViewModel
-        {
-            Method = DeliveryMethod.ShippingCompany,
-            Type = DeliveryMethod.ShippingCompany.GetDescription(),
-            StepOrder = DeliverySteps.Count + 1
-        });
-    }
-
     public void AddShippingCarrierStep(IEnumerable<Handler> handlers)
     {
         DeliveryStepViewModel step = new()
@@ -93,58 +69,6 @@ internal partial class DeliveryChainEditorViewModel : ObservableObject
         DeliverySteps.Add(step);
     }
 
-    [RelayCommand(CanExecute = nameof(CanRemoveDeliveryStep))]
-    private void RemoveDeliveryStep(DeliveryStepViewModel step)
-    {
-        DeliverySteps.Remove(step);
-        ResetSelectedDeliveryStepsOrder();
-        if (ReferenceEquals(SelectedDeliveryStep, step))
-        {
-            SelectedDeliveryStep = null;
-        }
-    }
-
-    [RelayCommand(CanExecute = nameof(CanMoveDeliveryStepDown))]
-    private void MoveDeliveryStepDown(DeliveryStepViewModel step) => MoveStep(step, MoveDirection.Down);
-
-    [RelayCommand(CanExecute = nameof(CanMoveDeliveryStepUp))]
-    private void MoveDeliveryStepUp(DeliveryStepViewModel step) => MoveStep(step, MoveDirection.Up);
-
-    private bool CanRemoveDeliveryStep(DeliveryStepViewModel step) => step is not null;
-
-    private bool CanMoveDeliveryStepDown(DeliveryStepViewModel step)
-    {
-        if (step is null) return false;
-
-        int index = DeliverySteps.IndexOf(step);
-        return index >= 0 && index < DeliverySteps.Count - 1;
-    }
-
-    private bool CanMoveDeliveryStepUp(DeliveryStepViewModel step)
-    {
-        if (step is null) return false;
-
-        int index = DeliverySteps.IndexOf(step);
-        return index > 0;
-    }
-
-    private void MoveStep(DeliveryStepViewModel step, MoveDirection direction)
-    {
-        int index = DeliverySteps.IndexOf(step);
-        if (index == -1) return;
-
-        int newIndex = index + (int)direction;
-
-        if (newIndex < 0 || newIndex >= DeliverySteps.Count)
-            return;
-
-        DeliverySteps.Move(index, newIndex);
-        ResetSelectedDeliveryStepsOrder();
-
-        MoveDeliveryStepUpCommand.NotifyCanExecuteChanged();
-        MoveDeliveryStepDownCommand.NotifyCanExecuteChanged();
-    }
-
     public void ResetSelectedDeliveryStepsOrder()
     {
         for (int i = 0; i < DeliverySteps.Count; i++)
@@ -153,28 +77,117 @@ internal partial class DeliveryChainEditorViewModel : ObservableObject
         }
     }
 
-    public IEnumerable<OrderDeliveryStepCreateDto> BuildDeliverySteps()
+    public IEnumerable<OrderDeliveryStep> BuildDeliverySteps()
     {
         return DeliverySteps
             .Where(step => step.SelectedHandler is not null)
             .OrderBy(step => step.StepOrder)
-            .Select(step => new OrderDeliveryStepCreateDto(
+            .Select(step => new OrderDeliveryStep(
                 step.StepOrder,
                 step.Method,
                 step.SelectedHandler.Id));
+    }
+
+    [RelayCommand]
+    private void AddDeliverymanStep()
+    {
+        DeliverySteps.Add(new DeliveryStepViewModel
+        {
+            Method = DeliveryMethod.DeliveryMan,
+            Type = DeliveryMethod.DeliveryMan.GetDescription(),
+            StepOrder = DeliverySteps.Count + 1
+        });
+    }
+
+    [RelayCommand]
+    private void AddShippingCarrierStep()
+    {
+        DeliverySteps.Add(new DeliveryStepViewModel
+        {
+            Method = DeliveryMethod.ShippingCompany,
+            Type = DeliveryMethod.ShippingCompany.GetDescription(),
+            StepOrder = DeliverySteps.Count + 1
+        });
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRemoveDeliveryStep))]
+    private void RemoveDeliveryStep(DeliveryStepViewModel step)
+    {
+        DeliverySteps.Remove(step);
+
+        ResetSelectedDeliveryStepsOrder();
+
+        if (ReferenceEquals(SelectedDeliveryStep, step))
+        {
+            SelectedDeliveryStep = null;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanMoveDeliveryStepDown))]
+    private void MoveDeliveryStepDown(DeliveryStepViewModel step)
+        => MoveStep(step, MoveDirection.Down);
+
+    [RelayCommand(CanExecute = nameof(CanMoveDeliveryStepUp))]
+    private void MoveDeliveryStepUp(DeliveryStepViewModel step)
+        => MoveStep(step, MoveDirection.Up);
+
+    private bool CanRemoveDeliveryStep(DeliveryStepViewModel step)
+        => step is not null;
+
+    private bool CanMoveDeliveryStepDown(DeliveryStepViewModel step)
+    {
+        if (step is null)
+            return false;
+
+        int index = DeliverySteps.IndexOf(step);
+
+        return index >= 0 && index < DeliverySteps.Count - 1;
+    }
+
+    private bool CanMoveDeliveryStepUp(DeliveryStepViewModel step)
+    {
+        if (step is null)
+            return false;
+
+        int index = DeliverySteps.IndexOf(step);
+
+        return index > 0;
+    }
+
+    private void MoveStep(DeliveryStepViewModel step, MoveDirection direction)
+    {
+        int index = DeliverySteps.IndexOf(step);
+
+        if (index == -1)
+            return;
+
+        int newIndex = index + (int)direction;
+
+        if (newIndex < 0 || newIndex >= DeliverySteps.Count)
+            return;
+
+        DeliverySteps.Move(index, newIndex);
+
+        ResetSelectedDeliveryStepsOrder();
+
+        MoveDeliveryStepUpCommand.NotifyCanExecuteChanged();
+        MoveDeliveryStepDownCommand.NotifyCanExecuteChanged();
     }
 
     private void RefreshDeliveryStepHandlers(DeliveryMethod method, IEnumerable<Handler> handlers)
     {
         Handler[] handlerOptions = handlers.ToArray();
 
-        foreach (DeliveryStepViewModel step in DeliverySteps.Where(step => step.Method == method))
+        foreach (DeliveryStepViewModel step in DeliverySteps.Where(x => x.Method == method))
         {
             Handler selectedHandler = step.SelectedHandler;
+
             step.Handlers = handlerOptions;
+
             if (selectedHandler is not null)
             {
-                step.SelectedHandler = step.Handlers.FirstOrDefault(handler => handler.Id == selectedHandler.Id);
+                step.SelectedHandler =
+                    step.Handlers.FirstOrDefault(x => x.Id == selectedHandler.Id);
             }
         }
     }
@@ -200,7 +213,10 @@ internal partial class DeliveryChainEditorViewModel : ObservableObject
         MoveDeliveryStepUpCommand.NotifyCanExecuteChanged();
         MoveDeliveryStepDownCommand.NotifyCanExecuteChanged();
         RemoveDeliveryStepCommand.NotifyCanExecuteChanged();
-        StepSelectionChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DeliverySteps)));
+
+        StepSelectionChanged?.Invoke(
+            this,
+            new PropertyChangedEventArgs(nameof(DeliverySteps)));
     }
 
     private void DeliveryStep_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -211,3 +227,8 @@ internal partial class DeliveryChainEditorViewModel : ObservableObject
         }
     }
 }
+
+public record OrderDeliveryStep(
+    int StepOrder,
+    DeliveryMethod DeliveryMethod,
+    int HandlerId);

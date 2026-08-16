@@ -1,29 +1,34 @@
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Application.Common.Extensions;
+using OrderHub.Application.Features.Orders.Contracts;
+using OrderHub.Application.Features.Orders.Queries;
 using OrderHub.Application.Features.Products.Contracts;
+using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
+using OrderHub.UI.Common;
 using OrderHub.UI.Features.Orders.Editor;
 using OrderHub.UI.Interfaces;
-using OrderHub.UI.Stores.Markers;
 using System.Linq;
 using System.Threading.Tasks;
-using static OrderHub.Application.DTOs.OrderDtos;
 
 namespace OrderHub.UI.Features.Orders.Edit;
 
-internal class ViewModel : Editor.ViewModel
+internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
 {
-    private readonly ISelectionStore<IOrderMarker, int> _selectionStore;
+    private readonly IOrderStore _orderStore;
+    private int _id;
 
     public ViewModel(
         IMediator mediator,
         IDialogService dialogService,
         IMessenger messenger,
-        ISelectionStore<IOrderMarker, int> selectionStore,
-        IProductStore productStore) : base(mediator, dialogService, messenger, productStore)
+        IProductStore productStore,
+        IOrderStore orderStore,
+        ILookupService lookupService) : base(mediator, dialogService, messenger, productStore, lookupService)
     {
-        _selectionStore = selectionStore;
+        _orderStore = orderStore;
     }
 
     public override string ActionName => "حفظ التعديلات";
@@ -31,7 +36,7 @@ internal class ViewModel : Editor.ViewModel
 
     protected override async Task AfterLoadAsync()
     {
-        OrderEditDto order = await _mediator.Send(new Application.Queries.OrderQueries.GetOrderForEditQuery(_selectionStore.Id));
+        GetOrderEdit.Order order = await _mediator.Send(new Application.Features.Orders.Queries.GetOrderEdit.Query(_id));
 
         if (order is null)
         {
@@ -40,11 +45,10 @@ internal class ViewModel : Editor.ViewModel
             return;
         }
 
-        await PartyPanel.EnsureClientLoadedAsync(order.ClientId);
         await EnsureDeliverymanLoadedAsync(order.DeliveryManId);
         await EnsureShippingCarrierLoadedAsync(order.ShippingCarrierId);
 
-        foreach (OrderDeliveryStepEditDto step in order.DeliverySteps)
+        foreach (var step in order.DeliverySteps)
         {
             if (step.DeliveryMethod == DeliveryMethod.DeliveryMan)
             {
@@ -58,7 +62,6 @@ internal class ViewModel : Editor.ViewModel
 
         await RunWithoutTrackingAsync(() =>
         {
-            OrderBuilder.Clear();
             DeliveryMethodsViewModel.DeliverySteps.Clear();
 
             PartyPanel.SelectedClient = PartyPanel.Clients?.FirstOrDefault(client => client.Id == order.ClientId);
@@ -72,7 +75,7 @@ internal class ViewModel : Editor.ViewModel
             DeliveryMethodsViewModel.SelectedShippingCarrier = DeliveryMethodsViewModel.ShippingCarriers
                 ?.FirstOrDefault(carrier => carrier.Id == order.ShippingCarrierId);
 
-            foreach (OrderItemEditDto item in order.OrderItems)
+            foreach (GetOrderEdit.OrderItem item in order.OrderItems)
             {
                 var suppliers = item.Suppliers
                     .Select(supplier => new OrderItemSupplier(supplier.Id, supplier.Name))
@@ -86,12 +89,22 @@ internal class ViewModel : Editor.ViewModel
                     Price = item.UnitPrice,
                     Quantity = item.Quantity,
                     Suppliers = suppliers,
-                    Supplier = suppliers.FirstOrDefault(supplier => supplier.Id == item.SupplierId)
+                    Supplier = suppliers.FirstOrDefault(supplier => supplier.Id == item.SupplierId),
+                    Properties = item.Properties.Select(property => new OrderItemProperty(
+                        property.PropertyId,
+                        property.Name,
+                        property.IsRequired,
+                        property.PropertyType,
+                        property.Options.Select(option => new OrderItemPropertyOption(option.OptionId, option.Value))
+                        .ToList(),
+                        property.SelectedValue))
+                    .ToList()
                 };
-                OrderBuilder.Items.Add(orderItem);
+                orderItem.StateChanged += OrderItem_StateChanged;
+                Items.Add(orderItem);
             }
 
-            foreach (OrderDeliveryStepEditDto step in order.DeliverySteps)
+            foreach (GetOrderEdit.DeliveryStep step in order.DeliverySteps)
             {
                 var handlers = step.DeliveryMethod switch
                 {
@@ -120,46 +133,26 @@ internal class ViewModel : Editor.ViewModel
         });
     }
 
+    private void OrderItem_StateChanged(object sender, System.EventArgs e)
+    {
+        SaveCommand.NotifyCanExecuteChanged();
+    }
+
     protected override async Task Save()
     {
-        var order = OrderBuilder
-            .WithDeliveryMethod(DeliveryMethodsViewModel.SelecteddDeliveryMethod.Value)
-            .WithDeliveryman(DeliveryMethodsViewModel.SelectedDeliveryman?.Id)
-            .WithShippingCarrier(DeliveryMethodsViewModel.SelectedShippingCarrier?.Id)
-            .WithDeliverySteps(DeliveryMethodsViewModel.BuildDeliverySteps())
-            .ForClient(PartyPanel.SelectedClient.Id)
-            .WithPaymentMethod(PartyPanel.SelectedPaymentMethod?.Id)
-            .Build();
-
-        if (!order.IsSuccess)
+        Result result = await _orderStore.UpdateOrder(_id, BuildOrder());
+        if(result.IsSuccess)
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification(order.ErrorMessage));
-            return;
+            _messenger.Send(new Application.Messages.Orders.OrderUpdatedMessage());
         }
-
-        OrderUpdateDto updateDto = new(
-            _selectionStore.Id,
-            order.Value.ClientId,
-            order.Value.OrderStatusId,
-            order.Value.DeliveryMethod,
-            order.Value.DeliveryManId,
-            order.Value.ShippingCarrierId,
-            order.Value.OrderItems,
-            order.Value.DeliverySteps,
-            order.Value.PaymentMothodId);
-
-        Result result = await _mediator.Send(new Application.Commands.OrderCommands.UpdateOrderCommand(updateDto));
-
-        if (!result.IsSuccess)
-        {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification(result.ErrorMessage));
-            return;
-        }
-
-        _messenger.Send(new Application.Messages.Orders.OrderUpdatedMessage());
-        await _mediator.Publish(new Application.Notifications.SuccessNotification("تم تحديث الطلب بنجاح."));
-        HasChanges = false;
-        _selectionStore.Clear();
         OnRequestClose();
+    }
+
+    public void Initialize(object parameter)
+    {
+        if(parameter is int id)
+        {
+            _id = id;
+        }
     }
 }

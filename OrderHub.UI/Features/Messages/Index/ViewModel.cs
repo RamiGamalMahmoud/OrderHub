@@ -2,6 +2,8 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Application.Common.Extensions;
+using OrderHub.Application.Common.Lookups;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
@@ -98,9 +100,7 @@ public partial class ViewModel : ObservableObject
 
     public IEnumerable<EnumItem<OutboxMessageStatus>> StatusFilters =>
         new[] { new EnumItem<OutboxMessageStatus>(default, "الكل") }
-        .Concat(Enum.GetValues(typeof(OutboxMessageStatus))
-            .Cast<OutboxMessageStatus>()
-            .Select(status => new EnumItem<OutboxMessageStatus>(status, status.GetDescription())));
+        .Concat(EnumItems.For<OutboxMessageStatus>());
 
     partial void OnSearchTermChanged(string oldValue, string newValue) => ApplyFilter();
 

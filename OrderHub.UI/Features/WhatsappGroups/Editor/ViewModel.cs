@@ -1,11 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using MediatR;
+using OrderHub.Application.Common.Lookups;
 using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using static OrderHub.Application.Queries.WhatsappGroupQueries;
@@ -44,10 +43,7 @@ public abstract partial class ViewModel : EditorViewModelBase
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     private string _groupLink;
 
-    public IEnumerable<EnumItem<WhatsappGroupType>> GroupTypes =>
-        Enum.GetValues<WhatsappGroupType>()
-            .Cast<WhatsappGroupType>()
-            .Select(e => new EnumItem<WhatsappGroupType>(e, e.GetDescription()));
+    public IEnumerable<EnumItem<WhatsappGroupType>> GroupTypes => EnumItems.For<WhatsappGroupType>();
 
     protected async Task<bool> SearchForExistedGroupd(string groupName)
     {

@@ -1,6 +1,4 @@
-﻿using System;
-using System.ComponentModel;
-using System.Linq;
+﻿using System.ComponentModel;
 
 namespace OrderHub.Domain.Enums;
 
@@ -19,16 +17,3 @@ public enum DeliveryMethod
     DeliveryChain = 4
 }
 
-public static class EnumExtensions
-{
-    public static string GetDescription(this Enum value)
-    {
-        var field = value.GetType().GetField(value.ToString());
-        var attribute = field?
-            .GetCustomAttributes(typeof(DescriptionAttribute), false)
-            .FirstOrDefault() as DescriptionAttribute;
-
-        return attribute?.Description ?? value.ToString();
-    }
-}
-public record EnumItem<T>(T Value, string DisplayName);

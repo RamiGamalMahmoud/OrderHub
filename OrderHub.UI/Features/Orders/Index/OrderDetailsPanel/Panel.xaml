@@ -9,6 +9,7 @@
     mc:Ignorable="d">
 
     <Border
+        Width="400"
         Background="White"
         BorderBrush="#E5E7EB"
         BorderThickness="1"
@@ -24,7 +25,7 @@
 
             <!--  Header  -->
 
-            <local:OrderDetailsHeader DataContext="{Binding SelectedOrderDetails.Header}" />
+            <local:OrderDetailsHeader Grid.Row="0" />
 
             <!--  Content  -->
 
@@ -35,11 +36,11 @@
 
                 <StackPanel Margin="10">
 
-                    <local:CustomerInfoCard DataContext="{Binding SelectedOrderDetails.Customer}" />
+                    <local:CustomerInfoCard DataContext="{Binding SelectedOrderDetails.Client}" />
 
                     <local:DeliveryInfoCard DataContext="{Binding SelectedOrderDetails.Delivery}" />
 
-                    <local:ProductsSummaryCard DataContext="{Binding SelectedOrderDetails.Products}" />
+                    <local:ProductsSummaryCard DataContext="{Binding SelectedOrderDetails.Items}" />
 
                     <local:OrderTotalCard DataContext="{Binding SelectedOrderDetails.Payment}" />
 

@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Features.Setup.Properties.Get;
 using OrderHub.Domain.Enums;
 using System;
@@ -19,9 +20,7 @@ public partial class PropertyEditorViewModel : ObservableValidator
 
     public PropertyEditorViewModel(IMediator mediator, IMessenger messenger, Mode mode)
     {
-        PropertyTypes = new ObservableCollection<EnumItem<PropertyType>>(
-            Enum.GetValues<PropertyType>()
-                .Select(x => new EnumItem<PropertyType>(x, x.GetDescription())));
+        PropertyTypes = new ObservableCollection<EnumItem<PropertyType>>(EnumItems.For<PropertyType>());
 
         SelectedPropertyType = PropertyTypes.First();
 

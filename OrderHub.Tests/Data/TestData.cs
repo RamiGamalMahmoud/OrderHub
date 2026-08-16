@@ -61,8 +61,8 @@ public static class TestData
         var supplier1 = CreateSupplier("Supplier 1");
         var supplier2 = CreateSupplier("Supplier 2");
 
-        order.AddOrderItem(1, "Product A", order.Id, 50, supplier1.Name.Value, 2);
-        order.AddOrderItem(2, "Product B", order.Id, 100, supplier2.Name.Value, 1);
+        order.AddOrderItem(1, "Product A", order.Id, 50, supplier1.Name.Value, 2, []);
+        order.AddOrderItem(2, "Product B", order.Id, 100, supplier2.Name.Value, 1, []);
 
         return order;
     }

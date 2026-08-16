@@ -10,11 +10,14 @@
         string WhatAppProfilesPath { get; }
         string DefaultWhatAppProfilePath { get; }
         string LogsPath { get; }
+        string DataPath { get; }
+        string DraftsPath { get; }
 
         void EnsureAppDirectoryCreated();
         void EnsureDatabaseFileCreated();
         void EnsureStorageDirectoryCreated();
         void EnsureWhatsAppProfilesDirectoryCreated();
         void EnsureLogsDirectoryCreated();
+        void EnsureDraftsDirectoryCreated();
     }
 }

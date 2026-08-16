@@ -13,22 +13,31 @@ using System.Threading.Tasks;
 
 namespace OrderHub.UI.Features.Products.Update;
 
-public class ViewModel : Editor.ViewModel
+public class ViewModel : Editor.ViewModel, IParameterizedViewModel
 {
-    private readonly ISelectionStore<IProductMarker, int> _selectionStore;
-    public ViewModel(IMediator mediator, ISelectionStore<IProductMarker, int> selectionStore, IMessenger messenger) : base(mediator, messenger)
+    private int _productId;
+    public ViewModel(IMediator mediator, IMessenger messenger) : base(mediator, messenger)
     {
-        _selectionStore = selectionStore;
         HasChanges = false;
     }
 
     public override string Title => "تعديل بيانات منتج";
 
+    public void Initialize(object parameter)
+    {
+        System.ArgumentNullException.ThrowIfNull(parameter);
+        _productId = (int) parameter;
+        if(_productId == 0)
+        {
+            throw new System.Exception();
+        }
+    }
+
     public override async Task LoadDataAsync()
     {
         await base.LoadDataAsync();
 
-        GetProduct.ProductDetails product = await _mediator.Send(new GetProduct.Query(_selectionStore.Id));
+        GetProduct.ProductDetails product = await _mediator.Send(new GetProduct.Query(_productId));
 
         Name = product.Name;
         Code = product.Code;
@@ -71,13 +80,12 @@ public class ViewModel : Editor.ViewModel
             .Where(p => p.IsAssigned)
             .Select(p => new UpdateProduct.ProductPropertiesDto(p.Id, p.PropertyRequirement.Value == Editor.PropertyRequirement.Required)));
 
-        Result result = await _mediator.Send(new UpdateProduct.Command(_selectionStore.Id, product));
+        Result result = await _mediator.Send(new UpdateProduct.Command(_productId, product));
 
         if (result.IsSuccess)
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification("تم تحديث بيانات المنتج"));
             _messenger.Send(new Application.Messages.Products.ProductedUpdatedMessage());
-            _selectionStore.Clear();
             OnRequestClose();
         }
         else

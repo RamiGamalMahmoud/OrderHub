@@ -38,6 +38,7 @@ public static class ServiceCollectionExtensions
     {
 
         services.AddSingleton<Features.MainWindow.MainWindowViewModel>();
+        services.AddSingleton<Features.Orders.Index.OrderDraftsDrawerViewModel>();
         services.AddSingleton<Features.Home.HomeViewModel>();
         services.AddTransient<Features.Settings.ClientCredentialsSettings.ClientCredentialsSettingsViewModel>();
         services.AddSingleton<Features.Suppliers.Index.SuppliersViewModel>();

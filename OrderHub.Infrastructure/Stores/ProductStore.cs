@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using OpenQA.Selenium.DevTools.V145.Page;
 using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Features.Products.Create;
 using OrderHub.Application.Features.Products.Get;
@@ -11,7 +10,6 @@ using OrderHub.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;

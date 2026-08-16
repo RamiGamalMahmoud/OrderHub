@@ -12,10 +12,10 @@ internal class OrderItemPropertyConfiguration : ModelConfigurationBase<OrderItem
 
         builder.Property(x => x.Value)
             .HasColumnType("varchar(100)")
-            .IsRequired();
+            .IsRequired(false);
 
         builder.HasOne(x => x.OrderItem)
-            .WithMany()
+            .WithMany(x => x.Properties)
             .HasForeignKey(x => x.OrderItemId)
             .OnDelete(DeleteBehavior.Cascade)
             .IsRequired();

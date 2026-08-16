@@ -4,9 +4,8 @@ using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.UI.Interfaces;
-using System;
 using System.Collections.ObjectModel;
-using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace OrderHub.UI.Features.MainWindow;
@@ -17,11 +16,13 @@ internal partial class MainWindowViewModel : ObservableObject
     private readonly ISessionManager _sessionManager;
     private readonly IMediator _mediator;
     private readonly IDialogService _dialogService;
+    private readonly IApplicationDirectoriesService _applicationDirectoriesService;
     private readonly IWhatsappService _whatsappService;
     private readonly IMessageService _messageService;
     private readonly IMessenger _messenger;
+
     [ObservableProperty]
-    private NavigationCommand _navigationCommand;
+    private NavigationCommand _selectedNavigationCommand;
 
     public MainWindowViewModel(
         INavigationService navigationService,
@@ -31,7 +32,8 @@ internal partial class MainWindowViewModel : ObservableObject
         IWhatsappService whatsappService,
         IMessageService messageService,
         IMessenger messenger,
-        IAppState appState)
+        IAppState appState,
+        IApplicationDirectoriesService applicationDirectoriesService)
     {
         _navigationService = navigationService;
         _sessionManager = sessionManager;
@@ -40,44 +42,86 @@ internal partial class MainWindowViewModel : ObservableObject
         _whatsappService = whatsappService;
         _messageService = messageService;
         _messenger = messenger;
+        _applicationDirectoriesService = applicationDirectoriesService;
         AppState = appState;
         InitializeNavigationCommands();
+        RegisterMessages();
+        IsAuthenticated = !_sessionManager.CurrentSession?.Token?.IsExpired ?? false;
     }
 
     public ObservableCollection<NavigationCommand> NavigationCommands { get; } = [];
 
     private void InitializeNavigationCommands()
     {
-        NavigationCommands.Add(new NavigationCommand("الصفحة الرئيسية", "Home",() => _navigationService.NavigateTo<Features.Home.HomeView>()));
-        NavigationCommands.Add(new NavigationCommand("الطلبات", "ListBox", () => _navigationService.NavigateTo<Features.Orders.Index.View>()));
-        NavigationCommands.Add(new NavigationCommand("المنتجات", "Factory", () => _navigationService.NavigateTo<Features.Products.Index.View>()));
-        NavigationCommands.Add(new NavigationCommand("الأقسام", "Factory", () => _navigationService.NavigateTo<Features.Categories.Index.View>()));
-        NavigationCommands.Add(new NavigationCommand("المدن", "MapMarker", () => _navigationService.NavigateTo<Features.Cities.Index.View>()));
-        NavigationCommands.Add(new NavigationCommand("العملاء", "AccountTie", () => _navigationService.NavigateTo<Features.Clients.Index.View>()));
-        NavigationCommands.Add(new NavigationCommand("الموردون", "BadgeAccount", () => _navigationService.NavigateTo<Features.Suppliers.Index.View>()));
-        NavigationCommands.Add(new NavigationCommand("شركات الشحن", "Ship", () => _navigationService.NavigateTo<Features.ShippingCarriers.Index.View>()));
-        NavigationCommands.Add(new NavigationCommand("المناديب", "Moped", () => _navigationService.NavigateTo<Features.Deliverymen.Index.View>()));
-        NavigationCommands.Add(new NavigationCommand("مجموعات الواتساب", "Whatsapp", () => _navigationService.NavigateTo<Features.WhatsappGroups.Index.View>()));
-        NavigationCommands.Add(new NavigationCommand("سجل الرسائل", "MessageMinusOutline", () => _navigationService.NavigateTo<Features.Messages.Index.View>()));
-        NavigationCommands.Add(new NavigationCommand("الإعدادات", "CogOutline", () => _navigationService.NavigateTo<Features.Settings.Home.SettingsHomeView>()));
+        NavigationCommands.Add(new NavigationCommand(
+            "الصفحة الرئيسية",
+            "Home",
+            () => _navigationService.NavigateTo<Features.Home.HomeView>()));
 
-        RegisterMessages();
-        
-        IsAuthenticated = 
-            _sessionManager.CurrentSession is not null && 
-            _sessionManager.CurrentSession.Token is not null && 
-            !_sessionManager.CurrentSession.Token.IsExpired;
-#if DEBUG
-        IsAppInDebug = true;
-#endif
+        NavigationCommands.Add(new NavigationCommand(
+            "الطلبات",
+            "ListBox",
+            () => _navigationService.NavigateTo<Features.Orders.Index.View>()));
+
+        NavigationCommands.Add(new NavigationCommand(
+            "المنتجات",
+            "Factory",
+            () => _navigationService.NavigateTo<Features.Products.Index.View>()));
+
+        NavigationCommands.Add(new NavigationCommand(
+            "الأقسام",
+            "Factory",
+            () => _navigationService.NavigateTo<Features.Categories.Index.View>()));
+
+        NavigationCommands.Add(new NavigationCommand(
+            "المدن",
+            "MapMarker",
+            () => _navigationService.NavigateTo<Features.Cities.Index.View>()));
+
+        NavigationCommands.Add(new NavigationCommand(
+            "العملاء",
+            "AccountTie",
+            () => _navigationService.NavigateTo<Features.Clients.Index.View>()));
+
+        NavigationCommands.Add(new NavigationCommand(
+            "الموردون",
+            "BadgeAccount",
+            () => _navigationService.NavigateTo<Features.Suppliers.Index.View>()));
+
+        NavigationCommands.Add(new NavigationCommand(
+            "شركات الشحن",
+            "Ship",
+            () => _navigationService.NavigateTo<Features.ShippingCarriers.Index.View>()));
+
+        NavigationCommands.Add(new NavigationCommand(
+            "المناديب",
+            "Moped",
+            () => _navigationService.NavigateTo<Features.Deliverymen.Index.View>()));
+
+        NavigationCommands.Add(new NavigationCommand(
+            "مجموعات الواتساب",
+            "Whatsapp",
+            () => _navigationService.NavigateTo<Features.WhatsappGroups.Index.View>()));
+
+        NavigationCommands.Add(new NavigationCommand(
+            "سجل الرسائل",
+            "MessageMinusOutline",
+            () => _navigationService.NavigateTo<Features.Messages.Index.View>()));
+
+        NavigationCommands.Add(new NavigationCommand(
+            "الإعدادات",
+            "CogOutline",
+            () => _navigationService.NavigateTo<Features.Settings.Home.SettingsHomeView>()));
     }
 
     private void RegisterMessages()
     {
-        _messenger.Register<Application.Messages.Orders.AddingNewMessageToQueMessage>(this, (r, m) => Message = m.RecipientName);
+        _messenger.Register<Application.Messages.Orders.AddingNewMessageToQueMessage>(
+            this, 
+            (r, m) => Message = m.RecipientName);
     }
 
-    partial void OnNavigationCommandChanged(NavigationCommand value)
+    partial void OnSelectedNavigationCommandChanged(NavigationCommand value)
     {
         value?.Action?.Invoke();
     }
@@ -86,10 +130,21 @@ internal partial class MainWindowViewModel : ObservableObject
     private async Task LoginSalla()
     {
         IsAuthenticated = await _mediator.Send(new Application.Commands.AuthCommand());
-        if(!IsAuthenticated)
+        if (!IsAuthenticated)
         {
             _dialogService.ShowDialog<Settings.ClientCredentialsSettings.ClientCredentialsSettingsView>();
         }
+    }
+
+    [RelayCommand]
+    private void OpenDataFolder()
+    {
+        Process.Start(new ProcessStartInfo()
+        {
+            FileName = _applicationDirectoriesService.DataPath,
+            UseShellExecute = true,
+            Verb = "open"
+        });
     }
 
     [ObservableProperty]
@@ -113,7 +168,12 @@ internal partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private string _message;
 
-    public bool IsAppInDebug { get; private set; } = false;
+    public bool IsAppInDebug =>
+#if DEBUG
+    true;
+#else
+    false;
+#endif
 
     public INavigationService NavigationService => _navigationService;
 

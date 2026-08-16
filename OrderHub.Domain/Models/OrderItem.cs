@@ -1,5 +1,7 @@
 ﻿using OrderHub.Domain.Common;
 using OrderHub.Domain.ValueObjects;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace OrderHub.Domain.Models;
 
@@ -15,7 +17,8 @@ public class OrderItem : ModelBase
         decimal unitPrice,
         int quantity,
         string supplierName,
-        int? supplierId)
+        int? supplierId,
+        IReadOnlyCollection<OrderItemPropertyData> properties)
     {
         ProductId = productId;
         ProductName = productName;
@@ -23,8 +26,19 @@ public class OrderItem : ModelBase
         Quantity = quantity;
         SupplierName = supplierName;
         SupplierId = supplierId;
+
+        foreach (var property in properties)
+        {
+            _properties.Add(new OrderItemProperty()
+            {
+                PropertyId = property.PropertyId,
+                Value = property.Value,
+            });
+        }
     }
 
+    private readonly Collection<OrderItemProperty> _properties = [];
+    public IEnumerable<OrderItemProperty> Properties => _properties;
     public int ProductId { get; private set; }
     public Product Product { get; private set; }
 
@@ -50,7 +64,8 @@ public class OrderItem : ModelBase
         decimal unitPrice,
         int quantity,
         string supplierName,
-        int? supplierId)
+        int? supplierId,
+        IReadOnlyCollection<OrderItemPropertyData> properties)
     {
         if (unitPrice <= 0)
             return Result<OrderItem>.Failure("Unit price must be greater than zero.");
@@ -65,7 +80,8 @@ public class OrderItem : ModelBase
                 unitPrice,
                 quantity,
                 supplierName,
-                supplierId));
+                supplierId,
+                properties));
     }
 
     public Result UpdateQuantity(int quantity)
@@ -114,3 +130,5 @@ public class OrderItem : ModelBase
         SupplierName = supplierName;
     }
 }
+
+public record OrderItemPropertyData(int PropertyId, string Value);
