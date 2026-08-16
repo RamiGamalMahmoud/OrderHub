@@ -8,11 +8,8 @@ namespace OrderHub.UI.Features.WhatsappGroups.Create;
 
 public class ViewModel : Editor.ViewModel
 {
-    private readonly IMessenger _messenger;
-
-    public ViewModel(IMediator mediator, IMessenger messenger) : base(mediator)
+    public ViewModel(IMediator mediator) : base(mediator)
     {
-        _messenger = messenger;
         HasChanges = true;
     }
 
@@ -24,7 +21,7 @@ public class ViewModel : Editor.ViewModel
         if (result.IsSuccess)
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification(MessageBuilder.Build(MessageBuilder.OperationType.Create, true, "مجموعة الواتساب")));
-            _messenger.Send(new Application.Messages.WhatsappGroups.WhatsappGroupCreatedMessage());
+            WeakReferenceMessenger.Default.Send(new Application.Messages.WhatsappGroups.WhatsappGroupCreatedMessage());
             OnRequestClose();
         }
         else

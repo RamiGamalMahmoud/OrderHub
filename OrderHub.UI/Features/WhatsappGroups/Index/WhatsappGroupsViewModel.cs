@@ -8,24 +8,21 @@ using OrderHub.UI.Stores.Markers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using static OrderHub.Application.DTOs.WhatsappGroupDtos;
 
 namespace OrderHub.UI.Features.WhatsappGroups.Index;
 
 internal partial class WhatsappGroupsViewModel : IndexViewModelBase<WhatsappGroupViewModel>
 {
-    private readonly IDialogService _dialogService;
     private readonly ISelectionStore<IWhatsappGroupMarker, int> _selectionStore;
     private List<WhatsappGroupViewModel> _allWhatsappGroups = [];
 
-    public WhatsappGroupsViewModel(IMediator mediator, IDialogService dialogService, ISelectionStore<IWhatsappGroupMarker, int> selectionStore, IMessenger messenger) : base(mediator, messenger)
+    public WhatsappGroupsViewModel(IMediator mediator, ISelectionStore<IWhatsappGroupMarker, int> selectionStore) : base(mediator)
     {
-        _dialogService = dialogService;
         _selectionStore = selectionStore;
 
-        _messenger.Register<Application.Messages.WhatsappGroups.WhatsappGroupCreatedMessage>(this, async (r, m) => await LoadAsync());
-        _messenger.Register<Application.Messages.WhatsappGroups.WhatsappGroupUpdatedMessage>(this, async (r, m) => await LoadAsync());
-        _messenger.Register<Application.Messages.WhatsappGroups.WhatsappGroupDeletedMessage>(this, async (r, m) => await LoadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.WhatsappGroups.WhatsappGroupCreatedMessage>(this, async (r, m) => await LoadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.WhatsappGroups.WhatsappGroupUpdatedMessage>(this, async (r, m) => await LoadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.WhatsappGroups.WhatsappGroupDeletedMessage>(this, async (r, m) => await LoadAsync());
     }
 
     protected override async Task LoadAsync()
@@ -45,19 +42,19 @@ internal partial class WhatsappGroupsViewModel : IndexViewModelBase<WhatsappGrou
     protected override Task ShowEditAsync(WhatsappGroupViewModel viewModel)
     {
         _selectionStore.Id = viewModel.Id;
-        _dialogService.ShowDialog<Update.View>();
+        DialogService.Instance.ShowDialog<Update.View>();
         return Task.CompletedTask;
     }
 
     protected override async Task DeleteAsync(WhatsappGroupViewModel viewModel)
     {
-        if (_dialogService.Confirm($"هل تريد حذف مجموعة الواتساب {viewModel.Name}"))
+        if (DialogService.Instance.Confirm($"هل تريد حذف مجموعة الواتساب {viewModel.Name}"))
         {
             Result result = await _mediator.Send(new Application.Commands.WhatsappGroupCommands.DeleteWhatsappGroupCommand(viewModel.Id));
             if(result.IsSuccess)
             {
                 await _mediator.Publish(new Application.Notifications.SuccessNotification(MessageBuilder.Build(MessageBuilder.OperationType.Delete, true, "مجموعة الواتساب")));
-                _messenger.Send(new Application.Messages.WhatsappGroups.WhatsappGroupDeletedMessage());
+                WeakReferenceMessenger.Default.Send(new Application.Messages.WhatsappGroups.WhatsappGroupDeletedMessage());
                 await LoadAsync();
             }
             else
@@ -69,7 +66,7 @@ internal partial class WhatsappGroupsViewModel : IndexViewModelBase<WhatsappGrou
 
     protected override Task ShowCreateAsync()
     {
-        _dialogService.ShowDialog<Create.View>();
+        DialogService.Instance.ShowDialog<Create.View>();
         return Task.CompletedTask;
     }
 

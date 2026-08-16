@@ -9,7 +9,6 @@ using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
 using OrderHub.UI.Features.Orders.Editor;
-using OrderHub.UI.Interfaces;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -22,11 +21,9 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
 
     public ViewModel(
         IMediator mediator,
-        IDialogService dialogService,
-        IMessenger messenger,
         IProductStore productStore,
         IOrderStore orderStore,
-        ILookupService lookupService) : base(mediator, dialogService, messenger, productStore, lookupService)
+        ILookupService lookupService) : base(mediator, productStore, lookupService)
     {
         _orderStore = orderStore;
     }
@@ -143,7 +140,7 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
         Result result = await _orderStore.UpdateOrder(_id, BuildOrder());
         if(result.IsSuccess)
         {
-            _messenger.Send(new Application.Messages.Orders.OrderUpdatedMessage());
+            WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.OrderUpdatedMessage());
         }
         OnRequestClose();
     }

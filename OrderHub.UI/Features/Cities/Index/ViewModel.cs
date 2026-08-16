@@ -14,20 +14,18 @@ namespace OrderHub.UI.Features.Cities.Index;
 
 public partial class ViewModel : IndexViewModelBase<CityListDto>
 {
-    private readonly IDialogService _dialogService;
     private readonly ISelectionStore<ICityMarker, int> _selectionStore;
     private List<CityListDto> _allCities = [];
     private IEnumerable<CityListDto> _cities;
 
-    public ViewModel(IMediator mediator, IMessenger messenger, IDialogService dialogService, ISelectionStore<ICityMarker, int> selectionStore)
-        : base(mediator, messenger)
+    public ViewModel(IMediator mediator, ISelectionStore<ICityMarker, int> selectionStore)
+        : base(mediator)
     {
-        _dialogService = dialogService;
         _selectionStore = selectionStore;
 
-        _messenger.Register<Application.Messages.Cities.CityCreatedMessage>(this, async (_, _) => await ReloadAsync());
-        _messenger.Register<Application.Messages.Cities.CityUpdatedMessage>(this, async (_, _) => await ReloadAsync());
-        _messenger.Register<Application.Messages.Cities.CityDeletedMessage>(this, async (_, _) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityCreatedMessage>(this, async (_, _) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityUpdatedMessage>(this, async (_, _) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityDeletedMessage>(this, async (_, _) => await ReloadAsync());
     }
 
     public IEnumerable<CityListDto> Cities
@@ -55,20 +53,20 @@ public partial class ViewModel : IndexViewModelBase<CityListDto>
 
     protected override Task ShowCreateAsync()
     {
-        _dialogService.ShowDialog<Create.CreateCityView>();
+        DialogService.Instance.ShowDialog<Create.CreateCityView>();
         return Task.CompletedTask;
     }
 
     protected override Task ShowEditAsync(CityListDto model)
     {
         _selectionStore.Id = model.Id;
-        _dialogService.ShowDialog<Edit.EditCityView>();
+        DialogService.Instance.ShowDialog<Edit.EditCityView>();
         return Task.CompletedTask;
     }
 
     protected override async Task DeleteAsync(CityListDto model)
     {
-        if (!_dialogService.Confirm($"هل تريد حذف المدينة ({model.Name})؟"))
+        if (!DialogService.Instance.Confirm($"هل تريد حذف المدينة ({model.Name})؟"))
         {
             return;
         }
@@ -77,7 +75,7 @@ public partial class ViewModel : IndexViewModelBase<CityListDto>
         if (result.IsSuccess)
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification($"تم حذف المدينة ({model.Name}) بنجاح."));
-            _messenger.Send(new Application.Messages.Cities.CityDeletedMessage());
+            WeakReferenceMessenger.Default.Send(new Application.Messages.Cities.CityDeletedMessage());
             return;
         }
 

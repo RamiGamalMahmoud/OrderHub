@@ -17,26 +17,24 @@ namespace OrderHub.UI.Features.Categories.Index
 {
     public partial class ViewModel : IndexViewModelBase<CategoryTreeDto>
     {
-        private readonly IDialogService _dialogService;
         private readonly ISelectionStore<ICategoryMarker, int> _selectionStore;
         private List<CategoryListDto> _allCategories = [];
 
-        public ViewModel(IMediator mediator, IDialogService dialogService, ISelectionStore<ICategoryMarker, int> selectionStore, IMessenger messenger) : base(mediator, messenger)
+        public ViewModel(IMediator mediator, ISelectionStore<ICategoryMarker, int> selectionStore) : base(mediator)
         {
-            _dialogService = dialogService;
             _selectionStore = selectionStore;
 
-            _messenger.Register<Application.Messages.Categories.CategoryCreatedMessage>(this, async (m, r) =>
+            WeakReferenceMessenger.Default.Register<Application.Messages.Categories.CategoryCreatedMessage>(this, async (m, r) =>
             {
                 await NavigateToCategory(SelectedCategory);
             });
 
-            _messenger.Register<Application.Messages.Categories.CategoryUpdatedMessage>(this, async (m, r) =>
+            WeakReferenceMessenger.Default.Register<Application.Messages.Categories.CategoryUpdatedMessage>(this, async (m, r) =>
             {
                 await NavigateToCategory(SelectedCategory);
             });
 
-            _messenger.Register<Application.Messages.Categories.CategoryDeletedMessage>(this, async (m, r) =>
+            WeakReferenceMessenger.Default.Register<Application.Messages.Categories.CategoryDeletedMessage>(this, async (m, r) =>
             {
                 await NavigateToCategory(SelectedCategory);
             });
@@ -44,7 +42,7 @@ namespace OrderHub.UI.Features.Categories.Index
 
         protected override async Task DeleteAsync(CategoryTreeDto dto)
         {
-            if (!_dialogService.Confirm($"هل تريد حذف قسم الـ ({dto.Name})؟"))
+            if (!DialogService.Instance.Confirm($"هل تريد حذف قسم الـ ({dto.Name})؟"))
                 return;
             Result result = await _mediator.Send(new Application.Commands.CategoryCommands.DeleteCategoryCommand(dto.Id));
             if(result.IsSuccess)
@@ -72,14 +70,14 @@ namespace OrderHub.UI.Features.Categories.Index
 
         protected override Task ShowCreateAsync()
         {
-            _dialogService.ShowDialog<Create.View>();
+            DialogService.Instance.ShowDialog<Create.View>();
             return Task.CompletedTask;
         }
 
         protected override Task ShowEditAsync(CategoryTreeDto dto)
         {
             _selectionStore.Id = dto.Id;
-            _dialogService.ShowDialog<Update.View>();
+            DialogService.Instance.ShowDialog<Update.View>();
             return Task.CompletedTask;
         }
 
@@ -110,7 +108,7 @@ namespace OrderHub.UI.Features.Categories.Index
         private void Edit(CategoryListDto dto)
         {
             _selectionStore.Id = dto.Id;
-            _dialogService.ShowDialog<Update.View>();
+            DialogService.Instance.ShowDialog<Update.View>();
         }
 
         [RelayCommand]
@@ -131,7 +129,7 @@ namespace OrderHub.UI.Features.Categories.Index
             stringBuilder.AppendLine("و جميع الأقسام التابعة له و كذلك المنتجات المرتبطة به");
             stringBuilder.AppendLine("و كذلك عمليات الشراء");
 
-            if (!_dialogService.Confirm(stringBuilder.ToString()))
+            if (!DialogService.Instance.Confirm(stringBuilder.ToString()))
                 return;
             Result result =await _mediator.Send(new Application.Commands.CategoryCommands.DeleteCategoryCommand(dto.Id));
             if(result.IsSuccess)

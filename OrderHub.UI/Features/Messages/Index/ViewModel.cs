@@ -7,7 +7,6 @@ using OrderHub.Application.Common.Lookups;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
-using OrderHub.UI.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -19,18 +18,16 @@ namespace OrderHub.UI.Features.Messages.Index;
 public partial class ViewModel : ObservableObject
 {
     private readonly IMediator _mediator;
-    private readonly IDialogService _dialogService;
     private List<OutboxMessageViewModel> _allOutboxMessages = [];
 
     [ObservableProperty]
     private ObservableCollection<MessageSummaryItemViewModel> _statusSummaries = [];
 
-    public ViewModel(IMediator mediator, IMessenger messenger, IDialogService dialogService)
+    public ViewModel(IMediator mediator)
     {
         _mediator = mediator;
-        _dialogService = dialogService;
 
-        messenger.Register<Application.Messages.OutboxMessages.MessageStatusChangedMessage>(this, (r, m) =>
+        WeakReferenceMessenger.Default.Register<Application.Messages.OutboxMessages.MessageStatusChangedMessage>(this, (r, m) =>
         {
             OutboxMessageViewModel outboxMessage = _allOutboxMessages.FirstOrDefault(x => x.Id == m.Id);
             if (outboxMessage != null)
@@ -41,7 +38,7 @@ public partial class ViewModel : ObservableObject
             ApplyFilter();
         });
 
-        messenger.Register<Application.Messages.Orders.MessagesCreatedMessage>(this, (r, m) =>
+        WeakReferenceMessenger.Default.Register<Application.Messages.Orders.MessagesCreatedMessage>(this, (r, m) =>
         {
             foreach (OutboxMessage outboxMessage in m.OutboxMessages)
             {
@@ -171,7 +168,7 @@ public partial class ViewModel : ObservableObject
     [RelayCommand]
     private async Task ResendMessage(OutboxMessageViewModel message)
     {
-        if(!_dialogService.Confirm("هل أنت متأكد أنك تريد إعادة إرسال هذه الرسالة؟"))
+        if(!DialogService.Instance.Confirm("هل أنت متأكد أنك تريد إعادة إرسال هذه الرسالة؟"))
         {
             return;
         }
@@ -190,7 +187,7 @@ public partial class ViewModel : ObservableObject
     [RelayCommand]
     private async Task DeleteMessage(OutboxMessageViewModel message)
     {
-        if(!_dialogService.Confirm("هل أنت متأكد أنك تريد حذف هذه الرسالة؟"))
+        if(!DialogService.Instance.Confirm("هل أنت متأكد أنك تريد حذف هذه الرسالة؟"))
         {
             return;
         }
@@ -200,7 +197,7 @@ public partial class ViewModel : ObservableObject
             return;
         }
 
-        if (!_dialogService.Confirm($"هل تريد حذف الرسالة للمستلم ({message.RecipientName})؟"))
+        if (!DialogService.Instance.Confirm($"هل تريد حذف الرسالة للمستلم ({message.RecipientName})؟"))
         {
             return;
         }

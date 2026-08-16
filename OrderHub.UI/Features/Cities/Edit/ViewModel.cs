@@ -11,13 +11,11 @@ namespace OrderHub.UI.Features.Cities.Edit;
 public partial class ViewModel : Editor.ViewModelBase
 {
     private readonly IMediator _mediator;
-    private readonly IMessenger _messenger;
     private readonly ISelectionStore<ICityMarker, int> _selectionStore;
 
-    public ViewModel(IMediator mediator, IMessenger messenger, ISelectionStore<ICityMarker, int> selectionStore)
+    public ViewModel(IMediator mediator, ISelectionStore<ICityMarker, int> selectionStore)
     {
         _mediator = mediator;
-        _messenger = messenger;
         _selectionStore = selectionStore;
     }
 
@@ -44,7 +42,7 @@ public partial class ViewModel : Editor.ViewModelBase
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification($"تم تحديث المدينة ({Name}) بنجاح."));
             OnRequestClose();
-            _messenger.Send(new Application.Messages.Cities.CityUpdatedMessage());
+            WeakReferenceMessenger.Default.Send(new Application.Messages.Cities.CityUpdatedMessage());
             return;
         }
 

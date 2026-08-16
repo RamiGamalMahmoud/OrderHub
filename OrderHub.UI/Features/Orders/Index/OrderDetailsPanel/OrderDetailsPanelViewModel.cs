@@ -1,22 +1,16 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using MediatR;
 using OrderHub.Application.Features.Orders.Queries;
-using OrderHub.UI.Interfaces;
-using System.Diagnostics;
-using System.Threading.Tasks;
 
 namespace OrderHub.UI.Features.Orders.Index.OrderDetailsPanel;
 
 public partial class OrderDetailsPanelViewModel : ObservableObject
 {
     private readonly IMediator _mediator;
-    private readonly IDialogService _dialogService;
 
-    public OrderDetailsPanelViewModel(IMediator mediator, IDialogService dialogService)
+    public OrderDetailsPanelViewModel(IMediator mediator)
     {
         _mediator = mediator;
-        _dialogService = dialogService;
     }
 
     [ObservableProperty]

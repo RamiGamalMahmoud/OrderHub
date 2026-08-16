@@ -16,7 +16,6 @@ internal class MessageService : IMessageService
 {
     private readonly AppDbContextFactory _dbFactory;
     private readonly IMessageSender _messageSender;
-    private readonly IMessenger _messenger;
     private readonly SemaphoreSlim _stateLock = new(1, 1);
 
     private readonly ConcurrentQueue<OutboxMessage> _queue = new();
@@ -26,14 +25,12 @@ internal class MessageService : IMessageService
 
     public MessageService(
         AppDbContextFactory dbFactory,
-        IMessageSender messageSender,
-        IMessenger messenger)
+        IMessageSender messageSender)
     {
         _dbFactory = dbFactory;
         _messageSender = messageSender;
-        _messenger = messenger;
 
-        _messenger.Register<Application.Messages.Orders.MessagesCreatedMessage>(this, (r, m) => QueueMessages(m.OutboxMessages));
+        WeakReferenceMessenger.Default.Register<Application.Messages.Orders.MessagesCreatedMessage>(this, (r, m) => QueueMessages(m.OutboxMessages));
     }
 
     public void QueueMessage(OutboxMessage message)
@@ -50,7 +47,7 @@ internal class MessageService : IMessageService
     {
         foreach (OutboxMessage message in messages.Where(message => message?.Recipient is not null))
         {
-            _messenger.Send(new Application.Messages.Orders.AddingNewMessageToQueMessage(message.Recipient.Name));
+            WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.AddingNewMessageToQueMessage(message.Recipient.Name));
             _queue.Enqueue(message);
         }
     }
@@ -151,7 +148,7 @@ internal class MessageService : IMessageService
         entity.SentAt = sent ? DateTime.Now : null;
 
         await db.SaveChangesAsync();
-        _messenger.Send(new Application.Messages.OutboxMessages.MessageStatusChangedMessage(
+        WeakReferenceMessenger.Default.Send(new Application.Messages.OutboxMessages.MessageStatusChangedMessage(
             entity.Id,
             entity.Status,
             entity.OrderId,

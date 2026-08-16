@@ -14,30 +14,28 @@ namespace OrderHub.UI.Features.ShippingCarriers.Index;
 public partial class ViewModel : IndexViewModelBase<ShippingCarrierListDto>
 {
     private readonly ISelectionStore<IShippingCarrierMarker, int> _selectionStore;
-    private readonly IDialogService _dialogService;
     private IEnumerable<ShippingCarrierListDto> _shippingCarriers;
     private List<ShippingCarrierListDto> _allShippingCarriers = [];
 
-    public ViewModel(IMediator mediator, IMessenger messenger, ISelectionStore<IShippingCarrierMarker, int> selectionStore, IDialogService dialogService) : base(mediator, messenger)
+    public ViewModel(IMediator mediator, ISelectionStore<IShippingCarrierMarker, int> selectionStore) : base(mediator)
     {
         _selectionStore = selectionStore;
-        _dialogService = dialogService;
 
-        _messenger.Register<Application.Messages.ShippingCarriers.ShippingCarrierCreatedMessage>(this, async (_, _) => await ReloadAsync());
-        _messenger.Register<Application.Messages.ShippingCarriers.ShippingCarrierUpdatedMessage>(this, async (_, _) => await ReloadAsync());
-        _messenger.Register<Application.Messages.ShippingCarriers.ShippingCarrierDeletedMessage>(this, async (_, _) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.ShippingCarriers.ShippingCarrierCreatedMessage>(this, async (_, _) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.ShippingCarriers.ShippingCarrierUpdatedMessage>(this, async (_, _) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.ShippingCarriers.ShippingCarrierDeletedMessage>(this, async (_, _) => await ReloadAsync());
     }
 
     protected override async Task DeleteAsync(ShippingCarrierListDto model)
     {
-        if(!_dialogService.Confirm("هل تريد حذف شركة الشحن؟")) return;
+        if(!DialogService.Instance.Confirm("هل تريد حذف شركة الشحن؟")) return;
         Result result = await _mediator.Send(new Application.Commands.ShippingCarriersCommands.DeleteShippingCarrierCommand(model.Id));
 
         if(result.IsSuccess)
         {
             string message = MessageBuilder.Build(MessageBuilder.OperationType.Delete, true, "شركة شحن");
             await _mediator.Publish(new Application.Notifications.SuccessNotification(message));
-            _messenger.Send(new Application.Messages.ShippingCarriers.ShippingCarrierDeletedMessage());
+            WeakReferenceMessenger.Default.Send(new Application.Messages.ShippingCarriers.ShippingCarrierDeletedMessage());
         }
 
         else
@@ -61,14 +59,14 @@ public partial class ViewModel : IndexViewModelBase<ShippingCarrierListDto>
 
     protected override Task ShowCreateAsync()
     {
-        _dialogService.ShowDialog<Create.View>();
+        DialogService.Instance.ShowDialog<Create.View>();
         return Task.CompletedTask;
     }
 
     protected override Task ShowEditAsync(ShippingCarrierListDto model)
     {
         _selectionStore.Id = model.Id;
-        _dialogService.ShowDialog<Edit.View>();
+        DialogService.Instance.ShowDialog<Edit.View>();
         return Task.CompletedTask;
     }
 

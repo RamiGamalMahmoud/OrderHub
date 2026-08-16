@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.UI.Common;
-using OrderHub.UI.Interfaces;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
@@ -14,12 +13,10 @@ namespace OrderHub.UI.Features.ShippingCarriers.Editor;
 public abstract partial class ViewModel : EditorViewModelBase
 {
     protected IMediator _mediator;
-    protected readonly IDialogService _dialogService;
 
-    protected ViewModel(IMediator mediator, IDialogService dialogService)
+    protected ViewModel(IMediator mediator)
     {
         _mediator = mediator;
-        _dialogService = dialogService;
         _notifyPropertiesNames =
         [
             nameof(Name),
@@ -92,5 +89,5 @@ public abstract partial class ViewModel : EditorViewModelBase
     }
 
     [RelayCommand]
-    private void ShowCreateCity() => _dialogService.ShowDialog<Features.Cities.Create.CreateCityView>();
+    private void ShowCreateCity() => DialogService.Instance.ShowDialog<Features.Cities.Create.CreateCityView>();
 }

@@ -12,13 +12,11 @@ namespace OrderHub.UI.Features.ShippingCarriers.Edit;
 
 public class ViewModel : Editor.ViewModel
 {
-    private readonly IMessenger _messenger;
     private readonly ISelectionStore<IShippingCarrierMarker, int> _selectionStore;
 
-    public ViewModel(IMediator mediator, IMessenger messenger, ISelectionStore<IShippingCarrierMarker, int> selectionStore, IDialogService dialogService) : base(mediator, dialogService)
+    public ViewModel(IMediator mediator, ISelectionStore<IShippingCarrierMarker, int> selectionStore) : base(mediator)
     {
         _mediator = mediator;
-        _messenger = messenger;
         _selectionStore = selectionStore;
     }
 
@@ -58,7 +56,7 @@ public class ViewModel : Editor.ViewModel
         {
             string message = MessageBuilder.Build(MessageBuilder.OperationType.Update, true, "شركة شحن");
             await _mediator.Publish(new Application.Notifications.SuccessNotification(message));
-            _messenger.Send(new Application.Messages.ShippingCarriers.ShippingCarrierUpdatedMessage());
+            WeakReferenceMessenger.Default.Send(new Application.Messages.ShippingCarriers.ShippingCarrierUpdatedMessage());
             OnRequestClose();
         }
         else

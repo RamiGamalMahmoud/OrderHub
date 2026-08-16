@@ -2,8 +2,8 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
-using OrderHub.UI.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -11,19 +11,16 @@ using System.Linq;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.CommonDtos;
 using static OrderHub.Application.DTOs.WhatsappGroupDtos;
-using OrderHub.Domain.Enums;
 
 namespace OrderHub.UI.Features.Deliverymen.Editor;
 
 public abstract partial class ViewModel : EditorViewModelBase, IDisposable
 {
     protected readonly IMediator _mediator;
-    protected readonly IDialogService _dialogService;
 
-    protected ViewModel(IMediator mediator, IDialogService dialogService)
+    protected ViewModel(IMediator mediator)
     {
         _mediator = mediator;
-        _dialogService = dialogService;
         _notifyPropertiesNames = [nameof(Name), nameof(SelectedCity), nameof(PhoneNumber), nameof(SelectedWhatsappGroup)];
         WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityCreatedMessage>(this, async (r, m) =>
         {
@@ -94,7 +91,7 @@ public abstract partial class ViewModel : EditorViewModelBase, IDisposable
         .Concat(WhatsappGroups ?? []);
 
     [RelayCommand]
-    private void ShowCreateCity() => _dialogService.ShowDialog<Features.Cities.Create.CreateCityView>();
+    private void ShowCreateCity() => DialogService.Instance.ShowDialog<Features.Cities.Create.CreateCityView>();
 
     private async Task LoadWhatsappGroupsAsync()
     {

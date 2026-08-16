@@ -4,7 +4,6 @@ using MediatR;
 using OrderHub.Application.Common.Extensions;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Interfaces;
-using OrderHub.UI.Interfaces;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
@@ -14,16 +13,11 @@ namespace OrderHub.UI.Features.Orders.Editor;
 internal partial class OrderPartyPanelViewModel : ObservableValidator
 {
     private readonly IMediator _mediator;
-    private readonly IDialogService _dialogService;
     private readonly ILookupService _lookupService;
 
-    public OrderPartyPanelViewModel(
-        IMediator mediator,
-        IDialogService dialogService,
-        ILookupService lookupService)
+    public OrderPartyPanelViewModel(IMediator mediator, ILookupService lookupService)
     {
         _mediator = mediator;
-        _dialogService = dialogService;
 
         ValidateAllProperties();
         _lookupService = lookupService;
@@ -52,6 +46,6 @@ internal partial class OrderPartyPanelViewModel : ObservableValidator
     [RelayCommand]
     private void ShowCreateClient()
     {
-        _dialogService.ShowDialog<Features.Clients.Create.View>();
+        DialogService.Instance.ShowDialog<Features.Clients.Create.View>();
     }
 }

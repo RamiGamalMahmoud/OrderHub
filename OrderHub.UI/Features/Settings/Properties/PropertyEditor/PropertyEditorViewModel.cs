@@ -16,9 +16,8 @@ namespace OrderHub.UI.Features.Settings.Properties.PropertyEditor;
 public partial class PropertyEditorViewModel : ObservableValidator
 {
     private readonly IMediator _mediator;
-    private readonly IMessenger _messenger;
 
-    public PropertyEditorViewModel(IMediator mediator, IMessenger messenger, Mode mode)
+    public PropertyEditorViewModel(IMediator mediator, Mode mode)
     {
         PropertyTypes = new ObservableCollection<EnumItem<PropertyType>>(EnumItems.For<PropertyType>());
 
@@ -27,7 +26,6 @@ public partial class PropertyEditorViewModel : ObservableValidator
         Options.CollectionChanged += Options_CollectionChanged;
 
         _mediator = mediator;
-        _messenger = messenger;
         Mode = mode;
         ValidateAllProperties();
     }

@@ -8,11 +8,11 @@
     mc:Ignorable="d">
 
     <Border
-        Padding="10 5"
+        Padding="10,5"
         Background="White"
         CornerRadius="5">
 
-        <ContentControl Content="{Binding NavigationService.CurrentView}" />
+        <ContentControl Content="{Binding NavigationService.Instance.CurrentView}" />
     </Border>
 
 </UserControl>

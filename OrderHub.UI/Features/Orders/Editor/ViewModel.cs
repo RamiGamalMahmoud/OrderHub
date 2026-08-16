@@ -6,7 +6,6 @@ using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Interfaces;
 using OrderHub.UI.Common;
-using OrderHub.UI.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,8 +16,6 @@ namespace OrderHub.UI.Features.Orders.Editor;
 internal abstract partial class ViewModel : EditorViewModelBase
 {
     protected readonly IMediator _mediator;
-    protected readonly IDialogService _dialogService;
-    protected readonly IMessenger _messenger;
 
     private bool _suspendChangeTracking;
 
@@ -44,20 +41,16 @@ internal abstract partial class ViewModel : EditorViewModelBase
 
     protected ViewModel(
         IMediator mediator,
-        IDialogService dialogService,
-        IMessenger messenger,
         IProductStore productStore,
         ILookupService lookupService)
     {
         _mediator = mediator;
-        _dialogService = dialogService;
-        _messenger = messenger;
 
         Items = new OrderItemsEditorViewModel();
         Items.PropertyChanged += Items_PropertyChanged;
 
         ProductsPanel = new OrderProductsPanelViewModel(mediator, productStore);
-        PartyPanel = new OrderPartyPanelViewModel(mediator, dialogService, lookupService);
+        PartyPanel = new OrderPartyPanelViewModel(mediator, lookupService);
         DeliveryMethodsViewModel = new DeliveryMethodsViewModel(mediator);
 
         ProductsPanel.ProductSelected += ProductsPanel_ProductSelected;
@@ -82,7 +75,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
             SaveCommand.NotifyCanExecuteChanged();
         };
 
-        _messenger.Register<Application.Messages.Clients.ClientCreatedMessage>(this, async (r, m) =>
+        WeakReferenceMessenger.Default.Register<Application.Messages.Clients.ClientCreatedMessage>(this, async (r, m) =>
         {
             await PartyPanel.LoadAsync();
         });
@@ -216,7 +209,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
     [RelayCommand]
     private void RemoveOrderItem(OrderItemViewModel item)
     {
-        if (_dialogService.Confirm("Â·  —Ìœ Õ–› Â–« «·⁄‰’— ø"))
+        if (DialogService.Instance.Confirm("Â·  —Ìœ Õ–› Â–« «·⁄‰’— ø"))
         {
             Items.RemoveItemCommand.Execute(item);
             SaveCommand.NotifyCanExecuteChanged();

@@ -11,7 +11,7 @@ namespace OrderHub.UI.Features.Categories.Update;
 
 public class ViewModel : Editor.ViewModel
 {
-    public ViewModel(IMediator mediator, ISelectionStore<ICategoryMarker, int> selectionStore, IMessenger messenger) : base(mediator, selectionStore, messenger)
+    public ViewModel(IMediator mediator, ISelectionStore<ICategoryMarker, int> selectionStore) : base(mediator, selectionStore)
     {
     }
 
@@ -33,7 +33,7 @@ public class ViewModel : Editor.ViewModel
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification("تمت تعديل القسم "));
             OnRequestClose();
-            _messenger.Send(new Application.Messages.Categories.CategoryUpdatedMessage());
+            WeakReferenceMessenger.Default.Send(new Application.Messages.Categories.CategoryUpdatedMessage());
         }
 
         else

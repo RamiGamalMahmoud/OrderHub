@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
+using OrderHub.UI.Common;
 using OrderHub.UI.Features.Suppliers.Editor;
 using OrderHub.UI.Interfaces;
 using OrderHub.UI.Stores.Markers;
@@ -11,20 +12,22 @@ using static OrderHub.Application.DTOs.SupplierDtos;
 
 namespace OrderHub.UI.Features.Suppliers.Update;
 
-public partial class ViewModel : EditSupplierViewModelBase
+public partial class ViewModel : EditSupplierViewModelBase, IParameterizedViewModel
 {
-    private readonly ISelectionStore<ISupplierMarker, int> _selectionStore;
-    private readonly IMessenger _messenger;
+    private int _supplierId;
 
-    public ViewModel(IMediator mediator, ISelectionStore<ISupplierMarker, int> selectionStore, IMessenger messenger, IDialogService dialogService) : base(mediator, dialogService)
+    public ViewModel(IMediator mediator) : base(mediator)
     {
-        _selectionStore = selectionStore;
-        _messenger = messenger;
+    }
+
+    public void Initialize(object parameter)
+    {
+        _supplierId = (int)parameter;
     }
 
     public override async Task LoadAsync()
     {
-        SupplierEditDto SupplierEditDto = await _mediator.Send(new Application.Queries.SupplierQueries.GetSupplierForEditQuery(_selectionStore.Id));
+        SupplierEditDto SupplierEditDto = await _mediator.Send(new Application.Queries.SupplierQueries.GetSupplierForEditQuery(_supplierId));
         await base.LoadAsync();
 
         Name = SupplierEditDto.Name;
@@ -41,7 +44,7 @@ public partial class ViewModel : EditSupplierViewModelBase
     protected override async Task Save()
     {
         SupplierUpdateDto supplierUpdateDto = new SupplierUpdateDto(
-            _selectionStore.Id,
+            _supplierId,
             Name,
             TimeOnly.FromDateTime(OpenAt.Value),
             TimeOnly.FromDateTime(CloseAt.Value),
@@ -56,8 +59,7 @@ public partial class ViewModel : EditSupplierViewModelBase
         {
 
             await _mediator.Publish(new Application.Notifications.SuccessNotification("تم تعديل بيانات المورد"));
-            _messenger.Send(new Application.Messages.Suppliers.SupplierUpdatedMessage());
-            _selectionStore.Clear();
+            WeakReferenceMessenger.Default.Send(new Application.Messages.Suppliers.SupplierUpdatedMessage());
             OnRequestClose();
         }
         else

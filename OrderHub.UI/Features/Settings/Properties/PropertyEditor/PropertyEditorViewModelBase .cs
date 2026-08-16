@@ -13,7 +13,7 @@ namespace OrderHub.UI.Features.Settings.Properties.PropertyEditor;
 
 public abstract partial class PropertyEditorViewModelBase : ObservableValidator
 {
-    protected PropertyEditorViewModelBase(IMessenger messenger)
+    protected PropertyEditorViewModelBase()
     {
         PropertyTypes = new ObservableCollection<EnumItem<PropertyType>>(EnumItems.For<PropertyType>());
 
@@ -25,7 +25,6 @@ public abstract partial class PropertyEditorViewModelBase : ObservableValidator
         };
 
         ValidateAllProperties();
-        _messenger = messenger;
     }
 
     public Mode Mode { get; protected set; }
@@ -54,7 +53,6 @@ public abstract partial class PropertyEditorViewModelBase : ObservableValidator
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddOptionCommand))]
     private string _newOptionValue;
-    protected readonly IMessenger _messenger;
 
     public ObservableCollection<OptionViewModel> Options { get; } = [];
 
@@ -117,7 +115,7 @@ public abstract partial class PropertyEditorViewModelBase : ObservableValidator
     [RelayCommand(CanExecute = nameof(CanSave))]
     protected virtual Task Save()
     {
-        _messenger.Send(new PropertyMessage());
+        WeakReferenceMessenger.Default.Send(new PropertyMessage());
         Clear();
         return Task.CompletedTask;
     }
@@ -127,7 +125,7 @@ public abstract partial class PropertyEditorViewModelBase : ObservableValidator
     {
     }
 
-    private void Clear()
+    protected void Clear()
     {
         Name = string.Empty;
         SelectedPropertyType = null;

@@ -15,12 +15,10 @@ namespace OrderHub.UI.Features.WhatsappGroups.Update;
 public partial class ViewModel : Editor.ViewModel
 {
     private readonly ISelectionStore<IWhatsappGroupMarker, int> _selectionStore;
-    private readonly IMessenger _messenger;
 
-    public ViewModel(IMediator mediator, ISelectionStore<IWhatsappGroupMarker, int> selectionStore, IMessenger messenger) : base(mediator)
+    public ViewModel(IMediator mediator, ISelectionStore<IWhatsappGroupMarker, int> selectionStore) : base(mediator)
     {
         _selectionStore = selectionStore;
-        _messenger = messenger;
     }
 
     public override string Title => "تعديل مجموعة واتساب";
@@ -41,7 +39,7 @@ public partial class ViewModel : Editor.ViewModel
         if(result.IsSuccess)
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification(MessageBuilder.Build(MessageBuilder.OperationType.Update, true, "مجموعة الواتساب")));
-            _messenger.Send(new Application.Messages.WhatsappGroups.WhatsappGroupUpdatedMessage());
+            WeakReferenceMessenger.Default.Send(new Application.Messages.WhatsappGroups.WhatsappGroupUpdatedMessage());
             _selectionStore.Clear();
             OnRequestClose();
         }

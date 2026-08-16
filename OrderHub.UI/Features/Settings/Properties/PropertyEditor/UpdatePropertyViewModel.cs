@@ -1,5 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
-using MediatR;
+﻿using MediatR;
 using OrderHub.Application.Features.Setup.Properties.Get;
 using OrderHub.Application.Features.Setup.Properties.Update;
 using System.Linq;
@@ -13,10 +12,7 @@ public sealed partial class UpdatePropertyViewModel : PropertyEditorViewModelBas
 
     private int _propertyId;
 
-    public UpdatePropertyViewModel(
-        IMediator mediator,
-        IMessenger messenger,
-        int propertyId) : base(messenger)
+    public UpdatePropertyViewModel(IMediator mediator, int propertyId)
     {
         _mediator = mediator;
         _propertyId = propertyId;

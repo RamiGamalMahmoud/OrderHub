@@ -10,7 +10,7 @@ namespace OrderHub.UI.Features.Categories.Create;
 
 public class ViewModel : Editor.ViewModel
 {
-    public ViewModel(IMediator mediator, ISelectionStore<ICategoryMarker, int> selectionStore, IMessenger messenger) : base(mediator, selectionStore, messenger)
+    public ViewModel(IMediator mediator, ISelectionStore<ICategoryMarker, int> selectionStore) : base(mediator, selectionStore)
     {
     }
 
@@ -25,7 +25,7 @@ public class ViewModel : Editor.ViewModel
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification("تمت إضافة القسم "));
             OnRequestClose();
-            _messenger.Send(new Application.Messages.Categories.CategoryCreatedMessage());
+            WeakReferenceMessenger.Default.Send(new Application.Messages.Categories.CategoryCreatedMessage());
         }
 
         else

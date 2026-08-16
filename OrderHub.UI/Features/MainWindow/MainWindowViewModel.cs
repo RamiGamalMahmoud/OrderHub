@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Interfaces.Services;
-using OrderHub.UI.Interfaces;
+using OrderHub.UI.Services;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -12,36 +12,27 @@ namespace OrderHub.UI.Features.MainWindow;
 
 internal partial class MainWindowViewModel : ObservableObject
 {
-    private readonly INavigationService _navigationService;
     private readonly ISessionManager _sessionManager;
     private readonly IMediator _mediator;
-    private readonly IDialogService _dialogService;
     private readonly IApplicationDirectoriesService _applicationDirectoriesService;
     private readonly IWhatsappService _whatsappService;
     private readonly IMessageService _messageService;
-    private readonly IMessenger _messenger;
 
     [ObservableProperty]
     private NavigationCommand _selectedNavigationCommand;
 
     public MainWindowViewModel(
-        INavigationService navigationService,
         ISessionManager sessionManager,
         IMediator mediator,
-        IDialogService dialogService,
         IWhatsappService whatsappService,
         IMessageService messageService,
-        IMessenger messenger,
         IAppState appState,
         IApplicationDirectoriesService applicationDirectoriesService)
     {
-        _navigationService = navigationService;
         _sessionManager = sessionManager;
         _mediator = mediator;
-        _dialogService = dialogService;
         _whatsappService = whatsappService;
         _messageService = messageService;
-        _messenger = messenger;
         _applicationDirectoriesService = applicationDirectoriesService;
         AppState = appState;
         InitializeNavigationCommands();
@@ -56,67 +47,67 @@ internal partial class MainWindowViewModel : ObservableObject
         NavigationCommands.Add(new NavigationCommand(
             "الصفحة الرئيسية",
             "Home",
-            () => _navigationService.NavigateTo<Features.Home.HomeView>()));
+            () => NavigationService.Instance.NavigateTo<Features.Home.HomeView>()));
 
         NavigationCommands.Add(new NavigationCommand(
             "الطلبات",
             "ListBox",
-            () => _navigationService.NavigateTo<Features.Orders.Index.View>()));
+            () => NavigationService.Instance.NavigateTo<Features.Orders.Index.View>()));
 
         NavigationCommands.Add(new NavigationCommand(
             "المنتجات",
             "Factory",
-            () => _navigationService.NavigateTo<Features.Products.Index.View>()));
+            () => NavigationService.Instance.NavigateTo<Features.Products.Index.View>()));
 
         NavigationCommands.Add(new NavigationCommand(
             "الأقسام",
             "Factory",
-            () => _navigationService.NavigateTo<Features.Categories.Index.View>()));
+            () => NavigationService.Instance.NavigateTo<Features.Categories.Index.View>()));
 
         NavigationCommands.Add(new NavigationCommand(
             "المدن",
             "MapMarker",
-            () => _navigationService.NavigateTo<Features.Cities.Index.View>()));
+            () => NavigationService.Instance.NavigateTo<Features.Cities.Index.View>()));
 
         NavigationCommands.Add(new NavigationCommand(
             "العملاء",
             "AccountTie",
-            () => _navigationService.NavigateTo<Features.Clients.Index.View>()));
+            () => NavigationService.Instance.NavigateTo<Features.Clients.Index.View>()));
 
         NavigationCommands.Add(new NavigationCommand(
             "الموردون",
             "BadgeAccount",
-            () => _navigationService.NavigateTo<Features.Suppliers.Index.View>()));
+            () => NavigationService.Instance.NavigateTo<Features.Suppliers.Index.View>()));
 
         NavigationCommands.Add(new NavigationCommand(
             "شركات الشحن",
             "Ship",
-            () => _navigationService.NavigateTo<Features.ShippingCarriers.Index.View>()));
+            () => NavigationService.Instance.NavigateTo<Features.ShippingCarriers.Index.View>()));
 
         NavigationCommands.Add(new NavigationCommand(
             "المناديب",
             "Moped",
-            () => _navigationService.NavigateTo<Features.Deliverymen.Index.View>()));
+            () => NavigationService.Instance.NavigateTo<Features.Deliverymen.Index.View>()));
 
         NavigationCommands.Add(new NavigationCommand(
             "مجموعات الواتساب",
             "Whatsapp",
-            () => _navigationService.NavigateTo<Features.WhatsappGroups.Index.View>()));
+            () => NavigationService.Instance.NavigateTo<Features.WhatsappGroups.Index.View>()));
 
         NavigationCommands.Add(new NavigationCommand(
             "سجل الرسائل",
             "MessageMinusOutline",
-            () => _navigationService.NavigateTo<Features.Messages.Index.View>()));
+            () => NavigationService.Instance.NavigateTo<Features.Messages.Index.View>()));
 
         NavigationCommands.Add(new NavigationCommand(
             "الإعدادات",
             "CogOutline",
-            () => _navigationService.NavigateTo<Features.Settings.Home.SettingsHomeView>()));
+            () => NavigationService.Instance.NavigateTo<Features.Settings.Home.SettingsHomeView>()));
     }
 
     private void RegisterMessages()
     {
-        _messenger.Register<Application.Messages.Orders.AddingNewMessageToQueMessage>(
+        WeakReferenceMessenger.Default.Register<Application.Messages.Orders.AddingNewMessageToQueMessage>(
             this, 
             (r, m) => Message = m.RecipientName);
     }
@@ -132,7 +123,7 @@ internal partial class MainWindowViewModel : ObservableObject
         IsAuthenticated = await _mediator.Send(new Application.Commands.AuthCommand());
         if (!IsAuthenticated)
         {
-            _dialogService.ShowDialog<Settings.ClientCredentialsSettings.ClientCredentialsSettingsView>();
+            DialogService.Instance.ShowDialog<Settings.ClientCredentialsSettings.ClientCredentialsSettingsView>();
         }
     }
 
@@ -175,7 +166,6 @@ internal partial class MainWindowViewModel : ObservableObject
     false;
 #endif
 
-    public INavigationService NavigationService => _navigationService;
-
+    public NavigationService NavigationService => NavigationService.Instance;
     public IAppState AppState { get; }
 }

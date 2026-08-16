@@ -20,7 +20,6 @@ public partial class PropertiesViewModel : ObservableObject
 {
     private readonly ObservableCollection<PropertyViewModel> _propertyItems = [];
     private readonly IMediator _mediator;
-    private readonly IMessenger _messenger;
     private readonly INotificationService _notificationService;
 
     public ReadOnlyObservableCollection<PropertyViewModel> PropertyItems { get; }
@@ -35,21 +34,20 @@ public partial class PropertiesViewModel : ObservableObject
             PropertyEditorViewModel = null;
             return;
         }
-        PropertyEditorViewModel = new ReadOnlyPropertyViewModel(_mediator, value.Id, _messenger);
+        PropertyEditorViewModel = new ReadOnlyPropertyViewModel(_mediator, value.Id);
         _ = (PropertyEditorViewModel as ReadOnlyPropertyViewModel).LoadAsync();
     }
 
     [ObservableProperty]
     private PropertyEditorViewModelBase _propertyEditorViewModel;
 
-    public PropertiesViewModel(IMediator mediator, IMessenger messenger, INotificationService notificationService)
+    public PropertiesViewModel(IMediator mediator, INotificationService notificationService)
     {
         PropertyItems = new ReadOnlyObservableCollection<PropertyViewModel>(_propertyItems);
         _mediator = mediator;
-        _messenger = messenger;
         _notificationService = notificationService;
 
-        _messenger.Register<PropertyMessage>(this, async (r, m) =>
+        WeakReferenceMessenger.Default.Register<PropertyMessage>(this, async (r, m) =>
         {
             await LoadAsync();
         });
@@ -75,13 +73,13 @@ public partial class PropertiesViewModel : ObservableObject
     private void Create()
     {
         SelectedProperty = null;
-        PropertyEditorViewModel = new CreatePropertyViewModel(_mediator, _messenger);
+        PropertyEditorViewModel = new CreatePropertyViewModel(_mediator);
     }
 
     [RelayCommand]
     private void Edit(int id)
     {
-        PropertyEditorViewModel = new UpdatePropertyViewModel(_mediator, _messenger, id);
+        PropertyEditorViewModel = new UpdatePropertyViewModel(_mediator, id);
         _ = (PropertyEditorViewModel as UpdatePropertyViewModel).LoadAsync();
     }
 

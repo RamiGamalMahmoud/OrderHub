@@ -13,17 +13,14 @@ namespace OrderHub.UI.Features.Orders;
 public partial class OrderViewModel : ObservableObject
 {
     private readonly IMediator _mediator;
-    private readonly IMessenger _messenger;
 
-    public OrderViewModel(IMediator mediator, IMessenger messenger)
+    public OrderViewModel(IMediator mediator)
     {
         _mediator = mediator;
-        _messenger = messenger;
     }
 
     public OrderViewModel(
         IMediator mediator,
-        IMessenger messenger,
         int id,
         string orderNumber,
         string clientName,
@@ -43,7 +40,6 @@ public partial class OrderViewModel : ObservableObject
         bool isDeliverymanMessageSent)
     {
         _mediator = mediator;
-        _messenger = messenger;
         Id = id;
         OrderNumber = orderNumber;
         ClientName = clientName;
@@ -95,7 +91,7 @@ public partial class OrderViewModel : ObservableObject
 
         if (result.IsSuccess)
         {
-            _messenger.Send(new Application.Messages.Orders.OrderUpdatedMessage());
+            WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.OrderUpdatedMessage());
         }
     }
 
@@ -154,7 +150,7 @@ public partial class OrderViewModel : ObservableObject
 
         if (result.IsSuccess)
         {
-            _messenger.Send(new Application.Messages.Orders.OrderUpdatedMessage());
+            WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.OrderUpdatedMessage());
         }
     }
 

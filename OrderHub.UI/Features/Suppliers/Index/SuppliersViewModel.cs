@@ -2,8 +2,6 @@
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
-using OrderHub.UI.Interfaces;
-using OrderHub.UI.Stores.Markers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,18 +11,13 @@ namespace OrderHub.UI.Features.Suppliers.Index;
 
 internal partial class SuppliersViewModel : IndexViewModelBase<SupplierListDto>
 {
-    private readonly IDialogService _dialogService;
-    private readonly ISelectionStore<ISupplierMarker, int> _selectionStore;
     private List<SupplierListDto> _allSuppliers = [];
 
-    public SuppliersViewModel(IMediator mediator, IDialogService dialogService, ISelectionStore<ISupplierMarker, int> selectionStore, IMessenger messenger) : base(mediator, messenger)
+    public SuppliersViewModel(IMediator mediator) : base(mediator)
     {
-        _dialogService = dialogService;
-        _selectionStore = selectionStore;
-
-        _messenger.Register<Application.Messages.Suppliers.SupplierCreatedMessage>(this, async (r, m) => await LoadAsync());
-        _messenger.Register<Application.Messages.Suppliers.SupplierUpdatedMessage>(this, async (r, m) => await LoadAsync());
-        _messenger.Register<Application.Messages.Suppliers.SupplierDeletedMessage>(this, async (r, m) => await LoadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.Suppliers.SupplierCreatedMessage>(this, async (r, m) => await LoadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.Suppliers.SupplierUpdatedMessage>(this, async (r, m) => await LoadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.Suppliers.SupplierDeletedMessage>(this, async (r, m) => await LoadAsync());
     }
 
     protected override async Task LoadAsync()
@@ -41,20 +34,19 @@ internal partial class SuppliersViewModel : IndexViewModelBase<SupplierListDto>
 
     protected override Task ShowEditAsync(SupplierListDto dto)
     {
-        _selectionStore.Id = dto.Id;
-        _dialogService.ShowDialog<Update.View>();
+        DialogService.Instance.ShowDialog<Update.View>(dto.Id);
         return Task.CompletedTask;
     }
 
     protected override async Task DeleteAsync(SupplierListDto dto)
     {
-        if (_dialogService.Confirm($"هل تريد حذف المورد {dto.Name}"))
+        if (DialogService.Instance.Confirm($"هل تريد حذف المورد {dto.Name}"))
         {
             Result result = await _mediator.Send(new Application.Commands.SupplierCommands.DeleteSupplierCommand(dto.Id));
             if (result.IsSuccess)
             {
                 await _mediator.Publish(new Application.Notifications.SuccessNotification(MessageBuilder.Build(MessageBuilder.OperationType.Delete, true, "المورد")));
-                _messenger.Send(new Application.Messages.Suppliers.SupplierDeletedMessage());
+                WeakReferenceMessenger.Default.Send(new Application.Messages.Suppliers.SupplierDeletedMessage());
                 await LoadAsync();
             }
             else
@@ -66,7 +58,7 @@ internal partial class SuppliersViewModel : IndexViewModelBase<SupplierListDto>
 
     protected override Task ShowCreateAsync()
     {
-        _dialogService.ShowDialog<Create.View>();
+        DialogService.Instance.ShowDialog<Create.View>();
         return Task.CompletedTask;
     }
 

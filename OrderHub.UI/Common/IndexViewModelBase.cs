@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using System.Threading.Tasks;
 
@@ -9,12 +8,10 @@ namespace OrderHub.UI.Common
     public abstract partial class IndexViewModelBase<TModel> : ObservableObject where TModel : class
     {
         protected readonly IMediator _mediator;
-        protected readonly IMessenger _messenger;
 
-        protected IndexViewModelBase(IMediator mediator, IMessenger messenger)
+        protected IndexViewModelBase(IMediator mediator)
         {
             _mediator = mediator;
-            _messenger = messenger;
         }
 
         [RelayCommand]

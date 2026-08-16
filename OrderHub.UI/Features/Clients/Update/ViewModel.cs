@@ -13,7 +13,7 @@ namespace OrderHub.UI.Features.Clients.Update
     {
         private readonly ISelectionStore<IClientMarker, int> _selectionStore;
 
-        public ViewModel(IMediator mediator, ISelectionStore<IClientMarker, int> selectionStore, IDialogService dialogService, IMessenger messenger) : base(mediator, dialogService, messenger)
+        public ViewModel(IMediator mediator, ISelectionStore<IClientMarker, int> selectionStore) : base(mediator)
         {
             _selectionStore = selectionStore;
         }
@@ -42,7 +42,7 @@ namespace OrderHub.UI.Features.Clients.Update
             if (result.IsSuccess)
             {
                 await _mediator.Publish(new Application.Notifications.SuccessNotification("تم تحديث بيانات عميل بنجاح"));
-                _messenger.Send(new Application.Messages.Clients.ClientUpdatedMessage());
+                WeakReferenceMessenger.Default.Send(new Application.Messages.Clients.ClientUpdatedMessage());
                 OnRequestClose();
                 _selectionStore.Clear();
                 HasChanges = false;

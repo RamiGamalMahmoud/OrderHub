@@ -9,12 +9,10 @@ namespace OrderHub.UI.Features.Cities.Create;
 public partial class CreateCityViewModel : Editor.ViewModelBase
 {
     private readonly IMediator _mediator;
-    private readonly IMessenger _messenger;
 
-    public CreateCityViewModel(IMediator mediator, IMessenger messenger)
+    public CreateCityViewModel(IMediator mediator)
     {
         _mediator = mediator;
-        _messenger = messenger;
     }
 
     public override string Title => "إضافة مدينة";
@@ -26,7 +24,7 @@ public partial class CreateCityViewModel : Editor.ViewModelBase
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification($"تم إضافة مدينة ({Name}) بنجاح."));
             OnRequestClose();
-            _messenger.Send(new Application.Messages.Cities.CityCreatedMessage());
+            WeakReferenceMessenger.Default.Send(new Application.Messages.Cities.CityCreatedMessage());
         }
         else
         {

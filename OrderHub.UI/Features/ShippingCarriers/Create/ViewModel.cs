@@ -2,7 +2,6 @@
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
-using OrderHub.UI.Interfaces;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.ShippingCarriersDtos;
 
@@ -10,11 +9,8 @@ namespace OrderHub.UI.Features.ShippingCarriers.Create;
 
 public class ViewModel : Editor.ViewModel
 {
-    private readonly IMessenger _messenger;
-
-    public ViewModel(IMediator mediator, IMessenger messenger, IDialogService dialogService) : base(mediator, dialogService)
+    public ViewModel(IMediator mediator) : base(mediator)
     {
-        _messenger = messenger;
     }
 
     public override string Title => "إنشاء شركة شحن جديدة";
@@ -28,7 +24,7 @@ public class ViewModel : Editor.ViewModel
         {
             string message = MessageBuilder.Build(MessageBuilder.OperationType.Create, true, "شركة شحن");
             await _mediator.Publish(new Application.Notifications.SuccessNotification(message));
-            _messenger.Send(new Application.Messages.ShippingCarriers.ShippingCarrierCreatedMessage());
+            WeakReferenceMessenger.Default.Send(new Application.Messages.ShippingCarriers.ShippingCarrierCreatedMessage());
             OnRequestClose();
         }
         else

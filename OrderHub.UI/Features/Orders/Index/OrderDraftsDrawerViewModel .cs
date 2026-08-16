@@ -2,7 +2,6 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
-using OrderHub.UI.Interfaces;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
@@ -11,26 +10,22 @@ namespace OrderHub.UI.Features.Orders.Index;
 internal partial class OrderDraftsDrawerViewModel : ObservableObject
 {
     private readonly IDraftService _draftService;
-    private readonly IDialogService _dialogService;
-    private readonly IMessenger _messenger;
 
     public ObservableCollection<OrderDraftSummary> Drafts { get; } = [];
 
     [ObservableProperty]
     private bool _isLoading;
 
-    public OrderDraftsDrawerViewModel(IDraftService draftService, IDialogService dialogService, IMessenger messenger)
+    public OrderDraftsDrawerViewModel(IDraftService draftService)
     {
         _draftService = draftService;
-        _dialogService = dialogService;
-        _messenger = messenger;
 
-        _messenger.Register<OrderDraftsDrawerViewModel, Messages.DraftSavedMessage>(this, (r, m) =>
+        WeakReferenceMessenger.Default.Register<OrderDraftsDrawerViewModel, Messages.DraftSavedMessage>(this, (r, m) =>
         {
             OnPropertyChanged(nameof(Drafts));
         });
 
-        _messenger.Register<OrderDraftsDrawerViewModel, Messages.DraftDeletedMessage>(this, (r, m) =>
+        WeakReferenceMessenger.Default.Register<OrderDraftsDrawerViewModel, Messages.DraftDeletedMessage>(this, (r, m) =>
         {
             OnPropertyChanged(nameof(Drafts));
         });
@@ -67,7 +62,7 @@ internal partial class OrderDraftsDrawerViewModel : ObservableObject
         if (draft is null)
             return;
 
-        bool deleteDraft = _dialogService.Confirm("هل تريد حذف هذه المسودة؟");
+        bool deleteDraft = DialogService.Instance.Confirm("هل تريد حذف هذه المسودة؟");
         if (!deleteDraft)
             return;
 
@@ -81,7 +76,7 @@ internal partial class OrderDraftsDrawerViewModel : ObservableObject
     [RelayCommand]
     private async Task DeleteAllDrafts()
     {
-        bool deleteDraft = _dialogService.Confirm("هل تريد حذف كل المسودات؟");
+        bool deleteDraft = DialogService.Instance.Confirm("هل تريد حذف كل المسودات؟");
         if (!deleteDraft)
             return;
 
@@ -96,6 +91,6 @@ internal partial class OrderDraftsDrawerViewModel : ObservableObject
     [RelayCommand]
     private void OpenDraft(OrderDraftSummary draft)
     {
-        _dialogService.ShowDialog<Features.Orders.Create.View>(draft.Id);
+        DialogService.Instance.ShowDialog<Features.Orders.Create.View>(draft.Id);
     }
 }

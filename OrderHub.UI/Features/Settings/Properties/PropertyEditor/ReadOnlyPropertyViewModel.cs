@@ -1,5 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
-using MediatR;
+﻿using MediatR;
 using OrderHub.Application.Features.Setup.Properties.Get;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,7 +10,7 @@ public sealed partial class ReadOnlyPropertyViewModel : PropertyEditorViewModelB
     private readonly IMediator _mediator;
     private readonly int _propertyId;
 
-    public ReadOnlyPropertyViewModel(IMediator mediator, int propertyId, IMessenger messenger) : base(messenger)
+    public ReadOnlyPropertyViewModel(IMediator mediator, int propertyId)
     {
         _mediator = mediator;
         _propertyId = propertyId;

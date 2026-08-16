@@ -10,7 +10,7 @@ namespace OrderHub.UI.Features.Products.Create
 {
     public class ViewModel : Editor.ViewModel
     {
-        public ViewModel(IMediator mediator, IMessenger messenger) : base(mediator, messenger)
+        public ViewModel(IMediator mediator) : base(mediator)
         {
         }
 
@@ -34,7 +34,7 @@ namespace OrderHub.UI.Features.Products.Create
             if(result.IsSuccess)
             {
                 await _mediator.Publish(new Application.Notifications.SuccessNotification("تم إنشاء المنتج"));
-                _messenger.Send(new Application.Messages.Products.ProductedCreatedMessage());
+                WeakReferenceMessenger.Default.Send(new Application.Messages.Products.ProductedCreatedMessage());
                 OnRequestClose();
             }
             else

@@ -5,8 +5,6 @@ using OrderHub.Application.Features.Products.Update;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
 using OrderHub.UI.Features.Products.Editor;
-using OrderHub.UI.Interfaces;
-using OrderHub.UI.Stores.Markers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,7 +14,7 @@ namespace OrderHub.UI.Features.Products.Update;
 public class ViewModel : Editor.ViewModel, IParameterizedViewModel
 {
     private int _productId;
-    public ViewModel(IMediator mediator, IMessenger messenger) : base(mediator, messenger)
+    public ViewModel(IMediator mediator) : base(mediator)
     {
         HasChanges = false;
     }
@@ -85,7 +83,7 @@ public class ViewModel : Editor.ViewModel, IParameterizedViewModel
         if (result.IsSuccess)
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification("تم تحديث بيانات المنتج"));
-            _messenger.Send(new Application.Messages.Products.ProductedUpdatedMessage());
+            WeakReferenceMessenger.Default.Send(new Application.Messages.Products.ProductedUpdatedMessage());
             OnRequestClose();
         }
         else

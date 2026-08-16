@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.UI.Common;
-using OrderHub.UI.Interfaces;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
@@ -15,10 +14,8 @@ namespace OrderHub.UI.Features.Clients.Edit
     {
         private IEnumerable<CityInfoDto> _cities;
         protected readonly IMediator _mediator;
-        private readonly IDialogService _dialogService;
-        protected readonly IMessenger _messenger;
 
-        protected ViewModelBase(IMediator mediator, IDialogService dialogService, IMessenger messenger)
+        protected ViewModelBase(IMediator mediator)
         {
             _notifyPropertiesNames =
                 [
@@ -31,18 +28,16 @@ namespace OrderHub.UI.Features.Clients.Edit
                 ];
 
             _mediator = mediator;
-            _dialogService = dialogService;
-            _messenger = messenger;
 
-            _messenger.Register<Application.Messages.Cities.CityCreatedMessage>(this, async (r, m) =>
+            WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityCreatedMessage>(this, async (r, m) =>
             {
                 Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
             });
-            _messenger.Register<Application.Messages.Cities.CityUpdatedMessage>(this, async (r, m) =>
+            WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityUpdatedMessage>(this, async (r, m) =>
             {
                 Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
             });
-            _messenger.Register<Application.Messages.Cities.CityDeletedMessage>(this, async (r, m) =>
+            WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityDeletedMessage>(this, async (r, m) =>
             {
                 Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
             });
@@ -93,6 +88,6 @@ namespace OrderHub.UI.Features.Clients.Edit
         private string _location;
 
         [RelayCommand]
-        private void ShowCreateCity() => _dialogService.ShowDialog<Features.Cities.Create.CreateCityView>();
+        private void ShowCreateCity() => DialogService.Instance.ShowDialog<Features.Cities.Create.CreateCityView>();
     }
 }

@@ -10,7 +10,6 @@ using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
 using OrderHub.UI.Features.Orders.Index.OrderDetailsPanel;
-using OrderHub.UI.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -22,7 +21,6 @@ namespace OrderHub.UI.Features.Orders.Index;
 
 internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 {
-    private readonly IDialogService _dialogService;
     public OrderDraftsDrawerViewModel OrderDraftsDrawerViewModel { get; }
 
     [ObservableProperty]
@@ -103,29 +101,26 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
     public ViewModel(
         IMediator mediator,
-        IMessenger messenger,
-        IDraftService draftService,
-        IDialogService dialogService)
-        : base(mediator, messenger)
+        IDraftService draftService)
+        : base(mediator)
     {
-        _dialogService = dialogService;
-        OrderDraftsDrawerViewModel = new OrderDraftsDrawerViewModel(draftService, dialogService, messenger);
+        OrderDraftsDrawerViewModel = new OrderDraftsDrawerViewModel(draftService);
 
-        OrderDetailsPanelViewModel = new OrderDetailsPanelViewModel(mediator, dialogService);
+        OrderDetailsPanelViewModel = new OrderDetailsPanelViewModel(mediator);
 
-        messenger.Register<Application.Messages.Orders.OrderCreatedMessage>(
+        WeakReferenceMessenger.Default.Register<Application.Messages.Orders.OrderCreatedMessage>(
             this,
             async (_, _) => await ReloadAsync());
 
-        messenger.Register<Application.Messages.Orders.OrderUpdatedMessage>(
+        WeakReferenceMessenger.Default.Register<Application.Messages.Orders.OrderUpdatedMessage>(
             this,
             async (_, _) => await ReloadAsync());
 
-        messenger.Register<Application.Messages.Orders.OrderDeletedMessage>(
+        WeakReferenceMessenger.Default.Register<Application.Messages.Orders.OrderDeletedMessage>(
             this,
             async (_, _) => await ReloadAsync());
 
-        messenger.Register<Application.Messages.OutboxMessages.MessageStatusChangedMessage>(
+        WeakReferenceMessenger.Default.Register<Application.Messages.OutboxMessages.MessageStatusChangedMessage>(
             this,
             (_, m) =>
             {
@@ -133,12 +128,12 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
                 order?.UpdateRecipientStatus(m.RecipientType, m.NewStatus == Domain.Enums.OutboxMessageStatus.Sent);
             });
 
-        _messenger.Register<ViewModel, Messages.DraftSavedMessage>(this, (r, m) =>
+        WeakReferenceMessenger.Default.Register<ViewModel, Messages.DraftSavedMessage>(this, (r, m) =>
         {
             OnPropertyChanged(nameof(OrderDraftsDrawerViewModel.Drafts.Count));
         });
 
-        _messenger.Register<ViewModel, Messages.DraftDeletedMessage>(this, (r, m) =>
+        WeakReferenceMessenger.Default.Register<ViewModel, Messages.DraftDeletedMessage>(this, (r, m) =>
         {
             OnPropertyChanged(nameof(OrderDraftsDrawerViewModel.Drafts.Count));
         });
@@ -215,7 +210,7 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
     protected override Task ShowCreateAsync()
     {
-        _dialogService.ShowDialog<Create.View>();
+        DialogService.Instance.ShowDialog<Create.View>();
         return Task.CompletedTask;
     }
 
@@ -271,13 +266,13 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
     protected override Task ShowEditAsync(OrderViewModel model)
     {
-        _dialogService.ShowDialog<Edit.View>(model.Id);
+        DialogService.Instance.ShowDialog<Edit.View>(model.Id);
         return Task.CompletedTask;
     }
 
     protected override async Task DeleteAsync(OrderViewModel model)
     {
-        if (!_dialogService.Confirm($"هل تريد حذف الطلب ({model.OrderNumber})؟"))
+        if (!DialogService.Instance.Confirm($"هل تريد حذف الطلب ({model.OrderNumber})؟"))
         {
             return;
         }
@@ -292,7 +287,7 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
             return;
         }
 
-        _messenger.Send(new Application.Messages.Orders.OrderDeletedMessage(model.Id));
+        WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.OrderDeletedMessage(model.Id));
         await _mediator.Publish(
             new Application.Notifications.SuccessNotification("تم حذف الطلب بنجاح."));
     }
@@ -309,7 +304,6 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
     private OrderViewModel Map(GetOrderPaged.Order order) => new(
         _mediator,
-        _messenger,
         order.Id,
         order.OrderNumber,
         order.ClientName,

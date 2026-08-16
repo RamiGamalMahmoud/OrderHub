@@ -11,12 +11,10 @@ namespace OrderHub.UI.Features.Deliverymen.Edit;
 
 internal class ViewModel : Editor.ViewModel
 {
-    private readonly IMessenger _messenger;
     private readonly ISelectionStore<IDeliverymanMarker, int> _selectionStore;
 
-    public ViewModel(IMediator mediator, IMessenger messenger, ISelectionStore<IDeliverymanMarker, int> selectionStore, IDialogService dialogService) : base(mediator, dialogService)
+    public ViewModel(IMediator mediator, ISelectionStore<IDeliverymanMarker, int> selectionStore) : base(mediator)
     {
-        _messenger = messenger;
         _selectionStore = selectionStore;
     }
 
@@ -46,7 +44,7 @@ internal class ViewModel : Editor.ViewModel
         if(result.IsSuccess)
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification("تم تعديل بيانات المندوب بنجاح."));
-            _messenger.Send(new Application.Messages.Deliveryman.DeleverymanUpdateMessage());
+            WeakReferenceMessenger.Default.Send(new Application.Messages.Deliveryman.DeleverymanUpdateMessage());
             OnRequestClose();
         }
         else

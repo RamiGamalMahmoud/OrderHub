@@ -4,35 +4,40 @@ using OrderHub.UI.Interfaces;
 using System;
 using System.Windows.Controls;
 
-namespace OrderHub.UI.Services
+internal sealed class DialogService
 {
-    internal class DialogService : IDialogService
+    public static DialogService Instance { get; private set; } = null!;
+    public static void Init(IServiceProvider serviceProvider)
     {
-        private readonly IServiceProvider _serviceProvider;
+        if (Instance is null)
+            Instance = new DialogService(serviceProvider);
+    }
 
-        public DialogService(IServiceProvider serviceProvider)
+    private readonly IServiceProvider _serviceProvider;
+
+    private DialogService(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
+    public void ShowDialog<TView>(object parameter = null)
+        where TView : IDialog
+    {
+        var view = _serviceProvider.GetRequiredService<TView>();
+
+        if (view is Control control &&
+            control.DataContext is IParameterizedViewModel viewModel)
         {
-            _serviceProvider = serviceProvider;
+            viewModel.Initialize(parameter);
         }
 
-        public void ShowDialog<TView>(object parameter = null) where TView : IDialog
-        {
-            TView view = _serviceProvider.GetRequiredService<TView>();
-            if(view is Control control)
-            {
-                if(control.DataContext is IParameterizedViewModel viewModel)
-                {
-                    viewModel.Initialize(parameter);
-                }
-            }
-            view.Show();
-        }
+        view.Show();
+    }
 
-        public bool Confirm(string message)
-        {
-            Features.Confirm.View confirmView = new Features.Confirm.View(message);
-            bool? result = confirmView.ShowDialog();
-            return result is true;
-        }
+    public bool Confirm(string message)
+    {
+        var confirmView = new OrderHub.UI.Features.Confirm.View(message);
+
+        return confirmView.ShowDialog() is true;
     }
 }

@@ -5,8 +5,6 @@ using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Features.Products.List;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
-using OrderHub.UI.Interfaces;
-using OrderHub.UI.Stores.Markers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -17,7 +15,6 @@ namespace OrderHub.UI.Features.Products.Index;
 
 public partial class ViewModel : IndexViewModelBase<ProductItem>
 {
-    private readonly IDialogService _dialogService;
     private ObservableCollection<KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>> _subCategories = new();
     private readonly IProductStore _productStore;
     public ObservableCollection<KeyValuePair<CategoryInfoDto, IEnumerable<CategoryInfoDto>>> SubCategories
@@ -25,19 +22,17 @@ public partial class ViewModel : IndexViewModelBase<ProductItem>
         get => _subCategories;
         set => SetProperty(ref _subCategories, value);
     }
-    public ViewModel(IMediator mediator, IDialogService dialogService, IMessenger messenger, IProductStore productStore) : base(mediator, messenger)
+    public ViewModel(IMediator mediator, IProductStore productStore) : base(mediator)
     {
-        _dialogService = dialogService;
-
-        _messenger.Register<Application.Messages.Products.ProductedCreatedMessage>(this, async (r, m) => await ReloadAsync());
-        _messenger.Register<Application.Messages.Products.ProductedDeletedMessage>(this, async (r, m) => await ReloadAsync());
-        _messenger.Register<Application.Messages.Products.ProductedUpdatedMessage>(this, async (r, m) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.Products.ProductedCreatedMessage>(this, async (r, m) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.Products.ProductedDeletedMessage>(this, async (r, m) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.Products.ProductedUpdatedMessage>(this, async (r, m) => await ReloadAsync());
         _productStore = productStore;
     }
 
     protected override async Task DeleteAsync(ProductItem dto)
     {
-        if (!_dialogService.Confirm($"هل تريد حذف المنتج( {dto.Name})"))
+        if (!DialogService.Instance.Confirm($"هل تريد حذف المنتج( {dto.Name})"))
         {
             return;
         }
@@ -46,7 +41,7 @@ public partial class ViewModel : IndexViewModelBase<ProductItem>
         if (result.IsSuccess)
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification("تم حذف المنتج"));
-            _messenger.Send(new Application.Messages.Products.ProductedDeletedMessage(dto.Id));
+            WeakReferenceMessenger.Default.Send(new Application.Messages.Products.ProductedDeletedMessage(dto.Id));
 
         }
         else
@@ -170,13 +165,13 @@ public partial class ViewModel : IndexViewModelBase<ProductItem>
 
     protected override Task ShowEditAsync(ProductItem model)
     {
-        _dialogService.ShowDialog<Update.View>(model.Id);
+        DialogService.Instance.ShowDialog<Update.View>(model.Id);
         return Task.CompletedTask;
     }
 
     protected override Task ShowCreateAsync()
     {
-        _dialogService.ShowDialog<Create.View>();
+        DialogService.Instance.ShowDialog<Create.View>();
         return Task.CompletedTask;
     }
 

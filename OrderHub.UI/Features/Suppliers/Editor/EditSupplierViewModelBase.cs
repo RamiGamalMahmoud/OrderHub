@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.UI.Common;
-using OrderHub.UI.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -15,13 +14,11 @@ namespace OrderHub.UI.Features.Suppliers.Editor;
 public abstract partial class EditSupplierViewModelBase : EditorViewModelBase
 {
     protected readonly IMediator _mediator;
-    private readonly IDialogService _dialogService;
 
-    public EditSupplierViewModelBase(IMediator mediator, IDialogService dialogService)
+    public EditSupplierViewModelBase(IMediator mediator)
     {
         _notifyPropertiesNames = [nameof(Name), nameof(OpenAt), nameof(CloseAt), nameof(Number), nameof(CountryCode), nameof(City), nameof(Street), nameof(SelectedWhatsappGroup)];
         _mediator = mediator;
-        _dialogService = dialogService;
         WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityCreatedMessage>(this, async (r, m) =>
         {
             Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
@@ -95,7 +92,7 @@ public abstract partial class EditSupplierViewModelBase : EditorViewModelBase
     private Application.DTOs.WhatsappGroupDtos.WhatsappGroupInfoDto _selectedWhatsappGroup;
 
     [RelayCommand]
-    private void ShowCreateCity() => _dialogService.ShowDialog<Cities.Create.CreateCityView>();
+    private void ShowCreateCity() => DialogService.Instance.ShowDialog<Cities.Create.CreateCityView>();
 
     public virtual async Task LoadAsync()
     {
@@ -107,7 +104,7 @@ public abstract partial class EditSupplierViewModelBase : EditorViewModelBase
     private void CloseEdit() => OnRequestClose();
 
     [RelayCommand]
-    private void ShowCreateWhatsappGroup() => _dialogService.ShowDialog<Features.WhatsappGroups.Create.View>();
+    private void ShowCreateWhatsappGroup() => DialogService.Instance.ShowDialog<Features.WhatsappGroups.Create.View>();
 
 
     public override string Title => "انشاء مورد جديد";

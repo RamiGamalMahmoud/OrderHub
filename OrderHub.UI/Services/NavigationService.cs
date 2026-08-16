@@ -1,16 +1,23 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
-using OrderHub.UI.Interfaces;
 using System;
 
 namespace OrderHub.UI.Services;
 
-public class NavigationService : ObservableObject, INavigationService
+public class NavigationService : ObservableObject
 {
     private readonly IServiceProvider _serviceProvider;
     private object _currentView = null;
+
+    public static NavigationService Instance { get; private set; }
+
+    public static void Init(IServiceProvider serviceProvider)
+    {
+        if (Instance == null)
+            Instance = new NavigationService(serviceProvider);
+    }
     
-    public NavigationService(IServiceProvider serviceProvider)
+    private NavigationService(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
     }
@@ -19,7 +26,7 @@ public class NavigationService : ObservableObject, INavigationService
     {
         TView view = _serviceProvider.GetRequiredService<TView>();
 
-        CurrentView = _serviceProvider.GetRequiredService<TView>(); ;
+        CurrentView = view;
         return view;
     }
 

@@ -10,7 +10,6 @@ using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
 using OrderHub.UI.Features.Orders.Editor;
-using OrderHub.UI.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,15 +26,11 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
 
     public ViewModel(
         IMediator mediator,
-        IMessenger messenger,
-        IDialogService dialogService,
         IProductStore productStore,
         ILookupService lookupService,
         IDraftService draftService)
         : base(
             mediator,
-            dialogService,
-            messenger,
             productStore,
             lookupService)
     {
@@ -109,7 +104,7 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
 
         await _draftService.DeleteAsync(_draftContext);
 
-        _messenger.Send(
+        WeakReferenceMessenger.Default.Send(
             new Messages.DraftDeletedMessage(_draftContext.Id));
 
         await HandleOrderSuccess(result.Value);
@@ -297,7 +292,7 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
             _draftContext,
             data);
 
-        _messenger.Send(
+        WeakReferenceMessenger.Default.Send(
             new Messages.DraftSavedMessage(
                 _draftContext.Id));
     }
@@ -353,7 +348,7 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
 
     private async Task HandleOrderSuccess(int orderId)
     {
-        _messenger.Send(
+        WeakReferenceMessenger.Default.Send(
             new Application.Messages.Orders.OrderCreatedMessage());
 
         await PublishSuccessNotification(

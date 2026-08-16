@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
-using OrderHub.UI.Interfaces;
+using OrderHub.UI.Services;
 using System;
 using System.Collections.ObjectModel;
 
@@ -9,18 +9,15 @@ namespace OrderHub.UI.Features.Settings.Home;
 
 public partial class SettingsHomeViewModel : ObservableObject
 {
-    private readonly INavigationService _navigationService;
+    public ObservableCollection<SettingsItemViewModel> Items { get; private set; } = [];
 
-    public ObservableCollection<SettingsItemViewModel> Items { get; private set; } = new ObservableCollection<SettingsItemViewModel>();
-
-    public SettingsHomeViewModel(INavigationService navigationService)
+    public SettingsHomeViewModel()
     {
-        _navigationService = navigationService;
-        Items.Add( new SettingsItemViewModel(
-            MaterialIconKind.PropertyTag, 
-            "خصائص المنتجات", 
+        Items.Add(new SettingsItemViewModel(
+            MaterialIconKind.PropertyTag,
+            "خصائص المنتجات",
             "عرض و تعديل خصائص المنتجات", () =>
-            _navigationService.NavigateTo<Features.Settings.Properties.PropertiesView>()));
+            NavigationService.Instance.NavigateTo<Features.Settings.Properties.PropertiesView>()));
     }
 }
 

@@ -1,5 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Notification.Wpf;
 using OrderHub.Application;
 using OrderHub.Application.Interfaces.Services;
@@ -18,9 +17,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<INotifier, Services.Notifier>();
         services.AddSingleton<IAppState, Services.AppState>();
         services.AddSingleton<Services.StartupProgress>();
-        services.AddSingleton<Interfaces.INavigationService, Services.NavigationService>();
-        services.AddSingleton<Interfaces.IDialogService, Services.DialogService>();
-        services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
         services.AddSingleton<INotificationService, Services.NotificationService>();
         services.AddSingleton<Properties.Settings>();
 

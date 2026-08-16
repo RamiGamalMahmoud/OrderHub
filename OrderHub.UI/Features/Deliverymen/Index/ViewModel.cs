@@ -14,18 +14,16 @@ namespace OrderHub.UI.Features.Deliverymen.Index;
 public partial class ViewModel : IndexViewModelBase<DeliverymanListDto>
 {
     private readonly ISelectionStore<IDeliverymanMarker, int> _selectionStore;
-    private readonly IDialogService _dialogService;
     private IEnumerable<DeliverymanListDto> _deliverymen;
     private List<DeliverymanListDto> _allDeliverymen = [];
 
-    public ViewModel(IMessenger messenger, IMediator mediator, ISelectionStore<IDeliverymanMarker, int> selectionStore, IDialogService dialogService) : base(mediator,messenger)
+    public ViewModel(IMediator mediator, ISelectionStore<IDeliverymanMarker, int> selectionStore) : base(mediator)
     {
         _selectionStore = selectionStore;
-        _dialogService = dialogService;
 
-        _messenger.Register<Application.Messages.Deliveryman.DeliverymanCreatedMessage>(this, async (r, m) => await ReloadAsync());
-        _messenger.Register<Application.Messages.Deliveryman.DeleverymanUpdateMessage>(this, async (r, m) => await ReloadAsync());
-        _messenger.Register<Application.Messages.Deliveryman.DeliverymanDeletedMessage>(this, async (r, m) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.Deliveryman.DeliverymanCreatedMessage>(this, async (r, m) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.Deliveryman.DeleverymanUpdateMessage>(this, async (r, m) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.Deliveryman.DeliverymanDeletedMessage>(this, async (r, m) => await ReloadAsync());
     }
 
     protected override async Task LoadAsync()
@@ -42,7 +40,7 @@ public partial class ViewModel : IndexViewModelBase<DeliverymanListDto>
 
     protected override async Task DeleteAsync(DeliverymanListDto deliveryman)
     {
-        if (_dialogService.Confirm($"هل تريد حذف المندوب ({deliveryman.Name})؟") is not true)
+        if (DialogService.Instance.Confirm($"هل تريد حذف المندوب ({deliveryman.Name})؟") is not true)
         {
             return;
         }
@@ -51,7 +49,7 @@ public partial class ViewModel : IndexViewModelBase<DeliverymanListDto>
         if (result.IsSuccess)
         {
             await _mediator.Publish(new Application.Notifications.SuccessNotification("تم حذف المندوب بنجاح."));
-            _messenger.Send(new Application.Messages.Deliveryman.DeliverymanDeletedMessage());
+            WeakReferenceMessenger.Default.Send(new Application.Messages.Deliveryman.DeliverymanDeletedMessage());
         }
         else
         {
@@ -62,13 +60,13 @@ public partial class ViewModel : IndexViewModelBase<DeliverymanListDto>
     protected override Task ShowEditAsync(DeliverymanListDto deliveryman)
     {
         _selectionStore.Id = deliveryman.Id;
-        _dialogService.ShowDialog<Edit.View>();
+        DialogService.Instance.ShowDialog<Edit.View>();
         return Task.CompletedTask;
     }
 
     protected override Task ShowCreateAsync()
     {
-        _dialogService.ShowDialog<Create.View>();
+        DialogService.Instance.ShowDialog<Create.View>();
         return Task.CompletedTask;
     }
 

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OrderHub.Application.Interfaces.Services;
+using OrderHub.UI.Services;
 using OrderHub.UI.StartUpSteps;
 using System;
 using System.Globalization;
@@ -27,6 +28,8 @@ public partial class App : System.Windows.Application
             .Build();
 
         RegisterGlobalExceptionHandlers();
+        DialogService.Init(_host.Services);
+        NavigationService.Init(_host.Services);
     }
 
     protected override void OnStartup(StartupEventArgs e)

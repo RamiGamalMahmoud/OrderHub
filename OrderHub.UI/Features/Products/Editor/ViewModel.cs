@@ -4,7 +4,6 @@ using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Common.Extensions;
 using OrderHub.Application.Common.Lookups;
-using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
 using System;
 using System.Collections.Generic;
@@ -20,12 +19,10 @@ namespace OrderHub.UI.Features.Products.Editor;
 public abstract partial class ViewModel : EditorViewModelBase
 {
     protected readonly IMediator _mediator;
-    protected readonly IMessenger _messenger;
 
-    protected ViewModel(IMediator mediator, IMessenger messenger)
+    protected ViewModel(IMediator mediator)
     {
         _mediator = mediator;
-        _messenger = messenger;
         _notifyPropertiesNames = [nameof(Name), nameof(SelectedCategory), nameof(PriceText), nameof(Code)];
         ValidateAllProperties();
         RegisterMessages();
@@ -34,10 +31,10 @@ public abstract partial class ViewModel : EditorViewModelBase
 
     private void RegisterMessages()
     {
-        _messenger.Register<Application.Messages.Categories.CategoryCreatedMessage>(this, async (_, _) => await RefreshCategoriesAsync());
-        _messenger.Register<Application.Messages.Categories.CategoryUpdatedMessage>(this, async (_, _) => await RefreshCategoriesAsync());
-        _messenger.Register<Application.Messages.Suppliers.SupplierCreatedMessage>(this, async (_, _) => await RefreshSuppliersAsync());
-        _messenger.Register<Application.Messages.Suppliers.SupplierUpdatedMessage>(this, async (_, _) => await RefreshSuppliersAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.Categories.CategoryCreatedMessage>(this, async (_, _) => await RefreshCategoriesAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.Categories.CategoryUpdatedMessage>(this, async (_, _) => await RefreshCategoriesAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.Suppliers.SupplierCreatedMessage>(this, async (_, _) => await RefreshSuppliersAsync());
+        WeakReferenceMessenger.Default.Register<Application.Messages.Suppliers.SupplierUpdatedMessage>(this, async (_, _) => await RefreshSuppliersAsync());
     }
 
     public virtual async Task LoadDataAsync()
