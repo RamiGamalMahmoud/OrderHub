@@ -10,17 +10,15 @@ namespace OrderHub.UI.Features.Settings.Properties.PropertyEditor;
 public sealed partial class UpdatePropertyViewModel : PropertyEditorViewModelBase
 {
     private readonly IMediator _mediator;
-    private readonly IMessenger _messenger;
 
     private int _propertyId;
 
     public UpdatePropertyViewModel(
         IMediator mediator,
         IMessenger messenger,
-        int propertyId)
+        int propertyId) : base(messenger)
     {
         _mediator = mediator;
-        _messenger = messenger;
         _propertyId = propertyId;
         Mode = Mode.Update;
     }
@@ -59,7 +57,7 @@ public sealed partial class UpdatePropertyViewModel : PropertyEditorViewModelBas
 
         await _mediator.Send(command);
 
-        //_messenger.Send(new PropertyUpdatedMessage(_propertyId));
+        await base.Save();
     }
 
     protected override void Cancel()

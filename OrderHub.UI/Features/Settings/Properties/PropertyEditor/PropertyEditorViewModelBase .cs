@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Domain.Enums;
 using System;
@@ -12,7 +13,7 @@ namespace OrderHub.UI.Features.Settings.Properties.PropertyEditor;
 
 public abstract partial class PropertyEditorViewModelBase : ObservableValidator
 {
-    protected PropertyEditorViewModelBase()
+    protected PropertyEditorViewModelBase(IMessenger messenger)
     {
         PropertyTypes = new ObservableCollection<EnumItem<PropertyType>>(EnumItems.For<PropertyType>());
 
@@ -24,6 +25,7 @@ public abstract partial class PropertyEditorViewModelBase : ObservableValidator
         };
 
         ValidateAllProperties();
+        _messenger = messenger;
     }
 
     public Mode Mode { get; protected set; }
@@ -52,11 +54,15 @@ public abstract partial class PropertyEditorViewModelBase : ObservableValidator
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddOptionCommand))]
     private string _newOptionValue;
+    protected readonly IMessenger _messenger;
 
     public ObservableCollection<OptionViewModel> Options { get; } = [];
 
     partial void OnSelectedPropertyTypeChanged(EnumItem<PropertyType> value)
     {
+        if (value is null)
+            return;
+
         if (value.Value != PropertyType.List)
             Options.Clear();
 
@@ -111,11 +117,21 @@ public abstract partial class PropertyEditorViewModelBase : ObservableValidator
     [RelayCommand(CanExecute = nameof(CanSave))]
     protected virtual Task Save()
     {
+        _messenger.Send(new PropertyMessage());
+        Clear();
         return Task.CompletedTask;
     }
 
     [RelayCommand]
     protected virtual void Cancel()
     {
+    }
+
+    private void Clear()
+    {
+        Name = string.Empty;
+        SelectedPropertyType = null;
+        Options.Clear();
+        Description = string.Empty;
     }
 }

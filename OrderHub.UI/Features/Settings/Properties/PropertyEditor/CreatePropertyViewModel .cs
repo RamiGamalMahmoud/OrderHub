@@ -9,14 +9,12 @@ namespace OrderHub.UI.Features.Settings.Properties.PropertyEditor;
 public sealed partial class CreatePropertyViewModel : PropertyEditorViewModelBase
 {
     private readonly IMediator _mediator;
-    private readonly IMessenger _messenger;
 
     public CreatePropertyViewModel(
         IMediator mediator,
-        IMessenger messenger)
+        IMessenger messenger) : base(messenger)
     {
         _mediator = mediator;
-        _messenger = messenger;
         Mode = Mode.Create;
     }
 
@@ -32,7 +30,7 @@ public sealed partial class CreatePropertyViewModel : PropertyEditorViewModelBas
 
         var id = await _mediator.Send(command);
 
-        //_messenger.Send(new PropertyCreatedMessage(id));
+        await base.Save();
     }
 
     protected override void Cancel()

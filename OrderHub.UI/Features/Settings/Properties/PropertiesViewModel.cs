@@ -35,7 +35,7 @@ public partial class PropertiesViewModel : ObservableObject
             PropertyEditorViewModel = null;
             return;
         }
-        PropertyEditorViewModel = new ReadOnlyPropertyViewModel(_mediator, value.Id);
+        PropertyEditorViewModel = new ReadOnlyPropertyViewModel(_mediator, value.Id, _messenger);
         _ = (PropertyEditorViewModel as ReadOnlyPropertyViewModel).LoadAsync();
     }
 
@@ -48,6 +48,11 @@ public partial class PropertiesViewModel : ObservableObject
         _mediator = mediator;
         _messenger = messenger;
         _notificationService = notificationService;
+
+        _messenger.Register<PropertyMessage>(this, async (r, m) =>
+        {
+            await LoadAsync();
+        });
     }
 
     public async Task LoadAsync()
