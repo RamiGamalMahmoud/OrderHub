@@ -13,13 +13,11 @@ namespace OrderHub.Infrastructure.CommandHandlers.OutboxMessages;
 
 internal class ResendOutboxMessageCommandHandler(
     AppDbContextFactory appDbContextFactory,
-    IMessageService messageService,
-    IMessenger messenger)
+    IMessageService messageService)
     : IRequestHandler<ResendOutboxMessageCommand, Result>
 {
     private readonly AppDbContextFactory _appDbContextFactory = appDbContextFactory;
     private readonly IMessageService _messageService = messageService;
-    private readonly IMessenger _messenger = messenger;
 
     public async Task<Result> Handle(ResendOutboxMessageCommand request, CancellationToken cancellationToken)
     {
@@ -42,7 +40,7 @@ internal class ResendOutboxMessageCommandHandler(
         await appDbContext.SaveChangesAsync(cancellationToken);
 
         _messageService.QueueMessage(message);
-        _messenger.Send(new Application.Messages.OutboxMessages.MessageStatusChangedMessage(
+        WeakReferenceMessenger.Default.Send(new Application.Messages.OutboxMessages.MessageStatusChangedMessage(
             message.Id,
             message.Status,
             message.OrderId,

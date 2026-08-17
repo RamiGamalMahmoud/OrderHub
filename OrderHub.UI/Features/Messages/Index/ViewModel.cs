@@ -21,6 +21,13 @@ public partial class ViewModel : ObservableObject
     private List<OutboxMessageViewModel> _allOutboxMessages = [];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelectedMessage))]
+    [NotifyCanExecuteChangedFor(nameof(ResendMessageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DeleteMessageCommand))]
+    private OutboxMessageViewModel _selectedMessage;
+    public bool HasSelectedMessage => SelectedMessage is not null;
+
+    [ObservableProperty]
     private ObservableCollection<MessageSummaryItemViewModel> _statusSummaries = [];
 
     public ViewModel(IMediator mediator)
@@ -165,7 +172,7 @@ public partial class ViewModel : ObservableObject
         System.Windows.Application.Current.Dispatcher.InvokeAsync(() => StatusSummaries = statusSummaries);
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasSelectedMessage))]
     private async Task ResendMessage(OutboxMessageViewModel message)
     {
         if(!DialogService.Instance.Confirm("هل أنت متأكد أنك تريد إعادة إرسال هذه الرسالة؟"))
@@ -184,7 +191,7 @@ public partial class ViewModel : ObservableObject
         await _mediator.Publish(new Application.Notifications.SuccessNotification("تمت إعادة جدولة الرسالة للإرسال."));
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasSelectedMessage))]
     private async Task DeleteMessage(OutboxMessageViewModel message)
     {
         if(!DialogService.Instance.Confirm("هل أنت متأكد أنك تريد حذف هذه الرسالة؟"))
@@ -297,7 +304,7 @@ public partial class OutboxMessageViewModel : ObservableObject
     public string RecipientName { get; init; }
     public EnumItem<RecipientType> RecipientType { get; init; }
     public string Text { get; init; }
-    public string Title => Text?.Split("\n").FirstOrDefault() ?? string.Empty;
+    public string Title => $"{RecipientName} - {Text?.Split("\n").FirstOrDefault() ?? string.Empty}";
     public string PhoneNumber { get; init; }
     public DateTime CreatedAt { get; init; }
 }

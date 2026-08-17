@@ -4,66 +4,172 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:hc="https://handyorg.github.io/handycontrol"
+    xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    FlowDirection="RightToLeft"
     mc:Ignorable="d">
 
-    <StackPanel Orientation="Horizontal">
+    <Grid>
 
+        <Grid.ColumnDefinitions>
+
+            <!--  الحالة  -->
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="160" />
+
+            <ColumnDefinition Width="18" />
+
+            <!--  من  -->
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="140" />
+
+            <ColumnDefinition Width="18" />
+
+            <!--  إلى  -->
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="140" />
+
+            <ColumnDefinition Width="18" />
+
+            <!--  الفترات السريعة  -->
+            <ColumnDefinition Width="Auto" />
+
+        </Grid.ColumnDefinitions>
+
+
+        <!--
+        =========================================================
+        الحالة
+        =========================================================
+        -->
 
         <TextBlock
+            Grid.Column="0"
             Margin="0,0,8,0"
             VerticalAlignment="Center"
-            FontWeight="DemiBold"
+            FontSize="11"
+            Foreground="#64748B"
             Text="الحالة" />
+
         <ComboBox
-            Width="160"
-            Margin="0,0,12,0"
-            VerticalAlignment="Center"
+            Grid.Column="1"
+            Height="34"
+            Padding="8,0"
+            VerticalContentAlignment="Center"
             Cursor="Hand"
             DisplayMemberPath="DisplayName"
             ItemsSource="{Binding StatusFilters}"
             SelectedItem="{Binding SelectedStatusFilter}" />
 
+
+        <!--
+        =========================================================
+        من
+        =========================================================
+        -->
+
         <TextBlock
+            Grid.Column="3"
             Margin="0,0,8,0"
             VerticalAlignment="Center"
-            FontWeight="DemiBold"
+            FontSize="11"
+            Foreground="#64748B"
             Text="من" />
+
         <DatePicker
-            Width="140"
-            Margin="0,0,12,0"
-            VerticalAlignment="Center"
+            Grid.Column="4"
+            Height="34"
+            Padding="7,0"
+            VerticalContentAlignment="Center"
             Cursor="Hand"
             SelectedDate="{Binding FromDate}" />
 
+
+        <!--
+        =========================================================
+        إلى
+        =========================================================
+        -->
+
         <TextBlock
+            Grid.Column="6"
             Margin="0,0,8,0"
             VerticalAlignment="Center"
-            FontWeight="DemiBold"
+            FontSize="11"
+            Foreground="#64748B"
             Text="إلى" />
+
         <DatePicker
-            Width="140"
-            Margin="0,0,12,0"
-            VerticalAlignment="Center"
+            Grid.Column="7"
+            Height="34"
+            Padding="7,0"
+            VerticalContentAlignment="Center"
             Cursor="Hand"
             SelectedDate="{Binding ToDate}" />
 
-        <Button
-            Height="auto"
-            Margin="0,0,8,0"
-            Command="{Binding SetTodayCommand}"
-            Content="اليوم"
-            Cursor="Hand" />
-        <Button
-            Height="auto"
-            Margin="0,0,8,0"
-            Command="{Binding SetCurrentWeekCommand}"
-            Content="الأسبوع الحالي"
-            Cursor="Hand" />
-        <Button
-            Height="auto"
-            Command="{Binding SetCurrentMonthCommand}"
-            Content="الشهر الحالي"
-            Cursor="Hand" />
-    </StackPanel>
+
+        <!--
+        =========================================================
+        Quick Date Filters
+        =========================================================
+        -->
+
+        <Border
+            Grid.Column="9"
+            Height="34"
+            Background="#F8FAFC"
+            BorderBrush="#E2E8F0"
+            BorderThickness="1"
+            CornerRadius="6">
+
+            <StackPanel Orientation="Horizontal">
+
+
+                <!--  اليوم  -->
+
+                <Button
+                    Height="32"
+                    Padding="12,0"
+                    hc:BorderElement.CornerRadius="5"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Command="{Binding SetTodayCommand}"
+                    Content="اليوم"
+                    Cursor="Hand"
+                    Foreground="#475569" />
+
+
+                <!--  هذا الأسبوع  -->
+
+                <Button
+                    Height="32"
+                    Padding="12,0"
+                    hc:BorderElement.CornerRadius="5"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Command="{Binding SetCurrentWeekCommand}"
+                    Content="هذا الأسبوع"
+                    Cursor="Hand"
+                    Foreground="#475569" />
+
+
+                <!--  هذا الشهر  -->
+
+                <Button
+                    Height="32"
+                    Padding="12,0"
+                    hc:BorderElement.CornerRadius="5"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Command="{Binding SetCurrentMonthCommand}"
+                    Content="هذا الشهر"
+                    Cursor="Hand"
+                    Foreground="#475569" />
+
+            </StackPanel>
+
+        </Border>
+
+    </Grid>
+
 </UserControl>
