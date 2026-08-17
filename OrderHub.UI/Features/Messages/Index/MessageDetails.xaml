@@ -436,8 +436,7 @@
                         CommandParameter="{Binding SelectedMessage}"
                         Cursor="Hand"
                         FontSize="11"
-                        Foreground="White"
-                        IsEnabled="{Binding SelectedMessage.CanResend}">
+                        Foreground="White">
 
                         <StackPanel
                             HorizontalAlignment="Center"

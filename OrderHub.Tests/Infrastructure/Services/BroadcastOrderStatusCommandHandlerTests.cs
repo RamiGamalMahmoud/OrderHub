@@ -1,6 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
-using FluentAssertions;
-using Moq;
+﻿using FluentAssertions;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
@@ -102,8 +100,7 @@ public class BroadcastOrderStatusCommandHandlerTests
             dbContext.Orders.Add(order);
             await dbContext.SaveChangesAsync();
 
-            Mock<IMessenger> mock = new Mock<IMessenger>();
-            BroadcastOrderStatusCommandHandler handler = new BroadcastOrderStatusCommandHandler(dbContextFactory, mock.Object);
+            BroadcastOrderStatusCommandHandler handler = new BroadcastOrderStatusCommandHandler(dbContextFactory);
 
             BroadcastOrderStatusCommand command = new BroadcastOrderStatusCommand(order.Id);
 
