@@ -14,7 +14,7 @@ using static OrderHub.Application.Commands.OrderCommands;
 
 namespace OrderHub.Infrastructure.CommandHandlers.Orders
 {
-    internal class BroadcastOrderStatusCommandHandler(AppDbContextFactory appDbContextFactory, IMessenger messenger) : IRequestHandler<BroadcastOrderStatusCommand, Result>
+    internal class BroadcastOrderStatusCommandHandler(AppDbContextFactory appDbContextFactory) : IRequestHandler<BroadcastOrderStatusCommand, Result>
     {
         private readonly AppDbContextFactory _appDbContextFactory = appDbContextFactory;
 
@@ -77,7 +77,7 @@ namespace OrderHub.Infrastructure.CommandHandlers.Orders
             try
             {
                 await appDbContext.SaveChangesAsync(cancellationToken);
-                messenger.Send(new Application.Messages.Orders.MessagesCreatedMessage(outboxMessages));
+                WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.MessagesCreatedMessage(outboxMessages));
                 return Result.Success();
             }
             catch (Exception)
