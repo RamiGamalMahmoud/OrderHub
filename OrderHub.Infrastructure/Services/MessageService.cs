@@ -124,12 +124,14 @@ internal class MessageService : IMessageService
         {
             return Task.FromResult(false);
         }
-
+        List<MessageAttachment> attachments =
+        [
+        ];
         return message.RecipientType switch
         {
             RecipientType.Supplier or RecipientType.Deliveryman
-                => _messageSender.SendToGroupAsync(message.Recipient.PhoneNumber, message.Text),
-            _ => _messageSender.SendToPhoneAsync(message.Recipient.PhoneNumber, message.Text)
+                => _messageSender.SendToGroupAsync(message.Recipient.PhoneNumber, new MessageToSend(message.Text, attachments)),
+            _ => _messageSender.SendToPhoneAsync(message.Recipient.PhoneNumber, new MessageToSend(message.Text, attachments))
         };
     }
 
