@@ -4,6 +4,6 @@ namespace OrderHub.Application.Interfaces.Services;
 
 public interface IMessageSender
 {
-    Task<bool> SendToPhoneAsync(string phoneNumber, string message);
-    Task<bool> SendToGroupAsync(string groupLink, string message);
+    Task<bool> SendToPhoneAsync(string destination, MessageToSend message);
+    Task<bool> SendToGroupAsync(string destination, MessageToSend message);
 }
