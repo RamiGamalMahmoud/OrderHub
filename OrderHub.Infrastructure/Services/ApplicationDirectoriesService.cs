@@ -16,7 +16,7 @@ internal class ApplicationDirectoriesService : IApplicationDirectoriesService
 #else
         Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            AppName);
+            _appName);
 #endif
 
     public string StorageDirectory => Path.Combine(AppDirectory, "Storage");
