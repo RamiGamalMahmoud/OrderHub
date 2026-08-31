@@ -64,7 +64,7 @@ public partial class OutboxMessageViewModel : ObservableObject
 
         foreach (var attachment in attachments)
         {
-            if (!string.IsNullOrEmpty(attachment.Key))
+            if (!string.IsNullOrEmpty(attachment.Key) && !Attachments.Any(x => x.FilePath == attachment.Key))
                 Attachments.Add(new MessageAttachmentItem(attachment.Key, attachment.Value));
         }
     }
@@ -76,7 +76,7 @@ public partial class OutboxMessageViewModel : ObservableObject
 
         foreach (string attachment in attachments)
         {
-            if (!string.IsNullOrEmpty(attachment))
+            if (!Attachments.Any(x => x.FilePath == attachment))
                 Attachments.Add(new MessageAttachmentItem(attachment));
         }
     }

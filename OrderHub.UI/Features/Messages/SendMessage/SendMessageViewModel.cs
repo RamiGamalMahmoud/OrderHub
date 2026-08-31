@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
+using OpenQA.Selenium.DevTools.V145.Autofill;
 using OrderHub.Application.Common.Extensions;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Interfaces;
@@ -59,12 +60,17 @@ public partial class SendMessageViewModel : ObservableObject, IParameterizedView
 
         if (openFileDialog.ShowDialog() == true)
         {
-            foreach (var filePath in openFileDialog.FileNames)
+            AddFiles(openFileDialog.FileNames);
+        }
+    }
+
+    public void AddFiles(IEnumerable<string> pathes)
+    {
+        foreach (var filePath in pathes)
+        {
+            if (!AttachedFiles.Any(f => f.FilePath == filePath))
             {
-                if (!AttachedFiles.Any(f => f.FilePath == filePath))
-                {
-                    AttachedFiles.Add(new MessageAttachmentItem(filePath));
-                }
+                AttachedFiles.Add(new MessageAttachmentItem(filePath));
             }
         }
     }
