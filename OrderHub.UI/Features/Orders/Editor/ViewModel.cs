@@ -33,6 +33,13 @@ internal abstract partial class ViewModel : EditorViewModelBase
 
     public abstract string ActionName { get; }
 
+    private bool _isDocumentingReady;
+    public bool IsDocumentingReady
+    {
+        get => _isDocumentingReady;
+        protected set => SetProperty(ref _isDocumentingReady, value);
+    }
+
     public override bool CanSave =>
         base.CanSave &&
         !PartyPanel.HasErrors &&

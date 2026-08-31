@@ -154,19 +154,57 @@
 
                             <!--  Status  -->
 
-                            <Border
+                            <Label
                                 Grid.Column="2"
+                                Height="auto"
                                 Padding="9,4"
-                                Background="#D9F7E9"
-                                CornerRadius="5">
+                                BorderThickness="0"
+                                Content="{Binding Status.DisplayName}"
+                                FontWeight="SemiBold">
+                                <Label.Style>
 
-                                <TextBlock
-                                    FontSize="10"
-                                    FontWeight="SemiBold"
-                                    Foreground="#00A878"
-                                    Text="{Binding Status.DisplayName}" />
+                                    <Style BasedOn="{StaticResource LabelDefault}" TargetType="Label">
 
-                            </Border>
+                                        <Style.Triggers>
+
+                                            <DataTrigger Binding="{Binding Status.Value}" Value="{x:Static enums:OutboxMessageStatus.Sending}">
+
+                                                <Setter Property="Background" Value="{StaticResource LightBlueBrush}" />
+
+                                                <Setter Property="Foreground" Value="{StaticResource Primary}" />
+
+                                            </DataTrigger>
+
+                                            <DataTrigger Binding="{Binding Status.Value}" Value="{x:Static enums:OutboxMessageStatus.Pending}">
+
+                                                <Setter Property="Background" Value="#FEF3C7" />
+
+                                                <Setter Property="Foreground" Value="#D97706" />
+
+                                            </DataTrigger>
+
+                                            <DataTrigger Binding="{Binding Status.Value}" Value="{x:Static enums:OutboxMessageStatus.Sent}">
+
+                                                <Setter Property="Background" Value="#DCFCE7" />
+
+                                                <Setter Property="Foreground" Value="#16A34A" />
+
+                                            </DataTrigger>
+
+                                            <DataTrigger Binding="{Binding Status.Value}" Value="{x:Static enums:OutboxMessageStatus.Failed}">
+
+                                                <Setter Property="Background" Value="#FEE2E2" />
+
+                                                <Setter Property="Foreground" Value="#DC2626" />
+
+                                            </DataTrigger>
+
+                                        </Style.Triggers>
+
+                                    </Style>
+
+                                </Label.Style>
+                            </Label>
 
 
                             <!--  WhatsApp  -->
@@ -373,6 +411,214 @@
 
                         </Border>
 
+                        <!--
+                        =================================================
+                        Notes
+                        =================================================
+                        -->
+
+                        <Border
+                            Margin="0,12,0,0"
+                            Padding="10"
+                            Background="White"
+                            BorderBrush="#E5E7EB"
+                            BorderThickness="1"
+                            CornerRadius="6">
+
+                            <Grid>
+
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+
+                                <!--  Header  -->
+                                <Grid>
+
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+
+                                        <icons:MaterialIcon
+                                            Width="18"
+                                            Height="18"
+                                            Foreground="{StaticResource Primary}"
+                                            Kind="NoteText" />
+
+                                        <TextBlock
+                                            Margin="7,0,0,0"
+                                            VerticalAlignment="Center"
+                                            FontSize="13"
+                                            FontWeight="SemiBold"
+                                            Foreground="#374151"
+                                            Text="ملاحظات" />
+
+                                        <Border
+                                            Margin="6,0,0,0"
+                                            Padding="6,2"
+                                            Background="#EFF6FF"
+                                            CornerRadius="10">
+
+                                            <TextBlock
+                                                FontSize="11"
+                                                Foreground="#2563EB"
+                                                Text="{Binding NotesCount}" />
+
+                                        </Border>
+
+                                    </StackPanel>
+
+                                </Grid>
+
+                                <!--  Add Note Area  -->
+                                <Border
+                                    Grid.Row="1"
+                                    Margin="0,10,0,0"
+                                    Padding="8"
+                                    Background="#FAFAFA"
+                                    BorderBrush="#D1D5DB"
+                                    BorderThickness="1"
+                                    CornerRadius="5">
+
+                                    <Grid>
+
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+
+                                        <!--  Note Input  -->
+                                        <TextBox
+                                            Name="NoteTextBox"
+                                            MinHeight="34"
+                                            MaxHeight="80"
+                                            Padding="8,6"
+                                            VerticalContentAlignment="Center"
+                                            AcceptsReturn="True"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            FontSize="12"
+                                            Foreground="#374151"
+                                            Text="{Binding NewNoteText, UpdateSourceTrigger=PropertyChanged}"
+                                            TextWrapping="Wrap"
+                                            ToolTip="اكتب ملاحظة..."
+                                            VerticalScrollBarVisibility="Auto" />
+
+
+                                        <!--  Add Button  -->
+                                        <Button
+                                            Grid.Column="1"
+                                            Width="32"
+                                            Height="32"
+                                            Padding="0"
+                                            Background="#EFF6FF"
+                                            BorderThickness="0"
+                                            Command="{Binding AddNoteCommand}"
+                                            Cursor="Hand"
+                                            ToolTip="إضافة الملاحظة">
+
+                                            <icons:MaterialIcon
+                                                Width="18"
+                                                Height="18"
+                                                Foreground="#2563EB"
+                                                Kind="Plus" />
+
+                                        </Button>
+
+                                    </Grid>
+
+                                </Border>
+
+                                <!--  Notes List  -->
+                                <StackPanel Grid.Row="2" Margin="0,10,0,0">
+
+                                    <ItemsControl ItemsSource="{Binding Notes}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border
+                                                    Margin="0,0,0,6"
+                                                    Padding="8"
+                                                    Background="#F8FAFC"
+                                                    BorderBrush="#E5E7EB"
+                                                    BorderThickness="1"
+                                                    CornerRadius="5">
+
+                                                    <Grid>
+
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+
+
+                                                        <!--  Note Icon  -->
+                                                        <Border
+                                                            Width="34"
+                                                            Height="34"
+                                                            Background="#f3e5f5"
+                                                            CornerRadius="5">
+
+                                                            <icons:MaterialIcon
+                                                                Width="18"
+                                                                Height="18"
+                                                                HorizontalAlignment="Center"
+                                                                VerticalAlignment="Center"
+                                                                Foreground="#4a148c"
+                                                                Kind="NoteText" />
+
+                                                        </Border>
+
+
+                                                        <!--  Note Content  -->
+                                                        <TextBlock
+                                                            Grid.Column="1"
+                                                            Margin="8,0"
+                                                            VerticalAlignment="Center"
+                                                            FontSize="12"
+                                                            Foreground="#374151"
+                                                            Text="{Binding}"
+                                                            TextWrapping="Wrap" />
+
+
+                                                        <!--  Delete  -->
+                                                        <Button
+                                                            Grid.Column="2"
+                                                            Width="26"
+                                                            Height="26"
+                                                            Padding="0"
+                                                            Background="Transparent"
+                                                            BorderThickness="0"
+                                                            Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.SelectedMessage.RemoveNoteCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            ToolTip="حذف">
+
+                                                            <icons:MaterialIcon
+                                                                Width="16"
+                                                                Height="16"
+                                                                Foreground="#EF4444"
+                                                                Kind="DeleteOutline" />
+
+                                                        </Button>
+
+                                                    </Grid>
+
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                </StackPanel>
+
+                            </Grid>
+
+                        </Border>
 
                         <!--
                         =================================================
@@ -380,13 +626,193 @@
                         =================================================
                         -->
 
-                        <TextBlock
-                            Margin="0,13,0,7"
-                            HorizontalAlignment="Right"
-                            FontSize="11"
-                            FontWeight="SemiBold"
-                            Foreground="#475569"
-                            Text="الوسائط المرفقة (1)" />
+                        <Border
+                            Margin="0,12,0,0"
+                            Padding="10"
+                            Background="White"
+                            BorderBrush="#E5E7EB"
+                            BorderThickness="1"
+                            CornerRadius="6">
+
+                            <Grid>
+
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <!--  Header  -->
+                                <Grid>
+
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+
+                                        <icons:MaterialIcon
+                                            Width="18"
+                                            Height="18"
+                                            Foreground="#64748B"
+                                            Kind="AttachFile" />
+
+                                        <TextBlock
+                                            Margin="7,0,0,0"
+                                            VerticalAlignment="Center"
+                                            FontSize="13"
+                                            FontWeight="SemiBold"
+                                            Foreground="#374151"
+                                            Text="المرفقات" />
+
+                                        <Border
+                                            Margin="6,0,0,0"
+                                            Padding="6,2"
+                                            Background="#EFF6FF"
+                                            CornerRadius="10">
+
+                                            <TextBlock
+                                                FontSize="11"
+                                                Foreground="#2563EB"
+                                                Text="{Binding AttachmentsCount}" />
+
+                                        </Border>
+
+                                    </StackPanel>
+
+                                </Grid>
+
+
+                                <!--  Attachments List  -->
+                                <StackPanel Grid.Row="2" Margin="0,10,0,0">
+
+                                    <ItemsControl ItemsSource="{Binding Attachments}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border
+                                                    Margin="0,0,0,6"
+                                                    Padding="8"
+                                                    Background="#F8FAFC"
+                                                    BorderBrush="#E5E7EB"
+                                                    BorderThickness="1"
+                                                    CornerRadius="5">
+
+                                                    <Grid>
+
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+
+
+                                                        <!--  File Icon  -->
+                                                        <Border
+                                                            Width="34"
+                                                            Height="34"
+                                                            Background="{Binding IconBackgroundColor}"
+                                                            CornerRadius="5">
+
+                                                            <icons:MaterialIcon
+                                                                Width="19"
+                                                                Height="19"
+                                                                HorizontalAlignment="Center"
+                                                                VerticalAlignment="Center"
+                                                                Foreground="{Binding IconColor}"
+                                                                Kind="{Binding Icon}" />
+
+                                                        </Border>
+
+
+                                                        <!--  File Info  -->
+                                                        <StackPanel
+                                                            Grid.Column="1"
+                                                            Margin="8,0"
+                                                            VerticalAlignment="Center">
+
+                                                            <TextBlock
+                                                                FontSize="12"
+                                                                FontWeight="SemiBold"
+                                                                Foreground="#374151"
+                                                                Text="{Binding Name}"
+                                                                TextTrimming="CharacterEllipsis" />
+
+                                                            <TextBlock
+                                                                Margin="0,3,0,0"
+                                                                FontSize="10"
+                                                                Foreground="#9CA3AF"
+                                                                Text="{Binding Size}" />
+
+                                                        </StackPanel>
+
+
+                                                        <!--  Delete  -->
+                                                        <Button
+                                                            Grid.Column="2"
+                                                            Width="26"
+                                                            Height="26"
+                                                            Padding="0"
+                                                            Background="Transparent"
+                                                            BorderThickness="0"
+                                                            Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.SelectedMessage.RemoveAttachmentCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            ToolTip="حذف">
+
+                                                            <icons:MaterialIcon
+                                                                Width="16"
+                                                                Height="16"
+                                                                Foreground="#EF4444"
+                                                                Kind="DeleteOutline" />
+
+                                                        </Button>
+
+                                                    </Grid>
+
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                </StackPanel>
+
+
+                                <!--  Add Attachments Area  -->
+                                <Button
+                                    Grid.Row="1"
+                                    Height="auto"
+                                    Margin="0,10,0,0"
+                                    Padding="10"
+                                    HorizontalAlignment="Stretch"
+                                    Background="#FAFAFA"
+                                    BorderBrush="#D1D5DB"
+                                    BorderThickness="1"
+                                    Command="{Binding AddAttachmentsCommand}"
+                                    Cursor="Hand">
+
+                                    <StackPanel Orientation="Horizontal">
+
+                                        <icons:MaterialIcon
+                                            Width="22"
+                                            Height="22"
+                                            HorizontalAlignment="Center"
+                                            Foreground="#94A3B8"
+                                            Kind="Upload" />
+
+                                        <TextBlock
+                                            Margin="5,0,0,0"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Foreground="#64748B"
+                                            Text="إضافة مرفق" />
+
+                                    </StackPanel>
+
+                                </Button>
+
+                            </Grid>
+
+                        </Border>
 
                     </StackPanel>
 

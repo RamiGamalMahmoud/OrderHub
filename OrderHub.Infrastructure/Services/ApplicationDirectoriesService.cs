@@ -2,73 +2,72 @@
 using System;
 using System.IO;
 
-namespace OrderHub.Infrastructure.Services
+namespace OrderHub.Infrastructure.Services;
+
+internal class ApplicationDirectoriesService : IApplicationDirectoriesService
 {
-    internal class ApplicationDirectoriesService : IApplicationDirectoriesService
-    {
-        public string AppPath
-        {
-            get
-            {
+    private const string _appName = "OrderHub";
+
+    public string AppDirectory =>
 #if DEBUG
-                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OrderHub - Dev");
+        Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            $"{_appName} - Dev");
 #else
-                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OrderHub");
+        Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            AppName);
 #endif
-            }
-        }
-        public string CredentialsFilePath => Path.Combine(StoragePath, "creditals.bin");
-        public string StoragePath => Path.Combine(AppPath, "Storage");
-        public string TokenFilePath => Path.Combine(StoragePath, "token.bin");
-        public string DataPath => Path.Combine(AppPath, "Data");
-        public string DatabaseFilePath => Path.Combine(DataPath, "order_hub.db");
-        public string WhatAppProfilesPath => Path.Combine(StoragePath, "WhatAppProfiles");
-        public string DefaultWhatAppProfilePath => Path.Combine(WhatAppProfilesPath, "Default");
-        public string LogsPath => Path.Combine(StoragePath, "Logs");
 
-        public string DraftsPath => Path.Combine(AppPath, "Drafts");
+    public string StorageDirectory => Path.Combine(AppDirectory, "Storage");
 
-        public void EnsureDatabaseFileCreated()
-        {
-            if (!Directory.Exists(DataPath))
-            {
-                Directory.CreateDirectory(DataPath);
-            }
-            if (!File.Exists(DatabaseFilePath))
-            {
-                File.Copy("./Data/order_hub.db", DatabaseFilePath);
-            }
-        }
-        public void EnsureDraftsDirectoryCreated()
-        {
-            if (!Directory.Exists(DraftsPath))
-            {
-                Directory.CreateDirectory(DraftsPath);
-            }
-        }
-        public void EnsureAppDirectoryCreated()
-        {
-            if (!Directory.Exists(AppPath)) Directory.CreateDirectory(AppPath);
-        }
+    public string AttachmentsDirectory => Path.Combine(StorageDirectory, "Attachments");
 
-        public void EnsureStorageDirectoryCreated()
-        {
-            if (!Directory.Exists(StoragePath)) Directory.CreateDirectory(StoragePath);
-        }
+    public string DataDirectory => Path.Combine(AppDirectory, "Data");
 
-        public void EnsureWhatsAppProfilesDirectoryCreated()
-        {
-            if (!Directory.Exists(WhatAppProfilesPath)) Directory.CreateDirectory(WhatAppProfilesPath);
-        }
+    public string WhatsAppProfilesDirectory => Path.Combine(AppDirectory, "WhatsAppProfiles");
 
-        public void EnsureLogsDirectoryCreated()
-        {
-            if (!Directory.Exists(LogsPath)) Directory.CreateDirectory(LogsPath);
-        }
+    public string DefaultWhatsAppProfileDirectory => Path.Combine(WhatsAppProfilesDirectory, "Default");
 
-        public void EnsureDefaultWhatAppProfileDirectoryCreated()
+    public string DocumentsDirectory => Path.Combine(AppDirectory, "Documents");
+
+    public string DraftsDirectory => Path.Combine(AppDirectory, "Drafts");
+
+    public string LogsDirectory => Path.Combine(StorageDirectory, "Logs");
+
+    public string CredentialsFilePath => Path.Combine(StorageDirectory, "creditals.bin");
+
+    public string TokenFilePath => Path.Combine(StorageDirectory, "token.bin");
+
+    public string DatabaseFilePath => Path.Combine(DataDirectory, "order_hub.db");
+
+    public string InvoicesDirecoty => Path.Combine(DocumentsDirectory, "Invoices");
+    public string ProformaInvoicesDirectory => Path.Combine(DocumentsDirectory, "ProformaInvoices");
+    public string QuotationsDirectory => Path.Combine(DocumentsDirectory, "Quotations");
+
+    public void EnsureDirectoriesCreated()
+    {
+        Directory.CreateDirectory(AppDirectory);
+        Directory.CreateDirectory(StorageDirectory);
+        Directory.CreateDirectory(DataDirectory);
+        Directory.CreateDirectory(WhatsAppProfilesDirectory);
+        Directory.CreateDirectory(DefaultWhatsAppProfileDirectory);
+        Directory.CreateDirectory(DocumentsDirectory);
+        Directory.CreateDirectory(DraftsDirectory);
+        Directory.CreateDirectory(LogsDirectory);
+        Directory.CreateDirectory(AttachmentsDirectory);
+        Directory.CreateDirectory(InvoicesDirecoty);
+        Directory.CreateDirectory(ProformaInvoicesDirectory);
+        Directory.CreateDirectory(QuotationsDirectory);
+
+        if (!File.Exists(DatabaseFilePath))
         {
-            if (!Directory.Exists(DefaultWhatAppProfilePath)) Directory.CreateDirectory(DefaultWhatAppProfilePath);
+            var sourcePath = Path.Combine(
+                AppContext.BaseDirectory,
+                "Data",
+                "order_hub.db");
+
+            File.Copy(sourcePath, DatabaseFilePath);
         }
     }
 }

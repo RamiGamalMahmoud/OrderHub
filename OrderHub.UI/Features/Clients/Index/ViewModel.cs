@@ -3,8 +3,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
-using OrderHub.UI.Interfaces;
-using OrderHub.UI.Stores.Markers;
+using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,13 +13,10 @@ namespace OrderHub.UI.Features.Clients.Index;
 
 public partial class ViewModel : IndexViewModelBase<ClientListDto>
 {
-    private readonly ISelectionStore<IClientMarker, int> _selectionStore;
     private List<ClientListDto> _allClients = [];
 
-    public ViewModel(IMediator mediator, ISelectionStore<IClientMarker, int> selectionStore) : base(mediator)
+    public ViewModel(IMediator mediator) : base(mediator)
     {
-        _selectionStore = selectionStore;
-
         WeakReferenceMessenger.Default.Register<Application.Messages.Clients.ClientCreatedMessage>(this, async (r, m) => await ReloadAsync());
         WeakReferenceMessenger.Default.Register<Application.Messages.Clients.ClientUpdatedMessage>(this, async (r, m) => await ReloadAsync());
         WeakReferenceMessenger.Default.Register<Application.Messages.Clients.ClientDeletedMessage>(this, async (r, m) => await ReloadAsync());
@@ -33,13 +29,13 @@ public partial class ViewModel : IndexViewModelBase<ClientListDto>
         Result result = await _mediator.Send(new Application.Commands.ClienCommands.DeleteClientCommand(dto.Id));
         if (result.IsSuccess)
         {
-            await _mediator.Publish(new Application.Notifications.SuccessNotification("تم حذف العميل."));
+            NotificationService.Instance.ShowSuccess("تم حذف العميل.");
             WeakReferenceMessenger.Default.Send(new Application.Messages.Clients.ClientDeletedMessage(dto.Id));
         }
 
         else
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification(result.ErrorMessage));
+            NotificationService.Instance.ShowError(result.ErrorMessage);
         }
     }
 
@@ -55,17 +51,14 @@ public partial class ViewModel : IndexViewModelBase<ClientListDto>
         ApplyFilter();
     }
 
-    protected override Task ShowEditAsync(ClientListDto dto)
+    protected override async Task ShowEditAsync(ClientListDto dto)
     {
-        _selectionStore.Id = dto.Id;
-        DialogService.Instance.ShowDialog<Update.View>();
-        return Task.CompletedTask;
+        await DialogService.Instance.ShowDialog<Update.View>("تعديل بيانات عميل", dto.Id);
     }
 
-    protected override Task ShowCreateAsync()
+    protected override async Task ShowCreateAsync()
     {
-        DialogService.Instance.ShowDialog<Create.View>();
-        return Task.CompletedTask;
+        await DialogService.Instance.ShowDialog<Create.View>("إضافة عميل جديد");
     }
 
     [ObservableProperty]

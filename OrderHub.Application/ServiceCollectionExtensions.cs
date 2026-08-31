@@ -11,6 +11,7 @@ public static class ServiceCollectionExtensions
         services.AddMemoryCache();
 
         services.AddSingleton<Interfaces.Services.ISessionManager, Services.SessionManager>();
+        services.AddScoped<Interfaces.Services.IOrderEntitySequenceService, Services.OrderEntitySequenceService>();
 
         return services;
     }

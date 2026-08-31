@@ -1,32 +1,38 @@
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
-using OrderHub.UI.Interfaces;
-using OrderHub.UI.Stores.Markers;
+using OrderHub.UI.Common;
+using OrderHub.UI.Services;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.CityDtos;
 
 namespace OrderHub.UI.Features.Cities.Edit;
 
-public partial class ViewModel : Editor.ViewModelBase
+public partial class ViewModel : Editor.ViewModelBase, IParameterizedViewModel
 {
     private readonly IMediator _mediator;
-    private readonly ISelectionStore<ICityMarker, int> _selectionStore;
+    private int _cityId;
 
-    public ViewModel(IMediator mediator, ISelectionStore<ICityMarker, int> selectionStore)
+    public ViewModel(IMediator mediator)
     {
         _mediator = mediator;
-        _selectionStore = selectionStore;
     }
 
     public override string Title => "تعديل مدينة";
 
+    public Task Initialize(object parameter)
+    {
+        if (parameter is not null && parameter is int id)
+            _cityId = id;
+        return Task.CompletedTask;
+    }
+
     public async Task LoadAsync()
     {
-        CityUpdateDto city = await _mediator.Send(new Application.Queries.CityQueries.GetCityForEditQuery(_selectionStore.Id));
+        CityUpdateDto city = await _mediator.Send(new Application.Queries.CityQueries.GetCityForEditQuery(_cityId));
         if (city is null)
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification("تعذر تحميل بيانات المدينة."));
+            NotificationService.Instance.ShowError("تعذر تحميل بيانات المدينة.");
             OnRequestClose();
             return;
         }
@@ -37,15 +43,15 @@ public partial class ViewModel : Editor.ViewModelBase
 
     protected override async Task Save()
     {
-        Result result = await _mediator.Send(new Application.Commands.CityCommands.UpdateCityCommand(new CityUpdateDto(_selectionStore.Id, Name)));
+        Result result = await _mediator.Send(new Application.Commands.CityCommands.UpdateCityCommand(new CityUpdateDto(_cityId, Name)));
         if (result.IsSuccess)
         {
-            await _mediator.Publish(new Application.Notifications.SuccessNotification($"تم تحديث المدينة ({Name}) بنجاح."));
+            NotificationService.Instance.ShowSuccess($"تم تحديث المدينة ({Name}) بنجاح.");
             OnRequestClose();
             WeakReferenceMessenger.Default.Send(new Application.Messages.Cities.CityUpdatedMessage());
             return;
         }
 
-        await _mediator.Publish(new Application.Notifications.ErrorNotification(result.ErrorMessage));
+        NotificationService.Instance.ShowError(result.ErrorMessage);
     }
 }

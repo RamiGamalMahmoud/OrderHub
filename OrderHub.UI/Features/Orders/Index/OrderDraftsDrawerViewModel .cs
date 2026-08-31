@@ -89,8 +89,8 @@ internal partial class OrderDraftsDrawerViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void OpenDraft(OrderDraftSummary draft)
+    private async Task OpenDraft(OrderDraftSummary draft)
     {
-        DialogService.Instance.ShowDialog<Features.Orders.Create.View>(draft.Id);
+        await DialogService.Instance.ShowDialog<Features.Orders.Create.View>("متابعة إكمال طلب ", draft.Id);
     }
 }

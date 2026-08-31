@@ -4,7 +4,7 @@ using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
 using OrderHub.UI.Interfaces;
-using OrderHub.UI.Stores.Markers;
+using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,15 +14,12 @@ namespace OrderHub.UI.Features.Cities.Index;
 
 public partial class ViewModel : IndexViewModelBase<CityListDto>
 {
-    private readonly ISelectionStore<ICityMarker, int> _selectionStore;
     private List<CityListDto> _allCities = [];
     private IEnumerable<CityListDto> _cities;
 
-    public ViewModel(IMediator mediator, ISelectionStore<ICityMarker, int> selectionStore)
+    public ViewModel(IMediator mediator)
         : base(mediator)
     {
-        _selectionStore = selectionStore;
-
         WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityCreatedMessage>(this, async (_, _) => await ReloadAsync());
         WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityUpdatedMessage>(this, async (_, _) => await ReloadAsync());
         WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityDeletedMessage>(this, async (_, _) => await ReloadAsync());
@@ -51,17 +48,14 @@ public partial class ViewModel : IndexViewModelBase<CityListDto>
         ApplyFilter();
     }
 
-    protected override Task ShowCreateAsync()
+    protected override async Task ShowCreateAsync()
     {
-        DialogService.Instance.ShowDialog<Create.CreateCityView>();
-        return Task.CompletedTask;
+        await DialogService.Instance.ShowDialog<Create.CreateCityView>("إضافة مدينة جديدة");
     }
 
-    protected override Task ShowEditAsync(CityListDto model)
+    protected override async Task ShowEditAsync(CityListDto model)
     {
-        _selectionStore.Id = model.Id;
-        DialogService.Instance.ShowDialog<Edit.EditCityView>();
-        return Task.CompletedTask;
+        await DialogService.Instance.ShowDialog<Edit.EditCityView>("إضافة مدينة جديدة", model.Id);
     }
 
     protected override async Task DeleteAsync(CityListDto model)
@@ -74,12 +68,12 @@ public partial class ViewModel : IndexViewModelBase<CityListDto>
         Result result = await _mediator.Send(new Application.Commands.CityCommands.DeleteCityCommand(model.Id));
         if (result.IsSuccess)
         {
-            await _mediator.Publish(new Application.Notifications.SuccessNotification($"تم حذف المدينة ({model.Name}) بنجاح."));
+            NotificationService.Instance.ShowSuccess($"تم حذف المدينة ({model.Name}) بنجاح.");
             WeakReferenceMessenger.Default.Send(new Application.Messages.Cities.CityDeletedMessage());
             return;
         }
 
-        await _mediator.Publish(new Application.Notifications.ErrorNotification(result.ErrorMessage));
+        NotificationService.Instance.ShowError(result.ErrorMessage);
     }
 
     private void ApplyFilter()

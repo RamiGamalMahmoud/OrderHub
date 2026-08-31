@@ -2,8 +2,7 @@
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
-using OrderHub.UI.Interfaces;
-using OrderHub.UI.Stores.Markers;
+using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,14 +12,11 @@ namespace OrderHub.UI.Features.ShippingCarriers.Index;
 
 public partial class ViewModel : IndexViewModelBase<ShippingCarrierListDto>
 {
-    private readonly ISelectionStore<IShippingCarrierMarker, int> _selectionStore;
     private IEnumerable<ShippingCarrierListDto> _shippingCarriers;
     private List<ShippingCarrierListDto> _allShippingCarriers = [];
 
-    public ViewModel(IMediator mediator, ISelectionStore<IShippingCarrierMarker, int> selectionStore) : base(mediator)
+    public ViewModel(IMediator mediator) : base(mediator)
     {
-        _selectionStore = selectionStore;
-
         WeakReferenceMessenger.Default.Register<Application.Messages.ShippingCarriers.ShippingCarrierCreatedMessage>(this, async (_, _) => await ReloadAsync());
         WeakReferenceMessenger.Default.Register<Application.Messages.ShippingCarriers.ShippingCarrierUpdatedMessage>(this, async (_, _) => await ReloadAsync());
         WeakReferenceMessenger.Default.Register<Application.Messages.ShippingCarriers.ShippingCarrierDeletedMessage>(this, async (_, _) => await ReloadAsync());
@@ -34,14 +30,14 @@ public partial class ViewModel : IndexViewModelBase<ShippingCarrierListDto>
         if(result.IsSuccess)
         {
             string message = MessageBuilder.Build(MessageBuilder.OperationType.Delete, true, "شركة شحن");
-            await _mediator.Publish(new Application.Notifications.SuccessNotification(message));
+            NotificationService.Instance.ShowSuccess(message);
             WeakReferenceMessenger.Default.Send(new Application.Messages.ShippingCarriers.ShippingCarrierDeletedMessage());
         }
 
         else
         {
             string message = MessageBuilder.Build(MessageBuilder.OperationType.Delete, false, "شركة شحن");
-            await _mediator.Publish(new Application.Notifications.ErrorNotification(message));
+            NotificationService.Instance.ShowError(message);
         }
     }
 
@@ -57,17 +53,14 @@ public partial class ViewModel : IndexViewModelBase<ShippingCarrierListDto>
         ApplyFilter();
     }
 
-    protected override Task ShowCreateAsync()
+    protected override async Task ShowCreateAsync()
     {
-        DialogService.Instance.ShowDialog<Create.View>();
-        return Task.CompletedTask;
+        await DialogService.Instance.ShowDialog<Create.View>("إضافة شركة شحن جديدة");
     }
 
-    protected override Task ShowEditAsync(ShippingCarrierListDto model)
+    protected override async Task ShowEditAsync(ShippingCarrierListDto model)
     {
-        _selectionStore.Id = model.Id;
-        DialogService.Instance.ShowDialog<Edit.View>();
-        return Task.CompletedTask;
+        await DialogService.Instance.ShowDialog<Edit.View>("تعديل بيانات شركة شحن", model.Id);
     }
 
     public IEnumerable<ShippingCarrierListDto> ShippingCarriers { get => _shippingCarriers; private set => SetProperty(ref _shippingCarriers, value); }

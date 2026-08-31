@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace OrderHub.Application.Interfaces.Stores;
+namespace OrderHub.Application.Interfaces.Repositories;
 
 public interface IPropertyStore
 {

@@ -1,9 +1,8 @@
-﻿using OrderHub.UI.Interfaces;
-using System.Windows;
+﻿using System.Windows;
 
 namespace OrderHub.UI.Features.Suppliers.Editor;
 
-internal partial class EditSupplierView : Window, IDialog
+internal partial class EditSupplierView : Window
 {
     public EditSupplierView(EditSupplierViewModelBase viewModel)
     {

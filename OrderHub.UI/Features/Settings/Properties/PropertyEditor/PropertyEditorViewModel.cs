@@ -117,8 +117,9 @@ public partial class PropertyEditorViewModel : ObservableValidator
     }
 
     [RelayCommand(CanExecute = nameof(CanSave))]
-    private async Task Save()
+    private Task Save()
     {
+        return Task.CompletedTask;
     }
 
     private bool CanSave()

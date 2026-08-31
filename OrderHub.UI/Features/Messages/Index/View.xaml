@@ -18,12 +18,12 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="12" />
-                <ColumnDefinition Width="330" />
+                <ColumnDefinition Width="400" />
             </Grid.ColumnDefinitions>
 
-            <local:MessageDetails Grid.Column="2" />
-
             <local:MessagesTable Grid.Column="0" />
+
+            <local:MessageDetails Grid.Column="2" />
 
         </Grid>
 

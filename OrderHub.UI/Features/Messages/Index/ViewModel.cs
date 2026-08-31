@@ -4,12 +4,18 @@ using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Common.Extensions;
 using OrderHub.Application.Common.Lookups;
+using OrderHub.Application.Features.Messaging;
+using OrderHub.Application.Interfaces;
+using OrderHub.Application.Interfaces.Services;
+using OrderHub.Application.Queries;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
+using OrderHub.UI.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -17,7 +23,8 @@ namespace OrderHub.UI.Features.Messages.Index;
 
 public partial class ViewModel : ObservableObject
 {
-    private readonly IMediator _mediator;
+    private readonly IRequestExecutor _requestExecutor;
+    private readonly IApplicationDirectoriesService _directoriesService;
     private List<OutboxMessageViewModel> _allOutboxMessages = [];
 
     [ObservableProperty]
@@ -30,9 +37,9 @@ public partial class ViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<MessageSummaryItemViewModel> _statusSummaries = [];
 
-    public ViewModel(IMediator mediator)
+    public ViewModel(IRequestExecutor requestExecutor, IApplicationDirectoriesService directoriesService)
     {
-        _mediator = mediator;
+        _requestExecutor = requestExecutor;
 
         WeakReferenceMessenger.Default.Register<Application.Messages.OutboxMessages.MessageStatusChangedMessage>(this, (r, m) =>
         {
@@ -58,28 +65,43 @@ public partial class ViewModel : ObservableObject
                     OrderNumber = GetDisplayTitle(outboxMessage),
                     Text = outboxMessage.Text,
                     PhoneNumber = outboxMessage.Recipient.PhoneNumber,
-                    CreatedAt = outboxMessage.CreatedAt
+                    CreatedAt = outboxMessage.CreatedAt,
+                    LastAttemptAt = outboxMessage.LastAttemptAt,
                 });
             }
 
             ApplyFilter();
         });
+        _directoriesService = directoriesService;
     }
 
     [RelayCommand]
     public async Task LoadAsync()
     {
-        _allOutboxMessages = (await _mediator.Send(new Application.Queries.OutboxMessageQueries.GetOutboxMessagesQuery()))
-            .Select(m => new OutboxMessageViewModel()
+        IEnumerable<OutboxMessageQueries.OutboxMessageListItem> outboxMessages = await _requestExecutor.ExecuteAsync(new OutboxMessageQueries.GetOutboxMessagesQuery());
+
+        _allOutboxMessages = outboxMessages
+            .Select(m =>
             {
-                Id = m.Id,
-                Status = new EnumItem<OutboxMessageStatus>(m.Status, m.Status.GetDescription()),
-                RecipientName = m.Recipient.Name,
-                RecipientType = new EnumItem<RecipientType>(m.RecipientType, m.RecipientType.GetDescription()),
-                OrderNumber = m.Order.OrderNumber,
-                Text = m.Text,
-                PhoneNumber = m.Recipient.PhoneNumber,
-                CreatedAt = m.CreatedAt
+                OutboxMessageViewModel messageViewModel = new OutboxMessageViewModel()
+                {
+                    Id = m.Id,
+                    Status = new EnumItem<OutboxMessageStatus>(m.Status, m.Status.GetDescription()),
+                    RecipientName = m.RecipientName,
+                    RecipientType = new EnumItem<RecipientType>(m.RecipientType, m.RecipientType.GetDescription()),
+                    OrderNumber = m.OrderNumber,
+                    Text = m.Text,
+                    PhoneNumber = m.PhoneNumber,
+                    CreatedAt = m.CreatedAt,
+                    LastAttemptAt = m.LastAttemptAt,
+                };
+                messageViewModel
+                    .AddAttachments(
+                        m.Attachments?
+                            .ToDictionary(x => Path.Combine( _directoriesService.AttachmentsDirectory, x.StoredName), x => x.OriginalName));
+
+                messageViewModel.AddNotes(m.Notes?.ToList());
+                return messageViewModel;
             })
             .OrderByDescending(m => m.CreatedAt)
             .ToList();
@@ -175,26 +197,34 @@ public partial class ViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(HasSelectedMessage))]
     private async Task ResendMessage(OutboxMessageViewModel message)
     {
-        if(!DialogService.Instance.Confirm("هل أنت متأكد أنك تريد إعادة إرسال هذه الرسالة؟"))
+        if (!await DialogService.Instance.ConfirmAsync("هل أنت متأكد أنك تريد إعادة إرسال هذه الرسالة؟"))
         {
             return;
         }
+        ResendOutboxMessageCommand.Message requestMessage = new ResendOutboxMessageCommand.Message(
+            message.Id, 
+            message.Text,
+            message
+                .Attachments
+                .Select(x => new ResendOutboxMessageCommand.AttachmentFile(x.FilePath, x.Name))
+                .ToList(),
+            message.Notes);
 
-        Result result = await _mediator.Send(new Application.Commands.OutboxMessageCommands.ResendOutboxMessageCommand(message.Id));
+        Result result = await _requestExecutor.ExecuteAsync(new ResendOutboxMessageCommand.Command(requestMessage));
 
         if (!result.IsSuccess)
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification(result.ErrorMessage));
+            NotificationService.Instance.ShowSuccess(result.ErrorMessage);
             return;
         }
 
-        await _mediator.Publish(new Application.Notifications.SuccessNotification("تمت إعادة جدولة الرسالة للإرسال."));
+        NotificationService.Instance.ShowError("تمت إعادة جدولة الرسالة للإرسال.");
     }
 
     [RelayCommand(CanExecute = nameof(HasSelectedMessage))]
     private async Task DeleteMessage(OutboxMessageViewModel message)
     {
-        if(!DialogService.Instance.Confirm("هل أنت متأكد أنك تريد حذف هذه الرسالة؟"))
+        if (!await DialogService.Instance.ConfirmAsync("هل أنت متأكد أنك تريد حذف هذه الرسالة؟"))
         {
             return;
         }
@@ -204,21 +234,27 @@ public partial class ViewModel : ObservableObject
             return;
         }
 
-        if (!DialogService.Instance.Confirm($"هل تريد حذف الرسالة للمستلم ({message.RecipientName})؟"))
+        if (!await DialogService.Instance.ConfirmAsync($"هل تريد حذف الرسالة للمستلم ({message.RecipientName})؟"))
         {
             return;
         }
 
-        Result result = await _mediator.Send(new Application.Commands.OutboxMessageCommands.DeleteOutboxMessageCommand(message.Id));
+        Result result = await _requestExecutor.ExecuteAsync(new Application.Features.Messaging.DeleteOutboxMessage.Command(message.Id));
 
         if (!result.IsSuccess)
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification(result.ErrorMessage));
+            NotificationService.Instance.ShowError(result.ErrorMessage);
             return;
         }
 
-        await _mediator.Publish(new Application.Notifications.SuccessNotification("تم حذف الرسالة بنجاح."));
+        NotificationService.Instance.ShowSuccess("تم حذف الرسالة بنجاح.");
         await LoadAsync();
+    }
+
+    [RelayCommand]
+    private async Task SendNewMessage()
+    {
+        await DialogService.Instance.ShowDialog<SendMessage.SendMessageView>("إرسال رسالة جديدة");
     }
 
     [RelayCommand]
@@ -286,25 +322,4 @@ public sealed class MessageSummaryItemViewModel
     public int Count { get; }
 
     public string DisplayText => $"{Title} - {Count}";
-}
-
-public partial class OutboxMessageViewModel : ObservableObject
-{
-    public int Id { get; set; }
-
-    [ObservableProperty]
-    private EnumItem<OutboxMessageStatus> _status;
-
-    public bool CanResend => Status?.Value == OutboxMessageStatus.Failed;
-
-    partial void OnStatusChanged(EnumItem<OutboxMessageStatus> oldValue, EnumItem<OutboxMessageStatus> newValue)
-        => OnPropertyChanged(nameof(CanResend));
-
-    public string OrderNumber { get; init; }
-    public string RecipientName { get; init; }
-    public EnumItem<RecipientType> RecipientType { get; init; }
-    public string Text { get; init; }
-    public string Title => $"{RecipientName} - {Text?.Split("\n").FirstOrDefault() ?? string.Empty}";
-    public string PhoneNumber { get; init; }
-    public DateTime CreatedAt { get; init; }
 }

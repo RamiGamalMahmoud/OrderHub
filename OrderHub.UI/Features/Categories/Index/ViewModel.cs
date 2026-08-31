@@ -4,8 +4,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
-using OrderHub.UI.Interfaces;
-using OrderHub.UI.Stores.Markers;
+using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -17,13 +16,10 @@ namespace OrderHub.UI.Features.Categories.Index
 {
     public partial class ViewModel : IndexViewModelBase<CategoryTreeDto>
     {
-        private readonly ISelectionStore<ICategoryMarker, int> _selectionStore;
         private List<CategoryListDto> _allCategories = [];
 
-        public ViewModel(IMediator mediator, ISelectionStore<ICategoryMarker, int> selectionStore) : base(mediator)
+        public ViewModel(IMediator mediator) : base(mediator)
         {
-            _selectionStore = selectionStore;
-
             WeakReferenceMessenger.Default.Register<Application.Messages.Categories.CategoryCreatedMessage>(this, async (m, r) =>
             {
                 await NavigateToCategory(SelectedCategory);
@@ -47,11 +43,11 @@ namespace OrderHub.UI.Features.Categories.Index
             Result result = await _mediator.Send(new Application.Commands.CategoryCommands.DeleteCategoryCommand(dto.Id));
             if(result.IsSuccess)
             {
-                await _mediator.Publish(new Application.Notifications.SuccessNotification("تم حذف القسم"));
+                NotificationService.Instance.ShowSuccess("تم حذف القسم");
             }
             else
             {
-                await _mediator.Publish(new Application.Notifications.ErrorNotification("خطأ أثناء حذف القسم"));
+                NotificationService.Instance.ShowError("خطأ أثناء الحذف !");
             }
         }
 
@@ -68,17 +64,14 @@ namespace OrderHub.UI.Features.Categories.Index
             ApplyFilter();
         }
 
-        protected override Task ShowCreateAsync()
+        protected override async Task ShowCreateAsync()
         {
-            DialogService.Instance.ShowDialog<Create.View>();
-            return Task.CompletedTask;
+            await DialogService.Instance.ShowDialog<Create.View>("إضافة قسم جديد");
         }
 
-        protected override Task ShowEditAsync(CategoryTreeDto dto)
+        protected override async Task ShowEditAsync(CategoryTreeDto dto)
         {
-            _selectionStore.Id = dto.Id;
-            DialogService.Instance.ShowDialog<Update.View>();
-            return Task.CompletedTask;
+            await DialogService.Instance.ShowDialog<Update.View>("تعديل بيانات قسم", dto.Id);
         }
 
         [RelayCommand]
@@ -105,10 +98,9 @@ namespace OrderHub.UI.Features.Categories.Index
         private async Task NavigateToHome() => await NavigateToCategory(null);
 
         [RelayCommand]
-        private void Edit(CategoryListDto dto)
+        private async Task Edit(CategoryListDto dto)
         {
-            _selectionStore.Id = dto.Id;
-            DialogService.Instance.ShowDialog<Update.View>();
+            await DialogService.Instance.ShowDialog<Update.View>("تعديل بيانات قسم", dto.Id);
         }
 
         [RelayCommand]
@@ -134,12 +126,12 @@ namespace OrderHub.UI.Features.Categories.Index
             Result result =await _mediator.Send(new Application.Commands.CategoryCommands.DeleteCategoryCommand(dto.Id));
             if(result.IsSuccess)
             {
-                await _mediator.Publish(new Application.Notifications.SuccessNotification("تم حذف القسم"));
+                NotificationService.Instance.ShowError("تم حذف القسم");
                 await LoadAsync();
             }
             else
             {
-                await _mediator.Publish(new Application.Notifications.ErrorNotification(result.ErrorMessage));
+                NotificationService.Instance.ShowError(result.ErrorMessage);
             }
         }
 

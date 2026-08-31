@@ -1,29 +1,37 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
-using OrderHub.UI.Interfaces;
-using OrderHub.UI.Stores.Markers;
+using OrderHub.UI.Common;
+using OrderHub.UI.Services;
 using System.Linq;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.ClientDtos;
 
 namespace OrderHub.UI.Features.Clients.Update
 {
-    internal class ViewModel : Edit.ViewModelBase
+    internal class ViewModel : Edit.ViewModelBase, IParameterizedViewModel
     {
-        private readonly ISelectionStore<IClientMarker, int> _selectionStore;
+        private int _clientId;
 
-        public ViewModel(IMediator mediator, ISelectionStore<IClientMarker, int> selectionStore) : base(mediator)
+        public ViewModel(IMediator mediator) : base(mediator)
         {
-            _selectionStore = selectionStore;
         }
 
         public override string Title => "تحديث بيانات عميل";
 
+        public Task Initialize(object parameter)
+        {
+            if(parameter is not null && parameter is int id)
+            {
+                _clientId = id;
+            }
+            return Task.CompletedTask;
+        }
+
         public override async Task LoadAsync()
         {
             await base.LoadAsync();
-            ClientFormDto client = await _mediator.Send(new Application.Queries.ClientQueries.GetClientEditQuery(_selectionStore.Id));
+            ClientFormDto client = await _mediator.Send(new Application.Queries.ClientQueries.GetClientEditQuery(_clientId));
 
             Name = client.Name;
             Street = client.Street;
@@ -37,19 +45,18 @@ namespace OrderHub.UI.Features.Clients.Update
         protected override async Task Save()
         {
             ClientFormDto client = new ClientFormDto(Name, Street, SelectedCity.Id, Number, CountryCode, Location);
-            Result result = await _mediator.Send(new Application.Commands.ClienCommands.UpdateClientCommand(_selectionStore.Id, client));
+            Result result = await _mediator.Send(new Application.Commands.ClienCommands.UpdateClientCommand(_clientId, client));
 
             if (result.IsSuccess)
             {
-                await _mediator.Publish(new Application.Notifications.SuccessNotification("تم تحديث بيانات عميل بنجاح"));
+                NotificationService.Instance.ShowSuccess("تم تحديث بيانات عميل بنجاح");
                 WeakReferenceMessenger.Default.Send(new Application.Messages.Clients.ClientUpdatedMessage());
                 OnRequestClose();
-                _selectionStore.Clear();
                 HasChanges = false;
             }
             else
             {
-                await _mediator.Publish(new Application.Notifications.ErrorNotification(result.ErrorMessage));
+                NotificationService.Instance.ShowError(result.ErrorMessage);
             }
         }
     }

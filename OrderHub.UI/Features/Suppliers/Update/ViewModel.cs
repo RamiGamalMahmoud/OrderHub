@@ -3,8 +3,7 @@ using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
 using OrderHub.UI.Features.Suppliers.Editor;
-using OrderHub.UI.Interfaces;
-using OrderHub.UI.Stores.Markers;
+using OrderHub.UI.Services;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -20,9 +19,10 @@ public partial class ViewModel : EditSupplierViewModelBase, IParameterizedViewMo
     {
     }
 
-    public void Initialize(object parameter)
+    public Task Initialize(object parameter)
     {
         _supplierId = (int)parameter;
+        return Task.CompletedTask;
     }
 
     public override async Task LoadAsync()
@@ -58,13 +58,13 @@ public partial class ViewModel : EditSupplierViewModelBase, IParameterizedViewMo
         if(result.IsSuccess)
         {
 
-            await _mediator.Publish(new Application.Notifications.SuccessNotification("تم تعديل بيانات المورد"));
+            NotificationService.Instance.ShowSuccess("تم تعديل بيانات المورد");
             WeakReferenceMessenger.Default.Send(new Application.Messages.Suppliers.SupplierUpdatedMessage());
             OnRequestClose();
         }
         else
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification("حدث خطأ اثناء تعديل بيانات المورد"));
+            NotificationService.Instance.ShowError("حدث خطأ اثناء تعديل بيانات المورد");
         }
     }
 }

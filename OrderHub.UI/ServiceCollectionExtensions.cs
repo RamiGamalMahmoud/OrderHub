@@ -14,15 +14,11 @@ public static class ServiceCollectionExtensions
     {
         // Services
         services.AddStartUpSteps();
-        services.AddSingleton<INotifier, Services.Notifier>();
         services.AddSingleton<IAppState, Services.AppState>();
         services.AddSingleton<Services.StartupProgress>();
-        services.AddSingleton<INotificationService, Services.NotificationService>();
         services.AddSingleton<Properties.Settings>();
 
         services.AddSingleton<INotificationManager, NotificationManager>();
-
-        services.AddSingleton(typeof(Interfaces.ISelectionStore<,>), typeof(Stores.SelectionStore<,>));
 
         services.AddViewModels();
         services.AddViews();
@@ -41,6 +37,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<Features.Cities.Index.ViewModel>();
         services.AddTransient<Features.Cities.Create.CreateCityViewModel>();
         services.AddTransient<Features.Cities.Edit.ViewModel>();
+
+        // Dashboard
+        services.AddTransient<Features.Dashboard.DashboardViewModel>();
 
         services.AddTransient<Features.Suppliers.Create.ViewModel>();
         services.AddTransient<Features.Suppliers.Update.ViewModel>();
@@ -77,6 +76,10 @@ public static class ServiceCollectionExtensions
 
         // Messages
         services.AddSingleton<Features.Messages.Index.ViewModel>();
+        services.AddTransient<Features.Messages.SendMessage.SendMessageViewModel>();
+
+        // Documents
+        services.AddTransient<Features.Documents.Preview.PreviewDocumentViewModel>();
 
         // Whatsapp
         services.AddSingleton<Features.WhatsappGroups.Index.WhatsappGroupsViewModel>();
@@ -97,6 +100,9 @@ public static class ServiceCollectionExtensions
         services.AddTransient<Features.Settings.ClientCredentialsSettings.ClientCredentialsSettingsView>();
         services.AddSingleton<Features.Home.HomeView>();
         services.AddSingleton<Features.Splash>();
+
+        // Dashboard
+        services.AddTransient<Features.Dashboard.DashboardView>();
 
         // Suppliers
         services.AddSingleton<Features.Suppliers.Index.View>();
@@ -144,6 +150,10 @@ public static class ServiceCollectionExtensions
 
         // Messages
         services.AddSingleton<Features.Messages.Index.View>();
+        services.AddTransient<Features.Messages.SendMessage.SendMessageView>();
+
+        // Documents
+        services.AddTransient<Features.Documents.Preview.PreviewDocumentView>();
 
         // Whatsapp
         services.AddSingleton<Features.WhatsappGroups.Index.View>();

@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.UI.Services;
@@ -36,7 +35,6 @@ internal partial class MainWindowViewModel : ObservableObject
         _applicationDirectoriesService = applicationDirectoriesService;
         AppState = appState;
         InitializeNavigationCommands();
-        RegisterMessages();
         IsAuthenticated = !_sessionManager.CurrentSession?.Token?.IsExpired ?? false;
     }
 
@@ -45,9 +43,9 @@ internal partial class MainWindowViewModel : ObservableObject
     private void InitializeNavigationCommands()
     {
         NavigationCommands.Add(new NavigationCommand(
-            "الصفحة الرئيسية",
-            "Home",
-            () => NavigationService.Instance.NavigateTo<Features.Home.HomeView>()));
+            "لوحة التحكم",
+            "ViewDashboard",
+            () => NavigationService.Instance.NavigateTo<Features.Dashboard.DashboardView>()));
 
         NavigationCommands.Add(new NavigationCommand(
             "الطلبات",
@@ -105,13 +103,6 @@ internal partial class MainWindowViewModel : ObservableObject
             () => NavigationService.Instance.NavigateTo<Features.Settings.Home.SettingsHomeView>()));
     }
 
-    private void RegisterMessages()
-    {
-        WeakReferenceMessenger.Default.Register<Application.Messages.Orders.AddingNewMessageToQueMessage>(
-            this, 
-            (r, m) => Message = m.RecipientName);
-    }
-
     partial void OnSelectedNavigationCommandChanged(NavigationCommand value)
     {
         value?.Action?.Invoke();
@@ -123,7 +114,7 @@ internal partial class MainWindowViewModel : ObservableObject
         IsAuthenticated = await _mediator.Send(new Application.Commands.AuthCommand());
         if (!IsAuthenticated)
         {
-            DialogService.Instance.ShowDialog<Settings.ClientCredentialsSettings.ClientCredentialsSettingsView>();
+            await DialogService.Instance.ShowDialog<Settings.ClientCredentialsSettings.ClientCredentialsSettingsView>("إعدادات الاتصال بسلة");
         }
     }
 
@@ -132,7 +123,7 @@ internal partial class MainWindowViewModel : ObservableObject
     {
         Process.Start(new ProcessStartInfo()
         {
-            FileName = _applicationDirectoriesService.DataPath,
+            FileName = _applicationDirectoriesService.DataDirectory,
             UseShellExecute = true,
             Verb = "open"
         });
@@ -148,12 +139,12 @@ internal partial class MainWindowViewModel : ObservableObject
         bool started = await _whatsappService.StartWhatsAppAsync();
         if (!started)
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification("تعذر تشغيل واتساب ويب."));
+            NotificationService.Instance.ShowError("تعذر تشغيل واتساب ويب.");
             return;
         }
 
         await _messageService.StartAsync();
-        await _mediator.Publish(new Application.Notifications.SuccessNotification("تم تشغيل واتساب ويب وخدمة الرسائل."));
+        NotificationService.Instance.ShowSuccess("تم تشغيل واتساب ويب وخدمة الرسائل.");
     }
 
     [ObservableProperty]

@@ -9,6 +9,7 @@ using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
 using OrderHub.UI.Features.Orders.Editor;
+using OrderHub.UI.Services;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -37,7 +38,7 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
 
         if (order is null)
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification("تعذر تحميل بيانات الطلب للتعديل."));
+            NotificationService.Instance.ShowError("تعذر تحميل بيانات الطلب للتعديل.");
             OnRequestClose();
             return;
         }
@@ -145,11 +146,13 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
         OnRequestClose();
     }
 
-    public void Initialize(object parameter)
+    public Task Initialize(object parameter)
     {
         if(parameter is int id)
         {
             _id = id;
         }
+
+        return Task.CompletedTask;
     }
 }

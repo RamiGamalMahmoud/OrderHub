@@ -2,5 +2,5 @@
 
 namespace OrderHub.Application.Messages.OutboxMessages
 {
-    public record MessageStatusChangedMessage(int Id, OutboxMessageStatus NewStatus, int OrderId, RecipientType RecipientType);
+    public record MessageStatusChangedMessage(int Id, OutboxMessageStatus NewStatus, int? OrderId, RecipientType RecipientType);
 }

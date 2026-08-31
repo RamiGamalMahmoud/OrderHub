@@ -1,9 +1,10 @@
-﻿using MediatR;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Notification.Wpf;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.UI.Services;
 using OrderHub.UI.StartUpSteps;
+using QuestPDF.Infrastructure;
 using System;
 using System.Globalization;
 using System.Threading;
@@ -30,10 +31,12 @@ public partial class App : System.Windows.Application
         RegisterGlobalExceptionHandlers();
         DialogService.Init(_host.Services);
         NavigationService.Init(_host.Services);
+        NotificationService.Initialize(_host.Services.GetRequiredService<INotificationManager>());
     }
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        QuestPDF.Settings.License = LicenseType.Community;
         CultureInfo culture = new CultureInfo("en-US");
 
         culture.DateTimeFormat.Calendar = new GregorianCalendar();
@@ -123,20 +126,6 @@ public partial class App : System.Windows.Application
 
     #endregion
 
-    #region Notifications
-
-    private async Task NotifyErrorAsync(string message)
-    {
-        await GetService<IMediator>().Publish(new Application.Notifications.ErrorNotification(message));
-    }
-
-    private async Task NotifySuccessAsync(string message)
-    {
-        await GetService<IMediator>().Publish(new Application.Notifications.SuccessNotification(message));
-    }
-
-    #endregion
-
     #region Helpers
 
     private T GetService<T>() => _host.Services.GetRequiredService<T>();
@@ -158,7 +147,7 @@ public partial class App : System.Windows.Application
         string message = "حدث خطأ غير متوقع. تم حفظ تفاصيل الخطأ في ملف السجل.";
 #endif
 
-        await NotifyErrorAsync(message);
+        NotificationService.Instance.ShowError(message);
     }
 
     protected override async void OnExit(ExitEventArgs e)

@@ -36,7 +36,7 @@ internal class GetOrderDetialsQeuryHandler(AppDbContextFactory dbContextFactory)
 
                     order.OrderItems.Select
                     (oi => new GetOrderDetials.Item(
-                        oi.Id,
+                        oi.ProductId,
                         oi.ProductName,
                         oi.UnitPrice.Value,
                         oi.Quantity,

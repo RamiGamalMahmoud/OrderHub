@@ -2,6 +2,7 @@
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
+using OrderHub.UI.Services;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.ShippingCarriersDtos;
 
@@ -23,14 +24,14 @@ public class ViewModel : Editor.ViewModel
         if (result.IsSuccess)
         {
             string message = MessageBuilder.Build(MessageBuilder.OperationType.Create, true, "شركة شحن");
-            await _mediator.Publish(new Application.Notifications.SuccessNotification(message));
+            NotificationService.Instance.ShowSuccess(message);
             WeakReferenceMessenger.Default.Send(new Application.Messages.ShippingCarriers.ShippingCarrierCreatedMessage());
             OnRequestClose();
         }
         else
         {
             string message = MessageBuilder.Build(MessageBuilder.OperationType.Create, false, "شركة شحن");
-            await _mediator.Publish(new Application.Notifications.ErrorNotification(message));
+            NotificationService.Instance.ShowError(message);
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using FluentAssertions;
 using Moq;
 using OrderHub.Application.Features.Setup.Properties.Create;
-using OrderHub.Application.Interfaces.Stores;
+using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Models;
 using System.Threading;
 using System.Threading.Tasks;

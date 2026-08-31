@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
+using OrderHub.UI.Services;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.CityDtos;
 
@@ -22,13 +23,13 @@ public partial class CreateCityViewModel : Editor.ViewModelBase
         Result result = await _mediator.Send(new Application.Commands.CityCommands.CreateCityCommand(new CityCreateDto(Name)));
         if (result.IsSuccess)
         {
-            await _mediator.Publish(new Application.Notifications.SuccessNotification($"تم إضافة مدينة ({Name}) بنجاح."));
+            NotificationService.Instance.ShowSuccess($"تم إضافة مدينة ({Name}) بنجاح.");
             OnRequestClose();
             WeakReferenceMessenger.Default.Send(new Application.Messages.Cities.CityCreatedMessage());
         }
         else
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification(result.ErrorMessage));
+            NotificationService.Instance.ShowError(result.ErrorMessage);
         }
     }
 }

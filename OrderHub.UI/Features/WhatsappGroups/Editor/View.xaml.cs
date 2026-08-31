@@ -1,15 +1,12 @@
-﻿using OrderHub.UI.Interfaces;
-using System.Windows;
+﻿using System.Windows.Controls;
 
 namespace OrderHub.UI.Features.WhatsappGroups.Editor;
 
-public partial class View : Window, IDialog
+public partial class View : UserControl
 {
     public View(ViewModel viewModel)
     {
         InitializeComponent();
         DataContext = viewModel;
     }
-
-    public new void Show() => ShowDialog();
 }

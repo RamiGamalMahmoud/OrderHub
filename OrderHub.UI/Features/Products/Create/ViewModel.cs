@@ -2,6 +2,7 @@
 using MediatR;
 using OrderHub.Application.Features.Products.Create;
 using OrderHub.Domain.Common;
+using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -33,13 +34,13 @@ namespace OrderHub.UI.Features.Products.Create
 
             if(result.IsSuccess)
             {
-                await _mediator.Publish(new Application.Notifications.SuccessNotification("تم إنشاء المنتج"));
+                NotificationService.Instance.ShowSuccess("تم إنشاء المنتج");
                 WeakReferenceMessenger.Default.Send(new Application.Messages.Products.ProductedCreatedMessage());
                 OnRequestClose();
             }
             else
             {
-                await _mediator.Publish(new Application.Notifications.ErrorNotification("خطأ أثناء إنشاء منتج"));
+                NotificationService.Instance.ShowError("خطأ أثناء إنشاء منتج");
             }
         }
     }

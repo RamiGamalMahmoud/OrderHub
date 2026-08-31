@@ -5,12 +5,12 @@ namespace OrderHub.Infrastructure.Services
 {
     internal class EncryptionService : IEncryptionService
     {
-        private static readonly byte[] _key;
+        private static readonly byte[] _key = null;
 
         public EncryptionService()
         {
-            string key = "YT783NDFTB3S7HMSH53DXHDV9T96TR8V";
-            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(key);
+            //string key = "YT783NDFTB3S7HMSH53DXHDV9T96TR8V";
+            //byte[] bytes = System.Text.Encoding.UTF8.GetBytes(key);
         }
 
         public byte[] Encrypt(string data) => Protect(Encode(data));

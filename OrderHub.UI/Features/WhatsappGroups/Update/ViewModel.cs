@@ -5,27 +5,30 @@ using OrderHub.Application.Common.Lookups;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
-using OrderHub.UI.Interfaces;
-using OrderHub.UI.Stores.Markers;
+using OrderHub.UI.Services;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.WhatsappGroupDtos;
 
 namespace OrderHub.UI.Features.WhatsappGroups.Update;
 
-public partial class ViewModel : Editor.ViewModel
+public partial class ViewModel(IMediator mediator) : Editor.ViewModel(mediator), IParameterizedViewModel
 {
-    private readonly ISelectionStore<IWhatsappGroupMarker, int> _selectionStore;
-
-    public ViewModel(IMediator mediator, ISelectionStore<IWhatsappGroupMarker, int> selectionStore) : base(mediator)
-    {
-        _selectionStore = selectionStore;
-    }
+    private int _groupId;
 
     public override string Title => "تعديل مجموعة واتساب";
 
+    public Task Initialize(object parameter)
+    {
+        if(parameter is not null && parameter is int id)
+        {
+            _groupId = id;
+        }
+        return Task.CompletedTask;
+    }
+
     public async Task LoadAsync()
     {
-        WhatsappGroupEditDto whatsappGroupEditDto = await _mediator.Send(new Application.Queries.WhatsappGroupQueries.GetAllWhatsappGroupForEditQuery(_selectionStore.Id));
+        WhatsappGroupEditDto whatsappGroupEditDto = await _mediator.Send(new Application.Queries.WhatsappGroupQueries.GetAllWhatsappGroupForEditQuery(_groupId));
 
         Name = whatsappGroupEditDto.Name;
         GroupType = new EnumItem<WhatsappGroupType>(whatsappGroupEditDto.WhatsappGroupType, whatsappGroupEditDto.WhatsappGroupType.GetDescription());
@@ -35,17 +38,16 @@ public partial class ViewModel : Editor.ViewModel
 
     protected override async Task Save()
     {
-        Result result = await _mediator.Send(new Application.Commands.WhatsappGroupCommands.UpdateWhatsappGroupCommand(_selectionStore.Id, Name, GroupType.Value, GroupLink));
+        Result result = await _mediator.Send(new Application.Commands.WhatsappGroupCommands.UpdateWhatsappGroupCommand(_groupId, Name, GroupType.Value, GroupLink));
         if(result.IsSuccess)
         {
-            await _mediator.Publish(new Application.Notifications.SuccessNotification(MessageBuilder.Build(MessageBuilder.OperationType.Update, true, "مجموعة الواتساب")));
+            NotificationService.Instance.ShowSuccess(MessageBuilder.Build(MessageBuilder.OperationType.Update, true, "مجموعة الواتساب"));
             WeakReferenceMessenger.Default.Send(new Application.Messages.WhatsappGroups.WhatsappGroupUpdatedMessage());
-            _selectionStore.Clear();
             OnRequestClose();
         }
         else
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification(MessageBuilder.Build(MessageBuilder.OperationType.Update, false, "مجموعة الواتساب")));
+            NotificationService.Instance.ShowError(MessageBuilder.Build(MessageBuilder.OperationType.Update, false, "مجموعة الواتساب"));
         }
     }
 }

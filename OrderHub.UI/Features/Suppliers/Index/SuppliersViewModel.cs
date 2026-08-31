@@ -2,6 +2,7 @@
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
+using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -32,10 +33,9 @@ internal partial class SuppliersViewModel : IndexViewModelBase<SupplierListDto>
         ApplyFilter();
     }
 
-    protected override Task ShowEditAsync(SupplierListDto dto)
+    protected override async Task ShowEditAsync(SupplierListDto dto)
     {
-        DialogService.Instance.ShowDialog<Update.View>(dto.Id);
-        return Task.CompletedTask;
+        await DialogService.Instance.ShowDialog<Update.View>("تعديل طلب", dto.Id);
     }
 
     protected override async Task DeleteAsync(SupplierListDto dto)
@@ -45,21 +45,20 @@ internal partial class SuppliersViewModel : IndexViewModelBase<SupplierListDto>
             Result result = await _mediator.Send(new Application.Commands.SupplierCommands.DeleteSupplierCommand(dto.Id));
             if (result.IsSuccess)
             {
-                await _mediator.Publish(new Application.Notifications.SuccessNotification(MessageBuilder.Build(MessageBuilder.OperationType.Delete, true, "المورد")));
+                NotificationService.Instance.ShowSuccess(MessageBuilder.Build(MessageBuilder.OperationType.Delete, true, "المورد"));
                 WeakReferenceMessenger.Default.Send(new Application.Messages.Suppliers.SupplierDeletedMessage());
                 await LoadAsync();
             }
             else
             {
-                await _mediator.Publish(new Application.Notifications.ErrorNotification(MessageBuilder.Build(MessageBuilder.OperationType.Delete, false, "المورد")));
+                NotificationService.Instance.ShowError(MessageBuilder.Build(MessageBuilder.OperationType.Delete, false, "المورد"));
             }
         }
     }
 
-    protected override Task ShowCreateAsync()
+    protected override async Task ShowCreateAsync()
     {
-        DialogService.Instance.ShowDialog<Create.View>();
-        return Task.CompletedTask;
+        await DialogService.Instance.ShowDialog<Create.View>("إضافة مورد جديد");
     }
 
     private IEnumerable<SupplierListDto> _supplierListDtos;

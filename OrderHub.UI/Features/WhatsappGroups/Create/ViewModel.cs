@@ -2,6 +2,7 @@
 using MediatR;
 using OrderHub.Application.Commands;
 using OrderHub.UI.Common;
+using OrderHub.UI.Services;
 using System.Threading.Tasks;
 
 namespace OrderHub.UI.Features.WhatsappGroups.Create;
@@ -20,13 +21,13 @@ public class ViewModel : Editor.ViewModel
         var result = await _mediator.Send(new WhatsappGroupCommands.CreateWhatsappGroupCommand(Name, GroupType.Value, GroupLink));
         if (result.IsSuccess)
         {
-            await _mediator.Publish(new Application.Notifications.SuccessNotification(MessageBuilder.Build(MessageBuilder.OperationType.Create, true, "مجموعة الواتساب")));
+            NotificationService.Instance.ShowSuccess(MessageBuilder.Build(MessageBuilder.OperationType.Create, true, "مجموعة الواتساب"));
             WeakReferenceMessenger.Default.Send(new Application.Messages.WhatsappGroups.WhatsappGroupCreatedMessage());
             OnRequestClose();
         }
         else
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification(MessageBuilder.Build(MessageBuilder.OperationType.Create, false, "مجموعة الواتساب")));
+            NotificationService.Instance.ShowError(MessageBuilder.Build(MessageBuilder.OperationType.Create, false, "مجموعة الواتساب"));
         }
     }
 }

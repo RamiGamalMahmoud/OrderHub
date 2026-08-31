@@ -2,7 +2,7 @@
 using OrderHub.Application.Features.Setup.Properties.Get;
 using OrderHub.Application.Features.Setup.Properties.GetAll;
 using OrderHub.Application.Features.Setup.Properties.Update;
-using OrderHub.Application.Interfaces.Stores;
+using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using System.Collections.Generic;

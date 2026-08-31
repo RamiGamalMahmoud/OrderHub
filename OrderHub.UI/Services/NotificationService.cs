@@ -1,13 +1,18 @@
 ﻿using Notification.Wpf;
-using OrderHub.Application.Interfaces.Services;
 
 namespace OrderHub.UI.Services
 {
-    internal class NotificationService : INotificationService
+    internal class NotificationService
     {
         private readonly INotificationManager _notificationManager;
 
-        public NotificationService(INotificationManager notificationManager)
+        public static NotificationService Instance { get; private set; }
+        public static void Initialize(INotificationManager notificationManager)
+        {
+            Instance ??= new NotificationService(notificationManager);
+        }
+
+        private NotificationService(INotificationManager notificationManager)
         {
             _notificationManager = notificationManager;
         }

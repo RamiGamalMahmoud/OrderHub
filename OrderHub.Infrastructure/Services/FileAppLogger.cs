@@ -34,7 +34,7 @@ internal class FileAppLogger : IAppLogger
 
     private async Task WriteAsync(string level, string message)
     {
-        string logFilePath = Path.Combine(_directoriesService.LogsPath, $"orderhub-{DateTime.Now:yyyy-MM-dd}.log");
+        string logFilePath = Path.Combine(_directoriesService.LogsDirectory, $"orderhub-{DateTime.Now:yyyy-MM-dd}.log");
         string entry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{level}] {message}{Environment.NewLine}{Environment.NewLine}";
 
         await _lock.WaitAsync();

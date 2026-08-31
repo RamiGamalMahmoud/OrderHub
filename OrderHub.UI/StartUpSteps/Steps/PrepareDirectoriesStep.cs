@@ -19,12 +19,7 @@ public class PrepareDirectoriesStep : IStartupStep
 
     public Task ExecuteAsync()
     {
-        _dirs.EnsureAppDirectoryCreated();
-        _dirs.EnsureStorageDirectoryCreated();
-        _dirs.EnsureDatabaseFileCreated();
-        _dirs.EnsureWhatsAppProfilesDirectoryCreated();
-        _dirs.EnsureLogsDirectoryCreated();
-        _dirs.EnsureDraftsDirectoryCreated();
+        _dirs.EnsureDirectoriesCreated();
 
         return Task.CompletedTask;
     }

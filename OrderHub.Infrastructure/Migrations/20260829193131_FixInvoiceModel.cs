@@ -1,0 +1,190 @@
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace OrderHub.Infrastructure.Migrations
+{
+    /// <inheritdoc />
+    public partial class FixInvoiceModel : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropTable(
+                name: "invoices_item");
+
+            migrationBuilder.RenameColumn(
+                name: "order_number",
+                table: "invoices",
+                newName: "source_draft_reference");
+
+            migrationBuilder.RenameColumn(
+                name: "invoice_number",
+                table: "invoices",
+                newName: "document_number");
+
+            migrationBuilder.RenameIndex(
+                name: "ix_invoices_invoice_number",
+                table: "invoices",
+                newName: "ix_invoices_document_number");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "customer_phone",
+                table: "invoices",
+                type: "TEXT",
+                maxLength: 50,
+                nullable: true,
+                oldClrType: typeof(string),
+                oldType: "TEXT",
+                oldMaxLength: 50);
+
+            migrationBuilder.AddColumn<DateTime>(
+                name: "issue_date",
+                table: "invoices",
+                type: "TEXT",
+                nullable: false,
+                defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
+
+            migrationBuilder.AddColumn<decimal>(
+                name: "subtotal",
+                table: "invoices",
+                type: "TEXT",
+                precision: 18,
+                scale: 2,
+                nullable: false,
+                defaultValue: 0m);
+
+            migrationBuilder.CreateTable(
+                name: "invoice_items",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    invoice_id = table.Column<int>(type: "INTEGER", nullable: false),
+                    created_at = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    modified_at = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    product_id = table.Column<int>(type: "INTEGER", nullable: false),
+                    product_name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    quantity = table.Column<decimal>(type: "TEXT", precision: 18, scale: 3, nullable: false),
+                    unit_price = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
+                    vat_rate = table.Column<decimal>(type: "TEXT", precision: 5, scale: 2, nullable: false),
+                    subtotal = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
+                    vat_amount = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
+                    total = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_invoice_items", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_invoice_items_invoices_invoice_id",
+                        column: x => x.invoice_id,
+                        principalTable: "invoices",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_invoice_items_products_product_id",
+                        column: x => x.product_id,
+                        principalTable: "products",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_invoice_items_invoice_id",
+                table: "invoice_items",
+                column: "invoice_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_invoice_items_product_id",
+                table: "invoice_items",
+                column: "product_id");
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropTable(
+                name: "invoice_items");
+
+            migrationBuilder.DropColumn(
+                name: "issue_date",
+                table: "invoices");
+
+            migrationBuilder.DropColumn(
+                name: "subtotal",
+                table: "invoices");
+
+            migrationBuilder.RenameColumn(
+                name: "source_draft_reference",
+                table: "invoices",
+                newName: "order_number");
+
+            migrationBuilder.RenameColumn(
+                name: "document_number",
+                table: "invoices",
+                newName: "invoice_number");
+
+            migrationBuilder.RenameIndex(
+                name: "ix_invoices_document_number",
+                table: "invoices",
+                newName: "ix_invoices_invoice_number");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "customer_phone",
+                table: "invoices",
+                type: "TEXT",
+                maxLength: 50,
+                nullable: false,
+                defaultValue: "",
+                oldClrType: typeof(string),
+                oldType: "TEXT",
+                oldMaxLength: 50,
+                oldNullable: true);
+
+            migrationBuilder.CreateTable(
+                name: "invoices_item",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    invoice_id = table.Column<int>(type: "INTEGER", nullable: false),
+                    product_id = table.Column<int>(type: "INTEGER", nullable: false),
+                    created_at = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    modified_at = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    price = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
+                    product_name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    quantity = table.Column<decimal>(type: "TEXT", precision: 18, scale: 3, nullable: false),
+                    total = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
+                    vat_amount = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
+                    vat_rate = table.Column<decimal>(type: "TEXT", precision: 5, scale: 2, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_invoices_item", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_invoices_item_invoices_invoice_id",
+                        column: x => x.invoice_id,
+                        principalTable: "invoices",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_invoices_item_products_product_id",
+                        column: x => x.product_id,
+                        principalTable: "products",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_invoices_item_invoice_id",
+                table: "invoices_item",
+                column: "invoice_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_invoices_item_product_id",
+                table: "invoices_item",
+                column: "product_id");
+        }
+    }
+}

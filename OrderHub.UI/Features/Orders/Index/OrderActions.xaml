@@ -16,25 +16,38 @@
         -->
         <Style
             x:Key="ActionButtonStyle"
-            BasedOn="{StaticResource ButtonBaseStyle}"
+            BasedOn="{StaticResource ButtonDefault}"
             TargetType="Button">
 
-            <Setter Property="Height" Value="30" />
-            <Setter Property="MinWidth" Value="72" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="MinWidth" Value="76" />
             <Setter Property="Margin" Value="3,0" />
-            <Setter Property="Padding" Value="9,0" />
+            <Setter Property="Padding" Value="10,0" />
             <Setter Property="FontSize" Value="12" />
             <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Background" Value="#F3EEFF" />
+            <Setter Property="Foreground" Value="#6D4AFF" />
+            <Setter Property="BorderBrush" Value="#DDD2FF" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Cursor" Value="Hand" />
-
-            <Setter Property="Background" Value="#F3F4F6" />
-            <Setter Property="Foreground" Value="#374151" />
-
             <Setter Property="VerticalContentAlignment" Value="Center" />
 
             <Style.Triggers>
 
+                <!--  Hover  -->
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E9DFFF" />
+                    <Setter Property="Foreground" Value="#5B3CC4" />
+                    <Setter Property="BorderBrush" Value="#CBB9FF" />
+                </Trigger>
+
+                <!--  Pressed  -->
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#DCCBFF" />
+                    <Setter Property="Foreground" Value="#4B2FA3" />
+                </Trigger>
+
+                <!--  Disabled  -->
                 <Trigger Property="IsEnabled" Value="False">
                     <Setter Property="Opacity" Value="0.45" />
                     <Setter Property="Cursor" Value="Arrow" />
@@ -53,30 +66,6 @@
 
             <Setter Property="Background" Value="#E8F7EE" />
             <Setter Property="Foreground" Value="#16A34A" />
-
-        </Style>
-
-
-        <!--  Edit button  -->
-        <Style
-            x:Key="EditButtonStyle"
-            BasedOn="{StaticResource ActionButtonStyle}"
-            TargetType="Button">
-
-            <Setter Property="Background" Value="#F1EEFF" />
-            <Setter Property="Foreground" Value="{StaticResource Primary}" />
-
-        </Style>
-
-
-        <!--  Delete button  -->
-        <Style
-            x:Key="DeleteButtonStyle"
-            BasedOn="{StaticResource ActionButtonStyle}"
-            TargetType="Button">
-
-            <Setter Property="Background" Value="#FEF2F2" />
-            <Setter Property="Foreground" Value="#DC2626" />
 
         </Style>
 
@@ -99,7 +88,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="10" />
-                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
 
@@ -108,7 +97,7 @@
             <!--  ============================================================  -->
 
             <Border
-                Grid.Column="0"
+                Grid.Column="2"
                 Padding="8,5"
                 Background="#F0FDF4"
                 BorderBrush="#DCFCE7"
@@ -347,21 +336,11 @@
 
 
             <!--  ============================================================  -->
-            <!--  Separator  -->
-            <!--  ============================================================  -->
-
-            <Border
-                Grid.Column="1"
-                Margin="8,3"
-                Background="#D1D5DB" />
-
-
-            <!--  ============================================================  -->
             <!--  Order Actions Group  -->
             <!--  ============================================================  -->
 
             <Border
-                Grid.Column="2"
+                Grid.Column="0"
                 Padding="8,5"
                 Background="#F5F3FF"
                 BorderBrush="#E9E5FF"
@@ -407,13 +386,58 @@
                         VerticalAlignment="Center"
                         Orientation="Horizontal">
 
+                        <!--  إنشاء فاتورة  -->
+
+                        <Button
+                            Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.GenerateInvoiceCommand}"
+                            CommandParameter="{Binding SelectedOrder}"
+                            IsEnabled="{Binding HasSelectedOrder}"
+                            Style="{StaticResource ActionButtonStyle}">
+
+                            <StackPanel Orientation="Horizontal">
+
+                                <icons:MaterialIcon
+                                    Width="16"
+                                    Height="16"
+                                    Kind="FilePdfBox" />
+
+                                <TextBlock
+                                    Margin="4,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Text="فاتورة" />
+
+                            </StackPanel>
+
+                        </Button>
+
+                        <!--  سند تسليم  -->
+                        <Button
+                            Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.CreateDeliveryNoteCommand}"
+                            IsEnabled="{Binding HasSelectedOrder}"
+                            Style="{StaticResource ActionButtonStyle}">
+
+                            <StackPanel Orientation="Horizontal">
+
+                                <icons:MaterialIcon
+                                    Width="19"
+                                    Height="19"
+                                    Margin="0,0,7,0"
+                                    VerticalAlignment="Center"
+                                    Kind="PackageVariantClosedCheck" />
+
+                                <TextBlock VerticalAlignment="Center" Text="سند تسليم" />
+
+                            </StackPanel>
+                        </Button>
+
+
                         <!--  تعديل  -->
 
                         <Button
                             Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.ShowEditCommand}"
                             CommandParameter="{Binding SelectedOrder}"
                             IsEnabled="{Binding HasSelectedOrder}"
-                            Style="{StaticResource EditButtonStyle}">
+                            Style="{StaticResource ActionButtonStyle}">
 
                             <StackPanel Orientation="Horizontal">
 
@@ -437,8 +461,9 @@
                         <Button
                             Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.DeleteCommand}"
                             CommandParameter="{Binding SelectedOrder}"
+                            Foreground="{StaticResource DangerBrush}"
                             IsEnabled="{Binding HasSelectedOrder}"
-                            Style="{StaticResource DeleteButtonStyle}">
+                            Style="{StaticResource ActionButtonStyle}">
 
                             <StackPanel Orientation="Horizontal">
 

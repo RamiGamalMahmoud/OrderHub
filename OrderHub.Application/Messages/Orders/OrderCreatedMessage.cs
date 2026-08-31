@@ -5,4 +5,3 @@ namespace OrderHub.Application.Messages.Orders;
 
 public record OrderCreatedMessage;
 public record MessagesCreatedMessage(IEnumerable<OutboxMessage> OutboxMessages);
-public record AddingNewMessageToQueMessage(string RecipientName);

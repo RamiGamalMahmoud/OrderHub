@@ -1,5 +1,5 @@
 ﻿using MediatR;
-using OrderHub.Application.Interfaces.Stores;
+using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Common;
 using System.Threading;
 using System.Threading.Tasks;

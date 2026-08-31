@@ -40,6 +40,7 @@ internal class OutboxMessageConfiguration : ModelConfigurationBase<OutboxMessage
         builder.HasOne(m => m.Order)
             .WithMany(o => o.OutboxMessages)
             .HasForeignKey(m => m.OrderId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne(m => m.Recipient)
@@ -50,5 +51,11 @@ internal class OutboxMessageConfiguration : ModelConfigurationBase<OutboxMessage
         builder.HasIndex(e => new { e.OrderId, e.RecipientId })
           .IsUnique()
           .HasFilter("[Status] = 'Pending'");
+
+        builder.Property(m => m.Notes)
+            .IsRequired(false);
+
+        builder.Property(m => m.LegacyAttachments)
+            .IsRequired(false);
     }
 }

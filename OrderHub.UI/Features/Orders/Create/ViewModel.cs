@@ -1,34 +1,44 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Common.Extensions;
+using OrderHub.Application.Features.Documents.ProformaInvoices;
+using OrderHub.Application.Features.Documents.Quotations;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Application.Features.Orders.Create;
 using OrderHub.Application.Features.Orders.Queries;
 using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Interfaces;
+using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
 using OrderHub.UI.Features.Orders.Editor;
+using OrderHub.UI.Services;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace OrderHub.UI.Features.Orders.Create;
 
-internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
+internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
 {
     private readonly IDraftService _draftService;
     private DraftContext _draftContext;
+    private readonly IApplicationDirectoriesService _directoriesService;
     private CancellationTokenSource _draftSaveCancellation;
+    private readonly IRequestExecutor _requestExecutor;
 
     public ViewModel(
         IMediator mediator,
         IProductStore productStore,
         ILookupService lookupService,
-        IDraftService draftService)
+        IDraftService draftService,
+        IRequestExecutor requestExecutor,
+        IApplicationDirectoriesService directoriesService)
         : base(
             mediator,
             productStore,
@@ -36,16 +46,96 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
     {
         _draftService = draftService;
         HasChanges = true;
+        _requestExecutor = requestExecutor;
+
+        PartyPanel.PropertyChanged += (_, _) =>
+        {
+            CreateQuotationCommand.NotifyCanExecuteChanged();
+            CreateProformaIncoidCommand.NotifyCanExecuteChanged();
+            OnPropertyChanged(nameof(CanCreateQuotion));
+            OnPropertyChanged(nameof(CanCreateProformaInvoice));
+        };
+
+        Items.PropertyChanged += (_, _) =>
+        {
+            CreateQuotationCommand.NotifyCanExecuteChanged();
+            CreateProformaIncoidCommand.NotifyCanExecuteChanged();
+            OnPropertyChanged(nameof(CanCreateQuotion));
+            OnPropertyChanged(nameof(CanCreateProformaInvoice));
+        };
+
+        IsDocumentingReady = true;
+
+        _directoriesService = directoriesService;
     }
 
     public override string Title => "إنشاء طلب جديد";
     public override string ActionName => "إتمام الطلب";
 
-    public void Initialize(object parameter)
+    public Task Initialize(object parameter)
     {
         _draftContext = parameter is Guid draftId
             ? new DraftContext(draftId)
             : new DraftContext(Guid.NewGuid());
+        return Task.CompletedTask;
+    }
+
+    public bool CanCreateQuotion => Items.Items.Any() && PartyPanel.SelectedClient != null;
+    public bool CanCreateProformaInvoice => Items.Items.Any() && PartyPanel.SelectedClient != null;
+
+    [RelayCommand(CanExecute = nameof(CanCreateQuotion))]
+    private async Task CreateQuotation()
+    {
+        CreateQuotationCommand.QuotationData quotation = new CreateQuotationCommand.QuotationData(
+            _draftContext.Id,
+            PartyPanel.SelectedClient.Name,
+            PartyPanel.SelectedClient.PhoneNumber,
+            PartyPanel.SelectedClient.Address,
+            0.0m,
+            Items.Items.Select(x => new CreateQuotationCommand.QuotationItemData(
+                x.ProductId,
+                x.ProductName,
+                x.Price,
+                x.Quantity,
+                0.0m))
+            .ToList());
+
+        string quotationNumber = await _requestExecutor.ExecuteAsync(new CreateQuotationCommand.Command(quotation));
+        string path = Path.Combine(_directoriesService.QuotationsDirectory, $"{quotationNumber}.pdf");
+        await DialogService.Instance.ShowDialog<Features.Documents.Preview.PreviewDocumentView>(
+            "عرض سعر",
+            new Features.Documents.Preview.Data(
+                path,
+                PartyPanel.SelectedClient.Name,
+                PartyPanel.SelectedClient.PhoneNumber));
+    }
+
+    [RelayCommand(CanExecute = nameof(CanCreateProformaInvoice))]
+    private async Task CreateProformaIncoid()
+    {
+        CreateProformaInvoiceCommand.ProformaInvoiceData data = new CreateProformaInvoiceCommand.ProformaInvoiceData(
+            _draftContext.Id,
+            PartyPanel.SelectedClient.Name,
+            PartyPanel.SelectedClient.PhoneNumber,
+            PartyPanel.SelectedClient.Address,
+            0.0m,
+            Items.Items.Select(x => new CreateProformaInvoiceCommand.ProformaInvoiceItemData(
+                x.ProductId,
+                x.ProductName,
+                x.Price,
+                x.Quantity,
+                0.0m))
+            .ToList());
+
+        string documentNumber = await _requestExecutor.ExecuteAsync(new CreateProformaInvoiceCommand.Command(data));
+        string path = Path.Combine(_directoriesService.ProformaInvoicesDirectory, $"{documentNumber}.pdf");
+
+        await DialogService.Instance.ShowDialog<Features.Documents.Preview.PreviewDocumentView>(
+            "فاتورة أولية",
+            new Features.Documents.Preview.Data(
+                path,
+                PartyPanel.SelectedClient.Name,
+                PartyPanel.SelectedClient.PhoneNumber));
     }
 
     protected override void MarkAsChanged()
@@ -94,11 +184,32 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
 
         Result<int> result =
             await _mediator.Send(
-                new CreateOrder.Command(order));
+                new CreateOrderCommand.Command(new CreateOrderCommand.OrderInput(
+                    order.ClientId,
+                    order.DeliveryMethod,
+                    order.DeliveryManId,
+                    order.ShippingCarrierId,
+
+                    order.OrderItems.Select(item => new CreateOrderCommand.Item(
+                        item.ProductId,
+                        item.ProductName,
+                        item.Quantity,
+                        item.UnitPrice,
+                        item.SupplierName,
+                        item.SupplierId,
+                        item.Properties.Select(property => new CreateOrderCommand.Property(
+                            property.PropertyId,
+                            property.Value)))),
+                    order.DeliverySteps.Select(step => new CreateOrderCommand.DeliveryStep(
+                        step.StepOrder,
+                        step.DeliveryMethod,
+                        step.HandlerId)), 
+                    order.PaymentMothodId,
+                    _draftContext.Id)));
 
         if (!result.IsSuccess)
         {
-            await HandleOrderFailure();
+            HandleOrderFailure();
             return;
         }
 
@@ -107,7 +218,7 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
         WeakReferenceMessenger.Default.Send(
             new Messages.DraftDeletedMessage(_draftContext.Id));
 
-        await HandleOrderSuccess(result.Value);
+        HandleOrderSuccess(result.Value);
 
         OnRequestClose();
     }
@@ -162,17 +273,18 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
     }
 
     private void BuildOrderItems(
-        Draft draft,
-        IReadOnlyCollection<GetOrderItemsEditor.OrderItem> items)
+    Draft draft,
+    IReadOnlyCollection<GetOrderItemsEditor.OrderItem> items)
     {
-        var draftItems = draft.Data.Items
+        var catalogItemsDict = items
+            .DistinctBy(x => x.ProductId)
             .ToDictionary(x => x.ProductId);
 
-        foreach (GetOrderItemsEditor.OrderItem item in items)
+        foreach (OrderDraftItem draftItem in draft.Data.Items)
         {
-            if (!draftItems.TryGetValue(
-                item.ProductId,
-                out OrderDraftItem draftItem))
+            if (!catalogItemsDict.TryGetValue(
+                draftItem.ProductId,
+                out GetOrderItemsEditor.OrderItem item))
                 continue;
 
             var suppliers = item.Suppliers
@@ -215,6 +327,7 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
             Items.Add(orderItem);
         }
     }
+
 
     private void BuildDeliverySteps(Draft draft)
     {
@@ -346,26 +459,20 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
         _draftSaveCancellation = null;
     }
 
-    private async Task HandleOrderSuccess(int orderId)
+    private void HandleOrderSuccess(int orderId)
     {
-        WeakReferenceMessenger.Default.Send(
-            new Application.Messages.Orders.OrderCreatedMessage());
+        WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.OrderCreatedMessage());
 
-        await PublishSuccessNotification(
-            "تم انشاء الطلب بنجاح");
+        PublishSuccessNotification("تم انشاء الطلب بنجاح");
     }
 
-    private async Task HandleOrderFailure()
+    private void HandleOrderFailure()
     {
-        await _mediator.Publish(
-            new Application.Notifications.ErrorNotification(
-                "حدث خطأ أثناء إنشاء الطلب"));
+        NotificationService.Instance.ShowError("حدث خطأ أثناء إنشاء الطلب");
     }
 
-    private async Task PublishSuccessNotification(string message)
+    private void PublishSuccessNotification(string message)
     {
-        await _mediator.Publish(
-            new Application.Notifications.SuccessNotification(
-                message));
+        NotificationService.Instance.ShowSuccess(message);
     }
 }

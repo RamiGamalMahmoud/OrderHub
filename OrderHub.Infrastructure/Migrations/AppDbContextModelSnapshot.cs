@@ -145,6 +145,460 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("clients", (string)null);
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.Invoice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CustomerAddress")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("customer_address");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("customer_name");
+
+                    b.Property<string>("CustomerPhone")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("customer_phone");
+
+                    b.Property<string>("DocumentNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("document_number");
+
+                    b.Property<DateTime>("IssueDate")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("issue_date");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("order_id");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("subtotal");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("total_amount");
+
+                    b.Property<decimal>("TotalVat")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("total_vat");
+
+                    b.HasKey("Id")
+                        .HasName("pk_invoices");
+
+                    b.HasIndex("DocumentNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_invoices_document_number");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_invoices_order_id");
+
+                    b.ToTable("invoices", (string)null);
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.InvoiceItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("InvoiceId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("invoice_id");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("product_id");
+
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("product_name");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("quantity");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("subtotal");
+
+                    b.Property<decimal>("Total")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("total");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("unit_price");
+
+                    b.Property<decimal>("VatAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("vat_amount");
+
+                    b.Property<decimal>("VatRate")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("vat_rate");
+
+                    b.HasKey("Id")
+                        .HasName("pk_invoice_items");
+
+                    b.HasIndex("InvoiceId")
+                        .HasDatabaseName("ix_invoice_items_invoice_id");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("ix_invoice_items_product_id");
+
+                    b.ToTable("invoice_items", (string)null);
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.ProformaInvoice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CustomerAddress")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("customer_address");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("customer_name");
+
+                    b.Property<string>("CustomerPhone")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("customer_phone");
+
+                    b.Property<string>("DocumentNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("document_number");
+
+                    b.Property<DateTime>("IssueDate")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("issue_date");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("order_id");
+
+                    b.Property<Guid?>("SourceDraftReference")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("source_draft_reference");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("subtotal");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("total_amount");
+
+                    b.Property<decimal>("TotalVat")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("total_vat");
+
+                    b.HasKey("Id")
+                        .HasName("pk_proforma_invoices");
+
+                    b.HasIndex("DocumentNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_proforma_invoices_document_number");
+
+                    b.HasIndex("OrderId")
+                        .HasDatabaseName("ix_proforma_invoices_order_id");
+
+                    b.HasIndex("SourceDraftReference")
+                        .HasDatabaseName("ix_proforma_invoices_source_draft_reference");
+
+                    b.ToTable("proforma_invoices", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_proforma_invoice_source_reference_or_order", "source_draft_reference IS NOT NULL OR order_id IS NOT NULL");
+                        });
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.ProformaInvoiceItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("product_id");
+
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("product_name");
+
+                    b.Property<int>("ProformaInvoiceId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("proforma_invoice_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("quantity");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("subtotal");
+
+                    b.Property<decimal>("Total")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("total");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("unit_price");
+
+                    b.Property<decimal>("VatAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("vat_amount");
+
+                    b.Property<decimal>("VatRate")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("vat_rate");
+
+                    b.HasKey("Id")
+                        .HasName("pk_proforma_invoice_items");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("ix_proforma_invoice_items_product_id");
+
+                    b.HasIndex("ProformaInvoiceId")
+                        .HasDatabaseName("ix_proforma_invoice_items_proforma_invoice_id");
+
+                    b.ToTable("proforma_invoice_items", (string)null);
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.Quotation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CustomerAddress")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("customer_address");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("customer_name");
+
+                    b.Property<string>("CustomerPhone")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("customer_phone");
+
+                    b.Property<string>("DocumentNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("document_number");
+
+                    b.Property<DateTime>("IssueDate")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("issue_date");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("order_id");
+
+                    b.Property<Guid?>("SourceDraftReference")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("source_draft_reference");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("subtotal");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("total_amount");
+
+                    b.Property<decimal>("TotalVat")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("total_vat");
+
+                    b.Property<DateTime>("ValidUntil")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("valid_until");
+
+                    b.HasKey("Id")
+                        .HasName("pk_quotations");
+
+                    b.HasIndex("DocumentNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_quotations_document_number");
+
+                    b.HasIndex("OrderId")
+                        .HasDatabaseName("ix_quotations_order_id");
+
+                    b.HasIndex("SourceDraftReference")
+                        .HasDatabaseName("ix_quotations_source_draft_reference");
+
+                    b.ToTable("quotations", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_quotation_source_reference_or_order", "source_draft_reference IS NOT NULL OR order_id IS NOT NULL");
+                        });
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.QuotationItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("product_id");
+
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("product_name");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("quantity");
+
+                    b.Property<int>("QuotationId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("quotation_id");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("subtotal");
+
+                    b.Property<decimal>("Total")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("total");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("unit_price");
+
+                    b.Property<decimal>("VatAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("vat_amount");
+
+                    b.Property<decimal>("VatRate")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("vat_rate");
+
+                    b.HasKey("Id")
+                        .HasName("pk_quotation_items");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("ix_quotation_items_product_id");
+
+                    b.HasIndex("QuotationId")
+                        .HasDatabaseName("ix_quotation_items_quotation_id");
+
+                    b.ToTable("quotation_items", (string)null);
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.Deliveryman", b =>
                 {
                     b.Property<int>("Id")
@@ -473,6 +927,10 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("last_attempt_at");
 
+                    b.PrimitiveCollection<string>("LegacyAttachments")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("legacy_attachments");
+
                     b.Property<int?>("MaxRetries")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
@@ -483,7 +941,11 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("modified_at");
 
-                    b.Property<int>("OrderId")
+                    b.PrimitiveCollection<string>("Notes")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("notes");
+
+                    b.Property<int?>("OrderId")
                         .HasColumnType("INTEGER")
                         .HasColumnName("order_id");
 
@@ -529,6 +991,59 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasFilter("[Status] = 'Pending'");
 
                     b.ToTable("outbox_messages", (string)null);
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.OutboxMessageAttachment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("file_size");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("modified_at");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("original_file_name");
+
+                    b.Property<int>("OutboxMessageId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("outbox_message_id");
+
+                    b.Property<string>("RelativePath")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("relative_path");
+
+                    b.Property<string>("StoredFileName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("stored_file_name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_message_attachments");
+
+                    b.HasIndex("OutboxMessageId")
+                        .HasDatabaseName("ix_message_attachments_outbox_message_id");
+
+                    b.ToTable("message_attachments", (string)null);
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.OutboxMessageRecipient", b =>
@@ -948,6 +1463,30 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("whatsapp_groups", (string)null);
                 });
 
+            modelBuilder.Entity("OrderHub.Infrastructure.Models.DocumentSequence", b =>
+                {
+                    b.Property<int>("DocumentType")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("document_type");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("year");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("month");
+
+                    b.Property<int>("LastNumber")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("last_number");
+
+                    b.HasKey("DocumentType", "Year", "Month")
+                        .HasName("pk_document_sequences");
+
+                    b.ToTable("document_sequences", (string)null);
+                });
+
             modelBuilder.Entity("ProductSupplier", b =>
                 {
                     b.Property<int>("ProductId")
@@ -1138,6 +1677,101 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Name");
 
                     b.Navigation("Phone");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.Invoice", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
+                        .WithOne()
+                        .HasForeignKey("OrderHub.Domain.Models.CommercialDocuments.Invoice", "OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_invoices_orders_order_id");
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.InvoiceItem", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.CommercialDocuments.Invoice", "Invoice")
+                        .WithMany("Items")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_invoice_items_invoices_invoice_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_invoice_items_products_product_id");
+
+                    b.Navigation("Invoice");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.ProformaInvoice", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .HasConstraintName("fk_proforma_invoices_orders_order_id");
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.ProformaInvoiceItem", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_proforma_invoice_items_products_product_id");
+
+                    b.HasOne("OrderHub.Domain.Models.CommercialDocuments.ProformaInvoice", "ProformaInvoice")
+                        .WithMany("Items")
+                        .HasForeignKey("ProformaInvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_proforma_invoice_items_proforma_invoices_proforma_invoice_id");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("ProformaInvoice");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.Quotation", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .HasConstraintName("fk_quotations_orders_order_id");
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.QuotationItem", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_quotation_items_products_product_id");
+
+                    b.HasOne("OrderHub.Domain.Models.CommercialDocuments.Quotation", "Quotation")
+                        .WithMany("Items")
+                        .HasForeignKey("QuotationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_quotation_items_quotations_quotation_id");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Quotation");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Deliveryman", b =>
@@ -1338,7 +1972,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .WithMany("OutboxMessages")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
                         .HasConstraintName("fk_outbox_messages_orders_order_id");
 
                     b.HasOne("OrderHub.Domain.Models.OutboxMessageRecipient", "Recipient")
@@ -1349,6 +1982,18 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Order");
 
                     b.Navigation("Recipient");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.OutboxMessageAttachment", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.OutboxMessage", "OutboxMessage")
+                        .WithMany("Attachments")
+                        .HasForeignKey("OutboxMessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_message_attachments_outbox_messages_outbox_message_id");
+
+                    b.Navigation("OutboxMessage");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Phone", b =>
@@ -1716,6 +2361,21 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Orders");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.Invoice", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.ProformaInvoice", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.Quotation", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.Order", b =>
                 {
                     b.Navigation("DeliverySteps");
@@ -1730,6 +2390,11 @@ namespace OrderHub.Infrastructure.Migrations
             modelBuilder.Entity("OrderHub.Domain.Models.OrderItem", b =>
                 {
                     b.Navigation("Properties");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.OutboxMessage", b =>
+                {
+                    b.Navigation("Attachments");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Product", b =>

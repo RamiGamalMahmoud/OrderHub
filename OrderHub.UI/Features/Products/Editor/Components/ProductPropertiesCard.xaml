@@ -17,14 +17,6 @@
         BorderThickness="1"
         CornerRadius="12">
 
-
-        <Border.Effect>
-            <DropShadowEffect
-                BlurRadius="15"
-                Opacity="0.08"
-                ShadowDepth="1" />
-        </Border.Effect>
-
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="auto" />
@@ -48,8 +40,8 @@
                 </StackPanel>
 
                 <hc:SearchBar
-                    Height="35"
-                    Margin="0,0,0,8"
+                    Height="40"
+                    Margin="0,12,0,0"
                     hc:InfoElement.Placeholder="البحث عن خاصية ..."
                     hc:InfoElement.ShowClearButton="True"
                     Style="{StaticResource SearchBarPlus}" />

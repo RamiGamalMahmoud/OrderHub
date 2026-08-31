@@ -4,15 +4,20 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Common.Lookups;
+using OrderHub.Application.Features.Documents.Invoices;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Application.Features.Orders.Queries;
+using OrderHub.Application.Interfaces;
+using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
 using OrderHub.UI.Features.Orders.Index.OrderDetailsPanel;
+using OrderHub.UI.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,13 +35,16 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
     private async Task ShowDraftsOrders()
     {
         IsDraftsOrderOpened = !IsDraftsOrderOpened;
-        if(IsDraftsOrderOpened)
+        if (IsDraftsOrderOpened)
             await OrderDraftsDrawerViewModel.LoadAsync();
     }
 
     public OrderDetailsPanelViewModel OrderDetailsPanelViewModel { get; }
 
     private readonly ObservableCollection<OrderViewModel> _orders = new();
+    private readonly IRequestExecutor _requestExecutor;
+    private readonly IApplicationDirectoriesService _applicationDirectoriesService;
+
     public ObservableCollection<OrderViewModel> Orders => _orders;
 
     [ObservableProperty]
@@ -46,6 +54,21 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
     partial void OnSelectedOrderChanged(OrderViewModel value)
     {
         OrderDetailsPanelViewModel.SelectedOrderId = value?.Id;
+    }
+
+    [RelayCommand]
+    private async Task GenerateInvoice(OrderViewModel order)
+    {
+        string invoiceNumber = await _requestExecutor.ExecuteAsync(new CreateInvoiceCommand.Command(order.Id));
+
+        string invoicePath = Path.Combine(_applicationDirectoriesService.InvoicesDirecoty, $"{invoiceNumber}.pdf");
+
+        await DialogService.Instance.ShowDialog<Features.Documents.Preview.PreviewDocumentView>(
+            "عرض فاتورة", 
+            new Features.Documents.Preview.Data(
+                invoicePath, 
+                order.ClientName, 
+                order.ClientPhoneNumber));
     }
 
     public bool HasSelectedOrder => SelectedOrder is not null;
@@ -101,9 +124,12 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
     public ViewModel(
         IMediator mediator,
-        IDraftService draftService)
+        IDraftService draftService,
+        IRequestExecutor requestExecutor,
+        IApplicationDirectoriesService applicationDirectoriesService)
         : base(mediator)
     {
+        _requestExecutor = requestExecutor;
         OrderDraftsDrawerViewModel = new OrderDraftsDrawerViewModel(draftService);
 
         OrderDetailsPanelViewModel = new OrderDetailsPanelViewModel(mediator);
@@ -137,10 +163,12 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         {
             OnPropertyChanged(nameof(OrderDraftsDrawerViewModel.Drafts.Count));
         });
+        _applicationDirectoriesService = applicationDirectoriesService;
     }
 
     protected override async Task LoadAsync()
     {
+        await OrderDraftsDrawerViewModel.LoadAsync();
         try
         {
             IsLoading = true;
@@ -161,8 +189,7 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         }
         catch (Exception ex)
         {
-            await _mediator.Publish(
-                new Application.Notifications.AppliationNotification(ex.Message));
+            NotificationService.Instance.Show(ex.Message);
         }
         finally
         {
@@ -208,10 +235,9 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
     partial void OnTotalCountChanged(int oldValue, int newValue) => OnPropertyChanged(nameof(PaginationSummary));
 
-    protected override Task ShowCreateAsync()
+    protected override async Task ShowCreateAsync()
     {
-        DialogService.Instance.ShowDialog<Create.View>();
-        return Task.CompletedTask;
+        await DialogService.Instance.ShowDialog<Create.View>("إنشاء طلب جديد");
     }
 
     [RelayCommand]
@@ -242,8 +268,7 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
             return;
         }
 
-        await _mediator.Publish(
-            new Application.Notifications.AppliationNotification(result.ErrorMessage));
+        NotificationService.Instance.ShowError(result.ErrorMessage);
     }
 
     [RelayCommand]
@@ -259,15 +284,13 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         }
         catch (Exception ex)
         {
-            await _mediator.Publish(
-                new Application.Notifications.AppliationNotification(ex.Message));
+            NotificationService.Instance.ShowError(ex.Message);
         }
     }
 
-    protected override Task ShowEditAsync(OrderViewModel model)
+    protected override async Task ShowEditAsync(OrderViewModel model)
     {
-        DialogService.Instance.ShowDialog<Edit.View>(model.Id);
-        return Task.CompletedTask;
+        await DialogService.Instance.ShowDialog<Edit.View>("تعديل طلب", model.Id);
     }
 
     protected override async Task DeleteAsync(OrderViewModel model)
@@ -282,14 +305,12 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
         if (!result.IsSuccess)
         {
-            await _mediator.Publish(
-                new Application.Notifications.ErrorNotification(result.ErrorMessage));
+            NotificationService.Instance.ShowError(result.ErrorMessage);
             return;
         }
 
         WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.OrderDeletedMessage(model.Id));
-        await _mediator.Publish(
-            new Application.Notifications.SuccessNotification("تم حذف الطلب بنجاح."));
+        NotificationService.Instance.ShowSuccess("تم حذف الطلب بنجاح.");
     }
 
 
@@ -442,13 +463,12 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
             CurrentPage = pagedOrders.PageNumber;
 
             UpdateOrders(pagedOrders.Items.Select(Map));
-            //OnPropertyChanged(nameof(PaymentMethodFilters));
-            //OnPropertyChanged(nameof(OrderStatusFilters));
+            OnPropertyChanged(nameof(PaymentMethodFilters));
+            OnPropertyChanged(nameof(OrderStatusFilters));
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            await _mediator.Publish(
-                new Application.Notifications.AppliationNotification(ex.Message));
+            NotificationService.Instance.ShowError(ex.Message);
         }
         finally
         {

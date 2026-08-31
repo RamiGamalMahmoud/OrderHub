@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Infrastructure.Features.OrderDrafts;
 using OrderHub.Infrastructure.ReadServices;
@@ -13,6 +14,10 @@ public static class ServiceCollectionExtensions
     {
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
         services.AddSingleton<AppDbContextFactory>();
+        services.AddScoped<AppDbContext>(services =>
+        {
+            return services.GetRequiredService<AppDbContextFactory>().CreateDbContext();
+        });
 
         services.AddServices();
         return services;
@@ -24,10 +29,17 @@ public static class ServiceCollectionExtensions
         services.AddReadServices();
         services.AddDrafts();
         services.AddTransient<Orders.OrderWriteService>();
-        services.AddSingleton<Services.WhatsappService>();
-        services.AddSingleton<IWhatsappService>(s => s.GetRequiredService<Services.WhatsappService>());
-        services.AddSingleton<IMessageSender>(s => s.GetRequiredService<Services.WhatsappService>());
+        services.AddSingleton<Application.Interfaces.IRequestExecutor, Execution.RequestExecutor>();
+        services.AddSingleton<Application.Interfaces.Services.IDataMigrationService, Services.DataMigrationService>();
+
+        services.AddSingleton<Application.Interfaces.Documents.IPdfDocumentFactory, Features.Documents.PdfDocumentFactory>();
+        services.AddSingleton<Application.Interfaces.Services.IFileStorageService, Services.LocalFileStorageService>();
+        services.AddSingleton<Services.PlaywrightWhatsAppService>();
+        services.AddSingleton<IWhatsappService>(s => s.GetRequiredService<Services.PlaywrightWhatsAppService>());
+        services.AddSingleton<IMessageSender>(s => s.GetRequiredService<Services.PlaywrightWhatsAppService>());
+        services.AddScoped<IUnitOfWork, Services.UnitOfWork>();
         services.AddSingleton<IMessageService, Services.MessageService>();
+        
         services.AddSingleton<IConnectionService, Services.ConnectionService>();
 
         services.AddSingleton<IDatabaseService, Services.DatabaseService>();

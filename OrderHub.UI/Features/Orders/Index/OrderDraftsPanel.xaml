@@ -22,7 +22,6 @@
 
             <Grid.RowDefinitions>
                 <RowDefinition Height="95" />
-                <RowDefinition Height="95" />
                 <RowDefinition Height="1*" />
                 <RowDefinition Height="65" />
             </Grid.RowDefinitions>
@@ -64,20 +63,20 @@
                     HorizontalAlignment="Left"
                     Orientation="Horizontal">
 
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        FontSize="18"
-                        FontWeight="Bold"
-                        Foreground="#111827"
-                        Text="المسودات" />
-
                     <icons:MaterialIcon
                         Width="23"
                         Height="23"
-                        Margin="8,0,0,0"
                         VerticalAlignment="Center"
                         Foreground="#315A91"
                         Kind="FileDocumentOutline" />
+
+                    <TextBlock
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Center"
+                        FontSize="18"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource Primary}"
+                        Text="الطلبات المعلقة" />
 
                 </StackPanel>
 
@@ -88,71 +87,9 @@
                     HorizontalAlignment="Left"
                     FontSize="12"
                     Foreground="#64748B"
-                    Text="طلبات لم يتم إكمالها بعد" />
+                    Text="طلبات لم يتم إكمالها بعد, اضغط متابعة لاكمال الطلب أو حذف." />
 
             </Grid>
-
-
-            <!--  =====================================================  -->
-            <!--  Auto Save Information  -->
-            <!--  =====================================================  -->
-
-            <Border
-                Grid.Row="1"
-                Margin="12,0,12,10"
-                Padding="15,10"
-                Background="#EEF5FF"
-                BorderThickness="0"
-                CornerRadius="9">
-
-                <Grid>
-
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="40" />
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel
-                        Grid.Column="0"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center">
-
-                        <TextBlock
-                            HorizontalAlignment="Center"
-                            FontSize="12"
-                            FontWeight="SemiBold"
-                            Foreground="#111827"
-                            Text="يتم حفظ مسوداتك تلقائياً أثناء العمل" />
-
-                        <TextBlock
-                            Margin="0,5,0,0"
-                            HorizontalAlignment="Center"
-                            FontSize="11"
-                            Foreground="#64748B">
-
-                            <Run Text="استخدمها لاحقاً من " />
-
-                            <Run
-                                FontWeight="SemiBold"
-                                Foreground="#2563EB"
-                                Text="هنا" />
-
-                        </TextBlock>
-
-                    </StackPanel>
-
-                    <icons:MaterialIcon
-                        Grid.Column="1"
-                        Width="24"
-                        Height="24"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        Foreground="#2563EB"
-                        Kind="InformationOutline" />
-
-                </Grid>
-
-            </Border>
 
 
             <!--  =====================================================  -->
@@ -160,7 +97,7 @@
             <!--  =====================================================  -->
 
             <ScrollViewer
-                Grid.Row="2"
+                Grid.Row="1"
                 Padding="12,5,12,8"
                 HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
@@ -463,7 +400,7 @@
             <!--  =====================================================  -->
 
             <Button
-                Grid.Row="3"
+                Grid.Row="2"
                 Height="50"
                 Margin="12,0,12,10"
                 HorizontalAlignment="Stretch"

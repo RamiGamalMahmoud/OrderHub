@@ -8,20 +8,13 @@
     xmlns:local="clr-namespace:OrderHub.UI.Features.Products.Editor.Components"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
+
     <Border
-        Grid.Column="2"
         Padding="20"
         Background="White"
         BorderBrush="#E5E7EB"
         BorderThickness="1"
         CornerRadius="12">
-
-        <Border.Effect>
-            <DropShadowEffect
-                BlurRadius="15"
-                Opacity="0.08"
-                ShadowDepth="1" />
-        </Border.Effect>
 
         <Grid>
 
@@ -30,30 +23,37 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <StackPanel Margin="0,0,0,16" Orientation="Vertical">
+            <!--  Header  -->
+            <StackPanel Margin="0,0,0,16">
+
                 <StackPanel Orientation="Horizontal">
+
                     <icons:MaterialIcon
                         Width="18"
                         Height="18"
                         VerticalAlignment="Center"
                         Foreground="{StaticResource Primary}"
                         Kind="Domain" />
+
                     <TextBlock
                         Margin="8,0,0,0"
-                        FontSize="18"
+                        VerticalAlignment="Center"
+                        FontSize="17"
                         FontWeight="SemiBold"
                         Text="الموردون" />
+
                 </StackPanel>
 
                 <hc:SearchBar
-                    Height="35"
-                    Margin="0,0,0,8"
-                    hc:InfoElement.Placeholder="البحث عن مورد"
+                    Height="40"
+                    Margin="0,12,0,0"
+                    hc:InfoElement.Placeholder="البحث عن مورد..."
                     hc:InfoElement.ShowClearButton="True"
                     Style="{StaticResource SearchBarPlus}" />
 
             </StackPanel>
 
+            <!--  Suppliers  -->
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
 
                 <ItemsControl ItemsSource="{Binding Suppliers}">
@@ -63,8 +63,7 @@
                         <DataTemplate>
 
                             <Border
-                                Height="40"
-                                Margin="4"
+                                Margin="0,0,0,8"
                                 Padding="10,6"
                                 Background="#FAFAFA"
                                 BorderBrush="#E5E7EB"
@@ -72,10 +71,12 @@
                                 CornerRadius="6">
 
                                 <CheckBox
-                                    MinWidth="130"
-                                    Command="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=DataContext.SelectSupplierCommand}"
+                                    MinHeight="28"
+                                    Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.SelectSupplierCommand}"
                                     Content="{Binding Value.Name}"
                                     Cursor="Hand"
+                                    FontSize="14"
+                                    FontWeight="SemiBold"
                                     IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" />
 
                             </Border>
@@ -91,4 +92,5 @@
         </Grid>
 
     </Border>
+
 </UserControl>

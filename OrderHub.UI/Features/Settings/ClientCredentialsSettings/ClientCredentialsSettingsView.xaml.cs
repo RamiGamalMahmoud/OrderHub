@@ -1,9 +1,8 @@
-﻿using OrderHub.UI.Interfaces;
-using System.Windows;
+﻿using System.Windows;
 
 namespace OrderHub.UI.Features.Settings.ClientCredentialsSettings;
 
-internal partial class ClientCredentialsSettingsView : Window, IDialog
+internal partial class ClientCredentialsSettingsView : Window
 {
     public ClientCredentialsSettingsView(ClientCredentialsSettingsViewModel viewModel)
     {

@@ -46,6 +46,7 @@
                 </hc:ThemeResources>
                 <hc:Theme />
                 <ResourceDictionary Source="/Resources/Styles/DataGridStyle.xaml" />
+                <ResourceDictionary Source="/Resources/Styles/DashboardStyles.xaml" />
 
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

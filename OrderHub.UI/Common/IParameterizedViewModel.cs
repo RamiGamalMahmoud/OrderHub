@@ -1,6 +1,8 @@
-﻿namespace OrderHub.UI.Common;
+﻿using System.Threading.Tasks;
+
+namespace OrderHub.UI.Common;
 
 public interface IParameterizedViewModel
 {
-    void Initialize(object parameter);
+    Task Initialize(object parameter);
 }

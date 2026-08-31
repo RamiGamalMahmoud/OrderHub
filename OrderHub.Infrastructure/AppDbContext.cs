@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OrderHub.Domain.Models;
+using OrderHub.Domain.Models.CommercialDocuments;
 using OrderHub.Infrastructure.Configurations;
+using OrderHub.Infrastructure.Models;
 
 namespace OrderHub.Infrastructure;
 
@@ -21,6 +23,7 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<PaymentMethod> PaymentMethods { get; set; }
     public DbSet<OutboxMessage> OutboxMessages { get; set; }
+    public DbSet<OutboxMessageAttachment> MessageAttachments { get; set; }
     public DbSet<ClientRecipient> ClientRecipients { get; set; }
     public DbSet<SupplierRecipient> SupplierRecipients { get; set; }
     public DbSet<DeliverymanRecipient> DeliverymanRecipients { get; set; }
@@ -30,6 +33,13 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<PropertyOption> PropertyOptions { get; set; }
     public DbSet<ProductProperty> ProductProperties { get; set; }
     public DbSet<OrderItemProperty> OrderItemProperties { get; set; }
+    public DbSet<Invoice> Invoices { get; set; }
+    public DbSet<InvoiceItem> InvoicesItem { get; set; }
+    public DbSet<DocumentSequence>  DocumentSequences { get; set; }
+    public DbSet<Quotation> Quotations { get; set; }
+    public DbSet<QuotationItem> QuotationItems { get; set; }
+    public DbSet<ProformaInvoice> ProformaInvoices { get; set; }
+    public DbSet<ProformaInvoiceItem> ProformaInvoiceItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

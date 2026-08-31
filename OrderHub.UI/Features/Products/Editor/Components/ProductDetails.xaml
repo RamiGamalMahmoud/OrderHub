@@ -8,6 +8,7 @@
     xmlns:local="clr-namespace:OrderHub.UI.Features.Products.Editor.Components"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
+
     <Border
         Padding="20"
         Background="White"
@@ -15,79 +16,76 @@
         BorderThickness="1"
         CornerRadius="12">
 
-        <Border.Effect>
-            <DropShadowEffect
-                BlurRadius="15"
-                Opacity="0.08"
-                ShadowDepth="1" />
-        </Border.Effect>
-
         <StackPanel>
 
-            <StackPanel Margin="0,0,0,18" Orientation="Horizontal">
+            <!--  Header  -->
+            <StackPanel Margin="0,0,0,20" Orientation="Horizontal">
+
                 <icons:MaterialIcon
                     Width="18"
                     Height="18"
                     VerticalAlignment="Center"
                     Foreground="{StaticResource Primary}"
                     Kind="PackageVariantClosed" />
+
                 <TextBlock
                     Margin="8,0,0,0"
-                    FontSize="18"
+                    VerticalAlignment="Center"
+                    FontSize="17"
                     FontWeight="SemiBold"
                     Text="بيانات المنتج" />
+
             </StackPanel>
 
             <!--  Product Name  -->
-
             <TextBlock
-                Margin="0,0,0,6"
+                Margin="0,0,0,8"
                 FontWeight="SemiBold"
                 Text="اسم المنتج" />
 
             <hc:TextBox
-                Height="36"
-                hc:InfoElement.Placeholder="اسم المنتج"
+                MinHeight="40"
+                Padding="10,6"
+                hc:InfoElement.Placeholder="أدخل اسم المنتج"
                 hc:InfoElement.ShowClearButton="True"
                 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
 
             <!--  Price + Code  -->
-
-            <Grid Margin="0,8,0,0">
+            <Grid Margin="0,20,0,0">
 
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition />
                     <ColumnDefinition Width="16" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition />
                 </Grid.ColumnDefinitions>
 
                 <!--  Price  -->
-
                 <StackPanel Grid.Column="0">
 
                     <TextBlock
-                        Margin="0,0,0,6"
+                        Margin="0,0,0,8"
                         FontWeight="SemiBold"
                         Text="السعر" />
 
                     <hc:TextBox
-                        Height="36"
+                        MinHeight="40"
+                        Padding="10,6"
                         hc:InfoElement.Placeholder="سعر المنتج"
                         Text="{Binding PriceText, UpdateSourceTrigger=PropertyChanged}" />
 
                 </StackPanel>
 
                 <!--  Code  -->
-
                 <StackPanel Grid.Column="2">
 
                     <TextBlock
-                        Margin="0,0,0,6"
+                        Margin="0,0,0,8"
                         FontWeight="SemiBold"
                         Text="الكود" />
 
                     <hc:TextBox
-                        Height="36"
+                        MinHeight="40"
+                        Padding="10,6"
                         hc:InfoElement.Placeholder="كود المنتج"
                         Text="{Binding Code, UpdateSourceTrigger=PropertyChanged}" />
 
@@ -96,19 +94,23 @@
             </Grid>
 
             <!--  Category  -->
+            <Grid Margin="0,24,0,8">
 
-            <DockPanel Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
                 <TextBlock
-                    DockPanel.Dock="Left"
+                    VerticalAlignment="Center"
                     FontWeight="SemiBold"
                     Text="القسم" />
 
                 <Border
+                    Grid.Column="1"
                     Padding="8,3"
                     Background="#F3F4F6"
                     CornerRadius="5"
-                    DockPanel.Dock="Right"
                     Visibility="{Binding IsFullPathVisible, Converter={StaticResource Boolean2VisibilityConverter}}">
 
                     <TextBlock
@@ -118,23 +120,19 @@
 
                 </Border>
 
-            </DockPanel>
+            </Grid>
 
             <!--  Root Category  -->
-
             <hc:ComboBox
-                Height="36"
+                MinHeight="40"
                 Margin="0,0,0,10"
                 hc:InfoElement.Placeholder="القسم الرئيسي"
                 hc:InfoElement.ShowClearButton="True"
                 DisplayMemberPath="Name"
-                FontSize="15"
-                FontWeight="SemiBold"
                 ItemsSource="{Binding CategorySelection.RootCategories}"
                 SelectedItem="{Binding SelectedCategory}" />
 
             <!--  Sub Categories  -->
-
             <ItemsControl ItemsSource="{Binding CategorySelection.SubCategories}">
 
                 <ItemsControl.ItemsPanel>
@@ -148,13 +146,11 @@
                     <DataTemplate>
 
                         <hc:ComboBox
-                            Height="36"
+                            MinHeight="40"
                             Margin="0,0,0,10"
                             hc:InfoElement.Placeholder="القسم الفرعي"
                             hc:InfoElement.ShowClearButton="True"
                             DisplayMemberPath="Name"
-                            FontSize="15"
-                            FontWeight="SemiBold"
                             ItemsSource="{Binding Value}"
                             SelectedItem="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=DataContext.SelectedCategory}" />
 
@@ -167,4 +163,5 @@
         </StackPanel>
 
     </Border>
+
 </UserControl>

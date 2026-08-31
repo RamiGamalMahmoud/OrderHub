@@ -1,4 +1,5 @@
 ﻿using OrderHub.Application.Interfaces.Services;
+using OrderHub.UI.Services;
 using System;
 using System.Threading.Tasks;
 
@@ -7,12 +8,12 @@ namespace OrderHub.UI.StartUpSteps.Steps;
 public class DatabaseInitializationStep : IStartupStep
 {
     private readonly IDatabaseService _db;
-    private readonly INotifier _notifier;
+    private readonly IDataMigrationService _migrationService;
 
-    public DatabaseInitializationStep(IDatabaseService db, INotifier notifier)
+    public DatabaseInitializationStep(IDatabaseService db, IDataMigrationService migrationService)
     {
         _db = db;
-        _notifier = notifier;
+        _migrationService = migrationService;
     }
 
     public int Order => (int)StartUpdStepsOrder.DatabaseInitialization;
@@ -24,7 +25,7 @@ public class DatabaseInitializationStep : IStartupStep
     {
         if (!await _db.CanConnectAsync())
         {
-            await _notifier.Error("خطأ في الاتصال بقاعدة البيانات");
+            NotificationService.Instance.ShowError("خطأ في الاتصال بقاعدة البيانات");
             throw new Exception("DB connection failed");
         }
 
@@ -33,7 +34,9 @@ public class DatabaseInitializationStep : IStartupStep
         if (await _db.HasPendingMigrationsAsync())
         {
             await _db.MigrateAsync();
-            await _notifier.Success("تم تحديث قاعدة البيانات");
+            NotificationService.Instance.ShowSuccess("تم تحديث قاعدة البيانات");
         }
+
+        await _migrationService.MigrateLegacyAttachmentsAsync();
     }
 }

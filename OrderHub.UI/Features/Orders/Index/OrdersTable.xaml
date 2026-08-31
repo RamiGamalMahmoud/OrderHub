@@ -44,7 +44,7 @@
             <DataGrid.Columns>
 
                 <DataGridTextColumn
-                    Width="150"
+                    MinWidth="150"
                     Binding="{Binding OrderNumber}"
                     FontWeight="SemiBold"
                     Header="رقم الطلب" />

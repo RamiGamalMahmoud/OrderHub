@@ -1,11 +1,10 @@
-﻿using OrderHub.UI.Interfaces;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace OrderHub.UI.Features.Orders.Editor;
 
-internal partial class View : Window, IDialog
+internal partial class View : Window
 {
     public View(ViewModel viewModel)
     {
@@ -36,19 +35,5 @@ internal partial class View : Window, IDialog
             if (viewModel.SaveCommand.CanExecute(null))
                 viewModel.SaveCommand.Execute(null);
         }
-
-        //if (e.Key == Key.Enter)
-        //{
-        //    if (Keyboard.FocusedElement is not Button)
-        //    {
-        //        e.Handled = true;
-
-        //        var request = new TraversalRequest(FocusNavigationDirection.Next);
-        //        if (Keyboard.FocusedElement is UIElement elementWithFocus)
-        //        {
-        //            elementWithFocus.MoveFocus(request);
-        //        }
-        //    }
-        //}
     }
 }

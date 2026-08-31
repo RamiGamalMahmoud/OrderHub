@@ -1,9 +1,8 @@
-﻿using OrderHub.UI.Interfaces;
-using System.Windows;
+﻿using System.Windows;
 
 namespace OrderHub.UI.Features.ShippingCarriers.Editor;
 
-public partial class View : Window, IDialog
+public partial class View : Window
 {
     public View(ViewModel viewModel)
     {

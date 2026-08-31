@@ -5,6 +5,7 @@ using OrderHub.Application.Features.Products.Update;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
 using OrderHub.UI.Features.Products.Editor;
+using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,7 +22,7 @@ public class ViewModel : Editor.ViewModel, IParameterizedViewModel
 
     public override string Title => "تعديل بيانات منتج";
 
-    public void Initialize(object parameter)
+    public Task Initialize(object parameter)
     {
         System.ArgumentNullException.ThrowIfNull(parameter);
         _productId = (int) parameter;
@@ -29,6 +30,8 @@ public class ViewModel : Editor.ViewModel, IParameterizedViewModel
         {
             throw new System.Exception();
         }
+
+        return Task.CompletedTask;
     }
 
     public override async Task LoadDataAsync()
@@ -82,13 +85,13 @@ public class ViewModel : Editor.ViewModel, IParameterizedViewModel
 
         if (result.IsSuccess)
         {
-            await _mediator.Publish(new Application.Notifications.SuccessNotification("تم تحديث بيانات المنتج"));
+            NotificationService.Instance.ShowSuccess("تم تحديث بيانات المنتج");
             WeakReferenceMessenger.Default.Send(new Application.Messages.Products.ProductedUpdatedMessage());
             OnRequestClose();
         }
         else
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification("خطأ أثناء تحديث بيانات المنتج"));
+            NotificationService.Instance.ShowError("خطأ أثناء تحديث بيانات المنتج");
         }
     }
 }

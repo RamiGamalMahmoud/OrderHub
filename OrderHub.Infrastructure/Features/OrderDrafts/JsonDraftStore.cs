@@ -50,14 +50,14 @@ internal sealed class JsonDraftStore : IDraftStore
     }
 
     private string GetPath(Guid id)
-        => Path.Combine(_directoriesService.DraftsPath, $"{id}.json");
+        => Path.Combine(_directoriesService.DraftsDirectory, $"{id}.json");
 
     public async Task<IReadOnlyList<OrderDraftSummary>> GetAllAsync()
     {
-        if (!Directory.Exists(_directoriesService.DraftsPath))
+        if (!Directory.Exists(_directoriesService.DraftsDirectory))
             return [];
 
-        var files = Directory.GetFiles(_directoriesService.DraftsPath, "*.json");
+        var files = Directory.GetFiles(_directoriesService.DraftsDirectory, "*.json");
 
         var drafts = new List<OrderDraftSummary>();
 

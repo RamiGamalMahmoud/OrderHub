@@ -1,12 +1,15 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.EntityFrameworkCore;
+using OpenQA.Selenium.DevTools.V145.Security;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,6 +18,7 @@ namespace OrderHub.Infrastructure.Services;
 internal class MessageService : IMessageService
 {
     private readonly AppDbContextFactory _dbFactory;
+    private readonly IApplicationDirectoriesService _directoriesService;
     private readonly IMessageSender _messageSender;
     private readonly SemaphoreSlim _stateLock = new(1, 1);
 
@@ -23,14 +27,11 @@ internal class MessageService : IMessageService
     private CancellationTokenSource _cts;
     private Task _worker;
 
-    public MessageService(
-        AppDbContextFactory dbFactory,
-        IMessageSender messageSender)
+    public MessageService(AppDbContextFactory dbFactory, IMessageSender messageSender, IApplicationDirectoriesService directoriesService)
     {
         _dbFactory = dbFactory;
         _messageSender = messageSender;
-
-        WeakReferenceMessenger.Default.Register<Application.Messages.Orders.MessagesCreatedMessage>(this, (r, m) => QueueMessages(m.OutboxMessages));
+        _directoriesService = directoriesService;
     }
 
     public void QueueMessage(OutboxMessage message)
@@ -47,7 +48,6 @@ internal class MessageService : IMessageService
     {
         foreach (OutboxMessage message in messages.Where(message => message?.Recipient is not null))
         {
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.AddingNewMessageToQueMessage(message.Recipient.Name));
             _queue.Enqueue(message);
         }
     }
@@ -81,7 +81,7 @@ internal class MessageService : IMessageService
         using AppDbContext appDbContext = _dbFactory.CreateDbContext();
 
         IEnumerable<OutboxMessage> pendingMessages = await appDbContext.OutboxMessages
-            .Where(x => x.Status == OutboxMessageStatus.Pending)
+            .Where(x => x.Status == OutboxMessageStatus.Sending)
             .Include(x => x.Recipient)
             .ToListAsync(cancellationToken);
 
@@ -124,14 +124,29 @@ internal class MessageService : IMessageService
         {
             return Task.FromResult(false);
         }
-        List<MessageAttachment> attachments =
-        [
-        ];
+
+        StringBuilder messageTextBuilder = new StringBuilder();
+        messageTextBuilder.AppendLine(message.Text);
+
+        if (message.Notes is not null && message.Notes.Any())
+        {
+            messageTextBuilder.AppendLine("*„·«ÕŸ« :*");
+            messageTextBuilder.AppendLine("----------------------");
+            foreach (string note in message.Notes)
+            {
+                messageTextBuilder.AppendLine($"= : {note}");
+            }
+            messageTextBuilder.AppendLine("*„⁄  ÕÌ«  „ Ã— «·„”«Ãœ*");
+        }
+
+
+        List<string> attachments = message.Attachments.Select(m => $"{Path.Combine(_directoriesService.AttachmentsDirectory, m.StoredFileName)}").ToList();
+
         return message.RecipientType switch
         {
             RecipientType.Supplier or RecipientType.Deliveryman
-                => _messageSender.SendToGroupAsync(message.Recipient.PhoneNumber, new MessageToSend(message.Text, attachments)),
-            _ => _messageSender.SendToPhoneAsync(message.Recipient.PhoneNumber, new MessageToSend(message.Text, attachments))
+                => _messageSender.SendToGroupAsync(message.Recipient.PhoneNumber, new MessageToSend(messageTextBuilder.ToString(), attachments)),
+            _ => _messageSender.SendToPhoneAsync(message.Recipient.PhoneNumber, new MessageToSend(messageTextBuilder.ToString(), attachments))
         };
     }
 

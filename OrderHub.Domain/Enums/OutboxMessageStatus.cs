@@ -11,5 +11,8 @@ public enum OutboxMessageStatus
     Sent = 2,
 
     [Description("فشل")]
-    Failed = 3
+    Failed = 3,
+
+    [Description("إرسال")]
+    Sending = 4,
 }

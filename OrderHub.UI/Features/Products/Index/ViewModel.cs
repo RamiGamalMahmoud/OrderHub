@@ -5,6 +5,7 @@ using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Features.Products.List;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
+using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -40,13 +41,13 @@ public partial class ViewModel : IndexViewModelBase<ProductItem>
         Result result = await _mediator.Send(new Application.Features.Products.Delete.DeleteProductCommand(dto.Id));
         if (result.IsSuccess)
         {
-            await _mediator.Publish(new Application.Notifications.SuccessNotification("تم حذف المنتج"));
+            NotificationService.Instance.ShowSuccess("تم حذف المنتج");
             WeakReferenceMessenger.Default.Send(new Application.Messages.Products.ProductedDeletedMessage(dto.Id));
 
         }
         else
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification("خطأ أثناء حذف المنتج"));
+            NotificationService.Instance.ShowError("خطأ أثناء حذف المنتج");
         }
     }
 
@@ -119,7 +120,7 @@ public partial class ViewModel : IndexViewModelBase<ProductItem>
             await ReloadAsync();
             return;
         }
-        //Products = await _mediator.Send(new Application.Queries.ProductQueries.GetProductsByCategoryQuery(value.Id));
+        
         var products = await _productStore.GetProductByCategoryAsync(value.Id);
         Products = products.Select(p => new ProductItem(
                 p.Id,
@@ -163,16 +164,14 @@ public partial class ViewModel : IndexViewModelBase<ProductItem>
             p.Suppliers.Select(s => new ProductSupplierItem(s.Id, s.Name)).ToList()));
     }
 
-    protected override Task ShowEditAsync(ProductItem model)
+    protected override async Task ShowEditAsync(ProductItem model)
     {
-        DialogService.Instance.ShowDialog<Update.View>(model.Id);
-        return Task.CompletedTask;
+        await DialogService.Instance.ShowDialog<Update.View>("تعديل بيانات منتج", model.Id);
     }
 
-    protected override Task ShowCreateAsync()
+    protected override async Task ShowCreateAsync()
     {
-        DialogService.Instance.ShowDialog<Create.View>();
-        return Task.CompletedTask;
+        await DialogService.Instance.ShowDialog<Create.View>("إضافة منتج جديد");
     }
 
     [ObservableProperty]

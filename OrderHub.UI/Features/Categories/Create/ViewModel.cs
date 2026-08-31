@@ -1,8 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
-using OrderHub.UI.Interfaces;
-using OrderHub.UI.Stores.Markers;
+using OrderHub.UI.Services;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.CategoryDtos;
 
@@ -10,7 +9,7 @@ namespace OrderHub.UI.Features.Categories.Create;
 
 public class ViewModel : Editor.ViewModel
 {
-    public ViewModel(IMediator mediator, ISelectionStore<ICategoryMarker, int> selectionStore) : base(mediator, selectionStore)
+    public ViewModel(IMediator mediator) : base(mediator)
     {
     }
 
@@ -23,14 +22,14 @@ public class ViewModel : Editor.ViewModel
 
         if(result.IsSuccess)
         {
-            await _mediator.Publish(new Application.Notifications.SuccessNotification("تمت إضافة القسم "));
+            NotificationService.Instance.ShowSuccess("تم إضافة القسم");
             OnRequestClose();
             WeakReferenceMessenger.Default.Send(new Application.Messages.Categories.CategoryCreatedMessage());
         }
 
         else
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification(result.ErrorMessage));
+            NotificationService.Instance.ShowError(result.ErrorMessage);
         }
     }
 }

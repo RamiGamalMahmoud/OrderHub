@@ -2,31 +2,28 @@
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
-using OrderHub.UI.Interfaces;
-using OrderHub.UI.Stores.Markers;
+using OrderHub.UI.Services;
 using System.Linq;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.ShippingCarriersDtos;
 
 namespace OrderHub.UI.Features.ShippingCarriers.Edit;
 
-public class ViewModel : Editor.ViewModel
+public class ViewModel : Editor.ViewModel, IParameterizedViewModel
 {
-    private readonly ISelectionStore<IShippingCarrierMarker, int> _selectionStore;
-
-    public ViewModel(IMediator mediator, ISelectionStore<IShippingCarrierMarker, int> selectionStore) : base(mediator)
+    private int _shippingCarriersId;
+    public ViewModel(IMediator mediator) : base(mediator)
     {
         _mediator = mediator;
-        _selectionStore = selectionStore;
     }
 
     public override async Task LoadAsync()
     {
         await base.LoadAsync();
-        ShippingCarrierEditDto dto = await _mediator.Send(new Application.Queries.ShippingCarriersQueries.GetShippingCarrierForEditQuery(_selectionStore.Id));
+        ShippingCarrierEditDto dto = await _mediator.Send(new Application.Queries.ShippingCarriersQueries.GetShippingCarrierForEditQuery(_shippingCarriersId));
         if (dto is null)
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification("خطأ! لم يتم تحميل بيانات شركة الشحن للتعديل."));
+            NotificationService.Instance.ShowError("خطأ! لم يتم تحميل بيانات شركة الشحن للتعديل.");
             await Task.Delay(3000);
             OnRequestClose();
             return;
@@ -50,19 +47,28 @@ public class ViewModel : Editor.ViewModel
     protected override async Task Save()
     {
         decimal.TryParse(ShippingCostText, out decimal shippingCost);
-        ShippingCarrierUpdateDto dto = new ShippingCarrierUpdateDto(_selectionStore.Id, Name, shippingCost, CountryCode, PhoneNumber, SelectedCity.Id, Street);
+        ShippingCarrierUpdateDto dto = new ShippingCarrierUpdateDto(_shippingCarriersId, Name, shippingCost, CountryCode, PhoneNumber, SelectedCity.Id, Street);
         Result result = await _mediator.Send(new Application.Commands.ShippingCarriersCommands.UpdateShippingCarrierCommand(dto));
         if (result.IsSuccess)
         {
             string message = MessageBuilder.Build(MessageBuilder.OperationType.Update, true, "شركة شحن");
-            await _mediator.Publish(new Application.Notifications.SuccessNotification(message));
+            NotificationService.Instance.ShowSuccess(message);
             WeakReferenceMessenger.Default.Send(new Application.Messages.ShippingCarriers.ShippingCarrierUpdatedMessage());
             OnRequestClose();
         }
         else
         {
             string message = MessageBuilder.Build(MessageBuilder.OperationType.Update, false, "شركة شحن");
-            await _mediator.Publish(new Application.Notifications.ErrorNotification(message));
+            NotificationService.Instance.ShowError(message);
         }
+    }
+
+    public Task Initialize(object parameter)
+    {
+        if(parameter is not null && parameter is int id)
+        {
+            _shippingCarriersId = id;
+        }
+        return Task.CompletedTask;
     }
 }

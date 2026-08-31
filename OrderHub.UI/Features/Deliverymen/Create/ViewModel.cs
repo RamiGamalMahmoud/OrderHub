@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
+using OrderHub.UI.Services;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.DeliverymanDtos;
 
@@ -22,13 +23,13 @@ internal class ViewModel : Editor.ViewModel
         Result result = await _mediator.Send(new Application.Commands.DeliverymanCommands.CreateDeliverymanCommand(deliveryman));
         if (result.IsSuccess)
         {
-            await _mediator.Publish(new Application.Notifications.SuccessNotification("تم انشاء المندوب بنجاح"));
+            NotificationService.Instance.ShowSuccess("تم انشاء المندوب بنجاح");
             WeakReferenceMessenger.Default.Send(new Application.Messages.Deliveryman.DeliverymanCreatedMessage());
             OnRequestClose();
         }
         else
         {
-            await _mediator.Publish(new Application.Notifications.ErrorNotification("خطأ أثناء إنشاء مندوب"));
+            NotificationService.Instance.ShowError("خطأ أثناء إنشاء مندوب");
         }
     }
 }

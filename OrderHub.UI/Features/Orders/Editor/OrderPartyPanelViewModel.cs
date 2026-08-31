@@ -44,8 +44,8 @@ internal partial class OrderPartyPanelViewModel : ObservableValidator
     }
 
     [RelayCommand]
-    private void ShowCreateClient()
+    private async Task ShowCreateClient()
     {
-        DialogService.Instance.ShowDialog<Features.Clients.Create.View>();
+        await DialogService.Instance.ShowDialog<Features.Clients.Create.View>("إضافة عميل جديد");
     }
 }

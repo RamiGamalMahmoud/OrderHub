@@ -5,10 +5,10 @@ using MediatR;
 using OrderHub.Application.Common.Extensions;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Features.Setup.Properties.GetAll;
-using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.UI.Features.Settings.Properties.PropertyEditor;
+using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -20,7 +20,6 @@ public partial class PropertiesViewModel : ObservableObject
 {
     private readonly ObservableCollection<PropertyViewModel> _propertyItems = [];
     private readonly IMediator _mediator;
-    private readonly INotificationService _notificationService;
 
     public ReadOnlyObservableCollection<PropertyViewModel> PropertyItems { get; }
 
@@ -41,11 +40,10 @@ public partial class PropertiesViewModel : ObservableObject
     [ObservableProperty]
     private PropertyEditorViewModelBase _propertyEditorViewModel;
 
-    public PropertiesViewModel(IMediator mediator, INotificationService notificationService)
+    public PropertiesViewModel(IMediator mediator)
     {
         PropertyItems = new ReadOnlyObservableCollection<PropertyViewModel>(_propertyItems);
         _mediator = mediator;
-        _notificationService = notificationService;
 
         WeakReferenceMessenger.Default.Register<PropertyMessage>(this, async (r, m) =>
         {
@@ -90,11 +88,11 @@ public partial class PropertiesViewModel : ObservableObject
         if (result.IsSuccess)
         {
             _propertyItems.Remove(_propertyItems.Where(x => x.Id == id).First());
-            _notificationService.ShowSuccess("تم حذف الخاصية");
+            NotificationService.Instance.ShowSuccess("تم حذف الخاصية");
         }
         else
         {
-            _notificationService.ShowError("لم يتم حذف الخاصية , الخاصية مرتبطة ببيانات أخرى");
+            NotificationService.Instance.ShowError("لم يتم حذف الخاصية , الخاصية مرتبطة ببيانات أخرى");
         }
     }
 }

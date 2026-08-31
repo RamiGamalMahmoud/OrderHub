@@ -1,9 +1,8 @@
-﻿using OrderHub.UI.Interfaces;
-using System.Windows;
+﻿using System.Windows.Controls;
 
 namespace OrderHub.UI.Features.Categories.Editor;
 
-public partial class View : Window, IDialog
+public partial class View : UserControl
 {
     public View(ViewModel viewModel)
     {
@@ -11,10 +10,5 @@ public partial class View : Window, IDialog
 
         DataContext = viewModel;
         Loaded += (s, e) => Dispatcher.Invoke(() => viewModel.LoadDataAsync());
-        viewModel.RequestClose += () => Close();
     }
-
-    private void Button_Click(object sender, RoutedEventArgs e) => Close();
-
-    public new void Show() => ShowDialog();
 }

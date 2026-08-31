@@ -25,32 +25,61 @@
         <!--  Filters  -->
         <local:MessageFiltersBar Grid.Column="1" HorizontalAlignment="Center" />
 
-        <!--  Refresh  -->
-        <Button
-            Grid.Column="2"
-            Width="90"
-            Height="40"
-            hc:BorderElement.CornerRadius="7"
-            Command="{Binding LoadCommand}"
-            Cursor="Hand"
-            Style="{StaticResource ButtonPrimary}">
+        <StackPanel Grid.Column="2" Orientation="Horizontal">
+            <!--  Refresh  -->
+            <Button
+                Grid.Column="2"
+                Width="90"
+                Height="40"
+                hc:BorderElement.CornerRadius="7"
+                Command="{Binding LoadCommand}"
+                Cursor="Hand"
+                Style="{StaticResource ButtonPrimary}">
 
-            <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal">
 
-                <icons:MaterialIcon
-                    Width="20"
-                    Margin="5,0"
-                    Kind="RefreshCircle" />
+                    <icons:MaterialIcon
+                        Width="20"
+                        Margin="5,0"
+                        Kind="RefreshCircle" />
 
-                <TextBlock
-                    VerticalAlignment="Center"
-                    FontSize="12"
-                    FontWeight="DemiBold"
-                    Text="تحديث" />
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontSize="12"
+                        FontWeight="DemiBold"
+                        Text="تحديث" />
 
-            </StackPanel>
+                </StackPanel>
 
-        </Button>
+            </Button>
+
+            <!--  Send New Message  -->
+            <Button
+                Grid.Column="2"
+                Width="90"
+                Height="40"
+                hc:BorderElement.CornerRadius="7"
+                Command="{Binding SendNewMessageCommand}"
+                Cursor="Hand"
+                Style="{StaticResource ButtonDashedSuccess}">
+
+                <StackPanel Orientation="Horizontal">
+
+                    <icons:MaterialIcon
+                        Width="20"
+                        Margin="5,0"
+                        Kind="Message" />
+
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontSize="12"
+                        FontWeight="DemiBold"
+                        Text="رسالة جديدة" />
+
+                </StackPanel>
+
+            </Button>
+        </StackPanel>
 
     </Grid>
 

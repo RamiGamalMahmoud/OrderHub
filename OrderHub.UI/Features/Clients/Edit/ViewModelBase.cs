@@ -88,6 +88,6 @@ namespace OrderHub.UI.Features.Clients.Edit
         private string _location;
 
         [RelayCommand]
-        private void ShowCreateCity() => DialogService.Instance.ShowDialog<Features.Cities.Create.CreateCityView>();
+        private async Task ShowCreateCity() => await DialogService.Instance.ShowDialog<Features.Cities.Create.CreateCityView>("إضافة مدينة جديدة");
     }
 }

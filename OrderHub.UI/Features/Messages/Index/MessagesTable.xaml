@@ -53,13 +53,22 @@
                                 Height="auto"
                                 HorizontalAlignment="Stretch"
                                 BorderThickness="0"
-                                Content="{Binding Status.DisplayName}">
+                                Content="{Binding Status.DisplayName}"
+                                FontWeight="SemiBold">
 
                                 <Label.Style>
 
                                     <Style BasedOn="{StaticResource LabelDefault}" TargetType="Label">
 
                                         <Style.Triggers>
+
+                                            <DataTrigger Binding="{Binding Status.Value}" Value="{x:Static enums:OutboxMessageStatus.Sending}">
+
+                                                <Setter Property="Background" Value="{StaticResource LightBlueBrush}" />
+
+                                                <Setter Property="Foreground" Value="{StaticResource Primary}" />
+
+                                            </DataTrigger>
 
                                             <DataTrigger Binding="{Binding Status.Value}" Value="{x:Static enums:OutboxMessageStatus.Pending}">
 
@@ -99,15 +108,20 @@
 
                 </DataGridTemplateColumn>
 
+                <!--  اسم المستلم  -->
+                <DataGridTextColumn
+                    Width="150"
+                    Binding="{Binding RecipientName}"
+                    Header="اسم المستلم" />
 
                 <!--  النوع  -->
-                <DataGridTemplateColumn Width="90" Header="النوع">
+                <DataGridTemplateColumn Width="150" Header="نوع المستلم">
 
                     <DataGridTemplateColumn.CellTemplate>
 
                         <DataTemplate>
 
-                            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal">
 
                                 <icons:MaterialIcon
                                     Width="18"
@@ -129,12 +143,12 @@
                 <!--  محتوى الرسالة  -->
                 <DataGridTextColumn
                     Width="*"
+                    MinWidth="200"
                     Binding="{Binding Title}"
                     Header="محتوى الرسالة" />
 
-
                 <!--  وقت الإرسال  -->
-                <DataGridTemplateColumn Width="150" Header="وقت الإرسال">
+                <DataGridTemplateColumn Width="160" Header="وقت الارسال">
 
                     <DataGridTemplateColumn.CellTemplate>
 
@@ -142,14 +156,14 @@
 
                             <StackPanel Orientation="Horizontal">
 
-                                <TextBlock VerticalAlignment="Center" Text="{Binding CreatedAt, StringFormat='{}{0:hh\\:mm tt}'}" />
+                                <TextBlock VerticalAlignment="Center" Text="{Binding LastAttemptAt, StringFormat='{}{0:hh\\:mm tt}'}" />
 
                                 <Separator Width="5" Margin="5,0" />
 
                                 <TextBlock
                                     Margin="0,2,0,0"
                                     VerticalAlignment="Center"
-                                    Text="{Binding CreatedAt, StringFormat='{}{0:dd/MM/yyyy}'}" />
+                                    Text="{Binding LastAttemptAt, StringFormat='{}{0:dd/MM/yyyy}'}" />
 
                             </StackPanel>
 

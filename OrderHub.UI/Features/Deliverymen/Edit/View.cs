@@ -1,9 +1,6 @@
-﻿
-using OrderHub.UI.Interfaces;
+﻿namespace OrderHub.UI.Features.Deliverymen.Edit;
 
-namespace OrderHub.UI.Features.Deliverymen.Edit;
-
-internal class View : Editor.View, IDialog
+internal class View : Editor.View
 {
     public View(ViewModel viewModel) : base(viewModel)
     {

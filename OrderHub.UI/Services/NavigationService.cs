@@ -13,8 +13,7 @@ public class NavigationService : ObservableObject
 
     public static void Init(IServiceProvider serviceProvider)
     {
-        if (Instance == null)
-            Instance = new NavigationService(serviceProvider);
+        Instance ??= new NavigationService(serviceProvider);
     }
     
     private NavigationService(IServiceProvider serviceProvider)

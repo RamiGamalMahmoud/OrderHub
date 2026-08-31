@@ -89,5 +89,5 @@ public abstract partial class ViewModel : EditorViewModelBase
     }
 
     [RelayCommand]
-    private void ShowCreateCity() => DialogService.Instance.ShowDialog<Features.Cities.Create.CreateCityView>();
+    private async Task ShowCreateCity() => await DialogService.Instance.ShowDialog<Features.Cities.Create.CreateCityView>("إضافة مدينة جديدة");
 }

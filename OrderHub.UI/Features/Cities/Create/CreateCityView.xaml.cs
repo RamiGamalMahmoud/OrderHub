@@ -1,18 +1,12 @@
-﻿using OrderHub.UI.Interfaces;
-using System.Windows;
+﻿using System.Windows.Controls;
 
 namespace OrderHub.UI.Features.Cities.Create;
 
-public partial class CreateCityView : Window, IDialog
+public partial class CreateCityView : UserControl
 {
     public CreateCityView(CreateCityViewModel viewModel)
     {
         InitializeComponent();
         DataContext = viewModel;
-        viewModel.RequestClose += () => Close();
     }
-
-    public new void Show() => ShowDialog();
-
-    private void Button_Click(object sender, RoutedEventArgs e) => Close();
 }

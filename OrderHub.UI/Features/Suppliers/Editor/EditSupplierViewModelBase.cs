@@ -92,7 +92,7 @@ public abstract partial class EditSupplierViewModelBase : EditorViewModelBase
     private Application.DTOs.WhatsappGroupDtos.WhatsappGroupInfoDto _selectedWhatsappGroup;
 
     [RelayCommand]
-    private void ShowCreateCity() => DialogService.Instance.ShowDialog<Cities.Create.CreateCityView>();
+    private async Task ShowCreateCity() => await DialogService.Instance.ShowDialog<Cities.Create.CreateCityView>("إضافة مدينة جديدة");
 
     public virtual async Task LoadAsync()
     {
@@ -104,7 +104,7 @@ public abstract partial class EditSupplierViewModelBase : EditorViewModelBase
     private void CloseEdit() => OnRequestClose();
 
     [RelayCommand]
-    private void ShowCreateWhatsappGroup() => DialogService.Instance.ShowDialog<Features.WhatsappGroups.Create.View>();
+    private async Task ShowCreateWhatsappGroup() => await DialogService.Instance.ShowDialog<Features.WhatsappGroups.Create.View>("إنشاء مجموعة واستاب جديدة");
 
 
     public override string Title => "انشاء مورد جديد";
