@@ -178,4 +178,10 @@ public class Order : ModelBase
     {
         DeliveryMethod = deliveryMethod;
     }
+
+    public void ReturnToPending() => OrderStatus = OrderStatus.Pending;
+    public void Ship() => OrderStatus = OrderStatus.Shipped;
+    public void StartProcessing() => OrderStatus = OrderStatus.Processing;
+    public void Cancel() => OrderStatus = OrderStatus.Cancelled;
+    public void Deliver() => OrderStatus = OrderStatus.Delivered;
 }

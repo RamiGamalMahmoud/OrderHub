@@ -39,7 +39,8 @@ internal partial class MainWindowViewModel : ObservableObject
     }
 
     public ObservableCollection<NavigationCommand> NavigationCommands { get; } = [];
-
+    [ObservableProperty]
+    private string _title = "OrderHub";
     private void InitializeNavigationCommands()
     {
         NavigationCommands.Add(new NavigationCommand(
@@ -105,6 +106,7 @@ internal partial class MainWindowViewModel : ObservableObject
 
     partial void OnSelectedNavigationCommandChanged(NavigationCommand value)
     {
+        Title = $"OrderHub - {value?.Name}";
         value?.Action?.Invoke();
     }
 

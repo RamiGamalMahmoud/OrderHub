@@ -2,9 +2,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Interfaces;
+using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
 using System;
 using System.Collections.Generic;
@@ -30,6 +32,24 @@ internal abstract partial class ViewModel : EditorViewModelBase
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     private decimal _totalPrice;
+
+    public IReadOnlyList<OrderSourceView> OrderSources =>
+        [
+            new OrderSourceView(OrderSource.Salla, "ÓáÉ", "Storefront"),
+            new OrderSourceView(OrderSource.Online, "ÃæäáÇíä", "OpenInNew")
+        ];
+
+    [ObservableProperty]
+    private OrderSourceView _selectedOrderSource;
+
+    [RelayCommand]
+    private void ShowCategoresView()
+    {
+        _categoriesView ??= new Components.CategoriesView(ProductsPanel);
+        DialogService.Instance.ShowDialog(_categoriesView, "ÊÍÏíÏ ÇáÞÓã");
+    }
+
+    private Components.CategoriesView _categoriesView;
 
     public abstract string ActionName { get; }
 
@@ -223,12 +243,18 @@ internal abstract partial class ViewModel : EditorViewModelBase
         }
     }
 
+    [RelayCommand]
+    private async Task AddProduct() => await DialogService.Instance.ShowDialog<Features.Products.Create.View>("ÅÖÇÝÉ ãäÊÌ");
+
+    [RelayCommand]
+    private async Task AddSupplier() => await DialogService.Instance.ShowDialog<Features.Suppliers.Create.View>("ÅÖÇÝÉ ãæÑÏ");
+
     private void ProductsPanel_ProductSelected(ProductSelectedEventArgs e)
     {
-        _ = LoadProducDetails(e.Id, e.Price, e.Quantity);
+        _ = LoadProducDetails(e.Id, e.Price, e.Quantity, e.VAT);
     }
 
-    private async Task LoadProducDetails(int productId, decimal price, int quantity)
+    private async Task LoadProducDetails(int productId, decimal price, int quantity, decimal vat)
     {
         var product = await _mediator.Send(
             new Application.Features.Orders.GetOrderItemEditor.Query(productId));
@@ -245,6 +271,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
             CategoryName = product.CategoryName,
             Price = finalPrice,
             Quantity = quantity,
+            VAT = vat,
 
             Suppliers = product.Suppliers.Select(s =>
                 new OrderItemSupplier(
@@ -317,3 +344,5 @@ public record Deliveryman(
     string CityName,
     string PhoneNumber,
     string WhatsappGroupName = null);
+
+public record OrderSourceView(OrderSource OrderSource, string Name, string Icon);

@@ -142,7 +142,7 @@ public static class CreateProformaInvoiceCommand
 
         private static PricingResult CalculateDocument(IEnumerable<ProformaInvoiceItemData> items)
         {
-            return DocumentPricingCalculator.Calculate(items.Select(item => new PricingItem(
+            return PricingCalculator.Calculate(items.Select(item => new PricingItem(
                 item.ProductId,
                 item.ProductName,
                 item.Quantity,

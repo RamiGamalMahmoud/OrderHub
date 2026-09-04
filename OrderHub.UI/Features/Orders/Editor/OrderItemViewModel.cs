@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using OrderHub.Domain.Enums;
+using OrderHub.Domain.Services.Pricing;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -22,7 +23,33 @@ public partial class OrderItemViewModel : ObservableValidator
     [NotifyPropertyChangedFor(nameof(SubTotal))]
     private int _quantity;
 
-    public decimal SubTotal => Price * Quantity;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SubTotal))]
+    decimal _vAT;
+
+    [ObservableProperty]
+    private PricingItemResult _pricing;
+
+    public decimal SubTotal
+    {
+        get
+        {
+            try
+            {
+                Pricing = PricingCalculator.CalculateItem(new PricingItem(
+                    ProductId,
+                    ProductName,
+                    Quantity,
+                    Price,
+                    VAT));
+                return Pricing.Total;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+    }
 
     [ObservableProperty]
     private OrderItemSupplier _supplier;

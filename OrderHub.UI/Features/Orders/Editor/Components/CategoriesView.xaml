@@ -1,0 +1,51 @@
+﻿<UserControl
+    x:Class="OrderHub.UI.Features.Orders.Editor.Components.CategoriesView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:OrderHub.UI.Features.Orders.Editor.Components"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+
+    <Border Width="400" Padding="10">
+        <StackPanel>
+
+            <ComboBox
+                Height="40"
+                Margin="0,5"
+                DisplayMemberPath="Name"
+                FontSize="16"
+                FontWeight="DemiBold"
+                ItemsSource="{Binding CategorySelection.RootCategories}"
+                SelectedItem="{Binding CategorySelection.SelectedCategory}" />
+
+            <ItemsControl ItemsSource="{Binding CategorySelection.SubCategories}">
+
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Vertical" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+
+                        <ComboBox
+                            Height="40"
+                            Margin="0,5"
+                            DisplayMemberPath="Name"
+                            FontSize="16"
+                            FontWeight="DemiBold"
+                            ItemsSource="{Binding Value}"
+                            SelectedItem="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.CategorySelection.SelectedCategory}" />
+
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+
+            </ItemsControl>
+
+        </StackPanel>
+    </Border>
+
+</UserControl>

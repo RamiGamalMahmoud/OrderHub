@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Interfaces.Stores;
 using OrderHub.Domain.Models;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,6 +14,11 @@ internal class OutboxMessageRepository : IOutboxMessageRepository
     public OutboxMessageRepository(AppDbContext dbContext)
     {
         _dbContext = dbContext;
+    }
+
+    public void AddRange(IEnumerable<OutboxMessage> messages)
+    {
+        _dbContext.OutboxMessages.AddRange(messages);
     }
 
     public async Task<OutboxMessage> Create(OutboxMessage message, CancellationToken cancellationToken = default)

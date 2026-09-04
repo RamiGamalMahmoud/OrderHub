@@ -142,7 +142,6 @@
 
                 <!--  محتوى الرسالة  -->
                 <DataGridTextColumn
-                    Width="*"
                     MinWidth="200"
                     Binding="{Binding Title}"
                     Header="محتوى الرسالة" />
@@ -171,6 +170,49 @@
 
                     </DataGridTemplateColumn.CellTemplate>
 
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+
+                            <StackPanel Orientation="Horizontal">
+
+                                <Button
+                                    Grid.Column="0"
+                                    Height="34"
+                                    Padding="8,0"
+                                    VerticalContentAlignment="Center"
+                                    BorderThickness="0"
+                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.SendMessageCommand}"
+                                    CommandParameter="{Binding}"
+                                    Cursor="Hand"
+                                    FontSize="11"
+                                    Foreground="{StaticResource Primary}">
+
+                                    <StackPanel
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Orientation="Horizontal">
+
+                                        <icons:MaterialIcon
+                                            Width="15"
+                                            Height="15"
+                                            Margin="0,0,5,0"
+                                            VerticalAlignment="Center"
+                                            Kind="Send" />
+                                        <TextBlock
+                                            VerticalAlignment="Center"
+                                            FontWeight="SemiBold"
+                                            Text="إرسال" />
+
+                                    </StackPanel>
+                                </Button>
+
+                            </StackPanel>
+
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
             </DataGrid.Columns>

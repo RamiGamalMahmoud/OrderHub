@@ -144,7 +144,7 @@ public static class CreateQuotationCommand
 
         private static PricingResult CalculateDocument(IEnumerable<QuotationItemData> items)
         {
-            return DocumentPricingCalculator.Calculate(items.Select(item => new PricingItem(
+            return PricingCalculator.Calculate(items.Select(item => new PricingItem(
                 item.ProductId,
                 item.ProductName,
                 item.Quantity,

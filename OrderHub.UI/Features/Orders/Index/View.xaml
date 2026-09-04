@@ -69,6 +69,25 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
+
+                    <Button
+                        Height="30"
+                        Margin="0,0,8,0"
+                        Command="{Binding SwitchOrderDetailsPanelCommand}"
+                        Cursor="Hand">
+                        <StackPanel Orientation="Horizontal">
+                            <icons:MaterialIcon
+                                Width="20"
+                                Margin="5,0"
+                                Kind="HamburgerMenu" />
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontSize="12"
+                                FontWeight="DemiBold"
+                                Text="تفاصيل الطلب" />
+                        </StackPanel>
+                    </Button>
+
                     <Button
                         Height="30"
                         Margin="0,0,8,0"
@@ -92,6 +111,7 @@
                                 Text="{Binding OrderDraftsDrawerViewModel.Drafts.Count}" />
                         </StackPanel>
                     </Button>
+
                     <Button
                         Grid.Column="2"
                         Height="30"
@@ -120,6 +140,7 @@
 
             <Grid Grid.Row="2">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="auto" />
                     <RowDefinition Height="1*" />
                     <RowDefinition Height="auto" />
                 </Grid.RowDefinitions>
@@ -130,14 +151,19 @@
                     <ColumnDefinition Width="auto" />
                 </Grid.ColumnDefinitions>
 
-                <local:OrdersTable />
+                <local:OrderActions Grid.Row="0" Grid.ColumnSpan="3" />
 
-                <local:Paginator Grid.Row="1" Margin="0,6,0,0" />
+                <local:OrdersTable Grid.Row="1" Margin="0,5,0,0" />
+
+                <local:Paginator Grid.Row="2" Margin="0,6,0,0" />
 
                 <orderDetailsPanel:Panel
+                    Grid.Row="1"
                     Grid.RowSpan="2"
                     Grid.Column="2"
-                    DataContext="{Binding OrderDetailsPanelViewModel}" />
+                    Margin="0,5,0,0"
+                    DataContext="{Binding OrderDetailsPanelViewModel}"
+                    Visibility="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.IsOrderDetailsPanelVisible, Converter={converters:BoolToVisibilityConverter}, FallbackValue=Collapsed}" />
 
             </Grid>
 

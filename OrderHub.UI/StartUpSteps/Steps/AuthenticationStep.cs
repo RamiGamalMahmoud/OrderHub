@@ -1,4 +1,5 @@
 ﻿using OrderHub.Application.Interfaces.Services;
+using OrderHub.UI.Services;
 using System.Threading.Tasks;
 
 namespace OrderHub.UI.StartUpSteps.Steps;
@@ -25,15 +26,30 @@ public class AuthenticationStep : IStartupStep
     public int Order => (int)StartUpdStepsOrder.Authentication;
     public string DisplayName => "جاري التحقق من المصادقة";
 
-    public bool IsEnabled => true;
+    public bool IsEnabled
+    {
+        get
+        {
+#if DEBUG
+            return true;
+#else
+            return false;
+#endif
+        }
+    }
 
     public async Task ExecuteAsync()
     {
-#if DEBUG
         var creds = await _credentials.GetClilentCredentialsAsync();
-        if (creds == null) return;
+        if (creds == null)
+            return;
 
         var token = await _tokenStorage.GetTokenAsync();
+        if (token == null)
+        {
+            NotificationService.Instance.ShowError("لم يتم الاتصال بسلة, يجب تسجيل الدخول!");
+            return;
+        }
         if (token == null)
         {
             var result = await _auth.AuthorizeAsync(creds);
@@ -42,6 +58,6 @@ public class AuthenticationStep : IStartupStep
         }
 
         await _session.StartNewSession();
-#endif
+        NotificationService.Instance.ShowSuccess("تمت المصادقة مع سلة.");
     }
 }

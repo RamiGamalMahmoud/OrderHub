@@ -6,62 +6,96 @@
     xmlns:local="clr-namespace:OrderHub.UI.Features.WhatsappGroups.Editor"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     d:DataContext="{d:DesignInstance Type=local:ViewModel}"
+    FlowDirection="RightToLeft"
     FontFamily="{StaticResource FontFamily}"
     FontSize="14"
     mc:Ignorable="d">
 
-    <Border
-        Padding="12"
-        HorizontalAlignment="Center"
-        VerticalAlignment="Center"
-        CornerRadius="12"
-        FlowDirection="RightToLeft">
+    <Border Width="420" Padding="24">
 
-        <StackPanel>
+        <Grid>
 
-            <TextBlock Margin="0,16,0,4" Text="اسم الجروب" />
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-            <TextBox Height="32" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
 
-            <TextBlock Margin="0,16,0,4" Text="نوع الجروب" />
+            <!--  Group Name  -->
 
-            <ComboBox
-                Height="32"
-                DisplayMemberPath="DisplayName"
-                ItemsSource="{Binding GroupTypes}"
-                SelectedItem="{Binding GroupType}" />
+            <StackPanel Grid.Row="0">
 
-            <TextBlock Margin="0,16,0,4" Text="رابط الجروب" />
+                <TextBlock
+                    Margin="0,0,0,6"
+                    FontWeight="SemiBold"
+                    Text="اسم الجروب" />
 
-            <TextBox Height="32" Text="{Binding GroupLink, UpdateSourceTrigger=PropertyChanged}" />
-
-            <StackPanel
-                Margin="0,16,0,0"
-                HorizontalAlignment="Center"
-                Orientation="Horizontal">
-
-                <Button
-                    Width="100"
-                    Margin="5,0"
-                    Padding="0"
-                    Command="{Binding SaveCommand}"
-                    Content="حفظ"
-                    Cursor="Hand"
-                    IsDefault="True"
-                    Style="{StaticResource ButtonPrimary}" />
-
-                <Button
-                    Width="100"
-                    Margin="5,0"
-                    Padding="0"
-                    Command="{Binding CloseEditorCommand}"
-                    Content="إلغاء"
-                    Cursor="Hand"
-                    IsCancel="True" />
+                <TextBox
+                    MinHeight="38"
+                    Padding="10,0"
+                    VerticalContentAlignment="Center"
+                    Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
 
             </StackPanel>
 
-        </StackPanel>
+
+            <!--  Group Type  -->
+
+            <StackPanel Grid.Row="1" Margin="0,18,0,0">
+
+                <TextBlock
+                    Margin="0,0,0,6"
+                    FontWeight="SemiBold"
+                    Text="نوع الجروب" />
+
+                <ComboBox
+                    MinHeight="38"
+                    Padding="8,0"
+                    DisplayMemberPath="DisplayName"
+                    ItemsSource="{Binding GroupTypes}"
+                    SelectedItem="{Binding GroupType}" />
+
+            </StackPanel>
+
+
+            <!--  Group Link  -->
+
+            <StackPanel Grid.Row="2" Margin="0,18,0,0">
+
+                <TextBlock
+                    Margin="0,0,0,6"
+                    FontWeight="SemiBold"
+                    Text="رابط الجروب" />
+
+                <TextBox
+                    MinHeight="38"
+                    Padding="10,0"
+                    VerticalContentAlignment="Center"
+                    FlowDirection="LeftToRight"
+                    Text="{Binding GroupLink, UpdateSourceTrigger=PropertyChanged}" />
+
+            </StackPanel>
+
+
+            <!--  Actions  -->
+
+            <Button
+                Grid.Row="3"
+                Height="38"
+                Margin="0,24,0,0"
+                HorizontalAlignment="Stretch"
+                Command="{Binding SaveCommand}"
+                Content="حفظ"
+                Cursor="Hand"
+                FontSize="14"
+                FontWeight="SemiBold"
+                IsDefault="True"
+                Style="{StaticResource ButtonPrimary}" />
+
+        </Grid>
+
     </Border>
 
 </UserControl>

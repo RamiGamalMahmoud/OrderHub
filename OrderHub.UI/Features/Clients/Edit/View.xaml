@@ -8,15 +8,12 @@
     xmlns:local="clr-namespace:OrderHub.UI.Features.Clients.Edit"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     d:DataContext="{d:DesignInstance Type=local:ViewModelBase}"
+    FlowDirection="RightToLeft"
     FontFamily="{StaticResource FontFamily}"
     FontSize="14"
     mc:Ignorable="d">
 
-    <Border
-        Width="450"
-        Padding="24"
-        Background="White"
-        FlowDirection="RightToLeft">
+    <Border Width="450" Padding="24">
 
         <Grid>
 
@@ -28,17 +25,20 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!--  Name  -->
+
+            <!--  Client Name  -->
+
             <StackPanel Grid.Row="0">
 
                 <TextBlock
-                    Margin="0,0,0,8"
+                    Margin="0,0,0,6"
                     FontWeight="SemiBold"
                     Text="اسم العميل" />
 
                 <hc:TextBox
-                    MinHeight="40"
-                    Padding="10,6"
+                    MinHeight="38"
+                    Padding="10,0"
+                    VerticalContentAlignment="Center"
                     hc:InfoElement.Necessary="True"
                     hc:InfoElement.Placeholder="أدخل اسم العميل"
                     hc:InfoElement.ShowClearButton="True"
@@ -46,8 +46,10 @@
 
             </StackPanel>
 
+
             <!--  Phone  -->
-            <Grid Grid.Row="1" Margin="0,20,0,0">
+
+            <Grid Grid.Row="1" Margin="0,18,0,0">
 
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -63,47 +65,54 @@
                 <TextBlock
                     Grid.Row="0"
                     Grid.ColumnSpan="3"
-                    Margin="0,0,0,8"
+                    Margin="0,0,0,6"
                     FontWeight="SemiBold"
                     Text="رقم الهاتف" />
 
                 <hc:TextBox
                     Grid.Row="1"
                     Grid.Column="0"
-                    MinHeight="40"
-                    Padding="10,6"
+                    MinHeight="38"
+                    Padding="10,0"
+                    VerticalContentAlignment="Center"
                     hc:InfoElement.ShowClearButton="True"
                     Text="{Binding Number, UpdateSourceTrigger=PropertyChanged}" />
 
                 <hc:TextBox
                     Grid.Row="1"
                     Grid.Column="2"
-                    MinHeight="40"
-                    Padding="10,6"
+                    MinHeight="38"
+                    Padding="8,0"
+                    VerticalContentAlignment="Center"
                     hc:InfoElement.ShowClearButton="True"
                     FlowDirection="LeftToRight"
                     Text="{Binding CountryCode, UpdateSourceTrigger=PropertyChanged}" />
 
             </Grid>
 
+
             <!--  Address  -->
-            <StackPanel Grid.Row="2" Margin="0,20,0,0">
+
+            <StackPanel Grid.Row="2" Margin="0,18,0,0">
 
                 <TextBlock
-                    Margin="0,0,0,8"
+                    Margin="0,0,0,6"
                     FontWeight="SemiBold"
                     Text="العنوان" />
 
+
                 <!--  City  -->
+
                 <Grid>
 
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition />
+                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
                     <hc:ComboBox
-                        MinHeight="40"
+                        MinHeight="38"
+                        Padding="8,0"
                         hc:InfoElement.Placeholder="اختر المدينة"
                         hc:InfoElement.ShowClearButton="True"
                         DisplayMemberPath="Name"
@@ -112,15 +121,18 @@
 
                     <Button
                         Grid.Column="1"
-                        Width="40"
-                        Height="40"
+                        Width="38"
+                        Height="38"
                         Margin="8,0,0,0"
+                        Padding="0"
                         BorderThickness="0"
                         Command="{Binding ShowCreateCityCommand}"
-                        Cursor="Hand">
+                        Cursor="Hand"
+                        ToolTip="إضافة مدينة">
 
                         <icons:MaterialIcon
-                            Width="20"
+                            Width="18"
+                            Height="18"
                             Foreground="{StaticResource Primary}"
                             Kind="PlusCircle" />
 
@@ -128,24 +140,30 @@
 
                 </Grid>
 
+
                 <!--  Street  -->
+
                 <hc:TextBox
-                    MinHeight="40"
-                    Margin="0,12,0,0"
-                    Padding="10,6"
+                    MinHeight="38"
+                    Margin="0,10,0,0"
+                    Padding="10,0"
+                    VerticalContentAlignment="Center"
                     hc:InfoElement.Placeholder="أدخل الشارع"
                     hc:InfoElement.ShowClearButton="True"
                     Text="{Binding Street, UpdateSourceTrigger=PropertyChanged}" />
 
             </StackPanel>
 
+
             <!--  Location  -->
-            <StackPanel Grid.Row="3" Margin="0,20,0,0">
+
+            <StackPanel Grid.Row="3" Margin="0,18,0,0">
 
                 <StackPanel Orientation="Horizontal">
 
                     <icons:MaterialIcon
-                        Width="18"
+                        Width="17"
+                        Height="17"
                         Margin="0,0,6,0"
                         VerticalAlignment="Center"
                         Foreground="{StaticResource Primary}"
@@ -159,9 +177,10 @@
                 </StackPanel>
 
                 <hc:TextBox
-                    MinHeight="40"
-                    Margin="0,8,0,0"
-                    Padding="10,6"
+                    MinHeight="38"
+                    Margin="0,7,0,0"
+                    Padding="10,0"
+                    VerticalContentAlignment="Center"
                     hc:InfoElement.Necessary="True"
                     hc:InfoElement.Placeholder="أدخل الموقع"
                     hc:InfoElement.ShowClearButton="True"
@@ -169,32 +188,21 @@
 
             </StackPanel>
 
+
             <!--  Actions  -->
-            <StackPanel
+
+            <Button
                 Grid.Row="4"
-                Margin="0,28,0,0"
-                HorizontalAlignment="Center"
-                Orientation="Horizontal">
-
-                <Button
-                    Width="100"
-                    MinHeight="40"
-                    Command="{Binding SaveCommand}"
-                    Content="حفظ"
-                    Cursor="Hand"
-                    IsDefault="True"
-                    Style="{StaticResource ButtonPrimary}" />
-
-                <Button
-                    Width="100"
-                    MinHeight="40"
-                    Margin="10,0,0,0"
-                    Command="{Binding CloseEditorCommand}"
-                    Content="إلغاء"
-                    Cursor="Hand"
-                    IsCancel="True" />
-
-            </StackPanel>
+                Height="38"
+                Margin="0,24,0,0"
+                HorizontalAlignment="Stretch"
+                Command="{Binding SaveCommand}"
+                Content="حفظ"
+                Cursor="Hand"
+                FontSize="14"
+                FontWeight="SemiBold"
+                IsDefault="True"
+                Style="{StaticResource ButtonPrimary}" />
 
         </Grid>
 

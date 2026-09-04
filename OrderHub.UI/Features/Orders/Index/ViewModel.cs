@@ -6,6 +6,7 @@ using MediatR;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Features.Documents.Invoices;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
+using OrderHub.Application.Features.Orders.NotifyOrderParticipants;
 using OrderHub.Application.Features.Orders.Queries;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Services;
@@ -72,6 +73,12 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
     }
 
     public bool HasSelectedOrder => SelectedOrder is not null;
+
+    [ObservableProperty]
+    private bool _isOrderDetailsPanelVisible;
+
+    [RelayCommand]
+    private void SwitchOrderDetailsPanel() => IsOrderDetailsPanelVisible = !IsOrderDetailsPanelVisible;
 
     [ObservableProperty]
     private bool _isLoading;
@@ -185,7 +192,6 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
             SelectedPaymentMethod ??= PaymentMethodFilters.FirstOrDefault();
             SelectedOrderStatus ??= OrderStatusFilters.FirstOrDefault();
 
-            await LoadOrdersPageAsync();
         }
         catch (Exception ex)
         {
@@ -243,7 +249,7 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
     [RelayCommand]
     private async Task BroadcastOrder(OrderViewModel model)
     {
-        await BroadcastOrderAsync(model, null);
+        await _requestExecutor.ExecuteAsync(new NotifyOrderParticipantsCommand(model.Id, null));
     }
 
     [RelayCommand]
@@ -260,11 +266,11 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
     private async Task BroadcastOrderAsync(OrderViewModel model, RecipientType? recipientType)
     {
-        Result result = await _mediator.Send(
-            new Application.Commands.OrderCommands.BroadcastOrderStatusCommand(model.Id, recipientType));
+        Result result = await _requestExecutor.ExecuteAsync(new NotifyOrderParticipantsCommand(model.Id, new NotificationRecipient((RecipientType) recipientType)));
 
         if (result.IsSuccess)
         {
+            NotificationService.Instance.Show("تم اضافة الرسالة للإرسال, توجه إلى سجل الرسائل لإرسالها او تخصيصها قبل الإرسال");
             return;
         }
 
@@ -278,8 +284,8 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         {
             await Task.WhenAll(
                 Orders.Select(order =>
-                    _mediator.Send(
-                        new Application.Commands.OrderCommands.BroadcastOrderStatusCommand(order.Id)))
+                    _requestExecutor.ExecuteAsync(
+                        new NotifyOrderParticipantsCommand(order.Id, null)))
             );
         }
         catch (Exception ex)
@@ -324,7 +330,7 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
     }
 
     private OrderViewModel Map(GetOrderPaged.Order order) => new(
-        _mediator,
+        _requestExecutor,
         order.Id,
         order.OrderNumber,
         order.ClientName,

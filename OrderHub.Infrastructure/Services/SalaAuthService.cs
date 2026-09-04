@@ -19,11 +19,11 @@ namespace OrderHub.Infrastructure.Services;
 
 public class SalaAuthService : IAuthService
 {
-    private const string _redirectUri = "http://127.0.0.1:9000/callback/";
-    private const string _authUrl = "https://accounts.salla.sa/oauth2/auth";
-    private const string _tokenUrl = "https://accounts.salla.sa/oauth2/token";
-    private const string _scope = "offline_access";
-    private const int _authorizationTimeoutSeconds = 120;
+    private const string REDIRECT_URI = "http://127.0.0.1:9000/callback/";
+    private const string AUTH_URL = "https://accounts.salla.sa/oauth2/auth";
+    private const string TOKEN_URL = "https://accounts.salla.sa/oauth2/token";
+    private const string SCOPE = "offline_access";
+    private const int AUTHORIZATION_TIMEOUT_SECONDS = 120;
 
     private readonly HttpClient _httpClient;
     private readonly ILogger _logger; // Optional: add your logging interface
@@ -42,7 +42,7 @@ public class SalaAuthService : IAuthService
         HttpListener listener = null;
         try
         {
-            listener = CreateListener(_redirectUri);
+            listener = CreateListener(REDIRECT_URI);
             _pendingState = GenerateSecureState();
 
             string authUrl = BuildAuthUrl(clientCredentials, _pendingState);
@@ -51,7 +51,7 @@ public class SalaAuthService : IAuthService
             HttpListenerContext context = await WaitForCallbackAsync(listener);
             if (context == null)
             {
-                return Result<Token>.Failure($"Authorization timeout after {_authorizationTimeoutSeconds} seconds");
+                return Result<Token>.Failure($"Authorization timeout after {AUTHORIZATION_TIMEOUT_SECONDS} seconds");
             }
 
             var queryParams = context.Request.QueryString;
@@ -92,8 +92,8 @@ public class SalaAuthService : IAuthService
             { "client_secret", clientCredentials.ClientSecret },
             { "grant_type", "authorization_code" },
             { "code", code },
-            { "scope", _scope },
-            { "redirect_uri", _redirectUri }
+            { "scope", SCOPE },
+            { "redirect_uri", REDIRECT_URI }
         };
 
         return await RequestTokenAsync(data);
@@ -129,7 +129,7 @@ public class SalaAuthService : IAuthService
         try
         {
             HttpResponseMessage response = await _httpClient.PostAsync(
-                _tokenUrl,
+                TOKEN_URL,
                 new FormUrlEncodedContent(data)
             );
 
@@ -165,7 +165,7 @@ public class SalaAuthService : IAuthService
 
     private async Task<HttpListenerContext> WaitForCallbackAsync(HttpListener listener)
     {
-        using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_authorizationTimeoutSeconds)))
+        using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(AUTHORIZATION_TIMEOUT_SECONDS)))
         {
             try
             {
@@ -240,11 +240,11 @@ public class SalaAuthService : IAuthService
 
     private static string BuildAuthUrl(ClientCredentials credentials, string state)
     {
-        return $"{_authUrl}?client_id={Uri.EscapeDataString(credentials.ClientId)}" +
+        return $"{AUTH_URL}?client_id={Uri.EscapeDataString(credentials.ClientId)}" +
                $"&response_type=code" +
-               $"&redirect_uri={Uri.EscapeDataString(_redirectUri)}" +
+               $"&redirect_uri={Uri.EscapeDataString(REDIRECT_URI)}" +
                $"&state={Uri.EscapeDataString(state)}" +
-               $"&scope={Uri.EscapeDataString(_scope)}";
+               $"&scope={Uri.EscapeDataString(SCOPE)}";
     }
 
     private static string GenerateSecureState()

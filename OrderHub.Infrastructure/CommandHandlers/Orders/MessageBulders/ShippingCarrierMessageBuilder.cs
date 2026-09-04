@@ -1,5 +1,6 @@
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
+using System.Linq;
 using System.Text;
 
 namespace OrderHub.Infrastructure.CommandHandlers.Orders.MessageBulders;
@@ -13,7 +14,7 @@ internal class ShippingCarrierMessageBuilder : MessageBuilderBase, IMessageBuild
             Order = order,
             OrderId = order.Id,
             RecipientType = RecipientType.ShippingCarrier,
-            Text = CreateMessageText(order),
+            Text = CreateMessageText(order, recipientId),
             Status = OutboxMessageStatus.Pending,
             Recipient = new ShippingCarrierRecipient
             {
@@ -24,7 +25,7 @@ internal class ShippingCarrierMessageBuilder : MessageBuilderBase, IMessageBuild
         };
     }
 
-    public string CreateMessageText(Order order)
+    public string CreateMessageText(Order order, int destinationId)
     {
         StringBuilder sb = new StringBuilder();
 
@@ -42,6 +43,14 @@ internal class ShippingCarrierMessageBuilder : MessageBuilderBase, IMessageBuild
             index++;
         }
 
+        var currentStep = order.DeliverySteps
+            .Single(x => x.ShippingCarrierId == destinationId);
+
+        var nextStep = order.DeliverySteps
+            .Where(x => x.StepOrder > currentStep.StepOrder)
+            .OrderBy(x => x.StepOrder)
+            .FirstOrDefault();
+        AppendDeliveryDestination(sb, order, nextStep);
         AppendFooter(sb);
 
         return sb.ToString();

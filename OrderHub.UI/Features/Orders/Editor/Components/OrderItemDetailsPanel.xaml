@@ -34,8 +34,7 @@
     </UserControl.Resources>
 
     <Border
-        Width="400"
-        Padding="16"
+        Padding="8"
         Background="White"
         BorderBrush="#E5E5E5"
         BorderThickness="1"
@@ -141,13 +140,63 @@
 
                         <StackPanel Margin="12">
 
-                            <TextBlock
-                                Margin="0,0,0,8"
-                                FontWeight="SemiBold"
-                                Text="المورد" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
 
-                            <ComboBox
-                                Height="36"
+                                <!--  العنوان  -->
+                                <StackPanel
+                                    Grid.Column="0"
+                                    Height="40"
+                                    Orientation="Horizontal">
+
+                                    <icons:MaterialIcon
+                                        Width="20"
+                                        VerticalAlignment="Center"
+                                        Foreground="{StaticResource BlueBrush}"
+                                        Kind="LocalShipping" />
+
+                                    <TextBlock
+                                        Margin="10,0,0,0"
+                                        VerticalAlignment="Center"
+                                        FontSize="16"
+                                        FontWeight="DemiBold"
+                                        Text="المورد" />
+                                </StackPanel>
+
+                                <!--  زر الإجراء  -->
+                                <Button
+                                    Grid.Column="1"
+                                    Height="auto"
+                                    HorizontalAlignment="Left"
+                                    BorderThickness="0"
+                                    Command="{Binding AddSupplierCommand}"
+                                    Cursor="Hand"
+                                    Foreground="{StaticResource Primary}"
+                                    ToolTip="إضافة مورد">
+
+                                    <StackPanel Orientation="Horizontal">
+
+                                        <icons:MaterialIcon Width="18" Kind="PlusCircle" />
+
+                                        <TextBlock
+                                            Margin="5,0,0,0"
+                                            FontWeight="SemiBold"
+                                            Text="إضافة مورد" />
+
+                                    </StackPanel>
+
+                                </Button>
+
+                            </Grid>
+
+                            <hc:ComboBox
+                                Height="40"
+                                hc:InfoElement.Placeholder="اختر المورد الخاص بالمنتج"
+                                hc:InfoElement.ShowClearButton="True"
+                                Cursor="Hand"
                                 DisplayMemberPath="Name"
                                 ItemsSource="{Binding Items.SelectedItem.Suppliers}"
                                 SelectedItem="{Binding Items.SelectedItem.Supplier}" />

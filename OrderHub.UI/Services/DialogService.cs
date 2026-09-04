@@ -24,6 +24,31 @@ internal sealed class DialogService
         _serviceProvider = serviceProvider;
     }
 
+    public void ShowDialog(object content, string title)
+    {
+        if (content is not UserControl userControl)
+            return;
+
+        var dialogContainer = new DialogContainerView(userControl, title);
+        dialogContainer.Closed += DialogContainer_Closed;
+
+        if (_currentDialog is null)
+        {
+            _currentDialog = HandyControl.Controls.Dialog.Show(dialogContainer);
+        }
+        else
+        {
+            // احتفظ بالمحتوى الحالي
+            if (_currentDialog.Content is DialogContainerView currentContainer)
+            {
+                _dialogHistory.Push(currentContainer);
+            }
+
+            // غير المحتوى فقط
+            _currentDialog.Content = dialogContainer;
+        }
+    }
+
     public async Task ShowDialog<TView>(string title, object parameter = null)
         where TView : class
     {

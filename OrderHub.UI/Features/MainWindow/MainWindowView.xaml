@@ -8,7 +8,7 @@
     xmlns:local="clr-namespace:OrderHub.UI.Features.MainWindow"
     xmlns:mainWindowComponents="clr-namespace:OrderHub.UI.Features.MainWindow.MainWindowComponents"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="MainWindowView"
+    Title="{Binding Title, FallbackValue='متجر المساجد'}"
     d:DataContext="{d:DesignInstance Type=local:MainWindowViewModel}"
     x:ClassModifier="internal"
     Background="{StaticResource WhiteBrush}"

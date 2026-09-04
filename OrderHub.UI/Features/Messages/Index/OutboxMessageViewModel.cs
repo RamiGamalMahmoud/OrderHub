@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
+using OrderHub.Application.Common.Extensions;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Domain.Enums;
 using System;
@@ -31,6 +32,10 @@ public partial class OutboxMessageViewModel : ObservableObject
 
     [ObservableProperty]
     private EnumItem<OutboxMessageStatus> _status;
+
+    public void MarkIsSending() => Status = new EnumItem<OutboxMessageStatus>(OutboxMessageStatus.Sending, OutboxMessageStatus.Sending.GetDescription());
+    public void CancelSending() => Status = new EnumItem<OutboxMessageStatus>(OutboxMessageStatus.Pending, OutboxMessageStatus.Pending.GetDescription());
+
 
     public string OrderNumber { get; init; }
     public string RecipientName { get; init; }
@@ -129,6 +134,24 @@ public partial class OutboxMessageViewModel : ObservableObject
     {
         if (Notes.Contains(note))
             Notes.Remove(note);
+    }
+
+    [RelayCommand]
+    private void MakeTextNoteBold()
+    {
+        NewNoteText = $"*{NewNoteText}*";
+    }
+
+    [RelayCommand]
+    private void MakeTextNoteStrikethrough()
+    {
+        NewNoteText = $"~{NewNoteText}~";
+    }
+
+    [RelayCommand]
+    private void MakeTextNoteItalic()
+    {
+        NewNoteText = $"_{NewNoteText}_";
     }
 
     partial void OnStatusChanged(EnumItem<OutboxMessageStatus> oldValue, EnumItem<OutboxMessageStatus> newValue)

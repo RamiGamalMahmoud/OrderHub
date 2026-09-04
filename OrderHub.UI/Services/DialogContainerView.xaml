@@ -8,7 +8,9 @@
     xmlns:local="clr-namespace:OrderHub.UI.Services"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
+
     <ScrollViewer>
+
         <Border
             Background="{DynamicResource RegionBrush}"
             BorderBrush="#E2E8F0"
@@ -17,40 +19,65 @@
             FlowDirection="RightToLeft">
 
             <Grid>
+
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="auto" />
+                    <RowDefinition Height="1" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <StackPanel
+
+                <!--  Header  -->
+
+                <Border
                     Grid.Row="0"
-                    Margin="14,10,14,0"
-                    Orientation="Horizontal">
-                    <Button
-                        Width="24"
-                        Height="24"
-                        Padding="0"
-                        VerticalAlignment="Center"
-                        hc:IconElement.Geometry="{StaticResource ErrorGeometry}"
-                        Click="Button_Click"
-                        Cursor="Hand"
-                        Foreground="{DynamicResource DangerBrush}"
-                        IsCancel="True"
-                        Style="{StaticResource ButtonIcon}" />
+                    Padding="14,10"
+                    Background="#F8FAFC"
+                    CornerRadius="10 10 0 0">
 
-                    <TextBlock
-                        Margin="10,0,0,0"
-                        VerticalAlignment="Center"
-                        FontSize="14"
-                        FontWeight="SemiBold"
-                        Foreground="#334155"
-                        Text="{Binding Title, FallbackValue='Title'}" />
+                    <StackPanel Orientation="Horizontal">
 
-                </StackPanel>
+                        <Button
+                            Width="24"
+                            Height="24"
+                            Padding="0"
+                            VerticalAlignment="Center"
+                            hc:IconElement.Geometry="{StaticResource ErrorGeometry}"
+                            Click="Button_Click"
+                            Cursor="Hand"
+                            Foreground="{DynamicResource DangerBrush}"
+                            IsCancel="True"
+                            Style="{StaticResource ButtonIcon}" />
 
-                <ContentControl Grid.Row="1" Content="{Binding Control}" />
+                        <TextBlock
+                            Margin="10,0,0,0"
+                            VerticalAlignment="Center"
+                            FontSize="14"
+                            FontWeight="SemiBold"
+                            Foreground="#334155"
+                            Text="{Binding Title, FallbackValue='Title'}" />
+
+                    </StackPanel>
+
+                </Border>
+
+
+                <!--  Divider  -->
+
+                <Border
+                    Grid.Row="1"
+                    Height="1"
+                    Background="#E2E8F0" />
+
+
+                <!--  Content  -->
+
+                <ContentControl Grid.Row="2" Content="{Binding Control}" />
 
             </Grid>
+
         </Border>
+
     </ScrollViewer>
+
 </UserControl>

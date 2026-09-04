@@ -3,28 +3,29 @@ using OrderHub.Application.Interfaces.Services;
 using System;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace OrderHub.Infrastructure.Services;
 
 internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSender
 {
-    private const string _whatsAppUrl = "https://web.whatsapp.com/";
-    private const string _wppScriptUrl = "https://cdn.jsdelivr.net/npm/@wppconnect/wa-js@latest/dist/wppconnect-wa.js";
+    private const string WHATSAPP_URL = "https://web.whatsapp.com/";
+    //private const string WPP_SCRIPT_URL = "https://cdn.jsdelivr.net/npm/@wppconnect/wa-js@latest/dist/wppconnect-wa.js";
 
     private readonly IApplicationDirectoriesService _appDirectoriesService;
+    private readonly IWppConnectScriptService _wppConnectScriptService;
 
     private IPlaywright _playwright;
     private IBrowserContext _context;
     private IPage _page;
 
-    public PlaywrightWhatsAppService(IApplicationDirectoriesService appDirectoriesService)
+    public PlaywrightWhatsAppService(IApplicationDirectoriesService appDirectoriesService, IWppConnectScriptService wppConnectScriptService)
     {
         _appDirectoriesService = appDirectoriesService;
+        _wppConnectScriptService = wppConnectScriptService;
     }
 
-    public async Task<bool> StartWhatsAppAsync(string url = _whatsAppUrl)
+    public async Task<bool> StartWhatsAppAsync(string url = WHATSAPP_URL)
     {
         var chromePath = FindChrome();
         if (chromePath is null) return false;
@@ -35,7 +36,7 @@ internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSend
             Directory.CreateDirectory(sessionPath);
 
             _playwright = await Playwright.CreateAsync();
-            _context = await _playwright.Chromium.LaunchPersistentContextAsync(
+            _context ??= await _playwright.Chromium.LaunchPersistentContextAsync(
                 sessionPath,
                 new BrowserTypeLaunchPersistentContextOptions
                 {
@@ -43,6 +44,12 @@ internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSend
                     ExecutablePath = chromePath,
                     Args = ["--disable-blink-features=AutomationControlled"]
                 });
+
+            _context.Close += (_, _) =>
+            {
+                _context = null;
+                _page = null;
+            };
 
             _page = _context.Pages.FirstOrDefault() ?? await _context.NewPageAsync();
 
@@ -230,33 +237,35 @@ internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSend
             throw new InvalidOperationException("Browser context is not initialized.");
         }
 
-        string scriptDirectoryPath = Path.Combine(Path.GetTempPath(), "OrderHub_WppConnect");
-        Directory.CreateDirectory(scriptDirectoryPath);
-        string scriptFilePath = Path.Combine(scriptDirectoryPath, "wppconnect-wa.js");
+        string wppScript = await _wppConnectScriptService.PrepareAsync();
 
-        string wppScript = string.Empty;
+        //string scriptDirectoryPath = Path.Combine(Path.GetTempPath(), "OrderHub_WppConnect");
+        //Directory.CreateDirectory(scriptDirectoryPath);
+        //string scriptFilePath = Path.Combine(scriptDirectoryPath, "wppconnect-wa.js");
 
-        if (File.Exists(scriptFilePath) && new FileInfo(scriptFilePath).Length > 0)
-        {
-            wppScript = await File.ReadAllTextAsync(scriptFilePath);
-        }
-        else
-        {
-            using var httpClient = new HttpClient();
+        //string wppScript = string.Empty;
 
-            httpClient.Timeout = TimeSpan.FromSeconds(30);
+        //if (File.Exists(scriptFilePath) && new FileInfo(scriptFilePath).Length > 0)
+        //{
+        //    wppScript = await File.ReadAllTextAsync(scriptFilePath);
+        //}
+        //else
+        //{
+        //    using var httpClient = new HttpClient();
 
-            wppScript = await httpClient.GetStringAsync(_wppScriptUrl);
+        //    httpClient.Timeout = TimeSpan.FromSeconds(30);
 
-            if (!string.IsNullOrWhiteSpace(wppScript))
-            {
-                await File.WriteAllTextAsync(scriptFilePath, wppScript);
-            }
-            else
-            {
-                throw new Exception("The downloaded WPP script is empty.");
-            }
-        }
+        //    wppScript = await httpClient.GetStringAsync(WPP_SCRIPT_URL);
+
+        //    if (!string.IsNullOrWhiteSpace(wppScript))
+        //    {
+        //        await File.WriteAllTextAsync(scriptFilePath, wppScript);
+        //    }
+        //    else
+        //    {
+        //        throw new Exception("The downloaded WPP script is empty.");
+        //    }
+        //}
 
         await _context.AddInitScriptAsync(wppScript);
     }

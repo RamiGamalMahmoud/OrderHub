@@ -6,109 +6,95 @@
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:local="clr-namespace:OrderHub.UI.Features.Orders.Index"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    d:DesignHeight="450"
-    d:DesignWidth="800"
     mc:Ignorable="d">
 
-    <Grid>
+    <DataGrid
+        d:ItemsSource="{d:SampleData}"
+        AutoGenerateColumns="False"
+        CanUserAddRows="False"
+        CanUserDeleteRows="False"
+        CanUserResizeRows="False"
+        ColumnHeaderHeight="34"
+        FontSize="12"
+        GridLinesVisibility="Vertical"
+        HeadersVisibility="Column"
+        HorizontalScrollBarVisibility="Auto"
+        IsReadOnly="True"
+        ItemsSource="{Binding Orders, IsAsync=True}"
+        RowHeight="40"
+        SelectedValue="{Binding SelectedOrder}"
+        SelectionMode="Single"
+        Validation.ErrorTemplate="{x:Null}"
+        VerticalGridLinesBrush="#E5E7EB"
+        VerticalScrollBarVisibility="Auto">
 
-        <Grid.RowDefinitions>
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="5" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
+        <DataGrid.Columns>
 
-        <local:OrderActions Grid.Row="0" />
+            <DataGridTextColumn
+                MinWidth="150"
+                Binding="{Binding OrderNumber}"
+                FontWeight="SemiBold"
+                Header="رقم الطلب" />
 
-        <DataGrid
-            Grid.Row="2"
-            d:ItemsSource="{d:SampleData}"
-            AutoGenerateColumns="False"
-            CanUserAddRows="False"
-            CanUserDeleteRows="False"
-            CanUserResizeRows="False"
-            ColumnHeaderHeight="34"
-            FontSize="12"
-            GridLinesVisibility="Vertical"
-            HeadersVisibility="Column"
-            HorizontalScrollBarVisibility="Auto"
-            IsReadOnly="True"
-            ItemsSource="{Binding Orders, IsAsync=True}"
-            RowHeight="40"
-            SelectedValue="{Binding SelectedOrder}"
-            SelectionMode="Single"
-            Validation.ErrorTemplate="{x:Null}"
-            VerticalGridLinesBrush="#E5E7EB"
-            VerticalScrollBarVisibility="Auto">
+            <DataGridTextColumn
+                Width="180"
+                Binding="{Binding ClientName}"
+                Header="اسم العميل" />
 
-            <DataGrid.Columns>
+            <DataGridTemplateColumn
+                Width="150"
+                Header="حالة الطلب"
+                SortMemberPath="DisplayName">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <local:OrderStatusComponent IsEnabled="{Binding CanEdit}" />
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
 
-                <DataGridTextColumn
-                    MinWidth="150"
-                    Binding="{Binding OrderNumber}"
-                    FontWeight="SemiBold"
-                    Header="رقم الطلب" />
+            <DataGridTemplateColumn
+                Width="150"
+                Header="وسيلة الدفع"
+                SortMemberPath="DisplayName">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <ComboBox
+                            Height="28"
+                            Cursor="Hand"
+                            DisplayMemberPath="DisplayName"
+                            FontSize="12"
+                            ItemsSource="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.PaymentMethods}"
+                            SelectedItem="{Binding PaymentMethod, UpdateSourceTrigger=PropertyChanged}" />
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
 
-                <DataGridTextColumn
-                    Width="180"
-                    Binding="{Binding ClientName}"
-                    Header="اسم العميل" />
+            <DataGridTextColumn
+                Width="90"
+                Binding="{Binding TotalPrice}"
+                Header="الإجمالي" />
 
-                <DataGridTemplateColumn
-                    Width="150"
-                    Header="حالة الطلب"
-                    SortMemberPath="DisplayName">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <local:OrderStatusComponent IsEnabled="{Binding CanEdit}" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+            <DataGridTemplateColumn Width="130" Header="الهاتف">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <TextBlock
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            FlowDirection="LeftToRight"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Text="{Binding ClientPhoneNumber}" />
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn
-                    Width="150"
-                    Header="وسيلة الدفع"
-                    SortMemberPath="DisplayName">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ComboBox
-                                Height="28"
-                                Cursor="Hand"
-                                DisplayMemberPath="DisplayName"
-                                FontSize="12"
-                                ItemsSource="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.PaymentMethods}"
-                                SelectedItem="{Binding PaymentMethod, UpdateSourceTrigger=PropertyChanged}" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+            <DataGridTextColumn
+                Width="115"
+                Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd}}"
+                Header="التاريخ"
+                IsReadOnly="True" />
 
-                <DataGridTextColumn
-                    Width="90"
-                    Binding="{Binding TotalPrice}"
-                    Header="الإجمالي" />
-
-                <DataGridTemplateColumn Width="130" Header="الهاتف">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                FlowDirection="LeftToRight"
-                                FontSize="12"
-                                FontWeight="SemiBold"
-                                Text="{Binding ClientPhoneNumber}" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-                <DataGridTextColumn
-                    Width="115"
-                    Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd}}"
-                    Header="التاريخ"
-                    IsReadOnly="True" />
-
-            </DataGrid.Columns>
-        </DataGrid>
-    </Grid>
+        </DataGrid.Columns>
+    </DataGrid>
 
 </UserControl>

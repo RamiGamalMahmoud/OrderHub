@@ -1,22 +1,21 @@
 ﻿using System.ComponentModel;
 
-namespace OrderHub.Domain.Enums
+namespace OrderHub.Domain.Enums;
+
+public enum OrderStatus
 {
-    public enum OrderStatus
-    {
-        [Description("قيد الانتظار")]
-        Pending,
+    [Description("قيد الانتظار")]
+    Pending,
 
-        [Description("قيد التجهيز")]
-        Processing,
-        
-        [Description("تم الشحن")]
-        Shipped,
+    [Description("قيد التجهيز")]
+    Processing,
 
-        [Description("تم التوصيل")]
-        Delivered,
+    [Description("تم الشحن")]
+    Shipped,
 
-        [Description("ملغى")]
-        Cancelled
-    }
+    [Description("تم التوصيل")]
+    Delivered,
+
+    [Description("ملغى")]
+    Cancelled
 }

@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Infrastructure.Features.OrderDrafts;
+using OrderHub.Infrastructure.Queries;
 using OrderHub.Infrastructure.ReadServices;
 using OrderHub.Infrastructure.Stores;
 using System.Reflection;
@@ -26,9 +27,11 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
         services.AddStore();
+        services.AddQueries();
         services.AddReadServices();
         services.AddDrafts();
         services.AddTransient<Orders.OrderWriteService>();
+        services.AddSingleton<Application.Interfaces.Services.IWppConnectScriptService, Services.WppConnectScriptService>();
         services.AddSingleton<Application.Interfaces.IRequestExecutor, Execution.RequestExecutor>();
         services.AddSingleton<Application.Interfaces.Services.IDataMigrationService, Services.DataMigrationService>();
 

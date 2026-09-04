@@ -12,14 +12,14 @@
     mc:Ignorable="d">
 
     <Border
-        Width="360"
+        Width="420"
         Padding="24"
         Background="White"
         FlowDirection="RightToLeft">
 
         <StackPanel>
 
-            <!-- Name -->
+            <!--  Name  -->
             <TextBlock
                 Margin="0,0,0,8"
                 FontWeight="SemiBold"
@@ -33,31 +33,17 @@
                 hc:InfoElement.ShowClearButton="True"
                 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
 
-            <!-- Actions -->
-            <StackPanel
-                Margin="0,28,0,0"
-                HorizontalAlignment="Center"
-                Orientation="Horizontal">
+            <!--  Actions  -->
 
-                <Button
-                    Width="100"
-                    MinHeight="40"
-                    Command="{Binding SaveCommand}"
-                    Content="حفظ"
-                    Cursor="Hand"
-                    IsDefault="True"
-                    Style="{StaticResource ButtonPrimary}" />
-
-                <Button
-                    Width="100"
-                    MinHeight="40"
-                    Margin="10,0,0,0"
-                    Command="hc:ControlCommands.Close"
-                    Content="إلغاء"
-                    Cursor="Hand"
-                    IsCancel="True" />
-
-            </StackPanel>
+            <Button
+                MinHeight="40"
+                Margin="0,20,0,0"
+                HorizontalAlignment="Stretch"
+                Command="{Binding SaveCommand}"
+                Content="حفظ"
+                Cursor="Hand"
+                IsDefault="True"
+                Style="{StaticResource ButtonPrimary}" />
 
         </StackPanel>
 

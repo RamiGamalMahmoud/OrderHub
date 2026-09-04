@@ -33,11 +33,11 @@
     </UserControl.Resources>
 
     <Border
-        Padding="12"
+        Padding="8"
         Background="White"
         BorderBrush="LightGray"
         BorderThickness="1"
-        CornerRadius="12">
+        CornerRadius="5">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="auto" />
@@ -47,18 +47,78 @@
 
             <StackPanel Orientation="Vertical">
 
-                <StackPanel Height="40" Orientation="Horizontal">
-                    <icons:MaterialIcon
-                        Width="20"
-                        Foreground="{StaticResource BlueBrush}"
-                        Kind="InvoiceLineItems" />
-                    <TextBlock
-                        Margin="10,0,0,0"
-                        VerticalAlignment="Center"
-                        FontSize="16"
-                        FontWeight="DemiBold"
-                        Text="المنتجات" />
-                </StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!--  العنوان  -->
+                    <StackPanel
+                        Grid.Column="0"
+                        Height="40"
+                        Orientation="Horizontal">
+
+                        <icons:MaterialIcon
+                            Width="20"
+                            VerticalAlignment="Center"
+                            Foreground="{StaticResource BlueBrush}"
+                            Kind="InvoiceLineItems" />
+
+                        <TextBlock
+                            Margin="10,0,0,0"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            FontWeight="DemiBold"
+                            Text="المنتجات" />
+
+                    </StackPanel>
+
+
+                    <!--  أزرار الإجراءات  -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+
+                        <Button
+                            Height="Auto"
+                            Margin="0,0,5,0"
+                            BorderThickness="0"
+                            Command="{Binding ShowCategoresViewCommand}"
+                            Cursor="Hand"
+                            FontWeight="SemiBold"
+                            Foreground="{StaticResource Primary}"
+                            ToolTip="اختيار القسم">
+
+                            <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+
+                                <TextBlock VerticalAlignment="Center" Text="اختيار القسم" />
+
+                            </StackPanel>
+                        </Button>
+
+
+                        <!--  إضافة منتج  -->
+                        <Button
+                            Height="Auto"
+                            BorderThickness="0"
+                            Command="{Binding AddProductCommand}"
+                            Cursor="Hand"
+                            Foreground="{StaticResource Primary}"
+                            ToolTip="إضافة منتج">
+
+                            <StackPanel Orientation="Horizontal">
+
+                                <TextBlock
+                                    Margin="5,0,0,0"
+                                    FontWeight="SemiBold"
+                                    Text="إضافة منتج" />
+
+                            </StackPanel>
+
+                        </Button>
+
+                    </StackPanel>
+
+                </Grid>
 
                 <hc:SearchBar
                     x:Name="ProductSearchBar"
@@ -68,37 +128,6 @@
                     FontSize="14"
                     FontWeight="SemiBold"
                     Text="{Binding ProductsPanel.SearchTerm, UpdateSourceTrigger=PropertyChanged}" />
-
-                <StackPanel Orientation="Vertical">
-                    <ComboBox
-                        Height="40"
-                        Margin="0,5"
-                        DisplayMemberPath="Name"
-                        FontSize="16"
-                        FontWeight="DemiBold"
-                        ItemsSource="{Binding ProductsPanel.CategorySelection.RootCategories}"
-                        SelectedItem="{Binding ProductsPanel.CategorySelection.SelectedCategory}" />
-
-                    <ItemsControl ItemsSource="{Binding ProductsPanel.CategorySelection.SubCategories}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Vertical" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <ComboBox
-                                    Height="40"
-                                    Margin="0,5"
-                                    DisplayMemberPath="Name"
-                                    FontSize="16"
-                                    FontWeight="DemiBold"
-                                    ItemsSource="{Binding Value}"
-                                    SelectedItem="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.ProductsPanel.CategorySelection.SelectedCategory}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
 
             </StackPanel>
 
@@ -167,7 +196,13 @@
 
             <StackPanel Grid.Row="2" Margin="0,10,0,0">
 
-                <Grid>
+                <Grid Margin="0,3,0,0" FlowDirection="RightToLeft">
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="4" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="1*" />
@@ -175,60 +210,185 @@
                         <ColumnDefinition Width="1*" />
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0" Orientation="Vertical">
+
+                    <!--  =========================  -->
+                    <!--  Inputs  -->
+                    <!--  =========================  -->
+
+                    <!--  Unit Price  -->
+
+                    <StackPanel Grid.Row="0" Grid.Column="0">
+
                         <TextBlock
+                            Margin="0,0,0,2"
                             HorizontalAlignment="Center"
+                            FontSize="11"
                             FontWeight="SemiBold"
-                            Text="السعر" />
+                            Text="سعر الوحدة" />
+
                         <hc:NumericUpDown
                             Name="PriceInput"
-                            Height="50"
-                            Margin="0,5,0,0"
+                            Height="38"
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Center"
-                            FontSize="20"
+                            FontSize="17"
                             FontWeight="DemiBold"
-                            Minimum="0.0"
+                            Minimum="0"
                             Value="{Binding ProductsPanel.Price}" />
+
                     </StackPanel>
 
+
+                    <!--  Quantity  -->
+
                     <StackPanel
+                        Grid.Row="0"
                         Grid.Column="1"
-                        Margin="5,0,5,0"
-                        Orientation="Vertical">
+                        Margin="4,0">
+
                         <TextBlock
+                            Margin="0,0,0,2"
                             HorizontalAlignment="Center"
+                            FontSize="11"
                             FontWeight="SemiBold"
                             Text="الكمية" />
+
                         <hc:NumericUpDown
                             Name="QuantityInput"
-                            Height="50"
-                            Margin="0,5,0,0"
+                            Height="38"
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Center"
-                            FontSize="20"
+                            FontSize="17"
                             FontWeight="DemiBold"
                             Minimum="0"
                             Value="{Binding ProductsPanel.Quantity}" />
+
                     </StackPanel>
 
-                    <StackPanel Grid.Column="2" Orientation="Vertical">
+
+                    <!--  VAT  -->
+
+                    <StackPanel Grid.Row="0" Grid.Column="2">
+
                         <TextBlock
+                            Margin="0,0,0,2"
                             HorizontalAlignment="Center"
+                            FontSize="11"
                             FontWeight="SemiBold"
-                            Text="الإجمالي الفرعي" />
-                        <Label
-                            Height="50"
-                            Margin="0,5,0,0"
+                            Text="نسبة الضريبة (%)" />
+
+                        <hc:NumericUpDown
+                            Name="VATInput"
+                            Height="38"
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Center"
-                            Content="{Binding ProductsPanel.SubTotal}"
-                            FontSize="20"
-                            FontWeight="DemiBold" />
+                            FontSize="17"
+                            FontWeight="DemiBold"
+                            Minimum="0"
+                            Value="{Binding ProductsPanel.VAT}" />
+
                     </StackPanel>
 
-                </Grid>
 
+                    <!--  =========================  -->
+                    <!--  Price Summary  -->
+                    <!--  =========================  -->
+
+
+                    <!--  Subtotal  -->
+
+                    <Border
+                        Grid.Row="2"
+                        Grid.Column="0"
+                        Margin="0,0,2,0"
+                        Padding="6,4"
+                        Background="#F4F6FA"
+                        BorderBrush="LightGray"
+                        BorderThickness="1"
+                        CornerRadius="4">
+
+                        <StackPanel>
+
+                            <TextBlock
+                                HorizontalAlignment="Center"
+                                FontSize="10"
+                                Text="الإجمالي الفرعي" />
+
+                            <TextBlock
+                                Margin="0,1,0,0"
+                                HorizontalAlignment="Center"
+                                FontSize="16"
+                                FontWeight="SemiBold"
+                                Text="{Binding ProductsPanel.Pricing.Subtotal}" />
+
+                        </StackPanel>
+
+                    </Border>
+
+
+                    <!--  VAT  -->
+
+                    <Border
+                        Grid.Row="2"
+                        Grid.Column="1"
+                        Margin="2,0"
+                        Padding="6,4"
+                        Background="#F4F6FA"
+                        BorderBrush="LightGray"
+                        BorderThickness="1"
+                        CornerRadius="4">
+
+                        <StackPanel>
+
+                            <TextBlock
+                                HorizontalAlignment="Center"
+                                FontSize="10"
+                                Text="الضريبة" />
+
+                            <TextBlock
+                                Margin="0,1,0,0"
+                                HorizontalAlignment="Center"
+                                FontSize="16"
+                                FontWeight="SemiBold"
+                                Text="{Binding ProductsPanel.Pricing.VatAmount}" />
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <!--  Total  -->
+
+                    <Border
+                        Grid.Row="2"
+                        Grid.Column="2"
+                        Margin="2,0,0,0"
+                        Padding="6,4"
+                        Background="#EEF3FF"
+                        BorderBrush="LightGray"
+                        BorderThickness="1"
+                        CornerRadius="4">
+
+                        <StackPanel>
+
+                            <TextBlock
+                                HorizontalAlignment="Center"
+                                FontSize="10"
+                                FontWeight="SemiBold"
+                                Text="الإجمالي" />
+
+                            <TextBlock
+                                Margin="0,1,0,0"
+                                HorizontalAlignment="Center"
+                                FontSize="17"
+                                FontWeight="Bold"
+                                Foreground="#2453D4"
+                                Text="{Binding ProductsPanel.Pricing.Total}" />
+
+                        </StackPanel>
+
+                    </Border>
+
+                </Grid>
 
                 <Button
                     x:Name="AddProductButton"

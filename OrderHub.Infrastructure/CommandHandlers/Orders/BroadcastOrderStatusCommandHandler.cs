@@ -1,256 +1,256 @@
-using CommunityToolkit.Mvvm.Messaging;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using OrderHub.Domain.Common;
-using OrderHub.Domain.Enums;
-using OrderHub.Domain.Models;
-using OrderHub.Infrastructure.CommandHandlers.Orders.MessageBulders;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using static OrderHub.Application.Commands.OrderCommands;
+//using CommunityToolkit.Mvvm.Messaging;
+//using MediatR;
+//using Microsoft.EntityFrameworkCore;
+//using OrderHub.Domain.Common;
+//using OrderHub.Domain.Enums;
+//using OrderHub.Domain.Models;
+//using OrderHub.Infrastructure.CommandHandlers.Orders.MessageBulders;
+//using System;
+//using System.Collections.Generic;
+//using System.Linq;
+//using System.Threading;
+//using System.Threading.Tasks;
+//using static OrderHub.Application.Commands.OrderCommands;
 
-namespace OrderHub.Infrastructure.CommandHandlers.Orders
-{
-    internal class BroadcastOrderStatusCommandHandler(AppDbContextFactory appDbContextFactory) : IRequestHandler<BroadcastOrderStatusCommand, Result>
-    {
-        private readonly AppDbContextFactory _appDbContextFactory = appDbContextFactory;
+//namespace OrderHub.Infrastructure.CommandHandlers.Orders
+//{
+//    internal class BroadcastOrderStatusCommandHandler(AppDbContextFactory appDbContextFactory) : IRequestHandler<BroadcastOrderStatusCommand, Result>
+//    {
+//        private readonly AppDbContextFactory _appDbContextFactory = appDbContextFactory;
 
-        public async Task<Result> Handle(BroadcastOrderStatusCommand request, CancellationToken cancellationToken)
-        {
-            using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
-            Order order = await appDbContext
-                .Orders
-                .Include(o => o.EntitySequences)
-                .Include(o => o.ShippingCarrier).ThenInclude(s => s.Phone)
-                .Include(o => o.Deliveryman).ThenInclude(d => d.WhatsappGroup)
-                .Include(o => o.DeliverySteps).ThenInclude(step => step.Deliveryman).ThenInclude(d => d.WhatsappGroup)
-                .Include(o => o.DeliverySteps).ThenInclude(step => step.ShippingCarrier).ThenInclude(carrier => carrier.Phone)
-                .Include(o => o.OrderItems).ThenInclude(oi => oi.Supplier).ThenInclude(s => s.Phone)
-                .Include(o => o.OrderItems).ThenInclude(oi => oi.Supplier).ThenInclude(s => s.WhatsappGroup)
-                .Include(o => o.Client).ThenInclude(c => c.Phone)
-                .Include(o => o.Client).ThenInclude(c => c.Address).ThenInclude(a => a.City)
-                .FirstOrDefaultAsync(o => o.Id == request.OrderId, cancellationToken);
+//        public async Task<Result> Handle(BroadcastOrderStatusCommand request, CancellationToken cancellationToken)
+//        {
+//            using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
+//            Order order = await appDbContext
+//                .Orders
+//                .Include(o => o.EntitySequences)
+//                .Include(o => o.ShippingCarrier).ThenInclude(s => s.Phone)
+//                .Include(o => o.Deliveryman).ThenInclude(d => d.WhatsappGroup)
+//                .Include(o => o.DeliverySteps).ThenInclude(step => step.Deliveryman).ThenInclude(d => d.WhatsappGroup)
+//                .Include(o => o.DeliverySteps).ThenInclude(step => step.ShippingCarrier).ThenInclude(carrier => carrier.Phone)
+//                .Include(o => o.OrderItems).ThenInclude(oi => oi.Supplier).ThenInclude(s => s.Phone)
+//                .Include(o => o.OrderItems).ThenInclude(oi => oi.Supplier).ThenInclude(s => s.WhatsappGroup)
+//                .Include(o => o.Client).ThenInclude(c => c.Phone)
+//                .Include(o => o.Client).ThenInclude(c => c.Address).ThenInclude(a => a.City)
+//                .FirstOrDefaultAsync(o => o.Id == request.OrderId, cancellationToken);
 
-            if (order is null)
-            {
-                return Result.Failure("الطلب غير موجود.");
-            }
+//            if (order is null)
+//            {
+//                return Result.Failure("الطلب غير موجود.");
+//            }
 
-            if (TryGetMissingClientPhone(order, request.RecipientType, out string clientName))
-            {
-                return Result.Failure($"العميل {clientName} ليس لديه رقم هاتف.");
-            }
+//            if (TryGetMissingClientPhone(order, request.RecipientType, out string clientName))
+//            {
+//                return Result.Failure($"العميل {clientName} ليس لديه رقم هاتف.");
+//            }
 
-            List<OutboxMessage> outboxMessages = new List<OutboxMessage>();
+//            List<OutboxMessage> outboxMessages = new List<OutboxMessage>();
 
-            if (request.RecipientType is null or RecipientType.Client)
-            {
-                outboxMessages.Add(NotifyClient(order));
-            }
+//            if (request.RecipientType is null or RecipientType.Client)
+//            {
+//                outboxMessages.Add(NotifyClient(order));
+//            }
 
-            if (request.RecipientType is null or RecipientType.Supplier)
-            {
-                Result<IEnumerable<OutboxMessage>> supplierMessagesResult = NotifySuppliers(order);
-                if (!supplierMessagesResult.IsSuccess)
-                {
-                    return Result.Failure(supplierMessagesResult.ErrorMessage);
-                }
+//            if (request.RecipientType is null or RecipientType.Supplier)
+//            {
+//                Result<IEnumerable<OutboxMessage>> supplierMessagesResult = NotifySuppliers(order);
+//                if (!supplierMessagesResult.IsSuccess)
+//                {
+//                    return Result.Failure(supplierMessagesResult.ErrorMessage);
+//                }
 
-                outboxMessages.AddRange(supplierMessagesResult.Value);
-            }
+//                outboxMessages.AddRange(supplierMessagesResult.Value);
+//            }
 
-            if (request.RecipientType is null or RecipientType.Deliveryman or RecipientType.ShippingCarrier)
-            {
-                Result<IEnumerable<OutboxMessage>> deliveryMessagesResult = NotifyDeliveryRecipients(order, request.RecipientType);
-                if (!deliveryMessagesResult.IsSuccess)
-                {
-                    return Result.Failure(deliveryMessagesResult.ErrorMessage);
-                }
+//            if (request.RecipientType is null or RecipientType.Deliveryman or RecipientType.ShippingCarrier)
+//            {
+//                Result<IEnumerable<OutboxMessage>> deliveryMessagesResult = NotifyDeliveryRecipients(order, request.RecipientType);
+//                if (!deliveryMessagesResult.IsSuccess)
+//                {
+//                    return Result.Failure(deliveryMessagesResult.ErrorMessage);
+//                }
 
-                outboxMessages.AddRange(deliveryMessagesResult.Value);
-            }
+//                outboxMessages.AddRange(deliveryMessagesResult.Value);
+//            }
 
-            appDbContext.OutboxMessages.AddRange(outboxMessages);
-            try
-            {
-                await appDbContext.SaveChangesAsync(cancellationToken);
-                WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.MessagesCreatedMessage(outboxMessages));
-                return Result.Success();
-            }
-            catch (Exception)
-            {
-                return Result.Failure("Failed to broadcast order status");
-            }
-        }
+//            appDbContext.OutboxMessages.AddRange(outboxMessages);
+//            try
+//            {
+//                await appDbContext.SaveChangesAsync(cancellationToken);
+//                WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.MessagesCreatedMessage(outboxMessages));
+//                return Result.Success();
+//            }
+//            catch (Exception)
+//            {
+//                return Result.Failure("Failed to broadcast order status");
+//            }
+//        }
 
-        private OutboxMessage NotifyClient(Order order)
-        {
-            return new ClientMessageBuilder().Create(order, order.ClientId, order.Client.Name.Value, order.Client.Phone.Number.FullNumber);
-        }
+//        private OutboxMessage NotifyClient(Order order)
+//        {
+//            return new ClientMessageBuilder().Create(order, order.ClientId, order.Client.Name.Value, order.Client.Phone.Number.FullNumber);
+//        }
 
-        private Result<IEnumerable<OutboxMessage>> NotifySuppliers(Order order)
-        {
-            IEnumerable<IGrouping<Supplier, OrderItem>> suppliers = order.OrderItems.GroupBy(oi => oi.Supplier);
-            List<OutboxMessage> outboxMessages = new List<OutboxMessage>();
+//        private Result<IEnumerable<OutboxMessage>> NotifySuppliers(Order order)
+//        {
+//            IEnumerable<IGrouping<Supplier, OrderItem>> suppliers = order.OrderItems.GroupBy(oi => oi.Supplier);
+//            List<OutboxMessage> outboxMessages = new List<OutboxMessage>();
 
-            foreach (IGrouping<Supplier, OrderItem> supplier in suppliers)
-            {
-                if (supplier.Key is null)
-                {
-                    continue;
-                }
+//            foreach (IGrouping<Supplier, OrderItem> supplier in suppliers)
+//            {
+//                if (supplier.Key is null)
+//                {
+//                    continue;
+//                }
 
-                if (string.IsNullOrWhiteSpace(supplier.Key.WhatsappGroup?.GroupLink))
-                {
-                    return Result<IEnumerable<OutboxMessage>>.Failure($"المورد {supplier.Key.Name.Value} ليس لديه رابط مجموعة واتساب.");
-                }
+//                if (string.IsNullOrWhiteSpace(supplier.Key.WhatsappGroup?.GroupLink))
+//                {
+//                    return Result<IEnumerable<OutboxMessage>>.Failure($"المورد {supplier.Key.Name.Value} ليس لديه رابط مجموعة واتساب.");
+//                }
 
-                outboxMessages.Add(new SupplierMessageBuilder().Create(order, supplier.Key.Id, supplier.Key.Name.Value, supplier.Key.WhatsappGroup.GroupLink));
-            }
+//                outboxMessages.Add(new SupplierMessageBuilder().Create(order, supplier.Key.Id, supplier.Key.Name.Value, supplier.Key.WhatsappGroup.GroupLink));
+//            }
 
-            return Result<IEnumerable<OutboxMessage>>.Success(outboxMessages);
-        }
+//            return Result<IEnumerable<OutboxMessage>>.Success(outboxMessages);
+//        }
 
-        private OutboxMessage NotifyDeliveryman(Order order)
-        {
-            return new DeliverymanMessageBuilder().Create(order, order.Deliveryman.Id, order.Deliveryman.Name.Value, order.Deliveryman.WhatsappGroup.GroupLink);
-        }
+//        private OutboxMessage NotifyDeliveryman(Order order)
+//        {
+//            return new DeliverymanMessageBuilder().Create(order, order.Deliveryman.Id, order.Deliveryman.Name.Value, order.Deliveryman.WhatsappGroup.GroupLink);
+//        }
 
-        private OutboxMessage NotifyDeliveryman(Order order, Deliveryman deliveryman)
-        {
-            return new DeliverymanMessageBuilder().Create(order, deliveryman.Id, deliveryman.Name.Value, deliveryman.WhatsappGroup.GroupLink);
-        }
+//        private OutboxMessage NotifyDeliveryman(Order order, Deliveryman deliveryman)
+//        {
+//            return new DeliverymanMessageBuilder().Create(order, deliveryman.Id, deliveryman.Name.Value, deliveryman.WhatsappGroup.GroupLink);
+//        }
 
-        private OutboxMessage NotifyShippingCarrier(Order order)
-        {
-            return new ShippingCarrierMessageBuilder().Create(
-                order,
-                order.ShippingCarrier.Id,
-                order.ShippingCarrier.Name.Value,
-                order.ShippingCarrier.Phone.Number.FullNumber);
-        }
+//        private OutboxMessage NotifyShippingCarrier(Order order)
+//        {
+//            return new ShippingCarrierMessageBuilder().Create(
+//                order,
+//                order.ShippingCarrier.Id,
+//                order.ShippingCarrier.Name.Value,
+//                order.ShippingCarrier.Phone.Number.FullNumber);
+//        }
 
-        private OutboxMessage NotifyShippingCarrier(Order order, ShippingCarrier shippingCarrier)
-        {
-            return new ShippingCarrierMessageBuilder().Create(
-                order,
-                shippingCarrier.Id,
-                shippingCarrier.Name.Value,
-                shippingCarrier.Phone.Number.FullNumber);
-        }
+//        private OutboxMessage NotifyShippingCarrier(Order order, ShippingCarrier shippingCarrier)
+//        {
+//            return new ShippingCarrierMessageBuilder().Create(
+//                order,
+//                shippingCarrier.Id,
+//                shippingCarrier.Name.Value,
+//                shippingCarrier.Phone.Number.FullNumber);
+//        }
 
-        private Result<IEnumerable<OutboxMessage>> NotifyDeliveryRecipients(Order order, RecipientType? recipientType = null)
-        {
-            if (TryGetMissingDeliverymanGroupName(order, recipientType, out string deliverymanName))
-            {
-                return Result<IEnumerable<OutboxMessage>>.Failure($"مندوب التوصيل {deliverymanName} ليس لديه رابط مجموعة واتساب.");
-            }
+//        private Result<IEnumerable<OutboxMessage>> NotifyDeliveryRecipients(Order order, RecipientType? recipientType = null)
+//        {
+//            if (TryGetMissingDeliverymanGroupName(order, recipientType, out string deliverymanName))
+//            {
+//                return Result<IEnumerable<OutboxMessage>>.Failure($"مندوب التوصيل {deliverymanName} ليس لديه رابط مجموعة واتساب.");
+//            }
 
-            if (TryGetMissingShippingCarrierPhone(order, recipientType, out string shippingCarrierName))
-            {
-                return Result<IEnumerable<OutboxMessage>>.Failure($"شركة الشحن {shippingCarrierName} ليس لديها رقم هاتف.");
-            }
+//            if (TryGetMissingShippingCarrierPhone(order, recipientType, out string shippingCarrierName))
+//            {
+//                return Result<IEnumerable<OutboxMessage>>.Failure($"شركة الشحن {shippingCarrierName} ليس لديها رقم هاتف.");
+//            }
 
-            if (order.DeliveryMethod == DeliveryMethod.DeliveryChain)
-            {
-                IEnumerable<OutboxMessage> messages = order.DeliverySteps
-                    .OrderBy(step => step.StepOrder)
-                    .GroupBy(step => new { step.DeliveryMethod, step.DeliverymanId, step.ShippingCarrierId })
-                    .Select(group => group.First())
-                    .Where(step =>
-                        recipientType is null
-                        || (recipientType == RecipientType.Deliveryman && step.DeliveryMethod == DeliveryMethod.DeliveryMan)
-                        || (recipientType == RecipientType.ShippingCarrier && step.DeliveryMethod == DeliveryMethod.ShippingCompany))
-                    .Select(step => step.DeliveryMethod switch
-                    {
-                        DeliveryMethod.DeliveryMan when step.Deliveryman is not null => NotifyDeliveryman(order, step.Deliveryman),
-                        DeliveryMethod.ShippingCompany when step.ShippingCarrier is not null => NotifyShippingCarrier(order, step.ShippingCarrier),
-                        _ => null
-                    })
-                    .Where(message => message is not null)
-                    .ToList();
+//            if (order.DeliveryMethod == DeliveryMethod.DeliveryChain)
+//            {
+//                IEnumerable<OutboxMessage> messages = order.DeliverySteps
+//                    .OrderBy(step => step.StepOrder)
+//                    .GroupBy(step => new { step.DeliveryMethod, step.DeliverymanId, step.ShippingCarrierId })
+//                    .Select(group => group.First())
+//                    .Where(step =>
+//                        recipientType is null
+//                        || (recipientType == RecipientType.Deliveryman && step.DeliveryMethod == DeliveryMethod.DeliveryMan)
+//                        || (recipientType == RecipientType.ShippingCarrier && step.DeliveryMethod == DeliveryMethod.ShippingCompany))
+//                    .Select(step => step.DeliveryMethod switch
+//                    {
+//                        DeliveryMethod.DeliveryMan when step.Deliveryman is not null => NotifyDeliveryman(order, step.Deliveryman),
+//                        DeliveryMethod.ShippingCompany when step.ShippingCarrier is not null => NotifyShippingCarrier(order, step.ShippingCarrier),
+//                        _ => null
+//                    })
+//                    .Where(message => message is not null)
+//                    .ToList();
 
-                return Result<IEnumerable<OutboxMessage>>.Success(messages);
-            }
+//                return Result<IEnumerable<OutboxMessage>>.Success(messages);
+//            }
 
-            List<OutboxMessage> outboxMessages = new List<OutboxMessage>();
+//            List<OutboxMessage> outboxMessages = new List<OutboxMessage>();
 
-            if (order.Deliveryman is not null && (recipientType is null or RecipientType.Deliveryman))
-            {
-                outboxMessages.Add(NotifyDeliveryman(order));
-            }
+//            if (order.Deliveryman is not null && (recipientType is null or RecipientType.Deliveryman))
+//            {
+//                outboxMessages.Add(NotifyDeliveryman(order));
+//            }
 
-            if (order.ShippingCarrier is not null && (recipientType is null or RecipientType.ShippingCarrier))
-            {
-                outboxMessages.Add(NotifyShippingCarrier(order));
-            }
+//            if (order.ShippingCarrier is not null && (recipientType is null or RecipientType.ShippingCarrier))
+//            {
+//                outboxMessages.Add(NotifyShippingCarrier(order));
+//            }
 
-            return Result<IEnumerable<OutboxMessage>>.Success(outboxMessages);
-        }
+//            return Result<IEnumerable<OutboxMessage>>.Success(outboxMessages);
+//        }
 
-        private static bool TryGetMissingClientPhone(Order order, RecipientType? recipientType, out string clientName)
-        {
-            clientName = order.Client?.Name.Value;
+//        private static bool TryGetMissingClientPhone(Order order, RecipientType? recipientType, out string clientName)
+//        {
+//            clientName = order.Client?.Name.Value;
 
-            return (recipientType is null or RecipientType.Client)
-                && string.IsNullOrWhiteSpace(order.Client?.Phone?.Number.FullNumber);
-        }
+//            return (recipientType is null or RecipientType.Client)
+//                && string.IsNullOrWhiteSpace(order.Client?.Phone?.Number.FullNumber);
+//        }
 
-        private static bool TryGetMissingDeliverymanGroupName(Order order, RecipientType? recipientType, out string deliverymanName)
-        {
-            if (order.DeliveryMethod == DeliveryMethod.DeliveryChain)
-            {
-                Deliveryman missingDeliveryman = order.DeliverySteps
-                    .Where(step => step.DeliveryMethod == DeliveryMethod.DeliveryMan)
-                    .Select(step => step.Deliveryman)
-                    .FirstOrDefault(deliveryman =>
-                        deliveryman is not null
-                        && (recipientType is null or RecipientType.Deliveryman)
-                        && string.IsNullOrWhiteSpace(deliveryman.WhatsappGroup?.GroupLink));
+//        private static bool TryGetMissingDeliverymanGroupName(Order order, RecipientType? recipientType, out string deliverymanName)
+//        {
+//            if (order.DeliveryMethod == DeliveryMethod.DeliveryChain)
+//            {
+//                Deliveryman missingDeliveryman = order.DeliverySteps
+//                    .Where(step => step.DeliveryMethod == DeliveryMethod.DeliveryMan)
+//                    .Select(step => step.Deliveryman)
+//                    .FirstOrDefault(deliveryman =>
+//                        deliveryman is not null
+//                        && (recipientType is null or RecipientType.Deliveryman)
+//                        && string.IsNullOrWhiteSpace(deliveryman.WhatsappGroup?.GroupLink));
 
-                deliverymanName = missingDeliveryman?.Name.Value;
-                return missingDeliveryman is not null;
-            }
+//                deliverymanName = missingDeliveryman?.Name.Value;
+//                return missingDeliveryman is not null;
+//            }
 
-            if (recipientType is RecipientType.ShippingCarrier || order.Deliveryman is null)
-            {
-                deliverymanName = null;
-                return false;
-            }
+//            if (recipientType is RecipientType.ShippingCarrier || order.Deliveryman is null)
+//            {
+//                deliverymanName = null;
+//                return false;
+//            }
 
-            deliverymanName = order.Deliveryman.Name.Value;
-            return (recipientType is null or RecipientType.Deliveryman)
-                && string.IsNullOrWhiteSpace(order.Deliveryman.WhatsappGroup?.GroupLink);
-        }
+//            deliverymanName = order.Deliveryman.Name.Value;
+//            return (recipientType is null or RecipientType.Deliveryman)
+//                && string.IsNullOrWhiteSpace(order.Deliveryman.WhatsappGroup?.GroupLink);
+//        }
 
-        private static bool TryGetMissingShippingCarrierPhone(Order order, RecipientType? recipientType, out string shippingCarrierName)
-        {
-            if (order.DeliveryMethod == DeliveryMethod.DeliveryChain)
-            {
-                ShippingCarrier missingShippingCarrier = order.DeliverySteps
-                    .Where(step => step.DeliveryMethod == DeliveryMethod.ShippingCompany)
-                    .Select(step => step.ShippingCarrier)
-                    .FirstOrDefault(carrier =>
-                        carrier is not null
-                        && (recipientType is null or RecipientType.ShippingCarrier)
-                        && string.IsNullOrWhiteSpace(carrier.Phone?.Number.FullNumber));
+//        private static bool TryGetMissingShippingCarrierPhone(Order order, RecipientType? recipientType, out string shippingCarrierName)
+//        {
+//            if (order.DeliveryMethod == DeliveryMethod.DeliveryChain)
+//            {
+//                ShippingCarrier missingShippingCarrier = order.DeliverySteps
+//                    .Where(step => step.DeliveryMethod == DeliveryMethod.ShippingCompany)
+//                    .Select(step => step.ShippingCarrier)
+//                    .FirstOrDefault(carrier =>
+//                        carrier is not null
+//                        && (recipientType is null or RecipientType.ShippingCarrier)
+//                        && string.IsNullOrWhiteSpace(carrier.Phone?.Number.FullNumber));
 
-                shippingCarrierName = missingShippingCarrier?.Name.Value;
-                return missingShippingCarrier is not null;
-            }
+//                shippingCarrierName = missingShippingCarrier?.Name.Value;
+//                return missingShippingCarrier is not null;
+//            }
 
-            if (recipientType is RecipientType.Deliveryman || order.ShippingCarrier is null)
-            {
-                shippingCarrierName = null;
-                return false;
-            }
+//            if (recipientType is RecipientType.Deliveryman || order.ShippingCarrier is null)
+//            {
+//                shippingCarrierName = null;
+//                return false;
+//            }
 
-            shippingCarrierName = order.ShippingCarrier.Name.Value;
-            return (recipientType is null or RecipientType.ShippingCarrier)
-                && string.IsNullOrWhiteSpace(order.ShippingCarrier.Phone?.Number.FullNumber);
-        }
-    }
-}
+//            shippingCarrierName = order.ShippingCarrier.Name.Value;
+//            return (recipientType is null or RecipientType.ShippingCarrier)
+//                && string.IsNullOrWhiteSpace(order.ShippingCarrier.Phone?.Number.FullNumber);
+//        }
+//    }
+//}

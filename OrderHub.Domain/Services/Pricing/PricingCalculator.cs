@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace OrderHub.Domain.Services.Pricing;
 
-public static class DocumentPricingCalculator
+public static class PricingCalculator
 {
     public static PricingResult Calculate(IReadOnlyCollection<PricingItem> items)
     {

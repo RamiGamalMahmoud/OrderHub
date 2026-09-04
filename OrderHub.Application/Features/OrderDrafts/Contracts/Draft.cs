@@ -25,6 +25,7 @@ public sealed record OrderDraftItem(
     string CategoryName,
     decimal Price,
     int Quantity,
+    decimal VAT,
     int? SupplierId,
     string SupplierName,
     IReadOnlyList<OrderDraftProperty> Properties);

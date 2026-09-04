@@ -1,6 +1,6 @@
 ﻿namespace OrderHub.Domain.Services.Pricing;
 
-public sealed record DocumentItemCalculation(
+public sealed record ItemCalculation(
     int ProductId,
     string ProductName,
     decimal Quantity,

@@ -6,5 +6,6 @@
         PrepareDirectories,
         DatabaseInitialization,
         Authentication,
+        PrepareMassagingService,
     }
 }

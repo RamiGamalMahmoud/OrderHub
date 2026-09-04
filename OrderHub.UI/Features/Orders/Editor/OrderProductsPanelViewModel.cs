@@ -2,9 +2,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MediatR;
 using OrderHub.Application.Features.Products.Contracts;
+using OrderHub.Domain.Services.Pricing;
 using OrderHub.UI.Common;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,14 +52,50 @@ internal partial class OrderProductsPanelViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddProductCommand))]
     [NotifyPropertyChangedFor(nameof(SubTotal))]
+    [NotifyPropertyChangedFor(nameof(Pricing))]
     private decimal _price;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddProductCommand))]
     [NotifyPropertyChangedFor(nameof(SubTotal))]
+    [NotifyPropertyChangedFor(nameof(Pricing))]
     private int _quantity;
 
-    public decimal SubTotal => Price * Quantity;
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(AddProductCommand))]
+    [NotifyPropertyChangedFor(nameof(SubTotal))]
+    [NotifyPropertyChangedFor(nameof(Pricing))]
+    private int _vAT;
+
+    [ObservableProperty]
+    private PricingItemResult _pricing;
+
+    public decimal SubTotal
+    {
+        get
+        {
+            if (SelectedProduct is null)
+            {
+                Pricing = null;
+                return 0;
+            }
+
+            try
+            {
+                Pricing = PricingCalculator.CalculateItem(new PricingItem(
+                    SelectedProduct.Id,
+                    SelectedProduct.Name,
+                    Quantity,
+                    Price,
+                    VAT));
+                return Pricing.Total;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+    }
 
     public Task LoadAsync()
         => ReloadRootCategoriesAsync();
@@ -76,7 +114,8 @@ internal partial class OrderProductsPanelViewModel : ObservableObject
         OnProductSelected(new ProductSelectedEventArgs(
             SelectedProduct.Id,
             Price,
-            Quantity));
+            Quantity,
+            VAT));
 
         ClearSelection();
     }
@@ -96,7 +135,7 @@ internal partial class OrderProductsPanelViewModel : ObservableObject
 
         try
         {
-             await Task.Delay(400, token);
+            await Task.Delay(400, token);
 
             IEnumerable<ProductLookupItem> searchProducts =
                 await _productStore.GetProductsByName(SearchTerm);
@@ -184,11 +223,13 @@ public class ProductSelectedEventArgs : EventArgs
     public ProductSelectedEventArgs(
         int id,
         decimal price,
-        int quantity)
+        int quantity,
+        decimal vat)
     {
         Id = id;
         Price = price;
         Quantity = quantity;
+        VAT = vat;
     }
 
     public int Id { get; }
@@ -196,6 +237,8 @@ public class ProductSelectedEventArgs : EventArgs
     public decimal Price { get; }
 
     public int Quantity { get; }
+
+    public decimal VAT { get; }
 }
 
 public delegate void ProductSelectedEventHandler(

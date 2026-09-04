@@ -75,7 +75,7 @@ public static class CreateInvoiceCommand
                 string invoiceFullNumber =
                     $"INV-{year}-{month:D2}-{invoiceNumber:D4}";
 
-                var invoicePricing = DocumentPricingCalculator.Calculate(order.OrderItems.Select(item => new PricingItem(
+                var invoicePricing = PricingCalculator.Calculate(order.OrderItems.Select(item => new PricingItem(
                     item.ProductId,
                     item.ProductName,
                     item.Quantity,
@@ -83,7 +83,7 @@ public static class CreateInvoiceCommand
                     0.0m))
                     .ToList());
 
-                var itemsResult = order.OrderItems.Select(item => DocumentPricingCalculator.CalculateItem(new PricingItem(
+                var itemsResult = order.OrderItems.Select(item => PricingCalculator.CalculateItem(new PricingItem(
                     item.ProductId,
                     item.ProductName,
                     item.Quantity,

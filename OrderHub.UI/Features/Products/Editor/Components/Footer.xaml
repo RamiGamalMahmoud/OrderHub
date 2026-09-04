@@ -33,14 +33,6 @@
                     IsDefault="True"
                     Style="{StaticResource ButtonPrimary}" />
 
-                <Button
-                    Width="120"
-                    Height="38"
-                    Command="{Binding CloseEditorCommand}"
-                    Content="إلغاء"
-                    Cursor="Hand"
-                    IsCancel="True" />
-
             </StackPanel>
         </Grid>
 

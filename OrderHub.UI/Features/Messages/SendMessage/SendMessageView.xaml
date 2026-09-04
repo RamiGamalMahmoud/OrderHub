@@ -153,76 +153,78 @@
                             BorderBrush="#E2E8F0"
                             BorderThickness="1"
                             CornerRadius="6">
-                            <ItemsControl ItemsSource="{Binding AttachedFiles}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border
-                                            Margin="0,0,0,6"
-                                            Padding="8"
-                                            Background="#F8FAFC"
-                                            BorderBrush="#E5E7EB"
-                                            BorderThickness="1"
-                                            CornerRadius="5">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <!--  File Icon  -->
-                                                <Border
-                                                    Width="34"
-                                                    Height="34"
-                                                    Background="{Binding IconBackgroundColor}"
-                                                    CornerRadius="5">
-                                                    <icons:MaterialIcon
-                                                        Width="19"
-                                                        Height="19"
-                                                        HorizontalAlignment="Center"
-                                                        VerticalAlignment="Center"
-                                                        Foreground="{Binding IconColor}"
-                                                        Kind="{Binding Icon}" />
-                                                </Border>
-                                                <!--  File Info  -->
-                                                <StackPanel
-                                                    Grid.Column="1"
-                                                    Margin="8,0"
-                                                    VerticalAlignment="Center">
-                                                    <TextBlock
-                                                        VerticalAlignment="Center"
-                                                        FontSize="12"
-                                                        FontWeight="SemiBold"
-                                                        Foreground="#374151"
-                                                        Text="{Binding Name}"
-                                                        TextTrimming="CharacterEllipsis" />
-                                                    <TextBlock
-                                                        Margin="0,3,0,0"
-                                                        FontSize="10"
-                                                        Foreground="#9CA3AF"
-                                                        Text="{Binding Size}" />
-                                                </StackPanel>
-                                                <!--  Delete  -->
-                                                <Button
-                                                    Grid.Column="2"
-                                                    Width="26"
-                                                    Height="26"
-                                                    Padding="0"
-                                                    Background="Transparent"
-                                                    BorderThickness="0"
-                                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.RemoveAttachmentCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    ToolTip="حذف">
-                                                    <icons:MaterialIcon
-                                                        Width="16"
-                                                        Height="16"
-                                                        Foreground="#EF4444"
-                                                        Kind="DeleteOutline" />
-                                                </Button>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <ScrollViewer Grid.Row="2" MaxHeight="200">
+                                <ItemsControl ItemsSource="{Binding AttachedFiles}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border
+                                                Margin="0,0,0,6"
+                                                Padding="8"
+                                                Background="#F8FAFC"
+                                                BorderBrush="#E5E7EB"
+                                                BorderThickness="1"
+                                                CornerRadius="5">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <!--  File Icon  -->
+                                                    <Border
+                                                        Width="34"
+                                                        Height="34"
+                                                        Background="{Binding IconBackgroundColor}"
+                                                        CornerRadius="5">
+                                                        <icons:MaterialIcon
+                                                            Width="19"
+                                                            Height="19"
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center"
+                                                            Foreground="{Binding IconColor}"
+                                                            Kind="{Binding Icon}" />
+                                                    </Border>
+                                                    <!--  File Info  -->
+                                                    <StackPanel
+                                                        Grid.Column="1"
+                                                        Margin="8,0"
+                                                        VerticalAlignment="Center">
+                                                        <TextBlock
+                                                            VerticalAlignment="Center"
+                                                            FontSize="12"
+                                                            FontWeight="SemiBold"
+                                                            Foreground="#374151"
+                                                            Text="{Binding Name}"
+                                                            TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock
+                                                            Margin="0,3,0,0"
+                                                            FontSize="10"
+                                                            Foreground="#9CA3AF"
+                                                            Text="{Binding Size}" />
+                                                    </StackPanel>
+                                                    <!--  Delete  -->
+                                                    <Button
+                                                        Grid.Column="2"
+                                                        Width="26"
+                                                        Height="26"
+                                                        Padding="0"
+                                                        Background="Transparent"
+                                                        BorderThickness="0"
+                                                        Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.RemoveAttachmentCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        ToolTip="حذف">
+                                                        <icons:MaterialIcon
+                                                            Width="16"
+                                                            Height="16"
+                                                            Foreground="#EF4444"
+                                                            Kind="DeleteOutline" />
+                                                    </Button>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
                         </Border>
                     </Grid>
 

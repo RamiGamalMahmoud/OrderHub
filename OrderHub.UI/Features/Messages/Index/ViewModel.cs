@@ -1,7 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using MediatR;
 using OrderHub.Application.Common.Extensions;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Features.Messaging;
@@ -218,7 +217,49 @@ public partial class ViewModel : ObservableObject
             return;
         }
 
-        NotificationService.Instance.ShowError("تمت إعادة جدولة الرسالة للإرسال.");
+        NotificationService.Instance.Show("تمت إعادة جدولة الرسالة للإرسال.");
+        message.MarkIsSending();
+    }
+
+    [RelayCommand]
+    private async Task SendMessage(OutboxMessageViewModel message)
+    {
+        if(message is null)
+        {
+            DialogService.Instance.Confirm("يجب اختيار رسالة أولا.");
+            return;
+        }
+        ResendOutboxMessageCommand.Message requestMessage = new ResendOutboxMessageCommand.Message(
+            message.Id,
+            message.Text,
+            message
+                .Attachments
+                .Select(x => new ResendOutboxMessageCommand.AttachmentFile(x.FilePath, x.Name))
+                .ToList(),
+            message.Notes);
+
+        Result result = await _requestExecutor.ExecuteAsync(new ResendOutboxMessageCommand.Command(requestMessage));
+
+        if (!result.IsSuccess)
+        {
+            message.MarkIsSending();
+            return;
+        }
+        
+        message.Status = new EnumItem<OutboxMessageStatus>(OutboxMessageStatus.Sending, OutboxMessageStatus.Sending.GetDescription());
+        NotificationService.Instance.Show("تمت إعادة جدولة الرسالة للإرسال.");
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSelectedMessage))]
+    private Task CancelSendingMessage(OutboxMessageViewModel message)
+    {
+        if (message is null)
+        {
+            DialogService.Instance.Confirm("يجب اختيار رسالة أولا.");
+            return Task.CompletedTask;
+        }
+        message.CancelSending();
+        return Task.CompletedTask;
     }
 
     [RelayCommand(CanExecute = nameof(HasSelectedMessage))]
@@ -243,12 +284,12 @@ public partial class ViewModel : ObservableObject
 
         if (!result.IsSuccess)
         {
-            NotificationService.Instance.ShowError(result.ErrorMessage);
+            NotificationService.Instance.Show(result.ErrorMessage);
             return;
         }
 
         NotificationService.Instance.ShowSuccess("تم حذف الرسالة بنجاح.");
-        await LoadAsync();
+        OutboxMessages.Remove(message);
     }
 
     [RelayCommand]

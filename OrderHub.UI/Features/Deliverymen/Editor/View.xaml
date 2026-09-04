@@ -7,114 +7,171 @@
     xmlns:local="clr-namespace:OrderHub.UI.Features.Deliverymen.Editor"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     d:DataContext="{d:DesignInstance Type=local:ViewModel}"
+    FlowDirection="RightToLeft"
     FontFamily="{StaticResource FontFamily}"
     FontSize="14"
     mc:Ignorable="d">
 
-    <Border
-        Width="400"
-        Padding="24"
-        FlowDirection="RightToLeft">
+    <Border Width="420" Padding="24">
 
-        <StackPanel>
+        <Grid>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
 
             <!--  Name  -->
-            <TextBlock
-                Margin="0,0,0,8"
-                FontWeight="SemiBold"
-                Text="اسم المندوب" />
 
-            <TextBox
-                MinHeight="40"
-                Padding="10,6"
-                Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
-
-            <!--  Phone  -->
-            <TextBlock
-                Margin="0,20,0,8"
-                FontWeight="SemiBold"
-                Text="رقم الهاتف" />
-
-            <TextBox
-                MinHeight="40"
-                Padding="10,6"
-                Text="{Binding PhoneNumber, UpdateSourceTrigger=PropertyChanged}" />
-
-            <!--  City  -->
-            <Grid Margin="0,20,0,8">
-
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+            <StackPanel Grid.Row="0">
 
                 <TextBlock
-                    VerticalAlignment="Center"
+                    Margin="0,0,0,6"
                     FontWeight="SemiBold"
-                    Text="المدينة" />
+                    Text="اسم المندوب" />
 
-                <Button
-                    Grid.Column="1"
-                    Width="40"
-                    Height="40"
-                    BorderThickness="0"
-                    Command="{Binding ShowCreateCityCommand}"
-                    Cursor="Hand">
-
-                    <icons:MaterialIcon
-                        Width="20"
-                        Foreground="{StaticResource Primary}"
-                        Kind="PlusCircle" />
-
-                </Button>
-
-            </Grid>
-
-            <ComboBox
-                MinHeight="40"
-                DisplayMemberPath="Name"
-                ItemsSource="{Binding Cities}"
-                SelectedItem="{Binding SelectedCity}" />
-
-            <!--  WhatsApp Group  -->
-            <TextBlock
-                Margin="0,20,0,8"
-                FontWeight="SemiBold"
-                Text="مجموعة واتساب" />
-
-            <ComboBox
-                MinHeight="40"
-                DisplayMemberPath="Name"
-                ItemsSource="{Binding WhatsappGroupsOptions}"
-                SelectedItem="{Binding SelectedWhatsappGroup}" />
-
-            <!--  Actions  -->
-            <StackPanel
-                Margin="0,28,0,0"
-                HorizontalAlignment="Center"
-                Orientation="Horizontal">
-
-                <Button
-                    Width="100"
-                    MinHeight="40"
-                    Command="{Binding SaveCommand}"
-                    Content="حفظ"
-                    Cursor="Hand"
-                    IsDefault="True"
-                    Style="{StaticResource ButtonPrimary}" />
-
-                <Button
-                    Width="100"
-                    MinHeight="40"
-                    Margin="10,0,0,0"
-                    Command="{Binding CloseEditorCommand}"
-                    Content="إلغاء"
-                    Cursor="Hand"
-                    IsCancel="True" />
+                <TextBox
+                    MinHeight="38"
+                    Padding="10,0"
+                    VerticalContentAlignment="Center"
+                    Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
 
             </StackPanel>
 
-        </StackPanel>
+
+            <!--  Phone  -->
+
+            <StackPanel Grid.Row="1" Margin="0,18,0,0">
+
+                <TextBlock
+                    Margin="0,0,0,6"
+                    FontWeight="SemiBold"
+                    Text="رقم الهاتف" />
+
+                <TextBox
+                    MinHeight="38"
+                    Padding="10,0"
+                    VerticalContentAlignment="Center"
+                    Text="{Binding PhoneNumber, UpdateSourceTrigger=PropertyChanged}" />
+
+            </StackPanel>
+
+
+            <!--  City  -->
+
+            <StackPanel Grid.Row="2" Margin="0,18,0,0">
+
+                <DockPanel Margin="0,0,0,6">
+
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        Text="المدينة" />
+
+                    <Button
+                        Margin="6,0,0,0"
+                        Padding="2"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        BorderThickness="0"
+                        Command="{Binding ShowCreateCityCommand}"
+                        Cursor="Hand"
+                        ToolTip="إضافة مدينة">
+
+                        <StackPanel Orientation="Horizontal">
+
+                            <TextBlock Text="إضافة مدينة" />
+
+                            <icons:MaterialIcon
+                                Width="18"
+                                Height="18"
+                                Margin="5,0,0,0"
+                                Foreground="{StaticResource Primary}"
+                                Kind="PlusCircle" />
+
+                        </StackPanel>
+
+                    </Button>
+
+                </DockPanel>
+
+                <ComboBox
+                    MinHeight="38"
+                    Padding="8,0"
+                    DisplayMemberPath="Name"
+                    ItemsSource="{Binding Cities}"
+                    SelectedItem="{Binding SelectedCity}" />
+
+            </StackPanel>
+
+
+            <!--  WhatsApp Group  -->
+
+            <StackPanel Grid.Row="3" Margin="0,18,0,0">
+
+                <DockPanel Margin="0,0,0,6">
+
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        Text="مجموعة واتساب" />
+
+                    <Button
+                        Margin="6,0,0,0"
+                        Padding="2"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        BorderThickness="0"
+                        Command="{Binding ShowCreateWhatsappGroupCommand}"
+                        Cursor="Hand"
+                        ToolTip="إضافة مجموعة واتساب">
+
+                        <StackPanel Orientation="Horizontal">
+
+                            <TextBlock Text="إضافة مجموعة" />
+
+                            <icons:MaterialIcon
+                                Width="18"
+                                Height="18"
+                                Margin="5,0,0,0"
+                                Foreground="{StaticResource Primary}"
+                                Kind="PlusCircle" />
+
+                        </StackPanel>
+
+                    </Button>
+
+                </DockPanel>
+
+                <ComboBox
+                    MinHeight="38"
+                    Padding="8,0"
+                    DisplayMemberPath="Name"
+                    ItemsSource="{Binding WhatsappGroupsOptions}"
+                    SelectedItem="{Binding SelectedWhatsappGroup}" />
+
+            </StackPanel>
+
+            <!--  Actions  -->
+
+            <Button
+                Grid.Row="4"
+                Height="38"
+                Margin="0,24,0,0"
+                HorizontalAlignment="Stretch"
+                Command="{Binding SaveCommand}"
+                Content="حفظ"
+                Cursor="Hand"
+                FontSize="14"
+                FontWeight="SemiBold"
+                IsDefault="True"
+                Style="{StaticResource ButtonPrimary}" />
+
+        </Grid>
 
     </Border>
 

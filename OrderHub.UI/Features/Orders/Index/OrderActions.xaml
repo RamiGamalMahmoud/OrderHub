@@ -76,18 +76,13 @@
     <!--  Main Action Card  -->
     <!--  ================================================================  -->
 
-    <Border
-        Padding="6"
-        Background="White"
-        BorderBrush="#E5E7EB"
-        BorderThickness="1"
-        CornerRadius="6">
+    <Border>
 
         <Grid>
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="5" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
@@ -108,7 +103,7 @@
 
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="30" />
+                        <RowDefinition Height="auto" />
                     </Grid.RowDefinitions>
 
 
@@ -138,197 +133,202 @@
 
                     <!--  Buttons  -->
 
-                    <WrapPanel
-                        Grid.Row="1"
-                        VerticalAlignment="Center"
-                        Orientation="Horizontal">
+                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Visible">
+                        <StackPanel
+                            Grid.Row="1"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
 
-                        <!--  =================================================  -->
-                        <!--  الكل  -->
-                        <!--  =================================================  -->
+                            <!--  =================================================  -->
+                            <!--  الكل  -->
+                            <!--  =================================================  -->
 
-                        <Button Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.BroadcastOrderCommand}" Content="الكل">
+                            <Button
+                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.BroadcastOrderCommand}"
+                                CommandParameter="{Binding SelectedOrder}"
+                                Content="الكل">
 
-                            <Button.Style>
+                                <Button.Style>
 
-                                <Style BasedOn="{StaticResource WhatsAppButtonStyle}" TargetType="Button">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedOrder.CanBroadcastAll}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding SelectedOrder.IsAllMessageSent}" Value="True">
-                                            <Setter Property="Background" Value="#16A34A" />
-                                            <Setter Property="Foreground" Value="White" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
+                                    <Style BasedOn="{StaticResource WhatsAppButtonStyle}" TargetType="Button">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedOrder.CanBroadcastAll}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding SelectedOrder.IsAllMessageSent}" Value="True">
+                                                <Setter Property="Background" Value="#16A34A" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
 
-                            </Button.Style>
+                                </Button.Style>
 
-                        </Button>
-
-
-                        <!--  =================================================  -->
-                        <!--  العميل  -->
-                        <!--  =================================================  -->
-
-                        <Button Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.BroadcastClientCommand}" CommandParameter="{Binding SelectedOrder}">
-
-                            <Button.Style>
-
-                                <Style BasedOn="{StaticResource WhatsAppButtonStyle}" TargetType="Button">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedOrder.HasClientRecipient}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding SelectedOrder.IsClientMessageSent}" Value="True">
-                                            <Setter Property="Background" Value="#16A34A" />
-                                            <Setter Property="Foreground" Value="White" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-
-                            </Button.Style>
-
-                            <StackPanel Orientation="Horizontal">
-
-                                <icons:MaterialIcon
-                                    Width="15"
-                                    Height="15"
-                                    Kind="Account" />
-
-                                <TextBlock
-                                    Margin="4,0,0,0"
-                                    VerticalAlignment="Center"
-                                    Text="العميل" />
-
-                            </StackPanel>
-
-                        </Button>
+                            </Button>
 
 
-                        <!--  =================================================  -->
-                        <!--  المندوب  -->
-                        <!--  =================================================  -->
+                            <!--  =================================================  -->
+                            <!--  العميل  -->
+                            <!--  =================================================  -->
 
-                        <Button Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.BroadcastDeliverymanCommand}" CommandParameter="{Binding SelectedOrder}">
+                            <Button Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.BroadcastClientCommand}" CommandParameter="{Binding SelectedOrder}">
 
-                            <Button.Style>
+                                <Button.Style>
 
-                                <Style BasedOn="{StaticResource WhatsAppButtonStyle}" TargetType="Button">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedOrder.HasDeliverymanRecipient}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding SelectedOrder.IsDeliverymanMessageSent}" Value="True">
-                                            <Setter Property="Background" Value="#16A34A" />
-                                            <Setter Property="Foreground" Value="White" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
+                                    <Style BasedOn="{StaticResource WhatsAppButtonStyle}" TargetType="Button">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedOrder.HasClientRecipient}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding SelectedOrder.IsClientMessageSent}" Value="True">
+                                                <Setter Property="Background" Value="#16A34A" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
 
-                            </Button.Style>
+                                </Button.Style>
 
-                            <StackPanel Orientation="Horizontal">
+                                <StackPanel Orientation="Horizontal">
 
-                                <icons:MaterialIcon
-                                    Width="15"
-                                    Height="15"
-                                    Kind="Motorcycle" />
+                                    <icons:MaterialIcon
+                                        Width="15"
+                                        Height="15"
+                                        Kind="Account" />
 
-                                <TextBlock
-                                    Margin="4,0,0,0"
-                                    VerticalAlignment="Center"
-                                    Text="المندوب" />
+                                    <TextBlock
+                                        Margin="4,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Text="العميل" />
 
-                            </StackPanel>
+                                </StackPanel>
 
-                        </Button>
-
-
-                        <!--  =================================================  -->
-                        <!--  شركة الشحن  -->
-                        <!--  =================================================  -->
-
-                        <Button Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.BroadcastShippingCarrierCommand}" CommandParameter="{Binding SelectedOrder}">
-
-                            <Button.Style>
-
-                                <Style BasedOn="{StaticResource WhatsAppButtonStyle}" TargetType="Button">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedOrder.HasShippingCarrierRecipient}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding SelectedOrder.IsShippingCarrierMessageSent}" Value="True">
-                                            <Setter Property="Background" Value="#16A34A" />
-                                            <Setter Property="Foreground" Value="White" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-
-                            </Button.Style>
-
-                            <StackPanel Orientation="Horizontal">
-
-                                <icons:MaterialIcon
-                                    Width="15"
-                                    Height="15"
-                                    Kind="Truck" />
-
-                                <TextBlock
-                                    Margin="4,0,0,0"
-                                    VerticalAlignment="Center"
-                                    Text="شركة الشحن" />
-
-                            </StackPanel>
-
-                        </Button>
+                            </Button>
 
 
-                        <!--  =================================================  -->
-                        <!--  المورد  -->
-                        <!--  =================================================  -->
+                            <!--  =================================================  -->
+                            <!--  المندوب  -->
+                            <!--  =================================================  -->
 
-                        <Button Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.BroadcastSupplierCommand}" CommandParameter="{Binding SelectedOrder}">
+                            <Button Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.BroadcastDeliverymanCommand}" CommandParameter="{Binding SelectedOrder}">
 
-                            <Button.Style>
+                                <Button.Style>
 
-                                <Style BasedOn="{StaticResource WhatsAppButtonStyle}" TargetType="Button">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedOrder.HasSupplierRecipient}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding SelectedOrder.IsSupplierMessageSent}" Value="True">
-                                            <Setter Property="Background" Value="#16A34A" />
-                                            <Setter Property="Foreground" Value="White" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
+                                    <Style BasedOn="{StaticResource WhatsAppButtonStyle}" TargetType="Button">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedOrder.HasDeliverymanRecipient}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding SelectedOrder.IsDeliverymanMessageSent}" Value="True">
+                                                <Setter Property="Background" Value="#16A34A" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
 
-                            </Button.Style>
+                                </Button.Style>
 
-                            <StackPanel Orientation="Horizontal">
+                                <StackPanel Orientation="Horizontal">
 
-                                <icons:MaterialIcon
-                                    Width="15"
-                                    Height="15"
-                                    Kind="PackageVariant" />
+                                    <icons:MaterialIcon
+                                        Width="15"
+                                        Height="15"
+                                        Kind="Motorcycle" />
 
-                                <TextBlock
-                                    Margin="4,0,0,0"
-                                    VerticalAlignment="Center"
-                                    Text="المورد" />
+                                    <TextBlock
+                                        Margin="4,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Text="المندوب" />
 
-                            </StackPanel>
+                                </StackPanel>
 
-                        </Button>
+                            </Button>
 
-                    </WrapPanel>
+
+                            <!--  =================================================  -->
+                            <!--  شركة الشحن  -->
+                            <!--  =================================================  -->
+
+                            <Button Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.BroadcastShippingCarrierCommand}" CommandParameter="{Binding SelectedOrder}">
+
+                                <Button.Style>
+
+                                    <Style BasedOn="{StaticResource WhatsAppButtonStyle}" TargetType="Button">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedOrder.HasShippingCarrierRecipient}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding SelectedOrder.IsShippingCarrierMessageSent}" Value="True">
+                                                <Setter Property="Background" Value="#16A34A" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+
+                                </Button.Style>
+
+                                <StackPanel Orientation="Horizontal">
+
+                                    <icons:MaterialIcon
+                                        Width="15"
+                                        Height="15"
+                                        Kind="Truck" />
+
+                                    <TextBlock
+                                        Margin="4,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Text="شركة الشحن" />
+
+                                </StackPanel>
+
+                            </Button>
+
+
+                            <!--  =================================================  -->
+                            <!--  المورد  -->
+                            <!--  =================================================  -->
+
+                            <Button Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.BroadcastSupplierCommand}" CommandParameter="{Binding SelectedOrder}">
+
+                                <Button.Style>
+
+                                    <Style BasedOn="{StaticResource WhatsAppButtonStyle}" TargetType="Button">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedOrder.HasSupplierRecipient}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding SelectedOrder.IsSupplierMessageSent}" Value="True">
+                                                <Setter Property="Background" Value="#16A34A" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+
+                                </Button.Style>
+
+                                <StackPanel Orientation="Horizontal">
+
+                                    <icons:MaterialIcon
+                                        Width="15"
+                                        Height="15"
+                                        Kind="PackageVariant" />
+
+                                    <TextBlock
+                                        Margin="4,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Text="المورد" />
+
+                                </StackPanel>
+
+                            </Button>
+
+                        </StackPanel>
+                    </ScrollViewer>
 
                 </Grid>
 
@@ -351,7 +351,7 @@
 
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="30" />
+                        <RowDefinition Height="auto" />
                     </Grid.RowDefinitions>
 
 

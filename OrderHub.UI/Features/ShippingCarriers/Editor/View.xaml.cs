@@ -1,8 +1,9 @@
 ﻿using System.Windows;
+using System.Windows.Controls;
 
 namespace OrderHub.UI.Features.ShippingCarriers.Editor;
 
-public partial class View : Window
+public partial class View : UserControl
 {
     public View(ViewModel viewModel)
     {
@@ -11,8 +12,5 @@ public partial class View : Window
         DataContext = viewModel;
 
         Loaded += async (_, _) => await Dispatcher.Invoke(viewModel.LoadAsync);
-        viewModel.RequestClose += () => Close();
     }
-
-    public new void Show() => ShowDialog();
 }

@@ -1,7 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
-using MediatR;
 using OrderHub.Application.Common.Lookups;
+using OrderHub.Application.Features.Orders.ChangePaymentMethod;
+using OrderHub.Application.Features.Orders.ChangeStatus;
+using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using System;
@@ -12,15 +14,10 @@ namespace OrderHub.UI.Features.Orders;
 
 public partial class OrderViewModel : ObservableObject
 {
-    private readonly IMediator _mediator;
-
-    public OrderViewModel(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
+    private readonly IRequestExecutor _requestExecutor;
 
     public OrderViewModel(
-        IMediator mediator,
+        IRequestExecutor requestExecutor,
         int id,
         string orderNumber,
         string clientName,
@@ -39,7 +36,7 @@ public partial class OrderViewModel : ObservableObject
         bool isShippingCarrierMessageSent,
         bool isDeliverymanMessageSent)
     {
-        _mediator = mediator;
+        _requestExecutor = requestExecutor;
         Id = id;
         OrderNumber = orderNumber;
         ClientName = clientName;
@@ -86,8 +83,7 @@ public partial class OrderViewModel : ObservableObject
 
     private async Task ChangePaymentMethod(int paymentMethodId)
     {
-        Result result = await _mediator.Send(
-            new Application.Commands.OrderCommands.ChangePaymentMethodCommand(Id, paymentMethodId));
+        Result result = await _requestExecutor.ExecuteAsync(new ChangePaymentMethodCommand(Id, paymentMethodId));
 
         if (result.IsSuccess)
         {
@@ -145,12 +141,19 @@ public partial class OrderViewModel : ObservableObject
 
     private async Task ChangeOrderStatus(OrderStatus orderStatus)
     {
-        Result result = await _mediator.Send(
-            new Application.Commands.OrderCommands.ChangeOrderStatusCommand(Id, orderStatus));
-
-        if (result.IsSuccess)
+        IChangeOrderStatusCommand changeOrderStatusCommand = orderStatus switch
         {
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.OrderUpdatedMessage());
+            Domain.Enums.OrderStatus.Cancelled => new CancelOrderCommand(Id),
+            Domain.Enums.OrderStatus.Delivered => new DeliverOrderCommand(Id),
+            Domain.Enums.OrderStatus.Processing => new StartOrderProcessingCommand(Id),
+            Domain.Enums.OrderStatus.Shipped => new ShipOrderCommand(Id),
+            Domain.Enums.OrderStatus.Pending => new ReturnOrderToPendingCommand(Id),
+            _ => null
+        };
+
+        if (changeOrderStatusCommand is not null)
+        {
+            await _requestExecutor.ExecuteAsync(changeOrderStatusCommand);
         }
     }
 

@@ -1,8 +1,9 @@
 ﻿using System.Windows;
+using System.Windows.Controls;
 
 namespace OrderHub.UI.Features.Suppliers.Editor;
 
-internal partial class EditSupplierView : Window
+internal partial class EditSupplierView : UserControl
 {
     public EditSupplierView(EditSupplierViewModelBase viewModel)
     {
@@ -10,7 +11,6 @@ internal partial class EditSupplierView : Window
         DataContext = viewModel;
 
         Loaded += CreateView_Loaded;
-        viewModel.RequestClose += () => Close();
     }
 
     private async void CreateView_Loaded(object sender, RoutedEventArgs e)
@@ -20,6 +20,4 @@ internal partial class EditSupplierView : Window
             await Dispatcher.Invoke(async () => await viewModdel.LoadAsync());
         }
     }
-
-    public new void Show() => ShowDialog();
 }

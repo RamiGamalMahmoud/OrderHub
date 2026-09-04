@@ -218,7 +218,7 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
         WeakReferenceMessenger.Default.Send(
             new Messages.DraftDeletedMessage(_draftContext.Id));
 
-        HandleOrderSuccess(result.Value);
+        HandleOrderSuccess();
 
         OnRequestClose();
     }
@@ -300,6 +300,7 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
                 CategoryName = item.CategoryName,
                 Price = draftItem.Price,
                 Quantity = draftItem.Quantity,
+                VAT = draftItem.VAT,
 
                 Suppliers = suppliers,
 
@@ -442,6 +443,7 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
             item.CategoryName,
             item.Price,
             item.Quantity,
+            item.VAT,
             item.Supplier?.Id,
             item.Supplier?.Name,
 
@@ -459,7 +461,7 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
         _draftSaveCancellation = null;
     }
 
-    private void HandleOrderSuccess(int orderId)
+    private void HandleOrderSuccess()
     {
         WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.OrderCreatedMessage());
 

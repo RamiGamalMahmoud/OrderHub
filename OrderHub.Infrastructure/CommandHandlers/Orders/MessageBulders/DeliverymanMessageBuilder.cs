@@ -1,5 +1,6 @@
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
+using System.Linq;
 using System.Text;
 
 namespace OrderHub.Infrastructure.CommandHandlers.Orders.MessageBulders;
@@ -42,6 +43,16 @@ internal class DeliverymanMessageBuilder : MessageBuilderBase, IMessageBuilder
             AppendProductBlock(sb, index, item, includePrice: false);
             index++;
         }
+
+        var currentStep = order.DeliverySteps
+            .Single(x => x.DeliverymanId == deliverymanId);
+
+        var nextStep = order.DeliverySteps
+            .Where(x => x.StepOrder > currentStep.StepOrder)
+            .OrderBy(x => x.StepOrder)
+            .FirstOrDefault();
+
+        AppendDeliveryDestination(sb, order, nextStep);
 
         AppendFooter(sb);
 

@@ -473,6 +473,46 @@
 
                                     </StackPanel>
 
+                                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+
+                                        <Button
+                                            BorderThickness="0"
+                                            Command="{Binding MakeTextNoteStrikethroughCommand}"
+                                            Cursor="Hand"
+                                            FontSize="10"
+                                            FontWeight="SemiBold">
+                                            <icons:MaterialIcon
+                                                Width="15"
+                                                Height="15"
+                                                Kind="FormatStrikethrough" />
+                                        </Button>
+
+                                        <Button
+                                            BorderThickness="0"
+                                            Command="{Binding MakeTextNoteBoldCommand}"
+                                            Cursor="Hand"
+                                            FontSize="10"
+                                            FontWeight="SemiBold">
+                                            <icons:MaterialIcon
+                                                Width="15"
+                                                Height="15"
+                                                Kind="FormatBold" />
+                                        </Button>
+
+                                        <Button
+                                            BorderThickness="0"
+                                            Command="{Binding MakeTextNoteItalicCommand}"
+                                            Cursor="Hand"
+                                            FontSize="10"
+                                            FontWeight="SemiBold">
+                                            <icons:MaterialIcon
+                                                Width="15"
+                                                Height="15"
+                                                Kind="FormatItalic" />
+                                        </Button>
+
+                                    </StackPanel>
+
                                 </Grid>
 
                                 <!--  Add Note Area  -->
@@ -500,9 +540,9 @@
                                             MaxHeight="80"
                                             Padding="8,6"
                                             VerticalContentAlignment="Center"
-                                            AcceptsReturn="True"
-                                            Background="Transparent"
-                                            BorderThickness="0"
+                                            Background="White"
+                                            BorderBrush="LightGray"
+                                            BorderThickness="1"
                                             FontSize="12"
                                             Foreground="#374151"
                                             Text="{Binding NewNoteText, UpdateSourceTrigger=PropertyChanged}"
@@ -845,7 +885,11 @@
 
                         <ColumnDefinition Width="*" />
 
-                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="5" />
+
+                        <ColumnDefinition Width="*" />
+
+                        <ColumnDefinition Width="5" />
 
                         <ColumnDefinition Width="*" />
 
@@ -889,11 +933,45 @@
 
                     </Button>
 
+                    <Button
+                        Grid.Column="2"
+                        Height="34"
+                        Padding="8,0"
+                        HorizontalAlignment="Stretch"
+                        BorderThickness="0"
+                        Command="{Binding CancelSendingMessageCommand}"
+                        CommandParameter="{Binding SelectedMessage}"
+                        Cursor="Hand"
+                        FontSize="11"
+                        Foreground="White"
+                        Style="{StaticResource ButtonWarning}">
+
+                        <StackPanel
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+
+                            <icons:MaterialIcon
+                                Width="15"
+                                Height="15"
+                                Margin="0,0,5,0"
+                                VerticalAlignment="Center"
+                                Kind="Cancel" />
+
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontWeight="SemiBold"
+                                Text="إلغاء الإرسال" />
+
+                        </StackPanel>
+
+                    </Button>
+
 
                     <!--  Delete  -->
 
                     <Button
-                        Grid.Column="2"
+                        Grid.Column="4"
                         Height="34"
                         Padding="8,0"
                         HorizontalAlignment="Stretch"
