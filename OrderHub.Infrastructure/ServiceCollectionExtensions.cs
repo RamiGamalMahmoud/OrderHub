@@ -31,6 +31,7 @@ public static class ServiceCollectionExtensions
         services.AddReadServices();
         services.AddDrafts();
         services.AddTransient<Orders.OrderWriteService>();
+        services.AddSingleton<Application.Interfaces.Services.IDatabaseConfigurationService, Configuration.DatabaseConfigurationService>();
         services.AddSingleton<Application.Interfaces.Services.IWppConnectScriptService, Services.WppConnectScriptService>();
         services.AddSingleton<Application.Interfaces.IRequestExecutor, Execution.RequestExecutor>();
         services.AddSingleton<Application.Interfaces.Services.IDataMigrationService, Services.DataMigrationService>();

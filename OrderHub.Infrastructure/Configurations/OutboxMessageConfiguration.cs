@@ -4,58 +4,84 @@ using OrderHub.Domain.Models;
 
 namespace OrderHub.Infrastructure.Configurations;
 
-internal class OutboxMessageConfiguration : ModelConfigurationBase<OutboxMessage>
+internal class OutboxMessageConfiguration
+    : ModelConfigurationBase<OutboxMessage>
 {
     public override void Configure(EntityTypeBuilder<OutboxMessage> builder)
     {
         base.Configure(builder);
 
-        builder.Property(m => m.Text)
-            .IsRequired()
+        builder.ToTable("outbox_messages");
+
+        builder.Property(x => x.Text)
+            .HasColumnType("varchar(4000)")
             .HasMaxLength(4000)
-            .HasColumnType("nvarchar(4000)");
+            .IsRequired();
 
-        builder.Property(m => m.RecipientType)
-            .IsRequired()
-            .HasConversion<string>();
+        builder.Property(x => x.RecipientType)
+            .HasColumnType("varchar(30)")
+            .HasMaxLength(30)
+            .HasConversion<string>()
+            .IsRequired();
 
-        builder.Property(m => m.Status)
-            .IsRequired()
-            .HasConversion<string>();
+        builder.Property(x => x.Status)
+            .HasColumnType("varchar(30)")
+            .HasMaxLength(30)
+            .HasConversion<string>()
+            .IsRequired();
 
-        builder.Property(m => m.RetryCount)
-            .IsRequired(false)
-            .HasDefaultValue(0);
+        builder.Property(x => x.RetryCount)
+            .HasColumnType("integer")
+            .HasDefaultValue(0)
+            .IsRequired(false);
 
-        builder.Property(m => m.MaxRetries)
-            .IsRequired(false)
-            .HasDefaultValue(3);
+        builder.Property(x => x.MaxRetries)
+            .HasColumnType("integer")
+            .HasDefaultValue(3)
+            .IsRequired(false);
 
-        builder.Property(m => m.LastAttemptAt)
-            .HasColumnType("datetime2");
+        builder.Property(x => x.LastAttemptAt)
+            .HasColumnType("timestamp with time zone")
+            .IsRequired(false);
 
-        builder.Property(m => m.SentAt)
-            .HasColumnType("datetime2");
+        builder.Property(x => x.SentAt)
+            .HasColumnType("timestamp with time zone")
+            .IsRequired(false);
 
-        builder.HasOne(m => m.Order)
-            .WithMany(o => o.OutboxMessages)
-            .HasForeignKey(m => m.OrderId)
+        builder.Property(x => x.OrderId)
+            .HasColumnType("integer")
+            .IsRequired(false);
+
+        builder.HasOne(x => x.Order)
+            .WithMany(x => x.OutboxMessages)
+            .HasForeignKey(x => x.OrderId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(m => m.Recipient)
+        builder.Property(x => x.RecipientId)
+            .HasColumnType("integer")
+            .IsRequired(false);
+
+        builder.HasOne(x => x.Recipient)
             .WithMany()
-            .HasForeignKey(m => m.RecipientId)
+            .HasForeignKey(x => x.RecipientId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Property(x => x.Notes)
+            .HasColumnType("text[]")
             .IsRequired(false);
 
-        builder.HasIndex(e => new { e.OrderId, e.RecipientId })
-          .IsUnique()
-          .HasFilter("[Status] = 'Pending'");
-
-        builder.Property(m => m.Notes)
+        builder.Property(x => x.LegacyAttachments)
+            .HasColumnType("text[]")
             .IsRequired(false);
 
-        builder.Property(m => m.LegacyAttachments)
-            .IsRequired(false);
+        builder.HasIndex(x => new
+        {
+            x.OrderId,
+            x.RecipientId
+        })
+        .IsUnique()
+        .HasFilter("status = 'Pending'");
     }
 }

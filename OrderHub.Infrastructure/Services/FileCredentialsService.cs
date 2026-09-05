@@ -1,50 +1,65 @@
 ﻿using OrderHub.Application.DTOs;
 using OrderHub.Application.Interfaces.Services;
-using System;
 using System.IO;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 
-namespace OrderHub.Infrastructure.Services
+namespace OrderHub.Infrastructure.Services;
+
+internal class FileCredentialsService : ICredentialsService
 {
-    internal class FileCredentialsService : ICredentialsService
+    private readonly IApplicationDirectoriesService _applicationDirectoriesService;
+    private readonly IEncryptionService _encryptionService;
+
+    public FileCredentialsService(
+        IApplicationDirectoriesService applicationDirectoriesService,
+        IEncryptionService encryptionService)
     {
-        private readonly IApplicationDirectoriesService _applicationDirectoriesService;
-        private readonly IEncryptionService _encryptionService;
-        private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
+        _applicationDirectoriesService = applicationDirectoriesService;
+        _encryptionService = encryptionService;
+    }
 
-        public FileCredentialsService(IApplicationDirectoriesService applicationDirectoriesService, IEncryptionService encryptionService)
+    public void DeleteClientCredentials()
+    {
+        string filePath =
+            _applicationDirectoriesService.CredentialsFilePath;
+
+        if (File.Exists(filePath))
         {
-            _applicationDirectoriesService = applicationDirectoriesService;
-            _encryptionService = encryptionService;
+            File.Delete(filePath);
+        }
+    }
+
+    public async Task<ClientCredentials> GetClilentCredentialsAsync()
+    {
+        string filePath =
+            _applicationDirectoriesService.CredentialsFilePath;
+
+        if (!File.Exists(filePath))
+        {
+            return null;
         }
 
-        public void DeleteClientCredentials()
-        {
-            if(File.Exists(_applicationDirectoriesService.CredentialsFilePath))
-            {
-                File.Delete(_applicationDirectoriesService.CredentialsFilePath);
-            }
-        }
+        byte[] encryptedData =
+            await File.ReadAllBytesAsync(filePath);
 
-        public async Task<ClientCredentials> GetClilentCredentialsAsync()
-        {
-            if (!File.Exists(_applicationDirectoriesService.CredentialsFilePath))
-            {
-                return null;
-            }
+        byte[] data =
+            _encryptionService.Decrypt(encryptedData);
 
-            byte[] fileContents = await File.ReadAllBytesAsync(_applicationDirectoriesService.CredentialsFilePath);
-            string decryptedContents = _encryptionService.Decrypt(fileContents);
-            ClientCredentials clientCredentials = JsonSerializer.Deserialize<ClientCredentials>(decryptedContents);
-            return clientCredentials;
-        }
+        return JsonSerializer.Deserialize<ClientCredentials>(data);
+    }
 
-        public async Task SaveClientCredentialsAsync(ClientCredentials clientCredentials)
-        {
-            byte[] encryptedContents = _encryptionService.Encrypt(JsonSerializer.Serialize(clientCredentials));
-            await File.WriteAllBytesAsync(_applicationDirectoriesService.CredentialsFilePath, encryptedContents);
-        }
+    public async Task SaveClientCredentialsAsync(
+        ClientCredentials clientCredentials)
+    {
+        byte[] data =
+            JsonSerializer.SerializeToUtf8Bytes(clientCredentials);
+
+        byte[] encryptedData =
+            _encryptionService.Encrypt(data);
+
+        await File.WriteAllBytesAsync(
+            _applicationDirectoriesService.CredentialsFilePath,
+            encryptedData);
     }
 }

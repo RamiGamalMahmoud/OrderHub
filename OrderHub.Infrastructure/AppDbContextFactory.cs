@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using OrderHub.Application.Configuration;
 using OrderHub.Application.Interfaces.Services;
 
 namespace OrderHub.Infrastructure;
@@ -6,13 +8,14 @@ namespace OrderHub.Infrastructure;
 internal class AppDbContextFactory
 {
     private readonly DbContextOptions<AppDbContext> _options;
-    private readonly IApplicationDirectoriesService _directories;
+    private readonly IDatabaseConfigurationService _databaseConfigurationService;
 
-    public AppDbContextFactory(IApplicationDirectoriesService directories)
+    public AppDbContextFactory(IDatabaseConfigurationService databaseConfigurationService)
     {
-        _directories = directories;
+        _databaseConfigurationService = databaseConfigurationService;
     }
 
+    // Used by tests
     public AppDbContextFactory(DbContextOptions<AppDbContext> options)
     {
         _options = options;
@@ -23,10 +26,25 @@ internal class AppDbContextFactory
         if (_options != null)
             return new AppDbContext(_options);
 
-        DbContextOptionsBuilder<AppDbContext> builder = new DbContextOptionsBuilder<AppDbContext>();
+        DatabaseSettings databaseSettings = new()
+        {
+            Database = "orderhub_dev"
+        };
 
-        builder.UseSqlite($"Data Source={_directories.DatabaseFilePath}")
-               .UseSnakeCaseNamingConvention();
+        NpgsqlConnectionStringBuilder connectionStringBuilder = new()
+        {
+            Host = databaseSettings.Host,
+            Port = databaseSettings.Port,
+            Database = databaseSettings.Database,
+            Username = databaseSettings.Username,
+            Password = databaseSettings.Password
+        };
+
+        DbContextOptionsBuilder<AppDbContext> builder = new();
+
+        builder
+            .UseNpgsql(connectionStringBuilder.ConnectionString)
+            .UseSnakeCaseNamingConvention();
 
         return new AppDbContext(builder.Options);
     }

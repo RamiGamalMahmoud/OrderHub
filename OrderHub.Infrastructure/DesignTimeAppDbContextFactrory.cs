@@ -1,17 +1,35 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Npgsql;
+using OrderHub.Application.Configuration;
 
 namespace OrderHub.Infrastructure;
 
-internal class DesignTimeAppDbContextFactrory : IDesignTimeDbContextFactory<AppDbContext>
+internal class DesignTimeAppDbContextFactrory
+    : IDesignTimeDbContextFactory<AppDbContext>
 {
     public AppDbContext CreateDbContext(string[] args)
     {
-        DbContextOptionsBuilder<AppDbContext> dbContextOptionsBuilder = new();
-        dbContextOptionsBuilder
-            .UseSqlite("Data Source=./Data/order_hub.db")
+        DatabaseSettings databaseSettings = new()
+        {
+            Database = "orderhub_dev"
+        };
+
+        NpgsqlConnectionStringBuilder connectionStringBuilder = new()
+        {
+            Host = databaseSettings.Host,
+            Port = databaseSettings.Port,
+            Database = databaseSettings.Database,
+            Username = databaseSettings.Username,
+            Password = databaseSettings.Password
+        };
+
+        DbContextOptionsBuilder<AppDbContext> optionsBuilder = new();
+
+        optionsBuilder
+            .UseNpgsql(connectionStringBuilder.ConnectionString)
             .UseSnakeCaseNamingConvention();
-        AppDbContext appDbContext = new(dbContextOptionsBuilder.Options);
-        return appDbContext;
+
+        return new AppDbContext(optionsBuilder.Options);
     }
 }

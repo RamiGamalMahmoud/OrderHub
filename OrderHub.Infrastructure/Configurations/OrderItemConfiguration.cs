@@ -2,53 +2,68 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using OrderHub.Domain.Models;
 
-namespace OrderHub.Infrastructure.Configurations
+namespace OrderHub.Infrastructure.Configurations;
+
+internal class OrderItemConfiguration : ModelConfigurationBase<OrderItem>
 {
-    internal class OrderItemConfiguration : ModelConfigurationBase<OrderItem>
+    public override void Configure(EntityTypeBuilder<OrderItem> builder)
     {
-        public override void Configure(EntityTypeBuilder<OrderItem> builder)
+        base.Configure(builder);
+
+        builder.ToTable("order_items");
+
+        builder.Property(x => x.OrderId)
+            .HasColumnType("integer")
+            .IsRequired();
+
+        builder.Property(x => x.ProductId)
+            .HasColumnType("integer")
+            .IsRequired();
+
+        builder.OwnsOne(x => x.UnitPrice, navigationBuilder =>
         {
-            base.Configure(builder);
-
-            builder.ToTable("order_items");
-
-            builder.OwnsOne(o => o.UnitPrice, navigationBuilder => navigationBuilder.Property(unitPrice => unitPrice.Value)
+            navigationBuilder.Property(unitPrice => unitPrice.Value)
                 .HasColumnName("unit_price")
-                .HasColumnType("DECIMAL(18,2)")
-                .IsRequired());
-
-            builder.Navigation(o => o.UnitPrice).IsRequired();
-
-            builder.Property(o => o.Quantity)
-                .HasColumnName("quantity")
-                .HasColumnType("DECIMAL(18,2)")
+                .HasColumnType("numeric(18,2)")
                 .IsRequired();
+        });
 
-            builder.HasOne(o => o.Product)
-                .WithMany()
-                .HasForeignKey(o => o.ProductId)
-                .OnDelete(DeleteBehavior.Restrict)
-                .IsRequired();
+        builder.Navigation(x => x.UnitPrice)
+            .IsRequired();
 
-            builder.Property(o => o.ProductName)
-                .HasColumnName("product_name")
-                .HasColumnType("VARCHAR(100)")
-                .HasMaxLength(100)
-                .IsRequired();
+        builder.Property(x => x.Quantity)
+            .HasColumnName("quantity")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
 
-            builder.HasOne(o => o.Supplier)
-                .WithMany()
-                .HasForeignKey(o => o.SupplierId)
-                .OnDelete(DeleteBehavior.Restrict)
-                .IsRequired(false);
+        builder.HasOne(x => x.Product)
+            .WithMany()
+            .HasForeignKey(x => x.ProductId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Property(o => o.SupplierName)
-                .HasColumnName("supplier_name")
-                .HasColumnType("VARCHAR(100)")
-                .HasMaxLength(100)
-                .IsRequired(false);
+        builder.Property(x => x.ProductName)
+            .HasColumnName("product_name")
+            .HasColumnType("varchar(100)")
+            .HasMaxLength(100)
+            .IsRequired();
 
-            builder.Ignore(o => o.SubTotal);
-        }
+        builder.Property(x => x.SupplierId)
+            .HasColumnType("integer")
+            .IsRequired(false);
+
+        builder.HasOne(x => x.Supplier)
+            .WithMany()
+            .HasForeignKey(x => x.SupplierId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(x => x.SupplierName)
+            .HasColumnName("supplier_name")
+            .HasColumnType("varchar(100)")
+            .HasMaxLength(100)
+            .IsRequired(false);
+
+        builder.Ignore(x => x.SubTotal);
     }
 }

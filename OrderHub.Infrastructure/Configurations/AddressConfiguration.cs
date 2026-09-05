@@ -2,28 +2,33 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using OrderHub.Domain.Models;
 
-namespace OrderHub.Infrastructure.Configurations
+namespace OrderHub.Infrastructure.Configurations;
+
+internal class AddressConfiguration : ModelConfigurationBase<Address>
 {
-    internal class AddressConfiguration : ModelConfigurationBase<Address>
+    public override void Configure(EntityTypeBuilder<Address> builder)
     {
-        public override void Configure(EntityTypeBuilder<Address> builder)
-        {
-            base.Configure(builder);
-            builder.HasKey(address => address.Id);
+        base.Configure(builder);
 
-            builder.Property(address => address.IsPrimary)
-                .IsRequired()
-                .HasDefaultValue(false);
+        builder.ToTable("addresses");
 
-            builder.Property(address => address.Street)
-                .HasColumnType("varchar(150)")
-                .HasMaxLength(150)
-                .IsRequired();
+        builder.Property(x => x.IsPrimary)
+            .HasColumnType("boolean")
+            .IsRequired();
 
-            builder.HasOne(address => address.City)
-                .WithMany()
-                .HasForeignKey("city_id")
-                .OnDelete(DeleteBehavior.Restrict);
-        }
+        builder.Property(x => x.Street)
+            .HasColumnName("street")
+            .HasColumnType("varchar(150)")
+            .HasMaxLength(150)
+            .IsRequired();
+
+        builder.Property<int>("city_id")
+            .HasColumnType("integer");
+
+        builder.HasOne(x => x.City)
+            .WithMany()
+            .HasForeignKey("city_id")
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

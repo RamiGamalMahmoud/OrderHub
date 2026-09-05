@@ -10,14 +10,36 @@ internal class ProductPropertyConfiguration : ModelConfigurationBase<ProductProp
     {
         base.Configure(builder);
 
+        builder.ToTable("product_properties");
+
+        builder.Property(x => x.ProductId)
+            .HasColumnType("integer")
+            .IsRequired();
+
+        builder.Property(x => x.PropertyId)
+            .HasColumnType("integer")
+            .IsRequired();
+
+        builder.Property(x => x.IsRequired)
+            .HasColumnType("boolean")
+            .IsRequired();
+
+        builder.HasOne(x => x.Product)
+            .WithMany(x => x.Properties)
+            .HasForeignKey(x => x.ProductId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasOne(x => x.Property)
             .WithMany()
             .HasForeignKey(x => x.PropertyId)
-            .OnDelete(DeleteBehavior.Restrict)
-            .IsRequired();
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Restrict);
 
-        builder.Property(x => x.IsRequired);
-
-        builder.HasIndex(x => new { x.ProductId, x.PropertyId });
+        builder.HasIndex(x => new
+        {
+            x.ProductId,
+            x.PropertyId
+        });
     }
 }

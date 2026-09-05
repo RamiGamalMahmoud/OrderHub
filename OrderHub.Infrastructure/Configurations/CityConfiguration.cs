@@ -8,17 +8,23 @@ internal class CityConfiguration : ModelConfigurationBase<City>
 {
     public override void Configure(EntityTypeBuilder<City> builder)
     {
-        builder.OwnsOne(city => city.Name,
-            navigationBuilder =>
-            {
-                navigationBuilder.Property(entityName => entityName.Value)
+        base.Configure(builder);
+
+        builder.ToTable("cities");
+
+        builder.OwnsOne(city => city.Name, navigationBuilder =>
+        {
+            navigationBuilder.Property(entityName => entityName.Value)
                 .HasColumnName("name")
+                .HasColumnType("varchar(100)")
                 .HasMaxLength(100)
                 .IsRequired();
 
-                navigationBuilder.HasIndex(entityName => entityName.Value).IsUnique();
-            });
+            navigationBuilder.HasIndex(entityName => entityName.Value)
+                .IsUnique();
+        });
 
-        builder.Navigation(city => city.Name).IsRequired();
+        builder.Navigation(city => city.Name)
+            .IsRequired();
     }
 }

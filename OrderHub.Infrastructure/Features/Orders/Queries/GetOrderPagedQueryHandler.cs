@@ -71,6 +71,9 @@ internal static class OrderQueryFilters
         int? paymentMethodId,
         OrderStatus? orderStatus)
     {
+        DateTime? fromDateUtc = fromDate?.Date.ToUniversalTime();
+        DateTime? toDateUtc = toDate?.Date.AddDays(1).ToUniversalTime();
+
         return query.Where(order =>
             (string.IsNullOrWhiteSpace(searchTerm)
                 || order.Client.Name.Value.Contains(searchTerm)
@@ -79,8 +82,8 @@ internal static class OrderQueryFilters
                     sequence.RecipientType == RecipientType.Client
                     && sequence.EntityId == order.ClientId
                     && sequence.DisplayTitle.Contains(searchTerm)))
-            && (!fromDate.HasValue || order.CreatedAt >= fromDate.Value.Date)
-            && (!toDate.HasValue || order.CreatedAt < toDate.Value.Date.AddDays(1))
+            && (!fromDateUtc.HasValue || order.CreatedAt >= fromDateUtc.Value)
+            && (!toDateUtc.HasValue || order.CreatedAt < toDateUtc.Value)
             && (!paymentMethodId.HasValue || order.PaymentMethodId == paymentMethodId.Value)
             && (!orderStatus.HasValue || order.OrderStatus == orderStatus.Value));
     }

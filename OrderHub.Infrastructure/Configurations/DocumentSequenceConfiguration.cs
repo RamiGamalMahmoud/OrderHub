@@ -2,12 +2,13 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using OrderHub.Infrastructure.Models;
 
-namespace OrderHub.Infrastructure.Configurations;
-
-internal class DocumentSequenceConfiguration : IEntityTypeConfiguration<DocumentSequence>
+internal class DocumentSequenceConfiguration
+    : IEntityTypeConfiguration<DocumentSequence>
 {
     public void Configure(EntityTypeBuilder<DocumentSequence> builder)
     {
+        builder.ToTable("document_sequences");
+
         builder.HasKey(x => new
         {
             x.DocumentType,
@@ -15,12 +16,21 @@ internal class DocumentSequenceConfiguration : IEntityTypeConfiguration<Document
             x.Month
         });
 
-        builder.Property(x => x.DocumentType).HasConversion<int>();
+        builder.Property(x => x.DocumentType)
+            .HasColumnType("integer")
+            .HasConversion<int>()
+            .IsRequired();
 
-        builder.Property(x => x.Year).IsRequired();
+        builder.Property(x => x.Year)
+            .HasColumnType("integer")
+            .IsRequired();
 
-        builder.Property(x => x.Month).IsRequired();
+        builder.Property(x => x.Month)
+            .HasColumnType("integer")
+            .IsRequired();
 
-        builder.Property(x => x.LastNumber).IsRequired();
+        builder.Property(x => x.LastNumber)
+            .HasColumnType("integer")
+            .IsRequired();
     }
 }

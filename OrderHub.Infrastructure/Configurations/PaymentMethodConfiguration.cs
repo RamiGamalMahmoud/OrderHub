@@ -5,51 +5,43 @@ using System;
 
 namespace OrderHub.Infrastructure.Configurations;
 
-internal class PaymentMethodConfiguration : ModelConfigurationBase<PaymentMethod>
+internal class PaymentMethodConfiguration
+    : ModelConfigurationBase<PaymentMethod>
 {
     public override void Configure(EntityTypeBuilder<PaymentMethod> builder)
     {
         base.Configure(builder);
 
-        builder.Property(p => p.Id)
-            .ValueGeneratedOnAdd();
-        // Code configuration
-        builder.Property(p => p.Code)
-            .IsRequired() // NOT NULL
+        builder.ToTable("payment_methods");
+
+        builder.Property(x => x.Code)
+            .HasColumnType("varchar(50)")
             .HasMaxLength(50)
-            .IsUnicode(false); // For codes, use varchar (better performance)
+            .IsUnicode(false)
+            .IsRequired();
 
-        // Unique index on Code
-        builder.HasIndex(p => p.Code)
-            .IsUnique()
-            .HasDatabaseName("UX_PaymentMethods_Code");
+        builder.HasIndex(x => x.Code)
+            .IsUnique();
 
-        // DisplayName configuration
-        builder.Property(p => p.DisplayName)
-            .IsRequired() // NOT NULL
+        builder.Property(x => x.DisplayName)
+            .HasColumnType("varchar(100)")
             .HasMaxLength(100)
-            .IsUnicode(true); // For Arabic/Unicode support
+            .IsRequired();
 
-        // Index on DisplayName for searching
-        builder.HasIndex(p => p.DisplayName)
-            .HasDatabaseName("IX_PaymentMethods_DisplayName");
+        builder.HasIndex(x => x.DisplayName);
 
-        // Description configuration
-        builder.Property(p => p.Description)
-            .IsRequired(false) // NULL allowed
+        builder.Property(x => x.Description)
+            .HasColumnType("varchar(500)")
             .HasMaxLength(500)
-            .IsUnicode(true);
+            .IsRequired(false);
 
-        // IsActive configuration
-        builder.Property(p => p.IsActive)
-            .IsRequired()
-            .HasDefaultValue(true); // Default value = true
+        builder.Property(x => x.IsActive)
+            .HasColumnType("boolean")
+            .HasDefaultValue(true)
+            .IsRequired();
 
-        // Index on IsActive for filtering
-        builder.HasIndex(p => p.IsActive)
-            .HasDatabaseName("IX_PaymentMethods_IsActive");
+        builder.HasIndex(x => x.IsActive);
 
-        // Seed initial data
         builder.HasData(
             new
             {
@@ -58,7 +50,9 @@ internal class PaymentMethodConfiguration : ModelConfigurationBase<PaymentMethod
                 DisplayName = "نقداً",
                 Description = "الدفع نقداً عند الاستلام",
                 IsActive = true,
-                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0)
+                CreatedAt = new DateTime(
+                    2026, 1, 1, 0, 0, 0,
+                    DateTimeKind.Utc)
             },
             new
             {
@@ -67,7 +61,9 @@ internal class PaymentMethodConfiguration : ModelConfigurationBase<PaymentMethod
                 DisplayName = "تحويل بنكي",
                 Description = "الدفع عبر التحويل البنكي",
                 IsActive = true,
-                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0)
+                CreatedAt = new DateTime(
+                    2026, 1, 1, 0, 0, 0,
+                    DateTimeKind.Utc)
             },
             new
             {
@@ -75,8 +71,10 @@ internal class PaymentMethodConfiguration : ModelConfigurationBase<PaymentMethod
                 Code = "SUPPLIER_ACCOUNT",
                 DisplayName = "على حساب المورد",
                 Description = "الدفع على حساب المورد",
-                IsActive = true, 
-                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0)
+                IsActive = true,
+                CreatedAt = new DateTime(
+                    2026, 1, 1, 0, 0, 0,
+                    DateTimeKind.Utc)
             },
             new
             {
@@ -85,7 +83,9 @@ internal class PaymentMethodConfiguration : ModelConfigurationBase<PaymentMethod
                 DisplayName = "سلة",
                 Description = "الدفع عبر منصة سلة",
                 IsActive = true,
-                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0)
+                CreatedAt = new DateTime(
+                    2026, 1, 1, 0, 0, 0,
+                    DateTimeKind.Utc)
             }
         );
     }
