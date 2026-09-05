@@ -1,5 +1,6 @@
 ﻿using Microsoft.Playwright;
 using OrderHub.Application.Interfaces.Services;
+using OrderHub.Infrastructure.Services.WhatsApp;
 using System;
 using System.IO;
 using System.Linq;
@@ -18,6 +19,10 @@ internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSend
     private IPlaywright _playwright;
     private IBrowserContext _context;
     private IPage _page;
+    internal static readonly string[] _options =
+        [
+            "--disable-blink-features=AutomationControlled",
+        ];
 
     public PlaywrightWhatsAppService(IApplicationDirectoriesService appDirectoriesService, IWppConnectScriptService wppConnectScriptService)
     {
@@ -28,7 +33,8 @@ internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSend
     public async Task<bool> StartWhatsAppAsync(string url = WHATSAPP_URL)
     {
         var chromePath = FindChrome();
-        if (chromePath is null) return false;
+        if (chromePath is null)
+            return false;
 
         try
         {
@@ -42,7 +48,7 @@ internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSend
                 {
                     Headless = false,
                     ExecutablePath = chromePath,
-                    Args = ["--disable-blink-features=AutomationControlled"]
+                    Args = _options
                 });
 
             _context.Close += (_, _) =>
@@ -53,17 +59,9 @@ internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSend
 
             _page = _context.Pages.FirstOrDefault() ?? await _context.NewPageAsync();
 
-            // 1. احقن السكربت كـ Init Script أولاً ليصبح متاحًا فور دخول الصفحة
             await InjectWppAsync();
-
-            // 2. اذهب إلى الرابط
             await _page.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
-
-            // 3. انتظر حتى تظهر الصفحة (سواء كانت واجهة محادثات أو كود QR)
             await WaitForWhatsapReadyAsync(_page);
-
-            // 4. انتظر حتى يتم تحميل مكتبة WPP بالكامل (لو هناك QR سينتظر المستخدم حتى يمسحه)
-            // جعلنا الوقت 5 دقائق (300000ms) ليعطي المستخدم وقتًا كافيًا لمسح الـ QR من الهاتف
             await WaitForWppReadyAsync(_page);
 
             return true;
@@ -76,10 +74,12 @@ internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSend
     }
 
 
+
     private async Task<bool> SendMessageContentAsync(string chatId, MessageToSend message)
     {
         if (_page is null || message is null)
             return false;
+
 
         if (!string.IsNullOrWhiteSpace(message.Message))
         {
@@ -87,8 +87,11 @@ internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSend
                 return false;
         }
 
-        if (message.Attachments is null)
+        if (message.Attachments is null || !message.Attachments.Any())
             return true;
+
+        // 🚨 تعديل جوهري: انتظر قليلاً بعد إرسال النص قبل البدء في رفع المرفقات لمحاكاة السلوك البشري
+        await Task.Delay(Random.Shared.Next(3000, 5000));
 
         foreach (var attachment in message.Attachments)
         {
@@ -99,10 +102,14 @@ internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSend
 
             if (!await SendFileToChatAsync(chatId, file.FullName, file.Name))
                 return false;
+
+            // 🚨 تعديل جوهري: انتظر بين كل ملف وملف آخر لمنع قفل الجلسة (خاصة مع الملفات الكبيرة)
+            await Task.Delay(Random.Shared.Next(4000, 7000));
         }
 
         return true;
     }
+
 
     public async Task<bool> SendAsync(string destination, MessageToSend message)
     {
@@ -142,32 +149,7 @@ internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSend
             return false;
 
         return await _page.EvaluateAsync<bool>(
-            """
-            async ({ chatId, message }) => {
-                try {
-                    if (!window.WPP ||
-                        !window.WPP.chat ||
-                        !window.WPP.chat.sendTextMessage) {
-                        return false;
-                    }
-
-                    await window.WPP.chat.sendTextMessage(
-                        chatId,
-                        message
-                    );
-
-                    return true;
-                }
-                catch (error) {
-                    console.error(
-                        "WPP sendTextMessage error:",
-                        error
-                    );
-
-                    return false;
-                }
-            }
-            """,
+            WppScripts.SendTextMessage,
             new
             {
                 chatId,
@@ -190,33 +172,7 @@ internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSend
             await WaitForWppReadyAsync(page);
 
             var groupId = await page.EvaluateAsync<string>(
-                    """
-                    async (inviteCode) => {
-                        try {
-                            if (!window.WPP ||
-                                !window.WPP.group ||
-                                !window.WPP.group.getGroupInfoFromInviteCode) {
-                                return null;
-                            }
-
-                            const groupInfo = await WPP.group.getGroupInfoFromInviteCode(inviteCode);
-
-                            if (!groupInfo || !groupInfo.id) {
-                                return null;
-                            }
-
-                            return groupInfo.id._serialized || groupInfo.id;
-                        }
-                        catch (error) {
-                            console.error(
-                                "WPP getGroupInfoFromInviteCode error:",
-                                error
-                            );
-
-                            return null;
-                        }
-                    }
-                    """,
+                    WppScripts.GetGroutIdFromIntitationCode,
                     inviteCode);
 
             if (string.IsNullOrWhiteSpace(groupId))
@@ -276,19 +232,7 @@ internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSend
             throw new InvalidOperationException("WhatsApp page is not initialized.");
 
         await page.WaitForFunctionAsync(
-            """
-            () => {
-                return document.querySelector(
-                    '[data-testid="chat-list"]'
-                ) ||
-                document.querySelector(
-                    '[data-testid="chatlist"]'
-                ) ||
-                document.querySelector(
-                    '[data-testid="side"]'
-                );
-            }
-            """,
+            WppScripts.WaitForWhatsapReadyScript,
             new PageWaitForFunctionOptions
             {
                 Timeout = 120000
@@ -436,42 +380,7 @@ internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSend
         await WaitForWppReadyAsync(_page);
 
         return await _page.EvaluateAsync<bool>(
-            """
-        async ({ chatId, dataUri, caption, mediaType, fileName }) => {
-            try {
-                if (!window.WPP ||
-                    !window.WPP.chat ||
-                    !window.WPP.chat.sendFileMessage) {
-                    return false;
-                }
-
-                const options = {
-                    type: mediaType,
-                    caption: caption || undefined
-                };
-
-                if (mediaType === "document") {
-                    options.filename = fileName;
-                }
-
-                await window.WPP.chat.sendFileMessage(
-                    chatId,
-                    dataUri,
-                    options
-                );
-
-                return true;
-            }
-            catch (error) {
-                console.error(
-                    "WPP sendFileMessage error:",
-                    error
-                );
-
-                return false;
-            }
-        }
-        """,
+            WppScripts.SendFileMessage,
             new
             {
                 chatId,

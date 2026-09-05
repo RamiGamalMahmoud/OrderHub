@@ -42,7 +42,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IMessageSender>(s => s.GetRequiredService<Services.PlaywrightWhatsAppService>());
         services.AddScoped<IUnitOfWork, Services.UnitOfWork>();
         services.AddSingleton<IMessageService, Services.MessageService>();
-        
+        services.AddSingleton<Services.MessageSendingOptions>(s => new Services.MessageSendingOptions());
+
         services.AddSingleton<IConnectionService, Services.ConnectionService>();
 
         services.AddSingleton<IDatabaseService, Services.DatabaseService>();
