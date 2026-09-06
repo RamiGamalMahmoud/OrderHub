@@ -19,4 +19,5 @@ public interface IApplicationDirectoriesService
     string QuotationsDirectory { get; }
 
     void EnsureDirectoriesCreated();
+    string GetWhatsAppProfileDirectory(string profileName);
 }
