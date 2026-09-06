@@ -949,10 +949,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_attempt_at");
 
-                    b.PrimitiveCollection<List<string>>("LegacyAttachments")
-                        .HasColumnType("text[]")
-                        .HasColumnName("legacy_attachments");
-
                     b.Property<int?>("MaxRetries")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -1052,11 +1048,6 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Property<int>("OutboxMessageId")
                         .HasColumnType("integer")
                         .HasColumnName("outbox_message_id");
-
-                    b.Property<string>("RelativePath")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)")
-                        .HasColumnName("relative_path");
 
                     b.Property<string>("StoredFileName")
                         .IsRequired()

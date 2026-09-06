@@ -72,10 +72,6 @@ internal class OutboxMessageConfiguration
             .HasColumnType("text[]")
             .IsRequired(false);
 
-        builder.Property(x => x.LegacyAttachments)
-            .HasColumnType("text[]")
-            .IsRequired(false);
-
         builder.HasIndex(x => new
         {
             x.OrderId,

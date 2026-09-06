@@ -23,11 +23,6 @@ internal class OutboxMessageAttachmentConfiguration
             .HasMaxLength(150)
             .IsRequired();
 
-        builder.Property(x => x.RelativePath)
-            .HasColumnType("varchar(500)")
-            .HasMaxLength(500)
-            .IsRequired(false);
-
         builder.Property(x => x.ContentType)
             .HasColumnType("varchar(100)")
             .HasMaxLength(100)

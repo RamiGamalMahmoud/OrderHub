@@ -34,7 +34,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<Application.Interfaces.Services.IDatabaseConfigurationService, Configuration.DatabaseConfigurationService>();
         services.AddSingleton<Application.Interfaces.Services.IWppConnectScriptService, Services.WppConnectScriptService>();
         services.AddSingleton<Application.Interfaces.IRequestExecutor, Execution.RequestExecutor>();
-        services.AddSingleton<Application.Interfaces.Services.IDataMigrationService, Services.DataMigrationService>();
 
         services.AddSingleton<Application.Interfaces.Documents.IPdfDocumentFactory, Features.Documents.PdfDocumentFactory>();
         services.AddSingleton<Application.Interfaces.Services.IFileStorageService, Services.LocalFileStorageService>();
