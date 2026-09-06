@@ -24,27 +24,7 @@ internal static class WppScripts
 
             await window.WPP.chat.sendTextMessage(
                 chatId,
-                message,
-                {
-                    useInteractiveMessage: true,
-
-                    buttons: [
-                        {
-                            id: "option_1",
-                            text: "الخيار الأول"
-                        },
-                        {
-                            id: "option_2",
-                            text: "الخيار الثاني"
-                        },
-                        {
-                            id: "option_3",
-                            text: "الخيار الثالث"
-                        }
-                    ],
-
-                    footer: "OrderHub"
-                }
+                message
             );
 
             return true;
