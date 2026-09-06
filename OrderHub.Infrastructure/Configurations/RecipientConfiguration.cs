@@ -22,8 +22,8 @@ internal class RecipientConfiguration : ModelConfigurationBase<OutboxMessageReci
             .IsRequired();
 
         builder.Property(x => x.PhoneNumber)
-            .HasColumnType("varchar(30)")
-            .HasMaxLength(30)
+            .HasColumnType("varchar(255)")
+            .HasMaxLength(255)
             .IsRequired();
     }
 }

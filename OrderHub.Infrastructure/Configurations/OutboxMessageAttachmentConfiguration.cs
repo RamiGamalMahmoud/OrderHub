@@ -26,7 +26,7 @@ internal class OutboxMessageAttachmentConfiguration
         builder.Property(x => x.RelativePath)
             .HasColumnType("varchar(500)")
             .HasMaxLength(500)
-            .IsRequired();
+            .IsRequired(false);
 
         builder.Property(x => x.ContentType)
             .HasColumnType("varchar(100)")

@@ -1054,7 +1054,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnName("outbox_message_id");
 
                     b.Property<string>("RelativePath")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)")
                         .HasColumnName("relative_path");
@@ -1099,8 +1098,8 @@ namespace OrderHub.Infrastructure.Migrations
 
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("varchar(30)")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)")
                         .HasColumnName("phone_number");
 
                     b.HasKey("Id");
