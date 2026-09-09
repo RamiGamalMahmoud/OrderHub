@@ -6,7 +6,6 @@ public class OutboxMessageAttachment : ModelBase
 {
     public string OriginalFileName { get; private set; }
     public string StoredFileName { get; private set; }
-    public string RelativePath { get; private set; }
     public string ContentType { get; private set; }
     public long FileSize { get; private set; }
 

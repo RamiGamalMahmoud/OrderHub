@@ -366,29 +366,16 @@ internal class MessageService : IMessageService
         DateTime attemptAt = DateTime.Now;
 
         entity.Status = status;
+
         entity.LastAttemptAt = attemptAt;
-        entity.SentAt = sent
-            ? attemptAt
-            : null;
+        entity.SentAt = sent ? attemptAt : null;
 
         await db.SaveChangesAsync();
-
-        await _logger.LogInfoAsync(
-            $"[STATUS] Message {messageId} status changed. " +
-            $"Previous={previousStatus}, " +
-            $"New={status}, " +
-            $"Sent={sent}, " +
-            $"AttemptAt={attemptAt:yyyy-MM-dd HH:mm:ss.fff}, " +
-            $"SentAt={(entity.SentAt.HasValue
-                ? entity.SentAt.Value.ToString("yyyy-MM-dd HH:mm:ss.fff")
-                : "N/A")}");
-
-        WeakReferenceMessenger.Default.Send(
-            new Application.Messages.OutboxMessages.MessageStatusChangedMessage(
-                entity.Id,
-                entity.Status,
-                entity.OrderId,
-                entity.RecipientType));
+        WeakReferenceMessenger.Default.Send(new OrderHub.Application.Messages.OutboxMessages.MessageStatusChangedMessage(
+            entity.Id,
+            entity.Status,
+            entity.OrderId,
+            entity.RecipientType));
     }
 
     public async Task StopAsync()

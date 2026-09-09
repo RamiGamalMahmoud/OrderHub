@@ -1,27 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using OrderHub.Domain.Models.CommercialDocuments;
+using OrderHub.Infrastructure.Configurations.CommercialDocuments;
 
-namespace OrderHub.Infrastructure.Configurations.CommercialDocuments;
-
-internal sealed class ProformaInvoiceConfiguration
+internal class ProformaInvoiceConfiguration
     : CommercialDocumentConfiguration<ProformaInvoice, ProformaInvoiceItem>
 {
-    public override void Configure(
-        EntityTypeBuilder<ProformaInvoice> builder)
+    public override void Configure(EntityTypeBuilder<ProformaInvoice> builder)
     {
         base.Configure(builder);
-
-        builder.Property(x => x.SourceDraftReference)
-            .IsRequired(false);
-
-        builder.HasIndex(x => x.SourceDraftReference)
-            .IsUnique(false);
-
-        builder.HasOne(x => x.Order)
-            .WithMany()
-            .HasForeignKey(x => x.OrderId)
-            .IsRequired(false);
 
         builder.ToTable("proforma_invoices", table =>
         {
@@ -30,5 +17,18 @@ internal sealed class ProformaInvoiceConfiguration
                 "source_draft_reference IS NOT NULL OR order_id IS NOT NULL");
         });
 
+        builder.Property(x => x.SourceDraftReference)
+            .HasColumnType("uuid")
+            .IsRequired(false);
+
+        builder.Property(x => x.OrderId)
+            .HasColumnType("integer")
+            .IsRequired(false);
+
+        builder.HasOne(x => x.Order)
+            .WithMany()
+            .HasForeignKey(x => x.OrderId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

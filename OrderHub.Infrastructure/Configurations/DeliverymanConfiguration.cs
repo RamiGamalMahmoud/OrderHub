@@ -1,42 +1,53 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using OrderHub.Domain.Models;
+using OrderHub.Infrastructure.Configurations;
 
-namespace OrderHub.Infrastructure.Configurations
+internal class DeliverymanConfiguration
+    : ModelConfigurationBase<Deliveryman>
 {
-    internal class DeliverymanConfiguration : ModelConfigurationBase<Deliveryman>
+    public override void Configure(EntityTypeBuilder<Deliveryman> builder)
     {
-        public override void Configure(EntityTypeBuilder<Deliveryman> builder)
-        {
-            base.Configure(builder);
+        base.Configure(builder);
 
-            builder.OwnsOne(d => d.Name, navigationBuilder =>
-            {
-                navigationBuilder.Property(entityName => entityName.Value)
+        builder.ToTable("deliverymen");
+
+        builder.OwnsOne(x => x.Name, navigationBuilder =>
+        {
+            navigationBuilder.Property(x => x.Value)
                 .HasColumnName("name")
-                .HasColumnType("VARCHAR(100)")
+                .HasColumnType("varchar(100)")
                 .HasMaxLength(100)
                 .IsRequired();
-            });
+        });
 
-            builder.Navigation(deliveryman => deliveryman.Name).IsRequired();
+        builder.Navigation(x => x.Name)
+            .IsRequired();
 
-            builder.HasOne(deliveryman => deliveryman.City)
-                .WithMany()
-                .HasForeignKey("deliveryman_city_id")
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Restrict);
+        builder.Property<int>("deliveryman_city_id")
+            .HasColumnType("integer")
+            .IsRequired();
 
-            builder.HasOne(deliveryman => deliveryman.WhatsappGroup)
-                .WithMany()
-                .HasForeignKey("whatsapp_group_id")
-                .IsRequired(false)
-                .OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(x => x.City)
+            .WithMany()
+            .HasForeignKey("deliveryman_city_id")
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Property(d => d.PhoneNumber)
-                .HasColumnType("varchar(15)")
-                .HasMaxLength(15)
-                .IsRequired(false);
-        }
+        builder.Property<int?>("whatsapp_group_id")
+            .HasColumnType("integer")
+            .IsRequired(false);
+
+        builder.HasOne(x => x.WhatsappGroup)
+            .WithMany()
+            .HasForeignKey("whatsapp_group_id")
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(x => x.PhoneNumber)
+            .HasColumnName("phone_number")
+            .HasColumnType("varchar(15)")
+            .HasMaxLength(15)
+            .IsRequired(false);
     }
 }

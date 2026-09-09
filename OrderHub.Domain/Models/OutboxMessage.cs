@@ -22,6 +22,5 @@ public class OutboxMessage : ModelBase
     public DateTime? SentAt { get; set; }
 
     public List<string> Notes { get; set; } = [];
-    public List<string> LegacyAttachments { get; set; } = [];
     public List<OutboxMessageAttachment> Attachments { get; set; } = [];
 }

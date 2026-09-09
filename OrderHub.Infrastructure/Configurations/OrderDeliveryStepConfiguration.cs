@@ -4,7 +4,8 @@ using OrderHub.Domain.Models;
 
 namespace OrderHub.Infrastructure.Configurations;
 
-internal class OrderDeliveryStepConfiguration : ModelConfigurationBase<OrderDeliveryStep>
+internal class OrderDeliveryStepConfiguration
+    : ModelConfigurationBase<OrderDeliveryStep>
 {
     public override void Configure(EntityTypeBuilder<OrderDeliveryStep> builder)
     {
@@ -12,32 +13,51 @@ internal class OrderDeliveryStepConfiguration : ModelConfigurationBase<OrderDeli
 
         builder.ToTable("order_delivery_steps");
 
-        builder.Property(step => step.StepOrder)
+        builder.Property(x => x.StepOrder)
+            .HasColumnType("integer")
             .IsRequired();
 
-        builder.Property(step => step.DeliveryMethod)
+        builder.Property(x => x.DeliveryMethod)
+            .HasColumnType("varchar(30)")
+            .HasMaxLength(30)
             .HasConversion<string>()
             .IsRequired();
 
-        builder.HasOne(step => step.Order)
-            .WithMany(order => order.DeliverySteps)
-            .HasForeignKey(step => step.OrderId)
-            .OnDelete(DeleteBehavior.Cascade)
+        builder.Property(x => x.OrderId)
+            .HasColumnType("integer")
             .IsRequired();
 
-        builder.HasOne(step => step.Deliveryman)
-            .WithMany()
-            .HasForeignKey(step => step.DeliverymanId)
-            .OnDelete(DeleteBehavior.Restrict)
+        builder.HasOne(x => x.Order)
+            .WithMany(x => x.DeliverySteps)
+            .HasForeignKey(x => x.OrderId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Property(x => x.DeliverymanId)
+            .HasColumnType("integer")
             .IsRequired(false);
 
-        builder.HasOne(step => step.ShippingCarrier)
+        builder.HasOne(x => x.Deliveryman)
             .WithMany()
-            .HasForeignKey(step => step.ShippingCarrierId)
-            .OnDelete(DeleteBehavior.Restrict)
+            .HasForeignKey(x => x.DeliverymanId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(x => x.ShippingCarrierId)
+            .HasColumnType("integer")
             .IsRequired(false);
 
-        builder.HasIndex(step => new { step.OrderId, step.StepOrder })
-            .IsUnique();
+        builder.HasOne(x => x.ShippingCarrier)
+            .WithMany()
+            .HasForeignKey(x => x.ShippingCarrierId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(x => new
+        {
+            x.OrderId,
+            x.StepOrder
+        })
+        .IsUnique();
     }
 }

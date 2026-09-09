@@ -4,7 +4,8 @@ using OrderHub.Domain.Models;
 
 namespace OrderHub.Infrastructure.Configurations;
 
-internal class OrderEntitySequenceConfiguration : ModelConfigurationBase<OrderEntitySequence>
+internal class OrderEntitySequenceConfiguration
+    : ModelConfigurationBase<OrderEntitySequence>
 {
     public override void Configure(EntityTypeBuilder<OrderEntitySequence> builder)
     {
@@ -12,42 +13,53 @@ internal class OrderEntitySequenceConfiguration : ModelConfigurationBase<OrderEn
 
         builder.ToTable("order_entity_sequences");
 
-        builder.Property(sequence => sequence.RecipientType)
+        builder.Property(x => x.RecipientType)
+            .HasColumnType("varchar(30)")
+            .HasMaxLength(30)
             .HasConversion<string>()
             .IsRequired();
 
-        builder.Property(sequence => sequence.EntityId)
+        builder.Property(x => x.EntityId)
+            .HasColumnType("integer")
             .IsRequired();
 
-        builder.Property(sequence => sequence.SequenceYear)
+        builder.Property(x => x.SequenceYear)
+            .HasColumnType("integer")
             .IsRequired();
 
-        builder.Property(sequence => sequence.SequenceMonth)
+        builder.Property(x => x.SequenceMonth)
+            .HasColumnType("integer")
             .IsRequired();
 
-        builder.Property(sequence => sequence.SequenceNumber)
+        builder.Property(x => x.SequenceNumber)
+            .HasColumnType("integer")
             .IsRequired();
 
-        builder.Property(sequence => sequence.DisplayTitle)
-            .HasColumnType("VARCHAR(50)")
+        builder.Property(x => x.DisplayTitle)
+            .HasColumnType("varchar(50)")
+            .HasMaxLength(50)
             .IsRequired();
 
-        builder.HasIndex(sequence => new
-            {
-                sequence.OrderId,
-                sequence.RecipientType,
-                sequence.EntityId
-            })
-            .IsUnique();
+        builder.Property(x => x.OrderId)
+            .HasColumnType("integer")
+            .IsRequired();
 
-        builder.HasIndex(sequence => new
-            {
-                sequence.RecipientType,
-                sequence.EntityId,
-                sequence.SequenceYear,
-                sequence.SequenceMonth,
-                sequence.SequenceNumber
-            })
-            .IsUnique();
+        builder.HasIndex(x => new
+        {
+            x.OrderId,
+            x.RecipientType,
+            x.EntityId
+        })
+        .IsUnique();
+
+        builder.HasIndex(x => new
+        {
+            x.RecipientType,
+            x.EntityId,
+            x.SequenceYear,
+            x.SequenceMonth,
+            x.SequenceNumber
+        })
+        .IsUnique();
     }
 }

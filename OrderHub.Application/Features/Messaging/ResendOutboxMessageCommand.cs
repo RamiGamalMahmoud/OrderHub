@@ -68,12 +68,12 @@ public static class ResendOutboxMessageCommand
             // 5. Store new physical files.
             foreach (var attachment in attachmentSyncResult.FilesToStore)
             {
-                _fileStorageService.SaveAttachment(attachment.SourcePath, attachment.StoredFileName);
+                await _fileStorageService.SaveAttachmentAsync(attachment.SourcePath, attachment.StoredFileName);
             }
 
             foreach(var fileToRemove in attachmentSyncResult.FilesToRemove)
             {
-                _fileStorageService.RemoveAttachmentFile(fileToRemove);
+                await _fileStorageService.DeleteAttachmentAsync(fileToRemove);
             }
 
             // 6. Queue the message

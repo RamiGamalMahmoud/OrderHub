@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using OrderHub.Infrastructure.Services;
+using System.Text;
 
 namespace OrderHub.Tests.Infrastructure.Services;
 
@@ -10,9 +11,12 @@ public class EncryptionServiceTests
     {
         EncryptionService encryptionService = new EncryptionService();
         string text = "this-is-my-test-data";
-        byte[] encrypted = encryptionService.Encrypt(text);
-        string decrypted = encryptionService.Decrypt(encrypted);
+        byte[] textBytes = Encoding.UTF8.GetBytes(text);
+        byte[] encrypted = encryptionService.Encrypt(textBytes);
+        
+        byte[] decryptedBytes = encryptionService.Decrypt(encrypted);
+        string decryptedString = Encoding.UTF8.GetString(decryptedBytes);
 
-        decrypted.Should().Be(text);
+        decryptedString.Should().Be(text);
     }
 }

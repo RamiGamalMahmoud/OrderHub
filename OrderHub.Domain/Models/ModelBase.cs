@@ -16,7 +16,7 @@ public abstract class ModelBase
 
     public void UpdateCreationDate(DateTime? createdAt = null)
     {
-        CreatedAt = createdAt ?? DateTime.Now;
+        CreatedAt = createdAt ?? DateTime.UtcNow;
         UpdateModificationDate(CreatedAt);
     }
 

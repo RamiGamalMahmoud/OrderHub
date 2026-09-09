@@ -12,31 +12,43 @@ internal abstract class CommercialDocumentItemConfiguration<TItem>
     {
         base.Configure(builder);
 
+        builder.Property(x => x.ProductId)
+            .HasColumnType("integer")
+            .IsRequired();
+
         builder.Property(x => x.ProductName)
-            .IsRequired()
-            .HasMaxLength(200);
+            .HasColumnType("varchar(200)")
+            .HasMaxLength(200)
+            .IsRequired();
 
         builder.Property(x => x.Quantity)
-            .HasPrecision(18, 3);
+            .HasColumnType("numeric(18,3)")
+            .IsRequired();
 
         builder.Property(x => x.UnitPrice)
-            .HasPrecision(18, 2);
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
 
         builder.Property(x => x.VatRate)
-            .HasPrecision(5, 2);
+            .HasColumnType("numeric(5,2)")
+            .IsRequired();
 
         builder.Property(x => x.Subtotal)
-            .HasPrecision(18, 2);
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
 
         builder.Property(x => x.VatAmount)
-            .HasPrecision(18, 2);
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
 
         builder.Property(x => x.Total)
-            .HasPrecision(18, 2);
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
 
         builder.HasOne(x => x.Product)
             .WithMany()
             .HasForeignKey(x => x.ProductId)
+            .IsRequired()
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

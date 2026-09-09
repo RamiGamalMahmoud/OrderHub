@@ -3,51 +3,77 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using OrderHub.Domain.Models;
 using System;
 
-namespace OrderHub.Infrastructure.Configurations
-{
-    internal class SupplierConfiguration : ModelConfigurationBase<Supplier>
-    {
-        public override void Configure(EntityTypeBuilder<Supplier> builder)
-        {
-            base.Configure(builder);
+namespace OrderHub.Infrastructure.Configurations;
 
-            builder.OwnsOne(supplier => supplier.Name, navigationBuilder =>
-            {
-                navigationBuilder.Property(name => name.Value)
+// ============================================================================
+// Supplier
+// ============================================================================
+
+internal class SupplierConfiguration
+    : ModelConfigurationBase<Supplier>
+{
+    public override void Configure(EntityTypeBuilder<Supplier> builder)
+    {
+        base.Configure(builder);
+
+        builder.ToTable("suppliers");
+
+        builder.OwnsOne(x => x.Name, navigationBuilder =>
+        {
+            navigationBuilder.Property(x => x.Value)
                 .HasColumnName("name")
                 .HasColumnType("varchar(100)")
                 .HasMaxLength(100)
                 .IsRequired();
-            });
+        });
 
-            builder.Navigation(supplier => supplier.Name).IsRequired();
+        builder.Navigation(x => x.Name)
+            .IsRequired();
 
-            builder.HasOne(supplier => supplier.Address).WithMany().HasForeignKey("address_id");
+        builder.Property<int?>("phone_id")
+            .HasColumnType("integer")
+            .IsRequired(false);
 
-            builder.HasOne(supplier => supplier.Phone).WithMany().HasForeignKey("phone_id");
+        builder.HasOne(x => x.Phone)
+            .WithMany()
+            .HasForeignKey("phone_id")
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.NoAction);
 
-            builder.OwnsOne(supplier => supplier.BusinessHours, navigationBuilder =>
-            {
-                navigationBuilder.Property(businessHours => businessHours.OpenAt)
-                .HasColumnType("time")
+        builder.Property<int?>("address_id")
+            .HasColumnType("integer")
+            .IsRequired(false);
+
+        builder.HasOne(x => x.Address)
+            .WithMany()
+            .HasForeignKey("address_id")
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Property<int?>("whatsapp_group_id")
+            .HasColumnType("integer")
+            .IsRequired(false);
+
+        builder.HasOne(x => x.WhatsappGroup)
+            .WithMany()
+            .HasForeignKey("whatsapp_group_id")
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.OwnsOne(x => x.BusinessHours, navigationBuilder =>
+        {
+            navigationBuilder.Property(x => x.OpenAt)
                 .HasColumnName("open_at")
-                .HasConversion(
-                    timeOnly => timeOnly.ToTimeSpan(), 
-                    timeSpan => TimeOnly.FromTimeSpan(timeSpan));
-
-                navigationBuilder.Property(businessHours => businessHours.CloseAt)
                 .HasColumnType("time")
-                .HasColumnName("close_at")
-                .HasConversion(
-                    timeOnly => timeOnly.ToTimeSpan(),
-                    timeSpan => TimeOnly.FromTimeSpan(timeSpan));
-            });
+                .IsRequired();
 
-            builder.HasOne(x => x.WhatsappGroup)
-                .WithMany()
-                .HasForeignKey("whatsapp_group_id")
-                .IsRequired(false)
-                .OnDelete(DeleteBehavior.Restrict);
-        }
+            navigationBuilder.Property(x => x.CloseAt)
+                .HasColumnName("close_at")
+                .HasColumnType("time")
+                .IsRequired();
+        });
+
+        builder.Navigation(x => x.BusinessHours)
+            .IsRequired(false);
     }
 }

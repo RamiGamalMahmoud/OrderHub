@@ -2,7 +2,7 @@
 
 namespace OrderHub.UI.Features.Settings.ClientCredentialsSettings;
 
-internal partial class ClientCredentialsSettingsView : Window
+public partial class ClientCredentialsSettingsView : Window
 {
     public ClientCredentialsSettingsView(ClientCredentialsSettingsViewModel viewModel)
     {

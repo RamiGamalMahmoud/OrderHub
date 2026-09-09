@@ -1,8 +1,8 @@
-﻿namespace OrderHub.Application.Interfaces.Services
+﻿namespace OrderHub.Application.Interfaces.Services;
+
+public interface IEncryptionService
 {
-    public interface IEncryptionService
-    {
-        byte[] Encrypt(string data);
-        string Decrypt(byte[] data);
-    }
+    byte[] Encrypt(byte[] data);
+
+    byte[] Decrypt(byte[] data);
 }

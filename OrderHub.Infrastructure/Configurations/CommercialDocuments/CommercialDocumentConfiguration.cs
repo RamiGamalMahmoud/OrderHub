@@ -9,36 +9,48 @@ internal abstract class CommercialDocumentConfiguration<TDocument, TItem>
     where TDocument : CommercialDocument<TItem>
     where TItem : CommercialDocumentItem
 {
-    public override void Configure(
-        EntityTypeBuilder<TDocument> builder)
+    public override void Configure(EntityTypeBuilder<TDocument> builder)
     {
         base.Configure(builder);
 
         builder.Property(x => x.DocumentNumber)
-            .IsRequired()
-            .HasMaxLength(50);
+            .HasColumnType("varchar(50)")
+            .HasMaxLength(50)
+            .IsRequired();
 
         builder.Property(x => x.IssueDate)
+            .HasColumnType("timestamp with time zone")
             .IsRequired();
 
         builder.Property(x => x.CustomerName)
-            .IsRequired()
-            .HasMaxLength(200);
+            .HasColumnType("varchar(200)")
+            .HasMaxLength(200)
+            .IsRequired();
 
         builder.Property(x => x.CustomerPhone)
-            .HasMaxLength(50);
+            .HasColumnType("varchar(50)")
+            .HasMaxLength(50)
+            .IsRequired();
+
+        builder.Property(x => x.CustomerAddress)
+            .HasColumnType("varchar(500)")
+            .HasMaxLength(500)
+            .IsRequired();
 
         builder.Property(x => x.Subtotal)
-            .HasPrecision(18, 2);
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
 
         builder.Property(x => x.TotalVat)
-            .HasPrecision(18, 2);
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
 
         builder.Property(x => x.TotalAmount)
-            .HasPrecision(18, 2);
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
 
         builder.HasIndex(x => x.DocumentNumber)
-            .IsUnique(true);
+            .IsUnique();
 
         builder.Navigation(x => x.Items)
             .UsePropertyAccessMode(PropertyAccessMode.Field);

@@ -4,7 +4,12 @@ using OrderHub.Domain.Models;
 
 namespace OrderHub.Infrastructure.Configurations;
 
-internal class WhatsappGroupConfiguration : ModelConfigurationBase<WhatsappGroup>
+// ============================================================================
+// WhatsappGroup
+// ============================================================================
+
+internal class WhatsappGroupConfiguration
+    : ModelConfigurationBase<WhatsappGroup>
 {
     public override void Configure(EntityTypeBuilder<WhatsappGroup> builder)
     {
@@ -12,17 +17,22 @@ internal class WhatsappGroupConfiguration : ModelConfigurationBase<WhatsappGroup
 
         builder.ToTable("whatsapp_groups");
 
-        builder.Property(w => w.GroupName)
-            .HasColumnType("VARCHAR(100)")
+        builder.Property(x => x.GroupName)
+            .HasColumnName("group_name")
+            .HasColumnType("varchar(100)")
             .HasMaxLength(100)
             .IsRequired();
 
-        builder.Property(w => w.GroupType)
-            .HasConversion<string>()
+        builder.Property(x => x.GroupLink)
+            .HasColumnName("group_link")
+            .HasColumnType("varchar(100)")
+            .HasMaxLength(100)
             .IsRequired();
 
-        builder.Property(x => x.GroupLink)
-            .HasColumnType("VARCHAR(100)")
+        builder.Property(x => x.GroupType)
+            .HasColumnName("group_type")
+            .HasColumnType("text")
+            .HasConversion<string>()
             .IsRequired();
     }
 }
