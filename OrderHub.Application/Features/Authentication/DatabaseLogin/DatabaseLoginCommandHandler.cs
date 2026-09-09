@@ -41,8 +41,7 @@ internal class DatabaseLoginCommandHandler : IRequestHandler<DatabaseLoginComman
         UserSession userSession = new UserSession(
             user.Id,
             user.UserName,
-            user.DisplayName,
-            user.Roles);
+            user.DisplayName);
 
         _applicationContext.SetUser(userSession);
 
@@ -54,8 +53,7 @@ internal class DatabaseLoginCommandHandler : IRequestHandler<DatabaseLoginComman
         UserInfoDto userInfo = new UserInfoDto(
             user.Id,
             user.UserName,
-            user.DisplayName,
-            user.Roles);
+            user.DisplayName);
 
         return Result<UserInfoDto>.Success(userInfo);
     }

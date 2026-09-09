@@ -67,8 +67,7 @@ internal class ApiLoginCommandHandler : IRequestHandler<ApiLoginCommand, Result<
         UserSession userSession = new UserSession(
             authResponse.UserInfo.Id,
             authResponse.UserInfo.UserName,
-            authResponse.UserInfo.DisplayName,
-            authResponse.UserInfo.Roles);
+            authResponse.UserInfo.DisplayName);
 
         _applicationContext.SetUser(userSession);
 

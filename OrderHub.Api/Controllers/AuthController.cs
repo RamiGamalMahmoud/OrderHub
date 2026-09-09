@@ -28,7 +28,7 @@ public sealed class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Login(LoginRequest request)
     {
         User? user = await _userRepository.GetByUsername(request.UserName);
 
@@ -63,8 +63,7 @@ public sealed class AuthController : ControllerBase
                 user.Id,
                 user.UserName,
                 user.DisplayName,
-                user.IsActive,
-                user.Roles));
+                user.IsActive));
 
         return Ok(response);
     }
@@ -89,5 +88,4 @@ public sealed record UserInfo(
     int Id,
     string UserName,
     string DisplayName,
-    bool IsActive,
-    IReadOnlyCollection<string> Roles);
+    bool IsActive);

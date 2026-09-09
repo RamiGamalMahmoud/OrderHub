@@ -40,6 +40,7 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<QuotationItem> QuotationItems { get; set; }
     public DbSet<ProformaInvoice> ProformaInvoices { get; set; }
     public DbSet<ProformaInvoiceItem> ProformaInvoiceItems { get; set; }
+    public DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

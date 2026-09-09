@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace OrderHub.Application.Features.Authentication.ApiLogin;
+﻿namespace OrderHub.Application.Features.Authentication.ApiLogin;
 public record AuthResponse(
     DatabaseInfo DatabaseInfo,
     UserInfo UserInfo);
@@ -15,5 +13,4 @@ public sealed record DatabaseInfo(
 public sealed record UserInfo(
     int Id,
     string UserName,
-    string DisplayName,
-    IReadOnlyCollection<string> Roles);
+    string DisplayName);

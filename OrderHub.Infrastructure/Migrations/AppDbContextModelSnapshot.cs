@@ -1462,6 +1462,105 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("suppliers", (string)null);
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("display_name");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsAdmin")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_admin");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("password_hash");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("user_name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_users");
+
+                    b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.UserPermission", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("CanRead")
+                        .HasColumnType("boolean")
+                        .HasColumnName("can_read");
+
+                    b.Property<bool>("CanWrite")
+                        .HasColumnType("boolean")
+                        .HasColumnName("can_write");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("Feature")
+                        .HasColumnType("integer")
+                        .HasColumnName("feature");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.Property<int?>("UserId1")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id1");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_permissions");
+
+                    b.HasIndex("UserId1")
+                        .HasDatabaseName("ix_user_permissions_user_id1");
+
+                    b.HasIndex("UserId", "Feature")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_permissions_user_id_feature");
+
+                    b.ToTable("user_permissions", (string)null);
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.WhatsappGroup", b =>
                 {
                     b.Property<int>("Id")
@@ -2309,6 +2408,21 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("WhatsappGroup");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.UserPermission", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_permissions_users_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.User", null)
+                        .WithMany("Permissions")
+                        .HasForeignKey("UserId1")
+                        .HasConstraintName("fk_user_permissions_users_user_id1");
+                });
+
             modelBuilder.Entity("product_supplier", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.Product", null)
@@ -2458,6 +2572,11 @@ namespace OrderHub.Infrastructure.Migrations
             modelBuilder.Entity("OrderHub.Domain.Models.Property", b =>
                 {
                     b.Navigation("Options");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.User", b =>
+                {
+                    b.Navigation("Permissions");
                 });
 #pragma warning restore 612, 618
         }
