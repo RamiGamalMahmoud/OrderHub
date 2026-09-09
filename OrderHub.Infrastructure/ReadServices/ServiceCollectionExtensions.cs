@@ -6,7 +6,7 @@ internal static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddReadServices(this IServiceCollection services)
     {
-        services.AddSingleton<Application.Interfaces.ILookupService, LookupService>();
+        services.AddSingleton<OrderHub.Application.Interfaces.ILookupService, LookupService>();
         return services;
     }
 }

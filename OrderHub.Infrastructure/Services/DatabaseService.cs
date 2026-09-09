@@ -1,52 +1,65 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using OrderHub.Application.Configuration;
 using OrderHub.Application.Interfaces.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace OrderHub.Infrastructure.Services
+namespace OrderHub.Infrastructure.Services;
+
+internal class DatabaseService : IDatabaseService
 {
-    internal class DatabaseService : IDatabaseService
+    private readonly AppDbContextFactory _appDbContextFactory;
+
+    public DatabaseService(AppDbContextFactory appDbContextFactory)
     {
-        private readonly AppDbContextFactory _appDbContextFactory;
+        _appDbContextFactory = appDbContextFactory;
+    }
 
-        public DatabaseService(AppDbContextFactory appDbContextFactory)
+    public async Task<bool> CanConnectAsync()
+    {
+        using (AppDbContext context = _appDbContextFactory.CreateDbContext())
         {
-            _appDbContextFactory = appDbContextFactory;
+            return await context.Database.CanConnectAsync();
         }
+    }
 
-        public async Task<bool> CanConnectAsync()
+    public async Task<bool> HasPendingMigrationsAsync()
+    {
+        using(AppDbContext context = _appDbContextFactory.CreateDbContext())
         {
-            using (AppDbContext context = _appDbContextFactory.CreateDbContext())
-            {
-                return await context.Database.CanConnectAsync();
-            }
+            IEnumerable<string> pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+            return pendingMigrations.Any();
         }
+    }
 
-        public async Task<bool> HasPendingMigrationsAsync()
+    public async Task MigrateAsync()
+    {
+        using (AppDbContext context = _appDbContextFactory.CreateDbContext())
         {
-            using(AppDbContext context = _appDbContextFactory.CreateDbContext())
-            {
-                IEnumerable<string> pendingMigrations = await context.Database.GetPendingMigrationsAsync();
-                return pendingMigrations.Any();
-            }
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM '__EFMigrationsLock';");
+            await context.Database.MigrateAsync();
         }
+    }
 
-        public async Task MigrateAsync()
+    public async Task FixCategoriesAsync()
+    {
+        using (AppDbContext context = _appDbContextFactory.CreateDbContext())
         {
-            using (AppDbContext context = _appDbContextFactory.CreateDbContext())
-            {
-                await context.Database.ExecuteSqlRawAsync("DELETE FROM '__EFMigrationsLock';");
-                await context.Database.MigrateAsync();
-            }
+            await context.Database.ExecuteSqlRawAsync("UPDATE categories SET parent_category_id = NULL WHERE id = parent_category_id");
         }
+    }
 
-        public async Task FixCategoriesAsync()
+    public async Task<bool> CanConnectAsync(DatabaseSettings databaseSettings)
+    {
+        using (AppDbContext context = _appDbContextFactory.CreateDbContext(
+            databaseSettings.Host,
+            databaseSettings.Port,
+            databaseSettings.Database,
+            databaseSettings.Username,
+            databaseSettings.Password))
         {
-            using (AppDbContext context = _appDbContextFactory.CreateDbContext())
-            {
-                await context.Database.ExecuteSqlRawAsync("UPDATE categories SET parent_category_id = NULL WHERE id = parent_category_id");
-            }
+            return await context.Database.CanConnectAsync();
         }
     }
 }

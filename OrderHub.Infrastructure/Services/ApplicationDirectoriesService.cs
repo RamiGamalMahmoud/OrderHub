@@ -6,17 +6,17 @@ namespace OrderHub.Infrastructure.Services;
 
 internal class ApplicationDirectoriesService : IApplicationDirectoriesService
 {
-    private const string _appName = "OrderHub";
+    private const string APP_NAME = "OrderHub";
 
     public string AppDirectory =>
 #if DEBUG
         Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            $"{_appName} - Dev");
+            $"{APP_NAME} - Dev");
 #else
         Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            _appName);
+            APP_NAME);
 #endif
 
     public string StorageDirectory => Path.Combine(AppDirectory, "Storage");

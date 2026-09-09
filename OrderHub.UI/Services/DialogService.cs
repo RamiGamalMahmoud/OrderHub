@@ -4,6 +4,7 @@ using OrderHub.UI.Services;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
 
 internal sealed class DialogService
@@ -22,6 +23,18 @@ internal sealed class DialogService
     private DialogService(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
+    }
+
+    public void SwitchWindow<T>() where T : Window
+    {
+        Window oldWindow = Application.Current.MainWindow;
+
+        T newWindow = _serviceProvider.GetRequiredService<T>();
+
+        Application.Current.MainWindow = newWindow;
+
+        newWindow.Show();
+        oldWindow?.Close();
     }
 
     public void ShowDialog(object content, string title)

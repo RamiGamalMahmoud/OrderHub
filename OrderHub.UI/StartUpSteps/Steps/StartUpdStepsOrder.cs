@@ -1,11 +1,12 @@
-﻿namespace OrderHub.UI.StartUpSteps.Steps
+﻿namespace OrderHub.UI.StartUpSteps.Steps;
+
+public enum StartUpdStepsOrder
 {
-    public enum StartUpdStepsOrder
-    {
-        WhatsAppStartup,
-        PrepareDirectories,
-        DatabaseInitialization,
-        Authentication,
-        PrepareMassagingService,
-    }
+    InitializeApplicationContextStep,
+    WhatsAppStartup,
+    PrepareDirectories,
+    DatabaseInitialization,
+    Authentication,
+    PrepareMassagingService,
+    RunApiServer,
 }

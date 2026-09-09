@@ -1,71 +1,176 @@
-﻿using OrderHub.Application.Interfaces.Services;
+﻿using OrderHub.Application.Interfaces;
+using OrderHub.Application.Interfaces.Services;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OrderHub.Infrastructure.Services;
 
-internal class LocalFileStorageService : IFileStorageService
+internal sealed class LocalFileStorageService
+    : IFileStorageService
 {
-    private readonly IApplicationDirectoriesService _directoriesService;
+    private readonly ILocalFileAccessService _localFileAccessService;
 
-    public LocalFileStorageService(IApplicationDirectoriesService directoriesService)
+    public LocalFileStorageService(
+        ILocalFileAccessService localFileAccessService)
     {
-        _directoriesService = directoriesService;
+        _localFileAccessService = localFileAccessService;
     }
 
-    public StoredFile SaveAttachment(string sourceFilePath, string destinationName)
+
+    #region Attachments
+
+    public async Task<StoredFile> SaveAttachmentAsync(
+        string sourceFilePath,
+        string destinationName,
+        CancellationToken cancellationToken = default)
     {
-        if (!File.Exists(sourceFilePath))
-            throw new FileNotFoundException(
-                "Attachment file was not found.",
-                sourceFilePath);
+        await using FileStream fileStream = new(
+            sourceFilePath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read);
 
-        string extension = Path.GetExtension(sourceFilePath);
+        await _localFileAccessService.SaveAttachmentAsync(
+            destinationName,
+            fileStream);
 
-        string destinationPath = Path.Combine(
-            _directoriesService.AttachmentsDirectory,
-            destinationName);
-
-        File.Copy(sourceFilePath, destinationPath);
-
-        long size = new FileInfo(destinationPath).Length;
+        FileInfo fileInfo = new(sourceFilePath);
 
         return new StoredFile(
             destinationName,
-            extension,
-            size);
+            fileInfo.Extension,
+            fileInfo.Length);
     }
 
-    public void RemoveAttachmentFile(string fileName)
+    public async Task<byte[]> GetAttachmentAsync(
+        string fileName,
+        CancellationToken cancellationToken = default)
     {
-        string path = Path.Combine(_directoriesService.AttachmentsDirectory, fileName);
-        if(File.Exists(path))
-        {
-            File.Delete(path);
-        }
+        string filePath =
+            await _localFileAccessService.GetAttachmentAsync(
+                fileName);
+
+        return await File.ReadAllBytesAsync(
+            filePath,
+            cancellationToken);
     }
 
-    public async Task SaveFileAsync(byte[] pdfBytes, string fileName)
+    public Task DeleteAttachmentAsync(
+        string fileName,
+        CancellationToken cancellationToken = default)
     {
-        string fullPath = Path.Combine(_directoriesService.StorageDirectory, fileName);
-        await File.WriteAllBytesAsync(fullPath, pdfBytes);
+        return _localFileAccessService.DeleteAttachmentAsync(
+            fileName);
     }
 
-    public async Task SaveQuotationDocumentAsync(byte[] document, string fileName)
+    #endregion
+
+
+    #region Quotations
+
+    public async Task SaveQuotationDocumentAsync(
+        byte[] document,
+        string fileName,
+        CancellationToken cancellationToken = default)
     {
-        string documentPath = Path.Combine(_directoriesService.QuotationsDirectory, fileName);
-        await File.WriteAllBytesAsync(documentPath, document);
+        await _localFileAccessService.SaveQuotationAsync(
+            fileName,
+            document);
     }
 
-    public async Task SaveInvoiceDocumentAsync(byte[] document, string fileName)
+    public async Task<byte[]> GetQuotationDocumentAsync(
+        string fileName,
+        CancellationToken cancellationToken = default)
     {
-        string documentPath = Path.Combine(_directoriesService.InvoicesDirecoty, fileName);
-        await File.WriteAllBytesAsync(documentPath, document);
+        string filePath =
+            await _localFileAccessService.GetQuotationAsync(
+                fileName);
+
+        return await File.ReadAllBytesAsync(
+            filePath,
+            cancellationToken);
     }
 
-    public async Task SaveProformaInvoiceDocumentAsync(byte[] document, string fileName)
+    public Task DeleteQuotationDocumentAsync(
+        string fileName,
+        CancellationToken cancellationToken = default)
     {
-        string documentPath = Path.Combine(_directoriesService.ProformaInvoicesDirectory, fileName);
-        await File.WriteAllBytesAsync(documentPath, document);
+        return _localFileAccessService.DeleteQuotationAsync(
+            fileName);
     }
+
+    #endregion
+
+
+    #region Invoices
+
+    public async Task SaveInvoiceDocumentAsync(
+        byte[] document,
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        await _localFileAccessService.SaveInvoiceAsync(
+            fileName,
+            document);
+    }
+
+    public async Task<byte[]> GetInvoiceDocumentAsync(
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        string filePath =
+            await _localFileAccessService.GetInvoiceAsync(
+                fileName);
+
+        return await File.ReadAllBytesAsync(
+            filePath,
+            cancellationToken);
+    }
+
+    public Task DeleteInvoiceDocumentAsync(
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        return _localFileAccessService.DeleteInvoiceAsync(
+            fileName);
+    }
+
+    #endregion
+
+
+    #region Proforma Invoices
+
+    public async Task SaveProformaInvoiceDocumentAsync(
+        byte[] document,
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        await _localFileAccessService.SaveProformaInvoiceAsync(
+            fileName,
+            document);
+    }
+
+    public async Task<byte[]> GetProformaInvoiceDocumentAsync(
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        string filePath =
+            await _localFileAccessService.GetProformaInvoiceAsync(
+                fileName);
+
+        return await File.ReadAllBytesAsync(
+            filePath,
+            cancellationToken);
+    }
+
+    public Task DeleteProformaInvoiceDocumentAsync(
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        return _localFileAccessService.DeleteProformaInvoiceAsync(
+            fileName);
+    }
+
+    #endregion
 }

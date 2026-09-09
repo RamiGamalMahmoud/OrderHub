@@ -3,7 +3,9 @@ using Notification.Wpf;
 using OrderHub.Application;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain;
-using OrderHub.Infrastructure;
+using OrderHub.Infrastructure.DependencyInjection;
+using OrderHub.UI.Services;
+using OrderHub.UI.Services.ApiServer;
 using OrderHub.UI.StartUpSteps;
 
 namespace OrderHub.UI;
@@ -90,6 +92,13 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<Features.Settings.Home.SettingsHomeViewModel>();
         services.AddSingleton<Features.Settings.Properties.PropertiesViewModel>();
 
+        // Database Configuration
+        services.AddTransient<Features.DatabaseConfiguration.DatabaseConfigurationViewModel>();
+
+        // Authentication
+        services.AddTransient<Features.Authentication.ApiLogin.ApiLoginViewModel>();
+        services.AddTransient<Features.Authentication.DatabaseLogin.DatabaseLoginViewModel>();
+
         return services;
     }
 
@@ -164,15 +173,30 @@ public static class ServiceCollectionExtensions
         services.AddTransient<Features.Settings.Home.SettingsHomeView>();
         services.AddSingleton<Features.Settings.Properties.PropertiesView>();
 
+        // Database Configuration
+        services.AddTransient<Features.DatabaseConfiguration.DatabaseConfigurationView>();
+
+        // Authentication
+        services.AddTransient<Features.Authentication.ApiLogin.ApiLoginView>();
+        services.AddTransient<Features.Authentication.DatabaseLogin.DatabaseLoginView>();
+
         return services;
     }
 
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
+        services.AddUiServices();
         services.AddDomain();
         services.AddApplication();
         services.AddInfrastructure();
         services.AddUI();
+        return services;
+    }
+
+    private static IServiceCollection AddUiServices(this IServiceCollection services)
+    {
+        services.AddSingleton<IApplicationInitializationService, ApplicationInitializationService>();
+        services.AddSingleton<IApiServerService, EmbeddedApiServerService>();
         return services;
     }
 }

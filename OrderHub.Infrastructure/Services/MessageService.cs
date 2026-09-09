@@ -165,7 +165,7 @@ internal class MessageService : IMessageService
         entity.SentAt = sent ? DateTime.Now : null;
 
         await db.SaveChangesAsync();
-        WeakReferenceMessenger.Default.Send(new Application.Messages.OutboxMessages.MessageStatusChangedMessage(
+        WeakReferenceMessenger.Default.Send(new OrderHub.Application.Messages.OutboxMessages.MessageStatusChangedMessage(
             entity.Id,
             entity.Status,
             entity.OrderId,

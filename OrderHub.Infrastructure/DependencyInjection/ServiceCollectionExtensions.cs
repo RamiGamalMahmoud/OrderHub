@@ -1,13 +1,17 @@
 using Microsoft.Extensions.DependencyInjection;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Services;
+using OrderHub.Application.Services;
+
+//using OrderHub.Infrastructure.Application.Connection;
 using OrderHub.Infrastructure.Features.OrderDrafts;
 using OrderHub.Infrastructure.Queries;
 using OrderHub.Infrastructure.ReadServices;
+using OrderHub.Infrastructure.Services;
 using OrderHub.Infrastructure.Stores;
 using System.Reflection;
 
-namespace OrderHub.Infrastructure;
+namespace OrderHub.Infrastructure.DependencyInjection;
 
 public static class ServiceCollectionExtensions
 {
@@ -15,7 +19,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
         services.AddSingleton<AppDbContextFactory>();
-        services.AddScoped<AppDbContext>(services =>
+        services.AddScoped(services =>
         {
             return services.GetRequiredService<AppDbContextFactory>().CreateDbContext();
         });
@@ -30,19 +34,30 @@ public static class ServiceCollectionExtensions
         services.AddQueries();
         services.AddReadServices();
         services.AddDrafts();
-        services.AddTransient<Orders.OrderWriteService>();
-        services.AddSingleton<Application.Interfaces.Services.IDatabaseConfigurationService, Configuration.DatabaseConfigurationService>();
-        services.AddSingleton<Application.Interfaces.Services.IWppConnectScriptService, Services.WppConnectScriptService>();
-        services.AddSingleton<Application.Interfaces.IRequestExecutor, Execution.RequestExecutor>();
+        services.AddSingleton<IHashShervice, HashShervice>();
+        services.AddTransient<IUserSessionStorage, UserSessionStorage>();
+        services.AddTransient<IUserSessionValidator, UserSessionValidator>();
 
-        services.AddSingleton<Application.Interfaces.Documents.IPdfDocumentFactory, Features.Documents.PdfDocumentFactory>();
-        services.AddSingleton<Application.Interfaces.Services.IFileStorageService, Services.LocalFileStorageService>();
+        services.AddSingleton<OrderHub.Application.Infrastructure.Connection.IConnectionConfigurationStorage, 
+            OrderHub.Infrastructure.Application.Connection.DpapiConnectionConfigurationStorage>();
+
+        services.AddSingleton<OrderHub.Application.Infrastructure.Installation.IApplicationConfigurationProvider, 
+            Application.Installation.ApplicationConfigurationProvider>();
+
+        services.AddTransient<Orders.OrderWriteService>();
+        services.AddSingleton<IDatabaseConfigurationService, Configuration.DatabaseConfigurationService>();
+        services.AddSingleton<IWppConnectScriptService, Services.WppConnectScriptService>();
+        services.AddSingleton<IRequestExecutor, Execution.RequestExecutor>();
+
+        services.AddSingleton<OrderHub.Application.Interfaces.Documents.IPdfDocumentFactory, Features.Documents.PdfDocumentFactory>();
+        services.AddSingleton<OrderHub.Application.Interfaces.ILocalFileAccessService, Services.LocalFileAccessService>();
+        services.AddSingleton<IFileStorageService, Services.LocalFileStorageService>();
         services.AddSingleton<Services.PlaywrightWhatsAppService>();
         services.AddSingleton<IWhatsappService>(s => s.GetRequiredService<Services.PlaywrightWhatsAppService>());
         services.AddSingleton<IMessageSender>(s => s.GetRequiredService<Services.PlaywrightWhatsAppService>());
         services.AddScoped<IUnitOfWork, Services.UnitOfWork>();
         services.AddSingleton<IMessageService, Services.MessageService>();
-        
+
         services.AddSingleton<IConnectionService, Services.ConnectionService>();
 
         services.AddSingleton<IDatabaseService, Services.DatabaseService>();

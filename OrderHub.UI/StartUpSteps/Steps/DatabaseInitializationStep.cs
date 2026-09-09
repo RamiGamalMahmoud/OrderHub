@@ -17,22 +17,40 @@ public class DatabaseInitializationStep : IStartupStep
     public int Order => (int)StartUpdStepsOrder.DatabaseInitialization;
     public string DisplayName => "جاري فحص قاعدة البيانات";
 
-    public bool IsEnabled => true;
+    public bool IsEnabled
+    {
+        get
+        {
+#if DEBUG
+            return true;
+#else
+            return false;
+#endif
+        }
+    }
 
     public async Task ExecuteAsync()
     {
-        if (!await _db.CanConnectAsync())
+        try
+        {
+            if (await _db.CanConnectAsync())
+            {
+                await _db.FixCategoriesAsync();
+
+                if (await _db.HasPendingMigrationsAsync())
+                {
+                    await _db.MigrateAsync();
+                    NotificationService.Instance.ShowSuccess("تم تحديث قاعدة البيانات");
+                }
+            }
+            else
+            {
+                NotificationService.Instance.ShowError("خطأ في الاتصال بقاعدة البيانات");
+            }
+        }
+        catch (Exception)
         {
             NotificationService.Instance.ShowError("خطأ في الاتصال بقاعدة البيانات");
-            throw new Exception("DB connection failed");
-        }
-
-        await _db.FixCategoriesAsync();
-
-        if (await _db.HasPendingMigrationsAsync())
-        {
-            await _db.MigrateAsync();
-            NotificationService.Instance.ShowSuccess("تم تحديث قاعدة البيانات");
         }
     }
 }

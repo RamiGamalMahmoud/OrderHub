@@ -13,7 +13,7 @@ internal sealed class DatabaseConfigurationService
     private readonly IEncryptionService _encryption;
 
     private string ConfigurationFilePath =>
-        Path.Combine(_directories.DataDirectory, "database.dat");
+        Path.Combine(_directories.StorageDirectory, "connection.bin");
 
     public DatabaseConfigurationService(
         IApplicationDirectoriesService directories,
@@ -26,9 +26,7 @@ internal sealed class DatabaseConfigurationService
     public DatabaseSettings GetSettings()
     {
         if (!File.Exists(ConfigurationFilePath))
-            throw new FileNotFoundException(
-                "Database configuration file was not found.",
-                ConfigurationFilePath);
+            return null;
 
         byte[] encryptedData =
             File.ReadAllBytes(ConfigurationFilePath);

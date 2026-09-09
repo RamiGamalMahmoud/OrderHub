@@ -1,12 +1,16 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Notification.Wpf;
+using OrderHub.Application.Context;
+using OrderHub.Application.Infrastructure.Connection;
+using OrderHub.Application.Infrastructure.Installation;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.UI.Services;
 using OrderHub.UI.StartUpSteps;
 using QuestPDF.Infrastructure;
 using System;
 using System.Globalization;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -50,7 +54,8 @@ public partial class App : System.Windows.Application
         CultureInfo.DefaultThreadCurrentUICulture = culture;
         base.OnStartup(e);
 
-        ShowSplashScreen();
+        //ShowSplashScreen();
+        DialogService.Instance.SwitchWindow<Features.Splash>();
         _ = StartAsync();
         //_ = InitializeAsync();
     }
@@ -65,7 +70,9 @@ public partial class App : System.Windows.Application
 
             await startupPipeline.RunAsync();
 
-            ShowMainWindow();
+            await InitializeApplicationAsync();
+
+            //ShowMainWindow();
         }
         catch (Exception ex)
         {
@@ -73,27 +80,44 @@ public partial class App : System.Windows.Application
         }
     }
 
-    private void ShowSplashScreen()
+
+    private async Task InitializeApplicationAsync()
     {
-        MainWindow = GetService<Features.Splash>();
-        MainWindow.Show();
+        IApplicationContext applicationContext = _host.Services.GetRequiredService<IApplicationContext>();
+        IConnectionConfigurationStorage connectionConfigurationStorage = _host.Services.GetRequiredService<IConnectionConfigurationStorage>();
+        ConnectionConfiguration connectionConfiguration = await connectionConfigurationStorage.LoadAsync();
+
+        IApplicationInitializationService initializationService = GetService<IApplicationInitializationService>();
+        await initializationService.InitializeAsync();
     }
 
-    private void ShowMainWindow()
+    private bool IsConnectionFileExists()
     {
-        SwitchWindow<Features.MainWindow.MainWindowView>();
+        IApplicationDirectoriesService applicationDirectories = _host.Services.GetRequiredService<IApplicationDirectoriesService>();
+        return Path.Exists(Path.Combine(applicationDirectories.StorageDirectory, "connection.bin"));
     }
 
-    private void SwitchWindow<T>() where T : Window
-    {
-        Window oldWindow = MainWindow;
+    //private void ShowSplashScreen()
+    //{
+    //    MainWindow = GetService<Features.Splash>();
+    //    MainWindow.Show();
+    //}
 
-        T newWindow = GetService<T>();
-        MainWindow = newWindow;
+    //private void ShowMainWindow()
+    //{
+    //    SwitchWindow<Features.MainWindow.MainWindowView>();
+    //}
 
-        newWindow.Show();
-        oldWindow?.Close();
-    }
+    //private void SwitchWindow<T>() where T : Window
+    //{
+    //    Window oldWindow = MainWindow;
+
+    //    T newWindow = GetService<T>();
+    //    MainWindow = newWindow;
+
+    //    newWindow.Show();
+    //    oldWindow?.Close();
+    //}
 
     #region Exception Handling
 
