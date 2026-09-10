@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using MediatR;
 using OrderHub.Application.Context;
+using OrderHub.Application.Features.Authentication.Logout;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.UI.Services;
 using System.Collections.ObjectModel;
@@ -17,6 +18,7 @@ internal partial class MainWindowViewModel : ObservableObject
     private readonly IApplicationDirectoriesService _applicationDirectoriesService;
     private readonly IWhatsappService _whatsappService;
     private readonly IMessageService _messageService;
+    private readonly IApplicationInitializationService _applicationInitializationService;
 
     [ObservableProperty]
     private NavigationCommand _selectedNavigationCommand;
@@ -28,7 +30,8 @@ internal partial class MainWindowViewModel : ObservableObject
         IMessageService messageService,
         IAppState appState,
         IApplicationDirectoriesService applicationDirectoriesService,
-        IApplicationContext applicationContext)
+        IApplicationContext applicationContext,
+        IApplicationInitializationService applicationInitializationService)
     {
         _sessionManager = sessionManager;
         _mediator = mediator;
@@ -39,11 +42,12 @@ internal partial class MainWindowViewModel : ObservableObject
         InitializeNavigationCommands();
         IsAuthenticated = !_sessionManager.CurrentSession?.Token?.IsExpired ?? false;
         ApplicationContext = applicationContext;
+        _applicationInitializationService = applicationInitializationService;
     }
 
     public ObservableCollection<NavigationCommand> NavigationCommands { get; } = [];
-    [ObservableProperty]
-    private string _title = "OrderHub";
+    
+    public string Title => $"OrderHub - {ApplicationContext.Application.InstallationType} - v{ApplicationContext.Application.Version}";
     private void InitializeNavigationCommands()
     {
         NavigationCommands.Add(new NavigationCommand(
@@ -107,12 +111,6 @@ internal partial class MainWindowViewModel : ObservableObject
             () => NavigationService.Instance.NavigateTo<Features.Settings.Home.SettingsHomeView>()));
     }
 
-    partial void OnSelectedNavigationCommandChanged(NavigationCommand value)
-    {
-        Title = $"OrderHub - {value?.Name}";
-        value?.Action?.Invoke();
-    }
-
     [RelayCommand]
     private async Task LoginSalla()
     {
@@ -153,9 +151,10 @@ internal partial class MainWindowViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private Task Logout()
+    private async Task Logout()
     {
-        return Task.CompletedTask;
+        await _mediator.Send(new LogoutCommand());
+        await _applicationInitializationService.InitializeAsync();
     }
 
     [ObservableProperty]
