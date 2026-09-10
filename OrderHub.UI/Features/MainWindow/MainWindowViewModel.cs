@@ -157,6 +157,11 @@ internal partial class MainWindowViewModel : ObservableObject
         await _applicationInitializationService.InitializeAsync();
     }
 
+    partial void OnSelectedNavigationCommandChanged(NavigationCommand value)
+    {
+        value?.Action?.Invoke();
+    }
+
     [ObservableProperty]
     private string _message;
 
