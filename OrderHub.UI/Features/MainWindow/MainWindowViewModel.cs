@@ -5,20 +5,25 @@ using OrderHub.Application.Context;
 using OrderHub.Application.Features.Authentication.Logout;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.UI.Services;
+using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace OrderHub.UI.Features.MainWindow;
 
 internal partial class MainWindowViewModel : ObservableObject
 {
+    private CancellationTokenSource _updatingCTS;
     private readonly ISessionManager _sessionManager;
     private readonly IMediator _mediator;
     private readonly IApplicationDirectoriesService _applicationDirectoriesService;
     private readonly IWhatsappService _whatsappService;
     private readonly IMessageService _messageService;
     private readonly IApplicationInitializationService _applicationInitializationService;
+    private readonly IUpdateService _updateService;
 
     [ObservableProperty]
     private NavigationCommand _selectedNavigationCommand;
@@ -31,7 +36,8 @@ internal partial class MainWindowViewModel : ObservableObject
         IAppState appState,
         IApplicationDirectoriesService applicationDirectoriesService,
         IApplicationContext applicationContext,
-        IApplicationInitializationService applicationInitializationService)
+        IApplicationInitializationService applicationInitializationService,
+        IUpdateService updateService)
     {
         _sessionManager = sessionManager;
         _mediator = mediator;
@@ -43,10 +49,11 @@ internal partial class MainWindowViewModel : ObservableObject
         IsAuthenticated = !_sessionManager.CurrentSession?.Token?.IsExpired ?? false;
         ApplicationContext = applicationContext;
         _applicationInitializationService = applicationInitializationService;
+        _updateService = updateService;
     }
 
     public ObservableCollection<NavigationCommand> NavigationCommands { get; } = [];
-    
+
     public string Title => $"OrderHub - {ApplicationContext.Application.InstallationType} - v{ApplicationContext.Application.Version}";
     private void InitializeNavigationCommands()
     {
@@ -160,6 +167,72 @@ internal partial class MainWindowViewModel : ObservableObject
     partial void OnSelectedNavigationCommandChanged(NavigationCommand value)
     {
         value?.Action?.Invoke();
+    }
+
+    [RelayCommand]
+    private async Task Update()
+    {
+        bool update = await DialogService.Instance.ConfirmAsync(
+            """
+            يتوفر إصدار جديد من البرنامج. هل تريد تنزيل التحديث وتثبيته الآن؟
+            """);
+        if (!update)
+            return;
+        _updatingCTS = new CancellationTokenSource();
+        IsUpdating = true;
+
+        var progress = new Progress<double>(value =>
+        {
+            UpdateProgress = value;
+        });
+
+
+
+        try
+        {
+            string installPath = await _updateService.DownloadUpdateAsync(ApplicationContext.Update, progress, _updatingCTS.Token);
+            _updateService.RunInstaller(installPath);
+        }
+        catch (OperationCanceledException)
+        {
+            UpdateProgress = 0;
+        }
+        catch (Exception)
+        {
+            // Actual download error
+        }
+
+        IsUpdating = false;
+    }
+
+    [RelayCommand]
+    private async Task CancelUpdate()
+    {
+        if (!IsUpdating || _updatingCTS is null)
+            return;
+
+        bool cancelUpdate = await DialogService.Instance.ConfirmAsync(
+            """
+            هل أنت متأكد من إلغاء التحديث؟ سيتم إيقاف عملية التنزيل الحالية ولن يتم تثبيت الإصدار الجديد.
+            """);
+
+        if (!cancelUpdate)
+            return;
+
+        await _updatingCTS.CancelAsync();
+
+
+    }
+
+    [ObservableProperty]
+    private bool _isUpdating;
+
+    private double _updateProgress;
+
+    public double UpdateProgress
+    {
+        get => _updateProgress;
+        set => SetProperty(ref _updateProgress, value);
     }
 
     [ObservableProperty]

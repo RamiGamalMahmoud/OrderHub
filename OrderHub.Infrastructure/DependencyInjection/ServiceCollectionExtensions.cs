@@ -38,6 +38,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IUserSessionStorage, UserSessionStorage>();
         services.AddTransient<IUserSessionValidator, UserSessionValidator>();
         services.AddTransient<IInitialAdminService, InitialAdminService>();
+        services.AddHttpClient<IUpdateService, GitHubUpdateService>();
 
         services.AddSingleton<OrderHub.Application.Infrastructure.Connection.IConnectionConfigurationStorage, 
             OrderHub.Infrastructure.Application.Connection.DpapiConnectionConfigurationStorage>();

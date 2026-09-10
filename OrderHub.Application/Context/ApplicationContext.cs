@@ -1,4 +1,6 @@
-﻿namespace OrderHub.Application.Context;
+﻿using OrderHub.Application.Interfaces.Services;
+
+namespace OrderHub.Application.Context;
 public sealed class ApplicationContext : IApplicationContext
 {
     public ApplicationInfo Application { get; private set; }
@@ -25,5 +27,14 @@ public sealed class ApplicationContext : IApplicationContext
     public void Initialize(ApplicationInfo applicationInfo)
     {
         Application ??= applicationInfo;
+    }
+
+    private UpdateInfo _update;
+
+    public UpdateInfo Update => _update;
+
+    public void SetUpdate(UpdateInfo updateInfo)
+    {
+        _update = updateInfo;
     }
 }

@@ -61,8 +61,13 @@
         <Grid>
 
             <Grid.ColumnDefinitions>
+                <!--  User  -->
                 <ColumnDefinition Width="Auto" />
+
+                <!--  Main / Update  -->
                 <ColumnDefinition Width="*" />
+
+                <!--  Application Status  -->
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
@@ -72,83 +77,194 @@
             <!--  =========================================================  -->
 
             <Button
-                Height="auto"
+                Grid.Column="0"
+                Height="32"
                 Padding="5,0"
+                Background="Transparent"
                 BorderThickness="0"
                 Cursor="Hand">
+
                 <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
-                    <!--  User Icon  -->
+
                     <Border
                         Width="32"
                         Height="32"
                         Background="#F3F4F6"
                         CornerRadius="16">
+
                         <icons:MaterialIcon
                             Width="25"
-                            Height="255"
+                            Height="25"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center">
+
                             <icons:MaterialIcon.Style>
+
                                 <Style TargetType="icons:MaterialIcon">
-                                    <!--  Normal User  -->
+
                                     <Setter Property="Kind" Value="User" />
+
                                     <Setter Property="Foreground" Value="{StaticResource Primary}" />
+
                                     <Style.Triggers>
-                                        <!--  Admin  -->
+
                                         <DataTrigger Binding="{Binding ApplicationContext.User.IsAdmin}" Value="True">
+
                                             <Setter Property="Kind" Value="AdministratorOutline" />
+
                                             <Setter Property="Foreground" Value="#7C3AED" />
+
                                         </DataTrigger>
+
                                     </Style.Triggers>
+
                                 </Style>
+
                             </icons:MaterialIcon.Style>
+
                         </icons:MaterialIcon>
+
                     </Border>
-                    <!--  User Information  -->
+
                     <StackPanel
                         Margin="8,0,0,0"
                         VerticalAlignment="Center"
                         Orientation="Horizontal">
+
                         <TextBlock
                             VerticalAlignment="Center"
                             FontFamily="{StaticResource Cairo}"
-                            FontSize="16"
+                            FontSize="14"
                             FontWeight="SemiBold"
                             Foreground="#1F2937"
                             Text="{Binding ApplicationContext.User.DisplayName}"
                             TextTrimming="CharacterEllipsis" />
+
                         <TextBlock
-                            Margin="10,0,0,0"
+                            Margin="8,0,0,0"
                             VerticalAlignment="Center"
                             FontFamily="{StaticResource Cairo}"
-                            FontSize="12"
+                            FontSize="11"
                             FontWeight="Medium"
                             Foreground="#7C3AED"
                             Text="مدير النظام"
                             Visibility="{Binding ApplicationContext.User.IsAdmin, Converter={converters:BoolToVisibilityConverter}}" />
+
                     </StackPanel>
 
                 </StackPanel>
+
             </Button>
 
 
             <!--  =========================================================  -->
-            <!--  Message  -->
+            <!--  Update  -->
             <!--  =========================================================  -->
 
-            <TextBlock
+            <Grid
                 Grid.Column="1"
-                Margin="12,0"
-                VerticalAlignment="Center"
-                FontSize="11"
-                Foreground="#6B7280"
-                Text="{Binding Message}"
-                TextAlignment="Center"
-                TextTrimming="CharacterEllipsis" />
+                Margin="20,0"
+                VerticalAlignment="Center">
+
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal"
+                    Visibility="{Binding ApplicationContext.Update.NeedToUpdate, Converter={converters:BoolToVisibilityConverter}}">
+
+                    <icons:MaterialIcon
+                        Width="16"
+                        Height="16"
+                        VerticalAlignment="Center"
+                        Foreground="{StaticResource Primary}"
+                        Kind="Update" />
+
+                    <TextBlock
+                        Margin="6,0,10,0"
+                        VerticalAlignment="Center"
+                        FontSize="11"
+                        FontWeight="Medium"
+                        Foreground="#4B5563"
+                        Text="يتوفر تحديث جديد للبرنامج" />
+
+                    <!--  Update  -->
+
+                    <Button
+                        Height="25"
+                        Padding="8,0"
+                        BorderThickness="0"
+                        Command="{Binding UpdateCommand}"
+                        Cursor="Hand"
+                        Style="{StaticResource ButtonInfo}"
+                        Visibility="{Binding IsUpdating, Converter={converters:BoolToVisibilityConverter ForTrue=Collapsed, ForFalse=Visible}}">
+
+                        <StackPanel Orientation="Horizontal">
+
+                            <icons:MaterialIcon
+                                Width="14"
+                                Height="14"
+                                Kind="Download" />
+
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                FontSize="10"
+                                FontWeight="SemiBold"
+                                Text="تحديث الآن" />
+
+                        </StackPanel>
+
+                    </Button>
+
+                    <!--  Progress  -->
+
+                    <ProgressBar
+                        Width="100"
+                        Height="20"
+                        Margin="10,0,0,0"
+                        Maximum="100"
+                        Minimum="0"
+                        Visibility="{Binding IsUpdating, Converter={converters:BoolToVisibilityConverter}}"
+                        Value="{Binding UpdateProgress}" />
+
+                    <!--  Cancel  -->
+
+                    <Button
+                        Height="25"
+                        Margin="10,0,0,0"
+                        Padding="8,0"
+                        BorderThickness="0"
+                        Command="{Binding CancelUpdateCommand}"
+                        Cursor="Hand"
+                        Style="{StaticResource ButtonDashedDanger}"
+                        Visibility="{Binding IsUpdating, Converter={converters:BoolToVisibilityConverter}}">
+
+                        <StackPanel Orientation="Horizontal">
+
+                            <icons:MaterialIcon
+                                Width="14"
+                                Height="14"
+                                Kind="CloseBox" />
+
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                FontSize="10"
+                                FontWeight="SemiBold"
+                                Text="إلغاء التحديث" />
+
+
+                        </StackPanel>
+
+                    </Button>
+
+                </StackPanel>
+
+            </Grid>
 
 
             <!--  =========================================================  -->
-            <!--  Status & Actions  -->
+            <!--  Application Status  -->
             <!--  =========================================================  -->
 
             <StackPanel
@@ -157,11 +273,48 @@
                 Orientation="Horizontal">
 
 
+                <!--  Version  -->
+
+                <Border
+                    Height="28"
+                    Margin="0,0,4,0"
+                    Padding="8,0"
+                    Background="#F9FAFB"
+                    CornerRadius="5">
+
+                    <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+
+                        <icons:MaterialIcon
+                            Width="16"
+                            Height="16"
+                            VerticalAlignment="Center"
+                            Foreground="#6B7280"
+                            Kind="InformationOutline" />
+
+                        <TextBlock
+                            Margin="5,0,0,0"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="#6B7280"
+                            Text="الإصدار" />
+
+                        <TextBlock
+                            Margin="5,0,0,0"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="#6B7280"
+                            Text="{Binding ApplicationContext.Application.Version}" />
+
+                    </StackPanel>
+
+                </Border>
+
+
                 <!--  Database  -->
 
                 <Button
                     Height="28"
-                    Margin="0,0,4,0"
+                    Margin="2,0"
                     Padding="7,0"
                     Background="Transparent"
                     BorderThickness="0"

@@ -1,4 +1,6 @@
-﻿namespace OrderHub.Application.Context;
+﻿using OrderHub.Application.Interfaces.Services;
+
+namespace OrderHub.Application.Context;
 public interface IApplicationContext
 {
     ApplicationInfo Application { get; }
@@ -7,8 +9,11 @@ public interface IApplicationContext
 
     UserSession User { get; }
 
+    UpdateInfo Update { get; }
+
     void Initialize(ApplicationInfo applicationInfo);
     void SetConnectionState(ConnectionState connectionState);
     void SetUser(UserSession user);
-    public void ClearUser();
+    void SetUpdate(UpdateInfo updateInfo);
+    void ClearUser();
 }
