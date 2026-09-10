@@ -164,7 +164,8 @@
             <Grid
                 Grid.Column="1"
                 Margin="20,0"
-                VerticalAlignment="Center">
+                VerticalAlignment="Center"
+                Visibility="{Binding CanUpdate, Converter={converters:BoolToVisibilityConverter}}">
 
                 <StackPanel
                     HorizontalAlignment="Center"

@@ -169,7 +169,11 @@ internal partial class MainWindowViewModel : ObservableObject
         value?.Action?.Invoke();
     }
 
-    [RelayCommand]
+    public bool CanUpdate =>
+        ApplicationContext.Update is not null &&
+        ApplicationContext.Update.NeedToUpdate;
+
+    [RelayCommand(CanExecute = nameof(CanUpdate))]
     private async Task Update()
     {
         bool update = await DialogService.Instance.ConfirmAsync(
