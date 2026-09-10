@@ -1,16 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Notification.Wpf;
-using OrderHub.Application.Context;
 using OrderHub.Application.Infrastructure.Connection;
-using OrderHub.Application.Infrastructure.Installation;
 using OrderHub.Application.Interfaces.Services;
+using OrderHub.UI.DependencyInjection;
 using OrderHub.UI.Services;
 using OrderHub.UI.StartUpSteps;
 using QuestPDF.Infrastructure;
 using System;
 using System.Globalization;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -28,7 +26,7 @@ public partial class App : System.Windows.Application
             .CreateDefaultBuilder()
             .ConfigureServices((context, services) =>
             {
-                services.AddServices();
+                services.AddUI();
             })
             .Build();
 
@@ -54,10 +52,8 @@ public partial class App : System.Windows.Application
         CultureInfo.DefaultThreadCurrentUICulture = culture;
         base.OnStartup(e);
 
-        //ShowSplashScreen();
         DialogService.Instance.SwitchWindow<Features.Splash>();
         _ = StartAsync();
-        //_ = InitializeAsync();
     }
 
     private async Task StartAsync()
@@ -66,13 +62,9 @@ public partial class App : System.Windows.Application
         {
             await Dispatcher.Yield(DispatcherPriority.Render);
 
-            IStartupPipeline startupPipeline = GetService<IStartupPipeline>();
-
-            await startupPipeline.RunAsync();
+            await RunStartUpPipeline();
 
             await InitializeApplicationAsync();
-
-            //ShowMainWindow();
         }
         catch (Exception ex)
         {
@@ -80,44 +72,24 @@ public partial class App : System.Windows.Application
         }
     }
 
+    private async Task RunStartUpPipeline()
+    {
+        await _host.Services.CreateScope()
+            .ServiceProvider
+            .GetRequiredService<IStartupPipeline>()
+            .RunAsync();
+
+    }
+
 
     private async Task InitializeApplicationAsync()
     {
-        IApplicationContext applicationContext = _host.Services.GetRequiredService<IApplicationContext>();
-        IConnectionConfigurationStorage connectionConfigurationStorage = _host.Services.GetRequiredService<IConnectionConfigurationStorage>();
-        ConnectionConfiguration connectionConfiguration = await connectionConfigurationStorage.LoadAsync();
+        await GetService<IConnectionConfigurationStorage>()
+            .LoadAsync();
 
-        IApplicationInitializationService initializationService = GetService<IApplicationInitializationService>();
-        await initializationService.InitializeAsync();
+        await GetService<IApplicationInitializationService>()
+            .InitializeAsync();
     }
-
-    private bool IsConnectionFileExists()
-    {
-        IApplicationDirectoriesService applicationDirectories = _host.Services.GetRequiredService<IApplicationDirectoriesService>();
-        return Path.Exists(Path.Combine(applicationDirectories.StorageDirectory, "connection.bin"));
-    }
-
-    //private void ShowSplashScreen()
-    //{
-    //    MainWindow = GetService<Features.Splash>();
-    //    MainWindow.Show();
-    //}
-
-    //private void ShowMainWindow()
-    //{
-    //    SwitchWindow<Features.MainWindow.MainWindowView>();
-    //}
-
-    //private void SwitchWindow<T>() where T : Window
-    //{
-    //    Window oldWindow = MainWindow;
-
-    //    T newWindow = GetService<T>();
-    //    MainWindow = newWindow;
-
-    //    newWindow.Show();
-    //    oldWindow?.Close();
-    //}
 
     #region Exception Handling
 

@@ -3,10 +3,11 @@
 public enum StartUpdStepsOrder
 {
     InitializeApplicationContextStep,
-    WhatsAppStartup,
     PrepareDirectories,
     DatabaseInitialization,
     Authentication,
     PrepareMassagingService,
     RunApiServer,
+    WhatsAppStartup,
+    CheckForUpdateStep,
 }

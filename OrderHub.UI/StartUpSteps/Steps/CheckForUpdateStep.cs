@@ -1,15 +1,16 @@
 ﻿using OrderHub.Application.Context;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.UI.Services;
-using OrderHub.UI.StartUpSteps;
 using System.Threading.Tasks;
+
+namespace OrderHub.UI.StartUpSteps.Steps;
 
 internal sealed class CheckForUpdateStep : IStartupStep
 {
     private readonly IUpdateService _updateService;
     private readonly IApplicationContext _applicationContext;
 
-    public int Order => 100;
+    public int Order => (int)StartUpdStepsOrder.CheckForUpdateStep;
 
     public string DisplayName => "التحقق من وجود تحديثات";
 
