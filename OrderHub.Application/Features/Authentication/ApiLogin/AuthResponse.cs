@@ -13,4 +13,5 @@ public sealed record DatabaseInfo(
 public sealed record UserInfo(
     int Id,
     string UserName,
-    string DisplayName);
+    string DisplayName,
+    bool IsAdmin);

@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MediatR;
+using OrderHub.Application.Context;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.UI.Services;
 using System.Collections.ObjectModel;
@@ -26,7 +27,8 @@ internal partial class MainWindowViewModel : ObservableObject
         IWhatsappService whatsappService,
         IMessageService messageService,
         IAppState appState,
-        IApplicationDirectoriesService applicationDirectoriesService)
+        IApplicationDirectoriesService applicationDirectoriesService,
+        IApplicationContext applicationContext)
     {
         _sessionManager = sessionManager;
         _mediator = mediator;
@@ -36,6 +38,7 @@ internal partial class MainWindowViewModel : ObservableObject
         AppState = appState;
         InitializeNavigationCommands();
         IsAuthenticated = !_sessionManager.CurrentSession?.Token?.IsExpired ?? false;
+        ApplicationContext = applicationContext;
     }
 
     public ObservableCollection<NavigationCommand> NavigationCommands { get; } = [];
@@ -149,6 +152,12 @@ internal partial class MainWindowViewModel : ObservableObject
         NotificationService.Instance.ShowSuccess("تم تشغيل واتساب ويب وخدمة الرسائل.");
     }
 
+    [RelayCommand]
+    private Task Logout()
+    {
+        return Task.CompletedTask;
+    }
+
     [ObservableProperty]
     private string _message;
 
@@ -161,4 +170,5 @@ internal partial class MainWindowViewModel : ObservableObject
 
     public NavigationService NavigationService => NavigationService.Instance;
     public IAppState AppState { get; }
+    public IApplicationContext ApplicationContext { get; }
 }

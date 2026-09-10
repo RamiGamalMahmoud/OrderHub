@@ -2,4 +2,5 @@
 public sealed record UserSession(
     int Id,
     string UserName,
-    string DisplayName);
+    string DisplayName,
+    bool IsAdmin);

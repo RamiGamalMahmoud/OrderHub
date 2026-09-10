@@ -41,7 +41,8 @@ internal class DatabaseLoginCommandHandler : IRequestHandler<DatabaseLoginComman
         UserSession userSession = new UserSession(
             user.Id,
             user.UserName,
-            user.DisplayName);
+            user.DisplayName,
+            user.IsAdmin);
 
         _applicationContext.SetUser(userSession);
 
