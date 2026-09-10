@@ -37,6 +37,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IHashShervice, HashShervice>();
         services.AddTransient<IUserSessionStorage, UserSessionStorage>();
         services.AddTransient<IUserSessionValidator, UserSessionValidator>();
+        services.AddTransient<IInitialAdminService, InitialAdminService>();
 
         services.AddSingleton<OrderHub.Application.Infrastructure.Connection.IConnectionConfigurationStorage, 
             OrderHub.Infrastructure.Application.Connection.DpapiConnectionConfigurationStorage>();

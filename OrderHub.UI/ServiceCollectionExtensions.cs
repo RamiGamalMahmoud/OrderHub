@@ -99,6 +99,9 @@ public static class ServiceCollectionExtensions
         services.AddTransient<Features.Authentication.ApiLogin.ApiLoginViewModel>();
         services.AddTransient<Features.Authentication.DatabaseLogin.DatabaseLoginViewModel>();
 
+        // Administration
+        services.AddTransient<Features.Administration.Admin.CreateAdmin.CreateAdminViewModel>();
+
         return services;
     }
 
@@ -179,6 +182,9 @@ public static class ServiceCollectionExtensions
         // Authentication
         services.AddTransient<Features.Authentication.ApiLogin.ApiLoginView>();
         services.AddTransient<Features.Authentication.DatabaseLogin.DatabaseLoginView>();
+
+        // Administration
+        services.AddTransient<Features.Administration.Admin.CreateAdmin.CreateAdminView>();
 
         return services;
     }

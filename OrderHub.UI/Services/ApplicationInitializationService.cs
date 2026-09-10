@@ -16,6 +16,7 @@ public sealed class ApplicationInitializationService : IApplicationInitializatio
     private readonly IUserSessionStorage _userSessionStorage;
     private readonly IUserSessionValidator _userSessionValidator;
     private readonly IAppLogger _appLogger;
+    private readonly IInitialAdminService _initialAdminService;
 
     public ApplicationInitializationService(
         IApplicationContext applicationContext,
@@ -23,7 +24,8 @@ public sealed class ApplicationInitializationService : IApplicationInitializatio
         IDatabaseService databaseService,
         IUserSessionStorage userSessionStorage,
         IUserSessionValidator userSessionValidator,
-        IAppLogger appLogger)
+        IAppLogger appLogger,
+        IInitialAdminService initialAdminService)
     {
         _applicationContext = applicationContext;
         _connectionConfigurationStorage = connectionConfigurationStorage;
@@ -31,6 +33,7 @@ public sealed class ApplicationInitializationService : IApplicationInitializatio
         _userSessionStorage = userSessionStorage;
         _userSessionValidator = userSessionValidator;
         _appLogger = appLogger;
+        _initialAdminService = initialAdminService;
     }
 
     public async Task InitializeAsync()
@@ -99,6 +102,13 @@ public sealed class ApplicationInitializationService : IApplicationInitializatio
 
             DialogService.Instance.SwitchWindow<
                 Features.DatabaseConfiguration.DatabaseConfigurationView>();
+
+            return false;
+        }
+
+        if (!await _initialAdminService.HasAdminAsync())
+        {
+            DialogService.Instance.SwitchWindow<Features.Administration.Admin.CreateAdmin.CreateAdminView>();
 
             return false;
         }

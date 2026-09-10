@@ -1,25 +1,43 @@
-﻿using OrderHub.Application.Interfaces.Stores;
+﻿using Microsoft.EntityFrameworkCore;
+using OrderHub.Application.Interfaces.Stores;
 using OrderHub.Domain.Models;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OrderHub.Infrastructure.Reopsitories;
 internal class UserRepository : IUserRepository
 {
-    public Task<User> GetByIdAsync(int id)
+    private readonly AppDbContext _dbContext;
+
+    public UserRepository(AppDbContext dbContext)
     {
-        return Task.FromResult(User.Create(
-            "username",
-            "tQ9XqipfrJ6g8c3zxvIjZKC+oZ75DTLt87jngZ5ef+YotCJN1OHAiNx7Wd6xOnqr",
-            "User Display Name",
-            true));
+        _dbContext = dbContext;
     }
 
-    public Task<User> GetByUsername(string username)
+    public void Add(User user)
     {
-        return Task.FromResult(User.Create(
-            username,
-            "tQ9XqipfrJ6g8c3zxvIjZKC+oZ75DTLt87jngZ5ef+YotCJN1OHAiNx7Wd6xOnqr",
-            "User Display Name",
-            true));
+        _dbContext.Users.Add(user);
+    }
+
+    public async Task<bool> AnyAdminAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users.AnyAsync(x => x.IsAdmin, cancellationToken);
+    }
+
+    public async Task<User> GetByIdAsync(int id)
+    {
+        return await _dbContext.Users
+            .Where(x => x.Id == id)
+            .Include(x => x.Permissions)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<User> GetByUsername(string username)
+    {
+        return await _dbContext.Users
+            .Where(x => x.UserName == username)
+            .Include(x => x.Permissions)
+            .FirstOrDefaultAsync();
     }
 }
