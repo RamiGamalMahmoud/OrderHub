@@ -26,6 +26,11 @@ public static class ServiceCollectionExtensions
         services.AddIntegrations();
         services.AddServices();
 
+        services.AddTransient<Features.Administration.Users.UserReadService>();
+
+        services.AddTransient<OrderHub.Application.Features.Administration.Users.GetUsers.IUserListingService>(sp => 
+            sp.GetRequiredService<Features.Administration.Users.UserReadService>());
+
         return services;
     }
 }

@@ -81,6 +81,7 @@ internal static class ViewRegistration
 
         // Administration
         services.AddTransient<Features.Administration.Admin.CreateAdmin.CreateAdminView>();
+        services.AddSingleton<Features.Administration.Users.List.UsersView>();
 
         return services;
     }

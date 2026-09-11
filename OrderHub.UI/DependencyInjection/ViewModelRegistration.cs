@@ -76,6 +76,7 @@ internal static class ViewModelRegistration
 
         // Administration
         services.AddTransient<Features.Administration.Admin.CreateAdmin.CreateAdminViewModel>();
+        services.AddSingleton<Features.Administration.Users.List.UsersViewModel>();
 
         return services;
     }
