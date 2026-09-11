@@ -6,11 +6,9 @@ using OrderHub.Application.Features.Authentication.Logout;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.UI.Services;
 using System;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace OrderHub.UI.Features.MainWindow;
 
@@ -24,9 +22,6 @@ internal partial class MainWindowViewModel : ObservableObject
     private readonly IMessageService _messageService;
     private readonly IApplicationInitializationService _applicationInitializationService;
     private readonly IUpdateService _updateService;
-
-    [ObservableProperty]
-    private NavigationCommand _selectedNavigationCommand;
 
     public MainWindowViewModel(
         ISessionManager sessionManager,
@@ -45,78 +40,15 @@ internal partial class MainWindowViewModel : ObservableObject
         _messageService = messageService;
         _applicationDirectoriesService = applicationDirectoriesService;
         AppState = appState;
-        InitializeNavigationCommands();
         IsAuthenticated = !_sessionManager.CurrentSession?.Token?.IsExpired ?? false;
         ApplicationContext = applicationContext;
         _applicationInitializationService = applicationInitializationService;
         _updateService = updateService;
     }
 
-    public ObservableCollection<NavigationCommand> NavigationCommands { get; } = [];
+    public MainWindowCommands Commads { get; } = new MainWindowCommands();
 
     public string Title => $"OrderHub - {ApplicationContext.Application.InstallationType} - v{ApplicationContext.Application.Version}";
-    private void InitializeNavigationCommands()
-    {
-        NavigationCommands.Add(new NavigationCommand(
-            "لوحة التحكم",
-            "ViewDashboard",
-            () => NavigationService.Instance.NavigateTo<Features.Dashboard.DashboardView>()));
-
-        NavigationCommands.Add(new NavigationCommand(
-            "الطلبات",
-            "ListBox",
-            () => NavigationService.Instance.NavigateTo<Features.Orders.Index.View>()));
-
-        NavigationCommands.Add(new NavigationCommand(
-            "المنتجات",
-            "Factory",
-            () => NavigationService.Instance.NavigateTo<Features.Products.Index.View>()));
-
-        NavigationCommands.Add(new NavigationCommand(
-            "الأقسام",
-            "Factory",
-            () => NavigationService.Instance.NavigateTo<Features.Categories.Index.View>()));
-
-        NavigationCommands.Add(new NavigationCommand(
-            "المدن",
-            "MapMarker",
-            () => NavigationService.Instance.NavigateTo<Features.Cities.Index.View>()));
-
-        NavigationCommands.Add(new NavigationCommand(
-            "العملاء",
-            "AccountTie",
-            () => NavigationService.Instance.NavigateTo<Features.Clients.Index.View>()));
-
-        NavigationCommands.Add(new NavigationCommand(
-            "الموردون",
-            "BadgeAccount",
-            () => NavigationService.Instance.NavigateTo<Features.Suppliers.Index.View>()));
-
-        NavigationCommands.Add(new NavigationCommand(
-            "شركات الشحن",
-            "Ship",
-            () => NavigationService.Instance.NavigateTo<Features.ShippingCarriers.Index.View>()));
-
-        NavigationCommands.Add(new NavigationCommand(
-            "المناديب",
-            "Moped",
-            () => NavigationService.Instance.NavigateTo<Features.Deliverymen.Index.View>()));
-
-        NavigationCommands.Add(new NavigationCommand(
-            "مجموعات الواتساب",
-            "Whatsapp",
-            () => NavigationService.Instance.NavigateTo<Features.WhatsappGroups.Index.View>()));
-
-        NavigationCommands.Add(new NavigationCommand(
-            "سجل الرسائل",
-            "MessageMinusOutline",
-            () => NavigationService.Instance.NavigateTo<Features.Messages.Index.View>()));
-
-        NavigationCommands.Add(new NavigationCommand(
-            "الإعدادات",
-            "CogOutline",
-            () => NavigationService.Instance.NavigateTo<Features.Settings.Home.SettingsHomeView>()));
-    }
 
     [RelayCommand]
     private async Task LoginSalla()
@@ -162,11 +94,6 @@ internal partial class MainWindowViewModel : ObservableObject
     {
         await _mediator.Send(new LogoutCommand());
         await _applicationInitializationService.InitializeAsync();
-    }
-
-    partial void OnSelectedNavigationCommandChanged(NavigationCommand value)
-    {
-        value?.Action?.Invoke();
     }
 
     public bool CanUpdate =>
