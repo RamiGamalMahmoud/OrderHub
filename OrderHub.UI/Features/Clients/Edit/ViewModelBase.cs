@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
@@ -29,15 +30,15 @@ namespace OrderHub.UI.Features.Clients.Edit
 
             _mediator = mediator;
 
-            WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityCreatedMessage>(this, async (r, m) =>
+            WeakReferenceMessenger.Default.Register<CitiesMessages.CityCreatedMessage>(this, async (r, m) =>
             {
                 Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
             });
-            WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityUpdatedMessage>(this, async (r, m) =>
+            WeakReferenceMessenger.Default.Register<CitiesMessages.CityUpdatedMessage>(this, async (r, m) =>
             {
                 Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
             });
-            WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityDeletedMessage>(this, async (r, m) =>
+            WeakReferenceMessenger.Default.Register<CitiesMessages.CityDeletedMessage>(this, async (r, m) =>
             {
                 Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
             });

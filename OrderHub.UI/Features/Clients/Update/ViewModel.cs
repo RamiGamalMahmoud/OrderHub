@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
@@ -50,7 +51,7 @@ namespace OrderHub.UI.Features.Clients.Update
             if (result.IsSuccess)
             {
                 NotificationService.Instance.ShowSuccess("تم تحديث بيانات عميل بنجاح");
-                WeakReferenceMessenger.Default.Send(new Application.Messages.Clients.ClientUpdatedMessage());
+                WeakReferenceMessenger.Default.Send(new ClientsMessages.ClientUpdatedMessage(_clientId));
                 OnRequestClose();
                 HasChanges = false;
             }

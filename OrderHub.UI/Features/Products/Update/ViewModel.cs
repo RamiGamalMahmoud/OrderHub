@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Features.Products.Get;
 using OrderHub.Application.Features.Products.Update;
@@ -86,7 +87,7 @@ public class ViewModel : Editor.ViewModel, IParameterizedViewModel
         if (result.IsSuccess)
         {
             NotificationService.Instance.ShowSuccess("تم تحديث بيانات المنتج");
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Products.ProductedUpdatedMessage());
+            WeakReferenceMessenger.Default.Send(new ProductsMessages.ProductUpdatedMessage(_productId));
             OnRequestClose();
         }
         else

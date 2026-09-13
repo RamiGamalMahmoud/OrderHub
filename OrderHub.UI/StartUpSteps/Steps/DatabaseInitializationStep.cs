@@ -26,8 +26,11 @@ public class DatabaseInitializationStep : IStartupStep
     {
         try
         {
-            if (await _db.CanConnectAsync() && _typeProvider.GetConfiguration().InstallationType is InstallationType.Server)
+            if (await _db.CanConnectAsync())
             {
+                if (_typeProvider.GetConfiguration().InstallationType is not InstallationType.Server)
+                    return;
+
                 if (await _db.HasPendingMigrationsAsync())
                 {
                     await _db.MigrateAsync();

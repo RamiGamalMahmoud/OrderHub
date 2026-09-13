@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
@@ -16,9 +17,9 @@ internal partial class SuppliersViewModel : IndexViewModelBase<SupplierListDto>
 
     public SuppliersViewModel(IMediator mediator) : base(mediator)
     {
-        WeakReferenceMessenger.Default.Register<Application.Messages.Suppliers.SupplierCreatedMessage>(this, async (r, m) => await LoadAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.Suppliers.SupplierUpdatedMessage>(this, async (r, m) => await LoadAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.Suppliers.SupplierDeletedMessage>(this, async (r, m) => await LoadAsync());
+        WeakReferenceMessenger.Default.Register<SuppliersMessages.SupplierCreatedMessage>(this, async (r, m) => await LoadAsync());
+        WeakReferenceMessenger.Default.Register<SuppliersMessages.SupplierUpdatedMessage>(this, async (r, m) => await LoadAsync());
+        WeakReferenceMessenger.Default.Register<SuppliersMessages.SupplierDeletedMessage>(this, async (r, m) => await LoadAsync());
     }
 
     protected override async Task LoadAsync()
@@ -46,7 +47,7 @@ internal partial class SuppliersViewModel : IndexViewModelBase<SupplierListDto>
             if (result.IsSuccess)
             {
                 NotificationService.Instance.ShowSuccess(MessageBuilder.Build(MessageBuilder.OperationType.Delete, true, "المورد"));
-                WeakReferenceMessenger.Default.Send(new Application.Messages.Suppliers.SupplierDeletedMessage());
+                WeakReferenceMessenger.Default.Send(new SuppliersMessages.SupplierDeletedMessage(dto.Id));
                 await LoadAsync();
             }
             else

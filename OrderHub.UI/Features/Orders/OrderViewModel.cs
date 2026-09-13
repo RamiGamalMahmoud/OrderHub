@@ -1,3 +1,4 @@
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using OrderHub.Application.Common.Lookups;
@@ -87,7 +88,7 @@ public partial class OrderViewModel : ObservableObject
 
         if (result.IsSuccess)
         {
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.OrderUpdatedMessage());
+            WeakReferenceMessenger.Default.Send(new OrdersMessages.OrderPaymentMethodChangedMessage(Id, paymentMethodId));
         }
     }
 
@@ -153,7 +154,11 @@ public partial class OrderViewModel : ObservableObject
 
         if (changeOrderStatusCommand is not null)
         {
-            await _requestExecutor.ExecuteAsync(changeOrderStatusCommand);
+            Result<OrderStatus> result = await _requestExecutor.ExecuteAsync(changeOrderStatusCommand);
+            if (result.IsSuccess)
+            {
+                WeakReferenceMessenger.Default.Send(new OrdersMessages.OrderStatusChangedMessage(Id, result.Value));
+            }
         }
     }
 

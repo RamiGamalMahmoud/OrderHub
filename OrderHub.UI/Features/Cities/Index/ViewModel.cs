@@ -1,3 +1,4 @@
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
@@ -20,9 +21,9 @@ public partial class ViewModel : IndexViewModelBase<CityListDto>
     public ViewModel(IMediator mediator)
         : base(mediator)
     {
-        WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityCreatedMessage>(this, async (_, _) => await ReloadAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityUpdatedMessage>(this, async (_, _) => await ReloadAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityDeletedMessage>(this, async (_, _) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<CitiesMessages.CityCreatedMessage>(this, async (_, _) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<CitiesMessages.CityUpdatedMessage>(this, async (_, _) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<CitiesMessages.CityDeletedMessage>(this, async (_, _) => await ReloadAsync());
     }
 
     public IEnumerable<CityListDto> Cities
@@ -69,7 +70,7 @@ public partial class ViewModel : IndexViewModelBase<CityListDto>
         if (result.IsSuccess)
         {
             NotificationService.Instance.ShowSuccess($"تم حذف المدينة ({model.Name}) بنجاح.");
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Cities.CityDeletedMessage());
+            WeakReferenceMessenger.Default.Send(new CitiesMessages.CityDeletedMessage(model.Id));
             return;
         }
 

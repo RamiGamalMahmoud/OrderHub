@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Features.Products.Create;
 using OrderHub.Domain.Common;
@@ -30,12 +31,12 @@ namespace OrderHub.UI.Features.Products.Create
                     .Where(x => x.IsAssigned)
                     .Select(p => new CreateProduct.ProductPropertiesDto(p.Id, p.PropertyRequirement.Value == Editor.PropertyRequirement.Required)));
             
-            Result result = await _mediator.Send(new CreateProduct.Command(product));
+            Result<int> result = await _mediator.Send(new CreateProduct.Command(product));
 
             if(result.IsSuccess)
             {
                 NotificationService.Instance.ShowSuccess("تم إنشاء المنتج");
-                WeakReferenceMessenger.Default.Send(new Application.Messages.Products.ProductedCreatedMessage());
+                WeakReferenceMessenger.Default.Send(new ProductsMessages.ProductCreatedMessage(result.Value));
                 OnRequestClose();
             }
             else

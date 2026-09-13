@@ -102,7 +102,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
             SaveCommand.NotifyCanExecuteChanged();
         };
 
-        WeakReferenceMessenger.Default.Register<Application.Messages.Clients.ClientCreatedMessage>(this, async (r, m) =>
+        WeakReferenceMessenger.Default.Register<OrderHub.UI.Messaging.ClientsMessages.ClientCreatedMessage>(this, async (r, m) =>
         {
             await PartyPanel.LoadAsync();
         });

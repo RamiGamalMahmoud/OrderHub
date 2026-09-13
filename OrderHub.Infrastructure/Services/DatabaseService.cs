@@ -20,13 +20,16 @@ internal class DatabaseService : IDatabaseService
     {
         using (AppDbContext context = _appDbContextFactory.CreateDbContext())
         {
-            return await context.Database.CanConnectAsync();
+
+            return context is null ?
+                false :
+                await context.Database.CanConnectAsync();
         }
     }
 
     public async Task<bool> HasPendingMigrationsAsync()
     {
-        using(AppDbContext context = _appDbContextFactory.CreateDbContext())
+        using (AppDbContext context = _appDbContextFactory.CreateDbContext())
         {
             IEnumerable<string> pendingMigrations = await context.Database.GetPendingMigrationsAsync();
             return pendingMigrations.Any();

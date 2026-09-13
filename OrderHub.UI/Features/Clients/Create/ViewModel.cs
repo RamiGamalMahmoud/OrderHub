@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Services;
@@ -18,7 +19,7 @@ namespace OrderHub.UI.Features.Clients.Create
             if(result.IsSuccess)
             {
                 NotificationService.Instance.ShowSuccess("تم انشاء العميل بنجاح");
-                WeakReferenceMessenger.Default.Send(new Application.Messages.Clients.ClientCreatedMessage());
+                WeakReferenceMessenger.Default.Send(new ClientsMessages.ClientCreatedMessage());
                 OnRequestClose();
             }
 

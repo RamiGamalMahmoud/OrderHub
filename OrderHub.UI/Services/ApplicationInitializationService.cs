@@ -66,6 +66,10 @@ public sealed class ApplicationInitializationService : IApplicationInitializatio
                 return;
             }
         }
+        catch(InvalidOperationException)
+        {
+            return;
+        }
         catch (Exception ex)
         {
             await _appLogger.LogErrorAsync(

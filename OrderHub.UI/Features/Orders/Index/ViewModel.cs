@@ -1,4 +1,5 @@
-﻿using AutoMapper.Internal;
+﻿using OrderHub.UI.Messaging;
+using AutoMapper.Internal;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -141,15 +142,21 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
         OrderDetailsPanelViewModel = new OrderDetailsPanelViewModel(mediator);
 
-        WeakReferenceMessenger.Default.Register<Application.Messages.Orders.OrderCreatedMessage>(
+        WeakReferenceMessenger.Default.Register<OrdersMessages.OrderCreatedMessage>(
             this,
             async (_, _) => await ReloadAsync());
 
-        WeakReferenceMessenger.Default.Register<Application.Messages.Orders.OrderUpdatedMessage>(
+        WeakReferenceMessenger.Default.Register<OrdersMessages.OrderUpdatedMessage>(
             this,
             async (_, _) => await ReloadAsync());
 
-        WeakReferenceMessenger.Default.Register<Application.Messages.Orders.OrderDeletedMessage>(
+        WeakReferenceMessenger.Default.Register<OrdersMessages.OrderStatusChangedMessage>(
+            this, async (_, _) => await ReloadAsync());
+
+        WeakReferenceMessenger.Default.Register<OrdersMessages.OrderPaymentMethodChangedMessage>(
+            this, async (_, _) => await ReloadAsync());
+
+        WeakReferenceMessenger.Default.Register<OrdersMessages.OrderDeletedMessage>(
             this,
             async (_, _) => await ReloadAsync());
 
@@ -161,12 +168,12 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
                 order?.UpdateRecipientStatus(m.RecipientType, m.NewStatus == Domain.Enums.OutboxMessageStatus.Sent);
             });
 
-        WeakReferenceMessenger.Default.Register<ViewModel, Messages.DraftSavedMessage>(this, (r, m) =>
+        WeakReferenceMessenger.Default.Register<ViewModel, OrdersMessages.OrderDraftSavedMessage>(this, (r, m) =>
         {
             OnPropertyChanged(nameof(OrderDraftsDrawerViewModel.Drafts.Count));
         });
 
-        WeakReferenceMessenger.Default.Register<ViewModel, Messages.DraftDeletedMessage>(this, (r, m) =>
+        WeakReferenceMessenger.Default.Register<ViewModel, OrdersMessages.OrderDraftDeletedMessage>(this, (r, m) =>
         {
             OnPropertyChanged(nameof(OrderDraftsDrawerViewModel.Drafts.Count));
         });
@@ -249,7 +256,11 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
     [RelayCommand]
     private async Task BroadcastOrder(OrderViewModel model)
     {
-        await _requestExecutor.ExecuteAsync(new NotifyOrderParticipantsCommand(model.Id, null));
+        Result result = await _requestExecutor.ExecuteAsync(new NotifyOrderParticipantsCommand(model.Id, null));
+        if (result.IsSuccess)
+        {
+            WeakReferenceMessenger.Default.Send(new MessagesMessages.OutboxMessagesQueuedMessage(model.Id));
+        }
     }
 
     [RelayCommand]
@@ -270,6 +281,7 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
 
         if (result.IsSuccess)
         {
+            WeakReferenceMessenger.Default.Send(new MessagesMessages.OutboxMessagesQueuedMessage(model.Id));
             NotificationService.Instance.Show("تم اضافة الرسالة للإرسال, توجه إلى سجل الرسائل لإرسالها او تخصيصها قبل الإرسال");
             return;
         }
@@ -283,9 +295,7 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
         try
         {
             await Task.WhenAll(
-                Orders.Select(order =>
-                    _requestExecutor.ExecuteAsync(
-                        new NotifyOrderParticipantsCommand(order.Id, null)))
+                Orders.Select(order => BroadcastOrder(order))
             );
         }
         catch (Exception ex)
@@ -315,7 +325,7 @@ internal partial class ViewModel : IndexViewModelBase<OrderViewModel>
             return;
         }
 
-        WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.OrderDeletedMessage(model.Id));
+        WeakReferenceMessenger.Default.Send(new OrdersMessages.OrderDeletedMessage(model.Id));
         NotificationService.Instance.ShowSuccess("تم حذف الطلب بنجاح.");
     }
 

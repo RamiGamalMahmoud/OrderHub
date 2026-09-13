@@ -1,4 +1,6 @@
-﻿using MediatR;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using OrderHub.UI.Messaging;
+using MediatR;
 using OrderHub.Application.Features.Setup.Properties.Get;
 using OrderHub.Application.Features.Setup.Properties.Update;
 using System.Linq;
@@ -52,6 +54,8 @@ public sealed partial class UpdatePropertyViewModel : PropertyEditorViewModelBas
         var command = new UpdatePropertyCommand(propertyUpdateDto);
 
         await _mediator.Send(command);
+
+        WeakReferenceMessenger.Default.Send(new PropertiesMessages.PropertyUpdatedMessage(_propertyId));
 
         await base.Save();
     }

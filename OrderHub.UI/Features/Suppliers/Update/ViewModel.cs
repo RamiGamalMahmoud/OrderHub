@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
@@ -59,7 +60,7 @@ public partial class ViewModel : EditSupplierViewModelBase, IParameterizedViewMo
         {
 
             NotificationService.Instance.ShowSuccess("تم تعديل بيانات المورد");
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Suppliers.SupplierUpdatedMessage());
+            WeakReferenceMessenger.Default.Send(new SuppliersMessages.SupplierUpdatedMessage(_supplierId));
             OnRequestClose();
         }
         else

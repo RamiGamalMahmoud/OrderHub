@@ -1,4 +1,6 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using OpenQA.Selenium.DevTools.V145.Autofill;
@@ -117,6 +119,7 @@ public partial class SendMessageViewModel : ObservableObject, IParameterizedView
 
         if (result.IsSuccess)
         {
+            WeakReferenceMessenger.Default.Send(new MessagesMessages.OutboxMessagesQueuedMessage(null));
             NotificationService.Instance.ShowSuccess("تم قيد الرسالة للارسال");
 
             Message = string.Empty;

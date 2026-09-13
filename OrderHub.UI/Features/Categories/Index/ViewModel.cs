@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
@@ -20,17 +21,17 @@ namespace OrderHub.UI.Features.Categories.Index
 
         public ViewModel(IMediator mediator) : base(mediator)
         {
-            WeakReferenceMessenger.Default.Register<Application.Messages.Categories.CategoryCreatedMessage>(this, async (m, r) =>
+            WeakReferenceMessenger.Default.Register<CategoriesMessages.CategoryCreatedMessage>(this, async (m, r) =>
             {
                 await NavigateToCategory(SelectedCategory);
             });
 
-            WeakReferenceMessenger.Default.Register<Application.Messages.Categories.CategoryUpdatedMessage>(this, async (m, r) =>
+            WeakReferenceMessenger.Default.Register<CategoriesMessages.CategoryUpdatedMessage>(this, async (m, r) =>
             {
                 await NavigateToCategory(SelectedCategory);
             });
 
-            WeakReferenceMessenger.Default.Register<Application.Messages.Categories.CategoryDeletedMessage>(this, async (m, r) =>
+            WeakReferenceMessenger.Default.Register<CategoriesMessages.CategoryDeletedMessage>(this, async (m, r) =>
             {
                 await NavigateToCategory(SelectedCategory);
             });
@@ -43,6 +44,7 @@ namespace OrderHub.UI.Features.Categories.Index
             Result result = await _mediator.Send(new Application.Commands.CategoryCommands.DeleteCategoryCommand(dto.Id));
             if(result.IsSuccess)
             {
+                WeakReferenceMessenger.Default.Send(new CategoriesMessages.CategoryDeletedMessage(dto.Id));
                 NotificationService.Instance.ShowSuccess("تم حذف القسم");
             }
             else
@@ -126,6 +128,7 @@ namespace OrderHub.UI.Features.Categories.Index
             Result result =await _mediator.Send(new Application.Commands.CategoryCommands.DeleteCategoryCommand(dto.Id));
             if(result.IsSuccess)
             {
+                WeakReferenceMessenger.Default.Send(new CategoriesMessages.CategoryDeletedMessage(dto.Id));
                 NotificationService.Instance.ShowError("تم حذف القسم");
                 await LoadAsync();
             }

@@ -26,8 +26,8 @@ internal sealed class UserPermissionConfiguration
         builder.Property(x => x.CanWrite)
             .IsRequired();
 
-        builder.HasOne<User>()
-            .WithMany()
+        builder.HasOne(x => x.User)
+            .WithMany(x => x.Permissions)
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 

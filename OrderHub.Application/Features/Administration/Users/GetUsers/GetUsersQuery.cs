@@ -1,5 +1,4 @@
 ﻿using MediatR;
-using OrderHub.Domain.Enums;
 using System;
 using System.Collections.Generic;
 
@@ -13,11 +12,4 @@ public sealed record UserListItem(
     string DisplayName,
     bool IsActive,
     bool IsAdmin,
-    IReadOnlyList<UserListItemPermission> Permissions,
     DateTime CreatedAt);
-
-public sealed record UserListItemPermission(
-    int Id, 
-    PermissionFeature PermissionFeature,
-    bool CanRead,
-    bool CanWrite);

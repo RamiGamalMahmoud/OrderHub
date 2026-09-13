@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Features.Products.Contracts;
@@ -25,9 +26,9 @@ public partial class ViewModel : IndexViewModelBase<ProductItem>
     }
     public ViewModel(IMediator mediator, IProductStore productStore) : base(mediator)
     {
-        WeakReferenceMessenger.Default.Register<Application.Messages.Products.ProductedCreatedMessage>(this, async (r, m) => await ReloadAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.Products.ProductedDeletedMessage>(this, async (r, m) => await ReloadAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.Products.ProductedUpdatedMessage>(this, async (r, m) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<ProductsMessages.ProductCreatedMessage>(this, async (r, m) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<ProductsMessages.ProductDeletedMessage>(this, async (r, m) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<ProductsMessages.ProductUpdatedMessage>(this, async (r, m) => await ReloadAsync());
         _productStore = productStore;
     }
 
@@ -42,7 +43,7 @@ public partial class ViewModel : IndexViewModelBase<ProductItem>
         if (result.IsSuccess)
         {
             NotificationService.Instance.ShowSuccess("تم حذف المنتج");
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Products.ProductedDeletedMessage(dto.Id));
+            WeakReferenceMessenger.Default.Send(new ProductsMessages.ProductDeletedMessage(dto.Id));
 
         }
         else

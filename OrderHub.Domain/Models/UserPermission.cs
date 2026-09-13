@@ -10,6 +10,8 @@ public class UserPermission : ModelBase
     public bool CanRead { get; private set; }
     public bool CanWrite { get; private set; }
 
+    public User User { get; private set; }
+
     private UserPermission()
     {
     }
@@ -28,6 +30,27 @@ public class UserPermission : ModelBase
         return new UserPermission
         {
             UserId = userId,
+            Feature = feature,
+            CanRead = canRead,
+            CanWrite = canWrite
+        };
+    }
+
+    public static UserPermission Create(
+    User user,
+    PermissionFeature feature,
+    bool canRead,
+    bool canWrite)
+    {
+        if(user is null)
+            throw new ArgumentNullException(nameof(user));
+
+        if (canWrite)
+            canRead = true;
+
+        return new UserPermission
+        {
+            User = user,
             Feature = feature,
             CanRead = canRead,
             CanWrite = canWrite

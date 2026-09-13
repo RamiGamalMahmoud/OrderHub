@@ -1,3 +1,4 @@
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Common.Extensions;
@@ -141,7 +142,7 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
         Result result = await _orderStore.UpdateOrder(_id, BuildOrder());
         if(result.IsSuccess)
         {
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.OrderUpdatedMessage());
+            WeakReferenceMessenger.Default.Send(new OrdersMessages.OrderUpdatedMessage(_id));
         }
         OnRequestClose();
     }

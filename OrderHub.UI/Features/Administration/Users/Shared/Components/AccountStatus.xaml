@@ -1,0 +1,152 @@
+﻿<UserControl
+    x:Class="OrderHub.UI.Features.Administration.Users.Shared.Components.AccountStatus"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    FontFamily="{StaticResource Cairo}"
+    mc:Ignorable="d">
+
+    <Border
+        Padding="16"
+        Background="#FAFAFA"
+        BorderBrush="#ECECEC"
+        BorderThickness="1"
+        CornerRadius="7">
+
+        <StackPanel Orientation="Horizontal">
+
+            <!--  Active  -->
+            <CheckBox
+                VerticalAlignment="Center"
+                Cursor="Hand"
+                FlowDirection="LeftToRight"
+                IsChecked="{Binding IsActive}">
+
+                <CheckBox.Style>
+                    <Style BasedOn="{StaticResource CheckBoxBaseStyle}" TargetType="CheckBox">
+
+                        <Setter Property="IsEnabled" Value="True" />
+
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsReadOnly}" Value="True">
+
+                                <Setter Property="IsEnabled" Value="False" />
+
+                            </DataTrigger>
+                        </Style.Triggers>
+
+                    </Style>
+                </CheckBox.Style>
+
+                <StackPanel Margin="8,0,0,0" Orientation="Horizontal">
+
+                    <Border
+                        Width="32"
+                        Height="32"
+                        Background="#ECFDF3"
+                        CornerRadius="16">
+
+                        <icons:MaterialIcon
+                            Width="19"
+                            Height="19"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Foreground="#16A34A"
+                            Kind="AccountCheckOutline" />
+
+                    </Border>
+
+                    <StackPanel Margin="8,0,0,0">
+
+                        <TextBlock
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="#374151"
+                            Text="حساب نشط" />
+
+                        <TextBlock
+                            Margin="0,2,0,0"
+                            FontSize="10"
+                            Foreground="#8A8A8A"
+                            Text="السماح للمستخدم بتسجيل الدخول" />
+
+                    </StackPanel>
+
+                </StackPanel>
+
+            </CheckBox>
+
+            <Border
+                Width="1"
+                Height="42"
+                Margin="24,0"
+                Background="#E4E4E4" />
+
+            <!--  Admin  -->
+            <CheckBox
+                VerticalAlignment="Center"
+                Cursor="Hand"
+                FlowDirection="LeftToRight"
+                IsChecked="{Binding IsAdmin}">
+
+                <CheckBox.Style>
+                    <Style BasedOn="{StaticResource CheckBoxBaseStyle}" TargetType="CheckBox">
+
+                        <Setter Property="IsEnabled" Value="True" />
+
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsReadOnly}" Value="True">
+
+                                <Setter Property="IsEnabled" Value="False" />
+
+                            </DataTrigger>
+                        </Style.Triggers>
+
+                    </Style>
+                </CheckBox.Style>
+
+                <StackPanel Margin="8,0,0,0" Orientation="Horizontal">
+
+                    <Border
+                        Width="32"
+                        Height="32"
+                        Background="#FFF0F0"
+                        CornerRadius="16">
+
+                        <icons:MaterialIcon
+                            Width="19"
+                            Height="19"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Foreground="#C62828"
+                            Kind="AdministratorOutline" />
+
+                    </Border>
+
+                    <StackPanel Margin="8,0,0,0">
+
+                        <TextBlock
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="#374151"
+                            Text="مدير النظام" />
+
+                        <TextBlock
+                            Margin="0,2,0,0"
+                            FontSize="10"
+                            Foreground="#8A8A8A"
+                            Text="يمتلك صلاحيات الإدارة الكاملة" />
+
+                    </StackPanel>
+
+                </StackPanel>
+
+            </CheckBox>
+
+        </StackPanel>
+
+    </Border>
+
+</UserControl>

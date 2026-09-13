@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Input;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Common.Extensions;
@@ -216,9 +217,9 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
         await _draftService.DeleteAsync(_draftContext);
 
         WeakReferenceMessenger.Default.Send(
-            new Messages.DraftDeletedMessage(_draftContext.Id));
+            new OrdersMessages.OrderDraftDeletedMessage(_draftContext.Id));
 
-        HandleOrderSuccess();
+        HandleOrderSuccess(result.Value);
 
         OnRequestClose();
     }
@@ -407,7 +408,7 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
             data);
 
         WeakReferenceMessenger.Default.Send(
-            new Messages.DraftSavedMessage(
+            new OrdersMessages.OrderDraftSavedMessage(
                 _draftContext.Id));
     }
 
@@ -461,9 +462,9 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
         _draftSaveCancellation = null;
     }
 
-    private void HandleOrderSuccess()
+    private void HandleOrderSuccess(int orderId)
     {
-        WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.OrderCreatedMessage());
+        WeakReferenceMessenger.Default.Send(new OrdersMessages.OrderCreatedMessage(orderId));
 
         PublishSuccessNotification("تم انشاء الطلب بنجاح");
     }

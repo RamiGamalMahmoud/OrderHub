@@ -219,7 +219,7 @@
                                         Margin="3,0"
                                         BorderThickness="0"
                                         Command="{Binding DataContext.EditUserCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                        CommandParameter="{Binding}"
+                                        CommandParameter="{Binding Id}"
                                         Cursor="Hand"
                                         ToolTip="تعديل">
 

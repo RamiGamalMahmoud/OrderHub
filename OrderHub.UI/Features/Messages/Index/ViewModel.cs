@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using OrderHub.Application.Common.Extensions;
@@ -51,26 +52,8 @@ public partial class ViewModel : ObservableObject
             ApplyFilter();
         });
 
-        WeakReferenceMessenger.Default.Register<Application.Messages.Orders.MessagesCreatedMessage>(this, (r, m) =>
-        {
-            foreach (OutboxMessage outboxMessage in m.OutboxMessages)
-            {
-                _allOutboxMessages.Insert(0, new OutboxMessageViewModel()
-                {
-                    Id = outboxMessage.Id,
-                    Status = new EnumItem<OutboxMessageStatus>(outboxMessage.Status, outboxMessage.Status.GetDescription()),
-                    RecipientName = outboxMessage.Recipient.Name,
-                    RecipientType = new EnumItem<RecipientType>(outboxMessage.RecipientType, outboxMessage.RecipientType.GetDescription()),
-                    OrderNumber = GetDisplayTitle(outboxMessage),
-                    Text = outboxMessage.Text,
-                    PhoneNumber = outboxMessage.Recipient.PhoneNumber,
-                    CreatedAt = outboxMessage.CreatedAt,
-                    LastAttemptAt = outboxMessage.LastAttemptAt,
-                });
-            }
-
-            ApplyFilter();
-        });
+        WeakReferenceMessenger.Default.Register<MessagesMessages.OutboxMessagesQueuedMessage>(
+            this, async (_, _) => await LoadAsync());
         _directoriesService = directoriesService;
     }
 

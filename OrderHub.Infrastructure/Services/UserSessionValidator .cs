@@ -1,23 +1,23 @@
-﻿using OrderHub.Application.Context;
+﻿using Microsoft.EntityFrameworkCore;
+using OrderHub.Application.Context;
 using OrderHub.Application.Interfaces.Services;
-using OrderHub.Application.Interfaces.Stores;
 using OrderHub.Domain.Models;
 using System.Threading.Tasks;
 
 namespace OrderHub.Infrastructure.Services;
 internal sealed class UserSessionValidator : IUserSessionValidator
 {
-    private readonly IUserRepository _userRepository;
+    private readonly AppDbContextFactory _dbContextFactory;
 
-    public UserSessionValidator(IUserRepository userRepository)
+    public UserSessionValidator(AppDbContextFactory appDbContextFactory)
     {
-        _userRepository = userRepository;
+        _dbContextFactory = appDbContextFactory;
     }
 
     public async Task<bool> IsValidAsync(UserSession session)
     {
-        User user = await _userRepository.GetByIdAsync(session.Id);
-
-        return user is not null && user.IsActive;
+        AppDbContext dbContext = _dbContextFactory.CreateDbContext();
+        return await dbContext.Users
+            .AnyAsync(x => x.Id == session.Id && x.IsActive);
     }
 }

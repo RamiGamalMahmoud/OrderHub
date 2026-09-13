@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Services;
@@ -24,7 +25,7 @@ public class ViewModel : Editor.ViewModel
         {
             NotificationService.Instance.ShowSuccess("تم إضافة القسم");
             OnRequestClose();
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Categories.CategoryCreatedMessage());
+            WeakReferenceMessenger.Default.Send(new CategoriesMessages.CategoryCreatedMessage());
         }
 
         else

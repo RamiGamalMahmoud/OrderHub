@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
@@ -20,12 +21,12 @@ internal partial class OrderDraftsDrawerViewModel : ObservableObject
     {
         _draftService = draftService;
 
-        WeakReferenceMessenger.Default.Register<OrderDraftsDrawerViewModel, Messages.DraftSavedMessage>(this, (r, m) =>
+        WeakReferenceMessenger.Default.Register<OrderDraftsDrawerViewModel, OrdersMessages.OrderDraftSavedMessage>(this, (r, m) =>
         {
             OnPropertyChanged(nameof(Drafts));
         });
 
-        WeakReferenceMessenger.Default.Register<OrderDraftsDrawerViewModel, Messages.DraftDeletedMessage>(this, (r, m) =>
+        WeakReferenceMessenger.Default.Register<OrderDraftsDrawerViewModel, OrdersMessages.OrderDraftDeletedMessage>(this, (r, m) =>
         {
             OnPropertyChanged(nameof(Drafts));
         });

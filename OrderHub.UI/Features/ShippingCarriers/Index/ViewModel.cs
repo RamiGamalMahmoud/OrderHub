@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
@@ -17,9 +18,9 @@ public partial class ViewModel : IndexViewModelBase<ShippingCarrierListDto>
 
     public ViewModel(IMediator mediator) : base(mediator)
     {
-        WeakReferenceMessenger.Default.Register<Application.Messages.ShippingCarriers.ShippingCarrierCreatedMessage>(this, async (_, _) => await ReloadAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.ShippingCarriers.ShippingCarrierUpdatedMessage>(this, async (_, _) => await ReloadAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.ShippingCarriers.ShippingCarrierDeletedMessage>(this, async (_, _) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<ShippingCarriersMessages.ShippingCarrierCreatedMessage>(this, async (_, _) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<ShippingCarriersMessages.ShippingCarrierUpdatedMessage>(this, async (_, _) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<ShippingCarriersMessages.ShippingCarrierDeletedMessage>(this, async (_, _) => await ReloadAsync());
     }
 
     protected override async Task DeleteAsync(ShippingCarrierListDto model)
@@ -31,7 +32,7 @@ public partial class ViewModel : IndexViewModelBase<ShippingCarrierListDto>
         {
             string message = MessageBuilder.Build(MessageBuilder.OperationType.Delete, true, "شركة شحن");
             NotificationService.Instance.ShowSuccess(message);
-            WeakReferenceMessenger.Default.Send(new Application.Messages.ShippingCarriers.ShippingCarrierDeletedMessage());
+            WeakReferenceMessenger.Default.Send(new ShippingCarriersMessages.ShippingCarrierDeletedMessage(model.Id));
         }
 
         else

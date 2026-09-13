@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Features.Suppliers.Editor;
@@ -28,7 +29,7 @@ public partial class ViewModel : EditSupplierViewModelBase
         if(result.IsSuccess)
         {
             NotificationService.Instance.ShowSuccess("تم إضافة المورد بنجاح");
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Suppliers.SupplierCreatedMessage());
+            WeakReferenceMessenger.Default.Send(new SuppliersMessages.SupplierCreatedMessage());
             OnRequestClose();
         }
         else

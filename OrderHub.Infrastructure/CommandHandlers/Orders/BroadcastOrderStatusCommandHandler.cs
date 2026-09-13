@@ -77,7 +77,6 @@
 //            try
 //            {
 //                await appDbContext.SaveChangesAsync(cancellationToken);
-//                WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.MessagesCreatedMessage(outboxMessages));
 //                return Result.Success();
 //            }
 //            catch (Exception)

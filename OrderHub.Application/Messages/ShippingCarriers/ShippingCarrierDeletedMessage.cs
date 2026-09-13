@@ -1,5 +1,0 @@
-﻿namespace OrderHub.Application.Messages.ShippingCarriers;
-
-public record ShippingCarrierDeletedMessage;
-public record ShippingCarrierCreatedMessage;
-public record ShippingCarrierUpdatedMessage;

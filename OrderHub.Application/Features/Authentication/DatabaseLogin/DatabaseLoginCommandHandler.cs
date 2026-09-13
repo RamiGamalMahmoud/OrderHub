@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using OrderHub.Application.Context;
+using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Application.Interfaces.Services;
-using OrderHub.Application.Interfaces.Stores;
 using OrderHub.Application.Services;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
@@ -30,7 +30,7 @@ internal class DatabaseLoginCommandHandler : IRequestHandler<DatabaseLoginComman
 
     public async Task<Result<UserInfoDto>> Handle(DatabaseLoginCommand request, CancellationToken cancellationToken)
     {
-        User user = await _userRepository.GetByUsername(request.UserName);
+        User user = await _userRepository.GetByUsernameAsync(request.UserName);
 
         if (user is null)
             return Result<UserInfoDto>.Failure("بيانات تسجيل الدخول غير صحيحة.");

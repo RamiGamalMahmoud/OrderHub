@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
@@ -22,27 +23,27 @@ public abstract partial class ViewModel : EditorViewModelBase, IDisposable
     {
         _mediator = mediator;
         _notifyPropertiesNames = [nameof(Name), nameof(SelectedCity), nameof(PhoneNumber), nameof(SelectedWhatsappGroup)];
-        WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityCreatedMessage>(this, async (r, m) =>
+        WeakReferenceMessenger.Default.Register<CitiesMessages.CityCreatedMessage>(this, async (r, m) =>
         {
             Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
         });
-        WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityUpdatedMessage>(this, async (r, m) =>
+        WeakReferenceMessenger.Default.Register<CitiesMessages.CityUpdatedMessage>(this, async (r, m) =>
         {
             Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
         });
-        WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityDeletedMessage>(this, async (r, m) =>
+        WeakReferenceMessenger.Default.Register<CitiesMessages.CityDeletedMessage>(this, async (r, m) =>
         {
             Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
         });
-        WeakReferenceMessenger.Default.Register<Application.Messages.WhatsappGroups.WhatsappGroupCreatedMessage>(this, async (r, m) =>
+        WeakReferenceMessenger.Default.Register<WhatsAppGroupsMessages.WhatsappGroupCreatedMessage>(this, async (r, m) =>
         {
             await LoadWhatsappGroupsAsync();
         });
-        WeakReferenceMessenger.Default.Register<Application.Messages.WhatsappGroups.WhatsappGroupUpdatedMessage>(this, async (r, m) =>
+        WeakReferenceMessenger.Default.Register<WhatsAppGroupsMessages.WhatsappGroupUpdatedMessage>(this, async (r, m) =>
         {
             await LoadWhatsappGroupsAsync();
         });
-        WeakReferenceMessenger.Default.Register<Application.Messages.WhatsappGroups.WhatsappGroupDeletedMessage>(this, async (r, m) =>
+        WeakReferenceMessenger.Default.Register<WhatsAppGroupsMessages.WhatsappGroupDeletedMessage>(this, async (r, m) =>
         {
             await LoadWhatsappGroupsAsync();
         });

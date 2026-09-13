@@ -79,6 +79,8 @@ public class User : ModelBase
         IsActive = false;
     }
 
+    public void SetActive(bool isActive) => IsActive = isActive;
+
     public void SetPermission(
         PermissionFeature feature,
         bool canRead,
@@ -91,7 +93,7 @@ public class User : ModelBase
         {
             _permissions.Add(
                 UserPermission.Create(
-                    Id,
+                    this,
                     feature,
                     canRead,
                     canWrite));
@@ -142,4 +144,6 @@ public class User : ModelBase
                 "Password hash is required.",
                 nameof(passwordHash));
     }
+
+    public void ClearPermissions() => _permissions.Clear();
 }

@@ -1,3 +1,4 @@
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
@@ -16,9 +17,9 @@ internal partial class WhatsappGroupsViewModel : IndexViewModelBase<WhatsappGrou
 
     public WhatsappGroupsViewModel(IMediator mediator) : base(mediator)
     {
-        WeakReferenceMessenger.Default.Register<Application.Messages.WhatsappGroups.WhatsappGroupCreatedMessage>(this, async (r, m) => await LoadAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.WhatsappGroups.WhatsappGroupUpdatedMessage>(this, async (r, m) => await LoadAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.WhatsappGroups.WhatsappGroupDeletedMessage>(this, async (r, m) => await LoadAsync());
+        WeakReferenceMessenger.Default.Register<WhatsAppGroupsMessages.WhatsappGroupCreatedMessage>(this, async (r, m) => await LoadAsync());
+        WeakReferenceMessenger.Default.Register<WhatsAppGroupsMessages.WhatsappGroupUpdatedMessage>(this, async (r, m) => await LoadAsync());
+        WeakReferenceMessenger.Default.Register<WhatsAppGroupsMessages.WhatsappGroupDeletedMessage>(this, async (r, m) => await LoadAsync());
     }
 
     protected override async Task LoadAsync()
@@ -48,7 +49,7 @@ internal partial class WhatsappGroupsViewModel : IndexViewModelBase<WhatsappGrou
             if(result.IsSuccess)
             {
                 NotificationService.Instance.ShowSuccess(MessageBuilder.Build(MessageBuilder.OperationType.Delete, true, "مجموعة الواتساب"));
-                WeakReferenceMessenger.Default.Send(new Application.Messages.WhatsappGroups.WhatsappGroupDeletedMessage());
+                WeakReferenceMessenger.Default.Send(new WhatsAppGroupsMessages.WhatsappGroupDeletedMessage(viewModel.Id));
                 await LoadAsync();
             }
             else

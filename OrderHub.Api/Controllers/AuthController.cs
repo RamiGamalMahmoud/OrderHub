@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using OrderHub.Application.Configuration;
+using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Application.Interfaces.Services;
-using OrderHub.Application.Interfaces.Stores;
 using OrderHub.Domain.Models;
 using System.Collections.Generic;
 using System.Threading;
@@ -30,7 +30,7 @@ public sealed class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
-        User? user = await _userRepository.GetByUsername(request.UserName);
+        User? user = await _userRepository.GetByUsernameAsync(request.UserName);
 
         if (user is null)
             return Unauthorized("بيانات تسجيل الدخول غير صحيحة.");

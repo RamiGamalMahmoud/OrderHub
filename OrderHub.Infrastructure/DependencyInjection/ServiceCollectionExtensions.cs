@@ -1,4 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
+using OrderHub.Application.Features.Administration.Users.GetUser;
+using OrderHub.Application.Features.Administration.Users.GetUsers;
+using OrderHub.Infrastructure.Features.Administration.Users;
 using OrderHub.Infrastructure.Features.OrderDrafts;
 using OrderHub.Infrastructure.Queries;
 using OrderHub.Infrastructure.ReadServices;
@@ -26,10 +29,11 @@ public static class ServiceCollectionExtensions
         services.AddIntegrations();
         services.AddServices();
 
-        services.AddTransient<Features.Administration.Users.UserReadService>();
+        services.AddTransient<UserReadService>();
 
-        services.AddTransient<OrderHub.Application.Features.Administration.Users.GetUsers.IUserListingService>(sp => 
-            sp.GetRequiredService<Features.Administration.Users.UserReadService>());
+        services.AddTransient<IUserListingService>(sp => sp.GetRequiredService<UserReadService>());
+
+        services.AddTransient<IUserDetailsService>(provider => provider.GetRequiredService<UserReadService>());
 
         return services;
     }
