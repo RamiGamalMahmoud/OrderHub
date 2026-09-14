@@ -2,6 +2,7 @@
 using OrderHub.Application;
 using OrderHub.Domain;
 using OrderHub.Infrastructure.DependencyInjection;
+using OrderHub.UI.Commands;
 
 namespace OrderHub.UI.DependencyInjection;
 
@@ -15,6 +16,7 @@ public static class ServiceCollectionExtensions
         services.AddUiServices();
         services.AddViewModels();
         services.AddViews();
+        services.AddCommands();
 
         return services;
     }

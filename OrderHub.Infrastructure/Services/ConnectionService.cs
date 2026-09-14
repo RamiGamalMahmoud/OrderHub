@@ -19,7 +19,7 @@ internal class ConnectionService : IConnectionService
 
     public event EventHandler<bool> ConnectionChanged;
 
-    public async Task Start()
+    public async Task StartAsync()
     {
         await _stateLock.WaitAsync();
 
@@ -39,7 +39,7 @@ internal class ConnectionService : IConnectionService
         }
     }
 
-    public async Task Stop()
+    public async Task StopAsync()
     {
         await _stateLock.WaitAsync();
 

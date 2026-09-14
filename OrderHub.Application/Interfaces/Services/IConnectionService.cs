@@ -7,6 +7,6 @@ public interface IConnectionService
 {
     event EventHandler<bool> ConnectionChanged;
     bool IsConnected { get; }
-    Task Start();
-    Task Stop();
+    Task StartAsync();
+    Task StopAsync();
 }

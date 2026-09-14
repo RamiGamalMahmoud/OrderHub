@@ -1,10 +1,9 @@
-using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
-using OrderHub.UI.Interfaces;
+using OrderHub.UI.Messaging;
 using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Linq;

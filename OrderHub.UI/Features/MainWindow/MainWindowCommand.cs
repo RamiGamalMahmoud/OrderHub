@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.Generic;
+using System.Windows.Input;
 
 namespace OrderHub.UI.Features.MainWindow;
 
@@ -11,5 +12,5 @@ internal record MainWindowCommand(
     bool IsEnabled = true,
     List<MainWindowCommand> ChildrenCommands = null)
 {
-    public RelayCommand RelayCommand { get; } = new RelayCommand(Action);
+    public ICommand Command { get; } = new RelayCommand(Action);
 }

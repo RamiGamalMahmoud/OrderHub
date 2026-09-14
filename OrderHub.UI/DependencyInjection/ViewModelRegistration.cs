@@ -6,7 +6,7 @@ internal static class ViewModelRegistration
     public static IServiceCollection AddViewModels(this IServiceCollection services)
     {
 
-        services.AddSingleton<Features.MainWindow.MainWindowViewModel>();
+        services.AddTransient<Features.MainWindow.MainWindowViewModel>();
         services.AddSingleton<Features.Orders.Index.OrderDraftsDrawerViewModel>();
         services.AddSingleton<Features.Home.HomeViewModel>();
         services.AddTransient<Features.Settings.ClientCredentialsSettings.ClientCredentialsSettingsViewModel>();

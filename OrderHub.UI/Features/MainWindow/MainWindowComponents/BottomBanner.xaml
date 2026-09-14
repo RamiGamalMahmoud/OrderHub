@@ -2,11 +2,13 @@
     x:Class="OrderHub.UI.Features.MainWindow.MainWindowComponents.BottomBanner"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:commands="clr-namespace:OrderHub.UI.Commands"
     xmlns:converters="clr-namespace:Hoax.WpfConverters;assembly=Hoax.WpfConverters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:local="clr-namespace:OrderHub.UI.Features.MainWindow.MainWindowComponents"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:states="clr-namespace:OrderHub.UI.States"
     xmlns:viewModel="clr-namespace:OrderHub.UI.Features.MainWindow"
     d:DataContext="{d:DesignInstance Type=viewModel:MainWindowViewModel}"
     FlowDirection="RightToLeft"
@@ -23,13 +25,13 @@
 
             <Style.Triggers>
 
-                <DataTrigger Binding="{Binding IsAuthenticated}" Value="True">
+                <DataTrigger Binding="{Binding Source={x:Static states:AppState.Instance}, Path=Salla.IsAuthenticated}" Value="True">
                     <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
                     <Setter Property="ToolTip" Value="متصل بـ Salla" />
                     <Setter Property="Kind" Value="Basket" />
                 </DataTrigger>
 
-                <DataTrigger Binding="{Binding IsAuthenticated}" Value="False">
+                <DataTrigger Binding="{Binding Source={x:Static states:AppState.Instance}, Path=Salla.IsAuthenticated}" Value="False">
                     <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
                     <Setter Property="ToolTip" Value="غير متصل بـ Salla" />
                     <Setter Property="Kind" Value="BasketOff" />
@@ -156,6 +158,63 @@
 
             </Button>
 
+            <!--  =========================================================  -->
+            <!--  Navigation  -->
+            <!--  =========================================================  -->
+
+            <Border
+                Grid.Column="1"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Background="#F9FAFB"
+                BorderBrush="#E5E7EB"
+                BorderThickness="1"
+                CornerRadius="5">
+
+                <StackPanel Orientation="Horizontal">
+
+                    <Button
+                        Width="30"
+                        Height="28"
+                        Padding="0"
+                        BorderThickness="0"
+                        Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Navigation.GoBackCommand}"
+                        Cursor="Hand"
+                        ToolTip="رجوع">
+
+                        <icons:MaterialIcon
+                            Width="17"
+                            Height="17"
+                            Foreground="#4B5563"
+                            Kind="ArrowRight" />
+
+                    </Button>
+
+                    <Border
+                        Width="1"
+                        Margin="0,5"
+                        Background="#E5E7EB" />
+
+                    <Button
+                        Width="30"
+                        Height="28"
+                        Padding="0"
+                        BorderThickness="0"
+                        Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Navigation.GoForwardCommand}"
+                        Cursor="Hand"
+                        ToolTip="تقدم">
+
+                        <icons:MaterialIcon
+                            Width="17"
+                            Height="17"
+                            Foreground="#4B5563"
+                            Kind="ArrowLeft" />
+
+                    </Button>
+
+                </StackPanel>
+
+            </Border>
 
             <!--  =========================================================  -->
             <!--  Update  -->
@@ -165,7 +224,7 @@
                 Grid.Column="1"
                 Margin="20,0"
                 VerticalAlignment="Center"
-                Visibility="{Binding CanUpdate, Converter={converters:BoolToVisibilityConverter}}">
+                Visibility="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Update.CanUpdate, Converter={converters:BoolToVisibilityConverter}}">
 
                 <StackPanel
                     HorizontalAlignment="Center"
@@ -194,10 +253,10 @@
                         Height="25"
                         Padding="8,0"
                         BorderThickness="0"
-                        Command="{Binding UpdateCommand}"
+                        Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Update.UpdateCommand}"
                         Cursor="Hand"
                         Style="{StaticResource ButtonInfo}"
-                        Visibility="{Binding IsUpdating, Converter={converters:BoolToVisibilityConverter ForTrue=Collapsed, ForFalse=Visible}}">
+                        Visibility="{Binding Source={x:Static states:AppState.Instance}, Path=Update.IsUpdating, Converter={converters:BoolToVisibilityConverter ForTrue=Collapsed, ForFalse=Visible}}">
 
                         <StackPanel Orientation="Horizontal">
 
@@ -225,8 +284,8 @@
                         Margin="10,0,0,0"
                         Maximum="100"
                         Minimum="0"
-                        Visibility="{Binding IsUpdating, Converter={converters:BoolToVisibilityConverter}}"
-                        Value="{Binding UpdateProgress}" />
+                        Visibility="{Binding Source={x:Static states:AppState.Instance}, Path=Update.IsUpdating, Converter={converters:BoolToVisibilityConverter}}"
+                        Value="{Binding Source={x:Static states:AppState.Instance}, Path=Update.Progress, Mode=OneWay}" />
 
                     <!--  Cancel  -->
 
@@ -235,10 +294,10 @@
                         Margin="10,0,0,0"
                         Padding="8,0"
                         BorderThickness="0"
-                        Command="{Binding CancelUpdateCommand}"
+                        Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Update.CancelUpdateCommand}"
                         Cursor="Hand"
                         Style="{StaticResource ButtonDashedDanger}"
-                        Visibility="{Binding IsUpdating, Converter={converters:BoolToVisibilityConverter}}">
+                        Visibility="{Binding Source={x:Static states:AppState.Instance}, Path=Update.IsUpdating, Converter={converters:BoolToVisibilityConverter}}">
 
                         <StackPanel Orientation="Horizontal">
 
@@ -319,7 +378,7 @@
                     Padding="7,0"
                     Background="Transparent"
                     BorderThickness="0"
-                    Command="{Binding OpenDataFolderCommand}"
+                    Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Application.OpenDataFolderCommand}"
                     Cursor="Hand"
                     Foreground="#4B5563">
 
@@ -360,13 +419,13 @@
 
                                     <Style.Triggers>
 
-                                        <DataTrigger Binding="{Binding AppState.IsConnected}" Value="True">
+                                        <DataTrigger Binding="{Binding Source={x:Static states:AppState.Instance}, Path=Connection.IsConnected}" Value="True">
 
                                             <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
 
                                         </DataTrigger>
 
-                                        <DataTrigger Binding="{Binding AppState.IsConnected}" Value="False">
+                                        <DataTrigger Binding="{Binding Source={x:Static states:AppState.Instance}, Path=Connection.IsConnected}" Value="False">
 
                                             <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
 
@@ -401,7 +460,7 @@
                     Padding="0"
                     Background="Transparent"
                     BorderThickness="0"
-                    Command="{Binding LoginSallaCommand}"
+                    Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Salla.LoginCommand}"
                     Cursor="Hand"
                     Visibility="{Binding IsAppInDebug, Converter={converters:BoolToVisibilityConverter}}">
 
@@ -426,7 +485,7 @@
                     Padding="8,0"
                     Background="Transparent"
                     BorderThickness="0"
-                    Command="{Binding LogoutCommand}"
+                    Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Auth.LogoutCommand}"
                     Cursor="Hand"
                     Foreground="{StaticResource DangerBrush}">
 

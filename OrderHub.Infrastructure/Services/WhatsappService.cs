@@ -180,7 +180,7 @@ internal class WhatsappService : IWhatsappService, IMessageSender
         }
     }
 
-    public void Close()
+    public void Stop()
     {
         CloseDriver();
     }

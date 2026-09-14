@@ -3,9 +3,11 @@ using Microsoft.Extensions.Hosting;
 using Notification.Wpf;
 using OrderHub.Application.Infrastructure.Connection;
 using OrderHub.Application.Interfaces.Services;
+using OrderHub.UI.Commands;
 using OrderHub.UI.DependencyInjection;
 using OrderHub.UI.Services;
 using OrderHub.UI.StartUpSteps;
+using OrderHub.UI.States;
 using QuestPDF.Infrastructure;
 using System;
 using System.Globalization;
@@ -34,6 +36,19 @@ public partial class App : System.Windows.Application
         DialogService.Init(_host.Services);
         NavigationService.Init(_host.Services);
         NotificationService.Initialize(_host.Services.GetRequiredService<INotificationManager>());
+        AppCommands.SetInstance(_host.Services.GetRequiredService<IAppCommands>());
+        AppState.SetInstance(_host.Services.GetRequiredService<IAppState>());
+
+        RegisterApplicationResources();
+    }
+
+    private void RegisterApplicationResources()
+    {
+        Resources["AppCommands"] =
+            _host.Services.GetRequiredService<IAppCommands>();
+
+        Resources["AppState"] =
+            _host.Services.GetRequiredService<AppState>();
     }
 
     protected override void OnStartup(StartupEventArgs e)
@@ -150,7 +165,7 @@ public partial class App : System.Windows.Application
     {
         base.OnExit(e);
         await GetService<IMessageService>().StopAsync();
-        GetService<IWhatsappService>().Close();
+        GetService<IWhatsappService>().Stop();
         await _host.StopAsync();
     }
 

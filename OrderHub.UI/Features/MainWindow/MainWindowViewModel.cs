@@ -1,182 +1,32 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using MediatR;
 using OrderHub.Application.Context;
-using OrderHub.Application.Features.Authentication.Logout;
-using OrderHub.Application.Interfaces.Services;
-using OrderHub.UI.Services;
-using System;
-using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace OrderHub.UI.Features.MainWindow;
 
 internal partial class MainWindowViewModel : ObservableObject
 {
-    private CancellationTokenSource _updatingCTS;
-    private readonly ISessionManager _sessionManager;
-    private readonly IMediator _mediator;
-    private readonly IApplicationDirectoriesService _applicationDirectoriesService;
-    private readonly IWhatsappService _whatsappService;
-    private readonly IMessageService _messageService;
-    private readonly IApplicationInitializationService _applicationInitializationService;
-    private readonly IUpdateService _updateService;
-
     public MainWindowViewModel(
-        ISessionManager sessionManager,
-        IMediator mediator,
-        IWhatsappService whatsappService,
-        IMessageService messageService,
-        IAppState appState,
-        IApplicationDirectoriesService applicationDirectoriesService,
-        IApplicationContext applicationContext,
-        IApplicationInitializationService applicationInitializationService,
-        IUpdateService updateService)
+        IApplicationContext applicationContext)
     {
-        _sessionManager = sessionManager;
-        _mediator = mediator;
-        _whatsappService = whatsappService;
-        _messageService = messageService;
-        _applicationDirectoriesService = applicationDirectoriesService;
-        AppState = appState;
-        IsAuthenticated = !_sessionManager.CurrentSession?.Token?.IsExpired ?? false;
         ApplicationContext = applicationContext;
-        _applicationInitializationService = applicationInitializationService;
-        _updateService = updateService;
+
+        Commands = new MainWindowCommands(applicationContext);
     }
 
-    public MainWindowCommands Commads { get; } = new MainWindowCommands();
+    public MainWindowCommands Commands { get; }
 
-    public string Title => $"OrderHub - {ApplicationContext.Application.InstallationType} - v{ApplicationContext.Application.Version}";
+    public IApplicationContext ApplicationContext { get; }
 
-    [RelayCommand]
-    private async Task LoginSalla()
-    {
-        IsAuthenticated = await _mediator.Send(new Application.Commands.AuthCommand());
-        if (!IsAuthenticated)
-        {
-            await DialogService.Instance.ShowDialog<Settings.ClientCredentialsSettings.ClientCredentialsSettingsView>("إعدادات الاتصال بسلة");
-        }
-    }
-
-    [RelayCommand]
-    private void OpenDataFolder()
-    {
-        Process.Start(new ProcessStartInfo()
-        {
-            FileName = _applicationDirectoriesService.DataDirectory,
-            UseShellExecute = true,
-            Verb = "open"
-        });
-    }
-
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(LoginSallaCommand))]
-    private bool _isAuthenticated = false;
-
-    [RelayCommand]
-    private async Task OpenWhatapp()
-    {
-        bool started = await _whatsappService.StartWhatsAppAsync();
-        if (!started)
-        {
-            NotificationService.Instance.ShowError("تعذر تشغيل واتساب ويب.");
-            return;
-        }
-
-        await _messageService.StartAsync();
-        NotificationService.Instance.ShowSuccess("تم تشغيل واتساب ويب وخدمة الرسائل.");
-    }
-
-    [RelayCommand]
-    private async Task Logout()
-    {
-        await _mediator.Send(new LogoutCommand());
-        await _applicationInitializationService.InitializeAsync();
-    }
-
-    public bool CanUpdate =>
-        ApplicationContext.Update is not null &&
-        ApplicationContext.Update.NeedToUpdate;
-
-    [RelayCommand(CanExecute = nameof(CanUpdate))]
-    private async Task Update()
-    {
-        bool update = await DialogService.Instance.ConfirmAsync(
-            """
-            يتوفر إصدار جديد من البرنامج. هل تريد تنزيل التحديث وتثبيته الآن؟
-            """);
-        if (!update)
-            return;
-        _updatingCTS = new CancellationTokenSource();
-        IsUpdating = true;
-
-        var progress = new Progress<double>(value =>
-        {
-            UpdateProgress = value;
-        });
-
-
-
-        try
-        {
-            string installPath = await _updateService.DownloadUpdateAsync(ApplicationContext.Update, progress, _updatingCTS.Token);
-            _updateService.RunInstaller(installPath);
-        }
-        catch (OperationCanceledException)
-        {
-            UpdateProgress = 0;
-        }
-        catch (Exception)
-        {
-            // Actual download error
-        }
-
-        IsUpdating = false;
-    }
-
-    [RelayCommand]
-    private async Task CancelUpdate()
-    {
-        if (!IsUpdating || _updatingCTS is null)
-            return;
-
-        bool cancelUpdate = await DialogService.Instance.ConfirmAsync(
-            """
-            هل أنت متأكد من إلغاء التحديث؟ سيتم إيقاف عملية التنزيل الحالية ولن يتم تثبيت الإصدار الجديد.
-            """);
-
-        if (!cancelUpdate)
-            return;
-
-        await _updatingCTS.CancelAsync();
-
-
-    }
-
-    [ObservableProperty]
-    private bool _isUpdating;
-
-    private double _updateProgress;
-
-    public double UpdateProgress
-    {
-        get => _updateProgress;
-        set => SetProperty(ref _updateProgress, value);
-    }
+    public string Title =>
+        $"OrderHub - {ApplicationContext.Application.InstallationType} - v{ApplicationContext.Application.Version}";
 
     [ObservableProperty]
     private string _message;
 
     public bool IsAppInDebug =>
 #if DEBUG
-    true;
+        true;
 #else
-    false;
+        false;
 #endif
-
-    public NavigationService NavigationService => NavigationService.Instance;
-    public IAppState AppState { get; }
-    public IApplicationContext ApplicationContext { get; }
 }

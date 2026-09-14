@@ -309,7 +309,7 @@ internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSend
         };
     }
 
-    public void Close()
+    public void Stop()
     {
         try
         {

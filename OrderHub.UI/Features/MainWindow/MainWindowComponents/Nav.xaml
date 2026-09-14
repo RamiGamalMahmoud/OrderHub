@@ -14,8 +14,8 @@
 
     <ListBox
         Grid.Row="1"
-        ItemsSource="{Binding Commads.NavigationCommands}"
-        SelectedItem="{Binding Commads.SelectedCommand}">
+        ItemsSource="{Binding Commands.NavigationCommands}"
+        SelectedItem="{Binding Commands.SelectedCommand}">
 
         <ListBox.ItemContainerStyle>
             <Style BasedOn="{StaticResource ListBoxItemBaseStyle}" TargetType="ListBoxItem">

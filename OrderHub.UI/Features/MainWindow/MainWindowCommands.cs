@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using OrderHub.Application.Context;
 using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -6,10 +7,14 @@ using System.Collections.ObjectModel;
 namespace OrderHub.UI.Features.MainWindow;
 internal partial class MainWindowCommands : ObservableObject
 {
-    public MainWindowCommands()
+    private readonly IApplicationContext _applicationContext;
+
+    public MainWindowCommands(IApplicationContext applicationContext)
     {
+        _applicationContext = applicationContext;
         InitializeNavigationCommands();
     }
+
     public ObservableCollection<MainWindowCommand> NavigationCommands { get; } = [];
     [ObservableProperty]
     private IEnumerable<MainWindowCommand> _childrenCommands;
@@ -22,7 +27,8 @@ internal partial class MainWindowCommands : ObservableObject
         if (value is null)
             return;
 
-        value.Action?.Invoke();
+        if (value.Command.CanExecute(null))
+            value.Command.Execute(null);
         ChildrenCommands = value.ChildrenCommands;
     }
 
@@ -36,7 +42,8 @@ internal partial class MainWindowCommands : ObservableObject
         NavigationCommands.Add(new MainWindowCommand(
             "الطلبات",
             "ListBox",
-            () => NavigationService.Instance.NavigateTo<Features.Orders.Index.View>()));
+            () => NavigationService.Instance.NavigateTo<Features.Orders.Index.View>(),
+            _applicationContext.User.IsAdmin));
 
         NavigationCommands.Add(new MainWindowCommand(
             "المنتجات",
@@ -90,8 +97,8 @@ internal partial class MainWindowCommands : ObservableObject
 
         NavigationCommands.Add(new MainWindowCommand(
             "إدارة المستخدمون",
-            "",
-            () => 
+            "AccountGroup",
+            () =>
             NavigationService.Instance.NavigateTo<Features.Administration.Users.List.UsersView>()));
     }
 

@@ -6,7 +6,7 @@ internal static class ViewRegistration
     public static IServiceCollection AddViews(this IServiceCollection services)
     {
         services.AddSingleton<Features.NotFoundView>();
-        services.AddSingleton<Features.MainWindow.MainWindowView>();
+        services.AddTransient<Features.MainWindow.MainWindowView>();
         services.AddTransient<Features.Settings.ClientCredentialsSettings.ClientCredentialsSettingsView>();
         services.AddSingleton<Features.Home.HomeView>();
         services.AddSingleton<Features.Splash>();
