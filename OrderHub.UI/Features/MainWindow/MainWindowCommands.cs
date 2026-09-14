@@ -1,6 +1,6 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using OrderHub.Application.Context;
-using OrderHub.UI.Services;
+using OrderHub.UI.Commands;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
@@ -8,10 +8,15 @@ namespace OrderHub.UI.Features.MainWindow;
 internal partial class MainWindowCommands : ObservableObject
 {
     private readonly IApplicationContext _applicationContext;
+    private readonly IAppCommands _appCommands;
 
-    public MainWindowCommands(IApplicationContext applicationContext)
+    public MainWindowCommands(
+        IApplicationContext applicationContext,
+        IAppCommands appCommands)
     {
         _applicationContext = applicationContext;
+        _appCommands = appCommands;
+
         InitializeNavigationCommands();
     }
 
@@ -37,69 +42,68 @@ internal partial class MainWindowCommands : ObservableObject
         NavigationCommands.Add(new MainWindowCommand(
             "لوحة التحكم",
             "ViewDashboard",
-            () => NavigationService.Instance.NavigateTo<Features.Dashboard.DashboardView>()));
+            _appCommands.Dashboard.OpenCommand));
 
         NavigationCommands.Add(new MainWindowCommand(
             "الطلبات",
             "ListBox",
-            () => NavigationService.Instance.NavigateTo<Features.Orders.Index.View>(),
+            _appCommands.Orders.OpenCommand,
             _applicationContext.User.IsAdmin));
 
         NavigationCommands.Add(new MainWindowCommand(
             "المنتجات",
             "Factory",
-            () => NavigationService.Instance.NavigateTo<Features.Products.Index.View>()));
+            _appCommands.Products.OpenCommand));
 
         NavigationCommands.Add(new MainWindowCommand(
             "الأقسام",
             "Factory",
-            () => NavigationService.Instance.NavigateTo<Features.Categories.Index.View>()));
+            _appCommands.Categories.OpenCommand));
 
         NavigationCommands.Add(new MainWindowCommand(
             "المدن",
             "MapMarker",
-            () => NavigationService.Instance.NavigateTo<Features.Cities.Index.View>()));
+            _appCommands.Cities.OpenCommand));
 
         NavigationCommands.Add(new MainWindowCommand(
             "العملاء",
             "AccountTie",
-            () => NavigationService.Instance.NavigateTo<Features.Clients.Index.View>()));
+            _appCommands.Clients.OpenCommand));
 
         NavigationCommands.Add(new MainWindowCommand(
             "الموردون",
             "BadgeAccount",
-            () => NavigationService.Instance.NavigateTo<Features.Suppliers.Index.View>()));
+            _appCommands.Suppliers.OpenCommand));
 
         NavigationCommands.Add(new MainWindowCommand(
             "شركات الشحن",
             "Ship",
-            () => NavigationService.Instance.NavigateTo<Features.ShippingCarriers.Index.View>()));
+            _appCommands.ShippingCarriers.OpenCommand));
 
         NavigationCommands.Add(new MainWindowCommand(
             "المناديب",
             "Moped",
-            () => NavigationService.Instance.NavigateTo<Features.Deliverymen.Index.View>()));
+            _appCommands.Deliverymen.OpenCommand));
 
         NavigationCommands.Add(new MainWindowCommand(
             "مجموعات الواتساب",
             "Whatsapp",
-            () => NavigationService.Instance.NavigateTo<Features.WhatsappGroups.Index.View>()));
+            _appCommands.WhatsappGroups.OpenCommand));
 
         NavigationCommands.Add(new MainWindowCommand(
             "سجل الرسائل",
             "MessageMinusOutline",
-            () => NavigationService.Instance.NavigateTo<Features.Messages.Index.View>()));
+            _appCommands.Messages.OpenCommand));
 
         NavigationCommands.Add(new MainWindowCommand(
             "الإعدادات",
             "CogOutline",
-            () => NavigationService.Instance.NavigateTo<Features.Settings.Home.SettingsHomeView>()));
+            _appCommands.Settings.OpenCommand));
 
         NavigationCommands.Add(new MainWindowCommand(
             "إدارة المستخدمون",
             "AccountGroup",
-            () =>
-            NavigationService.Instance.NavigateTo<Features.Administration.Users.List.UsersView>()));
+            _appCommands.Users.OpenCommand));
     }
 
 }

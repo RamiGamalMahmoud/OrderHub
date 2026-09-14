@@ -7,6 +7,7 @@
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:local="clr-namespace:OrderHub.UI.Features.MainWindow.MainWindowComponents"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:states="clr-namespace:OrderHub.UI.States"
     mc:Ignorable="d">
 
     <Border
@@ -60,7 +61,7 @@
                 FontSize="13"
                 FontWeight="SemiBold"
                 Foreground="White"
-                IsEnabled="{Binding AppState.Connection.IsConnected}">
+                IsEnabled="{Binding Source={x:Static states:AppState.Instance}, Path=Connection.IsConnected}">
 
                 <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
 

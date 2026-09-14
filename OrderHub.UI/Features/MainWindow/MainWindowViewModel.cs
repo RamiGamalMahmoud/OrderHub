@@ -1,16 +1,18 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using OrderHub.Application.Context;
+using OrderHub.UI.Commands;
 
 namespace OrderHub.UI.Features.MainWindow;
 
 internal partial class MainWindowViewModel : ObservableObject
 {
     public MainWindowViewModel(
-        IApplicationContext applicationContext)
+        IApplicationContext applicationContext,
+        IAppCommands appCommands)
     {
         ApplicationContext = applicationContext;
 
-        Commands = new MainWindowCommands(applicationContext);
+        Commands = new MainWindowCommands(applicationContext, appCommands);
     }
 
     public MainWindowCommands Commands { get; }

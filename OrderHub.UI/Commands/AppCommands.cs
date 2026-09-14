@@ -1,4 +1,4 @@
-﻿namespace OrderHub.UI.Commands;
+namespace OrderHub.UI.Commands;
 
 public sealed class AppCommands : IAppCommands
 {
@@ -8,7 +8,20 @@ public sealed class AppCommands : IAppCommands
         UpdateCommands update,
         SallaCommands salla,
         WhatsappCommands whatsapp,
-        ApplicationCommands application)
+        ApplicationCommands application,
+        DashboardCommands dashboard,
+        OrdersCommands orders,
+        ProductsCommands products,
+        CategoriesCommands categories,
+        CitiesCommands cities,
+        ClientsCommands clients,
+        SuppliersCommands suppliers,
+        ShippingCarriersCommands shippingCarriers,
+        DeliverymenCommands deliverymen,
+        WhatsappGroupsCommands whatsappGroups,
+        MessagesCommands messages,
+        SettingsCommands settings,
+        UsersCommands users)
     {
         Auth = auth;
         Navigation = navigation;
@@ -16,6 +29,19 @@ public sealed class AppCommands : IAppCommands
         Salla = salla;
         Whatsapp = whatsapp;
         Application = application;
+        Dashboard = dashboard;
+        Orders = orders;
+        Products = products;
+        Categories = categories;
+        Cities = cities;
+        Clients = clients;
+        Suppliers = suppliers;
+        ShippingCarriers = shippingCarriers;
+        Deliverymen = deliverymen;
+        WhatsappGroups = whatsappGroups;
+        Messages = messages;
+        Settings = settings;
+        Users = users;
     }
 
     public static IAppCommands Instance { get; private set; } = null!;
@@ -26,6 +52,19 @@ public sealed class AppCommands : IAppCommands
     public SallaCommands Salla { get; }
     public WhatsappCommands Whatsapp { get; }
     public ApplicationCommands Application { get; }
+    public DashboardCommands Dashboard { get; }
+    public OrdersCommands Orders { get; }
+    public ProductsCommands Products { get; }
+    public CategoriesCommands Categories { get; }
+    public CitiesCommands Cities { get; }
+    public ClientsCommands Clients { get; }
+    public SuppliersCommands Suppliers { get; }
+    public ShippingCarriersCommands ShippingCarriers { get; }
+    public DeliverymenCommands Deliverymen { get; }
+    public WhatsappGroupsCommands WhatsappGroups { get; }
+    public MessagesCommands Messages { get; }
+    public SettingsCommands Settings { get; }
+    public UsersCommands Users { get; }
 
     public static void SetInstance(IAppCommands instance)
     {
