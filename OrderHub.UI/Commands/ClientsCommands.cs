@@ -1,12 +1,21 @@
-using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using OrderHub.Application.Interfaces.Services;
+using OrderHub.Domain.Enums;
 using OrderHub.UI.Services;
 
 namespace OrderHub.UI.Commands;
 
-public partial class ClientsCommands : ObservableObject, ICommandGroup
+public partial class ClientsCommands : AuthorizableCommandGroup, ICommandGroup
 {
-    [RelayCommand]
+    public ClientsCommands(IAuthorizationService authorization)
+        : base(authorization)
+    {
+        RegisterAuthorizableCommands(OpenCommand);
+    }
+
+    private bool CanRead => Authorization.CanRead(PermissionFeature.Clients);
+
+    [RelayCommand(CanExecute = nameof(CanRead))]
     private void Open()
     {
         NavigationService.Instance

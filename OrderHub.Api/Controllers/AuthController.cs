@@ -2,8 +2,10 @@
 using OrderHub.Application.Configuration;
 using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Application.Interfaces.Services;
+using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -63,7 +65,12 @@ public sealed class AuthController : ControllerBase
                 user.Id,
                 user.UserName,
                 user.DisplayName,
-                user.IsActive));
+                user.IsActive,
+                user.Permissions.Select(permission => new UserPermissionInfo(
+                    permission.Feature,
+                    permission.CanRead,
+                    permission.CanWrite))
+                .ToList()));
 
         return Ok(response);
     }
@@ -88,4 +95,10 @@ public sealed record UserInfo(
     int Id,
     string UserName,
     string DisplayName,
-    bool IsActive);
+    bool IsAdmin,
+    IReadOnlyCollection<UserPermissionInfo> UserPermissions);
+
+public sealed record UserPermissionInfo(
+    PermissionFeature Feature,
+    bool CanRead,
+    bool CanWrite);

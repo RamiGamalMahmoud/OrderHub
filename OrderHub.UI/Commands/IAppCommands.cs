@@ -20,4 +20,5 @@ public interface IAppCommands
     MessagesCommands Messages { get; }
     SettingsCommands Settings { get; }
     UsersCommands Users { get; }
+    DocumentsCommands Documents { get; }
 }

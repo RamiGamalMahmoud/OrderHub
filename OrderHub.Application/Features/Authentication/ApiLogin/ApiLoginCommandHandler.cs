@@ -3,6 +3,7 @@ using OrderHub.Application.Context;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Application.Services;
 using OrderHub.Domain.Common;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading;
@@ -68,7 +69,12 @@ internal class ApiLoginCommandHandler : IRequestHandler<ApiLoginCommand, Result<
             authResponse.UserInfo.Id,
             authResponse.UserInfo.UserName,
             authResponse.UserInfo.DisplayName,
-            authResponse.UserInfo.IsAdmin);
+            authResponse.UserInfo.IsAdmin,
+            authResponse.UserInfo.UserPermissions.Select(permission => new UserPermissionSession(
+                permission.Feature,
+                permission.CanRead,
+                permission.CanWrite))
+            .ToList());
 
         _applicationContext.SetUser(userSession);
 

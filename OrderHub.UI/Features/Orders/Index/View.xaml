@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:buttons="clr-namespace:OrderHub.UI.Components.Buttons"
+    xmlns:commands="clr-namespace:OrderHub.UI.Commands"
     xmlns:converters="clr-namespace:Hoax.WpfConverters;assembly=Hoax.WpfConverters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:hc="https://handyorg.github.io/handycontrol"
@@ -117,9 +118,10 @@
                         Height="30"
                         hc:BorderElement.CornerRadius="7"
                         Background="#facc15"
-                        Command="{Binding ShowCreateCommand}"
+                        Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Orders.CreateCommand}"
                         Cursor="Hand"
-                        Foreground="Black">
+                        Foreground="Black"
+                        Visibility="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsEnabled, Converter={converters:BoolToVisibilityConverter}}">
                         <StackPanel Orientation="Horizontal">
                             <icons:MaterialIcon
                                 Width="20"

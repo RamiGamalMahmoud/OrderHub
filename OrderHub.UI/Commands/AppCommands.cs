@@ -11,6 +11,7 @@ public sealed class AppCommands : IAppCommands
         ApplicationCommands application,
         DashboardCommands dashboard,
         OrdersCommands orders,
+        DocumentsCommands documents,
         ProductsCommands products,
         CategoriesCommands categories,
         CitiesCommands cities,
@@ -31,6 +32,7 @@ public sealed class AppCommands : IAppCommands
         Application = application;
         Dashboard = dashboard;
         Orders = orders;
+        Documents = documents;
         Products = products;
         Categories = categories;
         Cities = cities;
@@ -54,6 +56,7 @@ public sealed class AppCommands : IAppCommands
     public ApplicationCommands Application { get; }
     public DashboardCommands Dashboard { get; }
     public OrdersCommands Orders { get; }
+    public DocumentsCommands Documents { get; }
     public ProductsCommands Products { get; }
     public CategoriesCommands Categories { get; }
     public CitiesCommands Cities { get; }

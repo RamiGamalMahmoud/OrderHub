@@ -1,4 +1,5 @@
 ﻿using OrderHub.Application.Interfaces.Services;
+using System;
 
 namespace OrderHub.Application.Context;
 public interface IApplicationContext
@@ -8,6 +9,7 @@ public interface IApplicationContext
     ConnectionState Connection { get; }
 
     UserSession User { get; }
+    event EventHandler UserChanged;
 
     UpdateInfo Update { get; }
 

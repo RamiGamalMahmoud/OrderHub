@@ -5,6 +5,7 @@ using OrderHub.Application.Interfaces.Services;
 using OrderHub.Application.Services;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -42,7 +43,12 @@ internal class DatabaseLoginCommandHandler : IRequestHandler<DatabaseLoginComman
             user.Id,
             user.UserName,
             user.DisplayName,
-            user.IsAdmin);
+            user.IsAdmin,
+            user.Permissions.Select(permission => new UserPermissionSession(
+                permission.Feature,
+                permission.CanRead,
+                permission.CanWrite))
+            .ToList());
 
         _applicationContext.SetUser(userSession);
 

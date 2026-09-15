@@ -47,8 +47,7 @@ internal partial class MainWindowCommands : ObservableObject
         NavigationCommands.Add(new MainWindowCommand(
             "الطلبات",
             "ListBox",
-            _appCommands.Orders.OpenCommand,
-            _applicationContext.User.IsAdmin));
+            _appCommands.Orders.OpenCommand));
 
         NavigationCommands.Add(new MainWindowCommand(
             "المنتجات",

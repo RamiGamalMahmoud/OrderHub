@@ -3,9 +3,623 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    d:DesignHeight="720"
+    d:DesignWidth="1100"
     mc:Ignorable="d">
 
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" />
+    <UserControl.Resources>
+
+        <!--  Card  -->
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="BorderBrush" Value="#E8ECF2" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="18" />
+        </Style>
+
+        <!--  Quick Action Button  -->
+        <Style x:Key="QuickActionButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="54" />
+            <Setter Property="Padding" Value="16,0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="White" />
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            x:Name="Border"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="10">
+
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Opacity" Value="0.88" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+
+        <Grid Margin="24">
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="20" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="20" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="20" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!--  =========================  -->
+            <!--  Header  -->
+            <!--  =========================  -->
+
+            <Grid>
+
+                <StackPanel>
+                    <TextBlock
+                        FontSize="26"
+                        FontWeight="SemiBold"
+                        Foreground="#172033"
+                        Text="لوحة التحكم" />
+
+                    <TextBlock
+                        Margin="0,5,0,0"
+                        FontSize="13"
+                        Foreground="#7A8496"
+                        Text="نظرة سريعة على حالة العمل اليوم" />
+                </StackPanel>
+
+                <Border
+                    Padding="12,7"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Background="#EAF8F1"
+                    CornerRadius="15">
+
+                    <StackPanel Orientation="Horizontal">
+
+                        <Ellipse
+                            Width="8"
+                            Height="8"
+                            Margin="0,0,7,0"
+                            Fill="#22A06B" />
+
+                        <TextBlock
+                            FontSize="12"
+                            Foreground="#168556"
+                            Text="النظام يعمل بشكل طبيعي" />
+
+                    </StackPanel>
+
+                </Border>
+
+            </Grid>
+
+            <!--  =========================  -->
+            <!--  Quick Actions  -->
+            <!--  =========================  -->
+
+            <UniformGrid Grid.Row="2" Columns="4">
+
+                <!--  New Order  -->
+                <Button
+                    Margin="0,0,8,0"
+                    Background="#3B82F6"
+                    Style="{StaticResource QuickActionButtonStyle}">
+
+                    <StackPanel Orientation="Horizontal">
+
+                        <icons:MaterialIcon
+                            Width="21"
+                            Height="21"
+                            Margin="0,0,9,0"
+                            Kind="CartPlus" />
+
+                        <TextBlock VerticalAlignment="Center" Text="إضافة طلب" />
+
+                    </StackPanel>
+
+                </Button>
+
+                <!--  Product  -->
+                <Button
+                    Margin="8,0"
+                    Background="#8B5CF6"
+                    Style="{StaticResource QuickActionButtonStyle}">
+
+                    <StackPanel Orientation="Horizontal">
+
+                        <icons:MaterialIcon
+                            Width="21"
+                            Height="21"
+                            Margin="0,0,9,0"
+                            Kind="PackageVariantPlus" />
+
+                        <TextBlock VerticalAlignment="Center" Text="إضافة منتج" />
+
+                    </StackPanel>
+
+                </Button>
+
+                <!--  Client  -->
+                <Button
+                    Margin="8,0"
+                    Background="#10B981"
+                    Style="{StaticResource QuickActionButtonStyle}">
+
+                    <StackPanel Orientation="Horizontal">
+
+                        <icons:MaterialIcon
+                            Width="21"
+                            Height="21"
+                            Margin="0,0,9,0"
+                            Kind="AccountPlusOutline" />
+
+                        <TextBlock VerticalAlignment="Center" Text="إضافة عميل" />
+
+                    </StackPanel>
+
+                </Button>
+
+                <!--  Message  -->
+                <Button
+                    Margin="8,0,0,0"
+                    Background="#F59E0B"
+                    Style="{StaticResource QuickActionButtonStyle}">
+
+                    <StackPanel Orientation="Horizontal">
+
+                        <icons:MaterialIcon
+                            Width="21"
+                            Height="21"
+                            Margin="0,0,9,0"
+                            Kind="MessagePlusOutline" />
+
+                        <TextBlock VerticalAlignment="Center" Text="إرسال رسالة" />
+
+                    </StackPanel>
+
+                </Button>
+
+            </UniformGrid>
+
+            <!--  =========================  -->
+            <!--  Statistics  -->
+            <!--  =========================  -->
+
+            <UniformGrid Grid.Row="4" Columns="4">
+
+                <!--  Orders  -->
+                <Border Margin="0,0,8,0" Style="{StaticResource CardStyle}">
+
+                    <Grid>
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel>
+
+                            <TextBlock
+                                FontSize="12"
+                                Foreground="#7A8496"
+                                Text="إجمالي الطلبات" />
+
+                            <TextBlock
+                                Margin="0,8,0,0"
+                                FontSize="27"
+                                FontWeight="SemiBold"
+                                Foreground="#172033"
+                                Text="35" />
+
+                            <TextBlock
+                                Margin="0,4,0,0"
+                                FontSize="11"
+                                Foreground="#22A06B"
+                                Text="+5 هذا الأسبوع" />
+
+                        </StackPanel>
+
+                        <Border
+                            Grid.Column="1"
+                            Width="46"
+                            Height="46"
+                            Background="#EAF2FF"
+                            CornerRadius="12">
+
+                            <icons:MaterialIcon
+                                Width="24"
+                                Height="24"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Foreground="#3B82F6"
+                                Kind="CartOutline" />
+
+                        </Border>
+
+                    </Grid>
+
+                </Border>
+
+                <!--  Products  -->
+                <Border Margin="8,0" Style="{StaticResource CardStyle}">
+
+                    <Grid>
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel>
+
+                            <TextBlock
+                                FontSize="12"
+                                Foreground="#7A8496"
+                                Text="المنتجات" />
+
+                            <TextBlock
+                                Margin="0,8,0,0"
+                                FontSize="27"
+                                FontWeight="SemiBold"
+                                Foreground="#172033"
+                                Text="56" />
+
+                            <TextBlock
+                                Margin="0,4,0,0"
+                                FontSize="11"
+                                Foreground="#8B5CF6"
+                                Text="+3 منتجات جديدة" />
+
+                        </StackPanel>
+
+                        <Border
+                            Grid.Column="1"
+                            Width="46"
+                            Height="46"
+                            Background="#F3EEFF"
+                            CornerRadius="12">
+
+                            <icons:MaterialIcon
+                                Width="24"
+                                Height="24"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Foreground="#8B5CF6"
+                                Kind="PackageVariant" />
+
+                        </Border>
+
+                    </Grid>
+
+                </Border>
+
+                <!--  Clients  -->
+                <Border Margin="8,0" Style="{StaticResource CardStyle}">
+
+                    <Grid>
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel>
+
+                            <TextBlock
+                                FontSize="12"
+                                Foreground="#7A8496"
+                                Text="العملاء" />
+
+                            <TextBlock
+                                Margin="0,8,0,0"
+                                FontSize="27"
+                                FontWeight="SemiBold"
+                                Foreground="#172033"
+                                Text="18" />
+
+                            <TextBlock
+                                Margin="0,4,0,0"
+                                FontSize="11"
+                                Foreground="#10B981"
+                                Text="+2 عملاء جدد" />
+
+                        </StackPanel>
+
+                        <Border
+                            Grid.Column="1"
+                            Width="46"
+                            Height="46"
+                            Background="#E9FAF4"
+                            CornerRadius="12">
+
+                            <icons:MaterialIcon
+                                Width="24"
+                                Height="24"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Foreground="#10B981"
+                                Kind="AccountGroupOutline" />
+
+                        </Border>
+
+                    </Grid>
+
+                </Border>
+
+                <!--  Messages  -->
+                <Border Margin="8,0,0,0" Style="{StaticResource CardStyle}">
+
+                    <Grid>
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel>
+
+                            <TextBlock
+                                FontSize="12"
+                                Foreground="#7A8496"
+                                Text="الرسائل اليوم" />
+
+                            <TextBlock
+                                Margin="0,8,0,0"
+                                FontSize="27"
+                                FontWeight="SemiBold"
+                                Foreground="#172033"
+                                Text="12" />
+
+                            <TextBlock
+                                Margin="0,4,0,0"
+                                FontSize="11"
+                                Foreground="#F59E0B"
+                                Text="9 تم إرسالها" />
+
+                        </StackPanel>
+
+                        <Border
+                            Grid.Column="1"
+                            Width="46"
+                            Height="46"
+                            Background="#FFF6DF"
+                            CornerRadius="12">
+
+                            <icons:MaterialIcon
+                                Width="24"
+                                Height="24"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Foreground="#F59E0B"
+                                Kind="MessageTextOutline" />
+
+                        </Border>
+
+                    </Grid>
+
+                </Border>
+
+            </UniformGrid>
+
+            <!--  =========================  -->
+            <!--  Bottom Section  -->
+            <!--  =========================  -->
+
+            <Grid Grid.Row="6">
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!--  Placeholder Analytics  -->
+                <Border Style="{StaticResource CardStyle}">
+
+                    <Grid>
+
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Grid>
+
+                            <TextBlock
+                                FontSize="15"
+                                FontWeight="SemiBold"
+                                Foreground="#172033"
+                                Text="نشاط الطلبات" />
+
+                            <TextBlock
+                                HorizontalAlignment="Right"
+                                FontSize="12"
+                                Foreground="#8993A4"
+                                Text="آخر 7 أيام" />
+
+                        </Grid>
+
+                        <Grid Grid.Row="1" Margin="0,25,0,0">
+
+                            <!--  simple fake chart  -->
+                            <StackPanel
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Bottom"
+                                Orientation="Horizontal">
+
+                                <Border
+                                    Width="34"
+                                    Height="50"
+                                    Margin="5,0"
+                                    VerticalAlignment="Bottom"
+                                    Background="#DCE9FF"
+                                    CornerRadius="5" />
+
+                                <Border
+                                    Width="34"
+                                    Height="80"
+                                    Margin="5,0"
+                                    VerticalAlignment="Bottom"
+                                    Background="#BFD6FF"
+                                    CornerRadius="5" />
+
+                                <Border
+                                    Width="34"
+                                    Height="60"
+                                    Margin="5,0"
+                                    VerticalAlignment="Bottom"
+                                    Background="#DCE9FF"
+                                    CornerRadius="5" />
+
+                                <Border
+                                    Width="34"
+                                    Height="110"
+                                    Margin="5,0"
+                                    VerticalAlignment="Bottom"
+                                    Background="#8EB5FF"
+                                    CornerRadius="5" />
+
+                                <Border
+                                    Width="34"
+                                    Height="90"
+                                    Margin="5,0"
+                                    VerticalAlignment="Bottom"
+                                    Background="#A8C7FF"
+                                    CornerRadius="5" />
+
+                                <Border
+                                    Width="34"
+                                    Height="130"
+                                    Margin="5,0"
+                                    VerticalAlignment="Bottom"
+                                    Background="#3B82F6"
+                                    CornerRadius="5" />
+
+                                <Border
+                                    Width="34"
+                                    Height="100"
+                                    Margin="5,0"
+                                    VerticalAlignment="Bottom"
+                                    Background="#73A4FF"
+                                    CornerRadius="5" />
+
+                            </StackPanel>
+
+                        </Grid>
+
+                    </Grid>
+
+                </Border>
+
+                <!--  Pending Orders  -->
+                <Border Grid.Column="2" Style="{StaticResource CardStyle}">
+
+                    <Grid>
+
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Border
+                            Width="48"
+                            Height="48"
+                            HorizontalAlignment="Left"
+                            Background="#FFF2E2"
+                            CornerRadius="12">
+
+                            <icons:MaterialIcon
+                                Width="25"
+                                Height="25"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Foreground="#F28C28"
+                                Kind="ClockOutline" />
+
+                        </Border>
+
+                        <StackPanel Grid.Row="1" Margin="0,16,0,0">
+
+                            <TextBlock
+                                FontSize="13"
+                                Foreground="#7A8496"
+                                Text="الطلبات المعلقة" />
+
+                            <TextBlock
+                                Margin="0,5,0,0"
+                                FontSize="32"
+                                FontWeight="SemiBold"
+                                Foreground="#172033"
+                                Text="7" />
+
+                        </StackPanel>
+
+                        <TextBlock
+                            Grid.Row="2"
+                            Margin="0,12,0,20"
+                            VerticalAlignment="Top"
+                            FontSize="12"
+                            Foreground="#8993A4"
+                            Text="يوجد 7 طلبات تحتاج إلى المراجعة أو استكمال إجراءاتها."
+                            TextWrapping="Wrap" />
+
+                        <Button
+                            Grid.Row="3"
+                            Height="38"
+                            Background="#FFF2E2"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            Foreground="#E47B13">
+
+                            <StackPanel Orientation="Horizontal">
+
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontWeight="SemiBold"
+                                    Text="عرض الطلبات المعلقة" />
+
+                                <icons:MaterialIcon
+                                    Width="17"
+                                    Height="17"
+                                    Margin="8,0,0,0"
+                                    Kind="ArrowLeft" />
+
+                            </StackPanel>
+
+                        </Button>
+
+                    </Grid>
+
+                </Border>
+
+            </Grid>
+
+        </Grid>
+
+    </ScrollViewer>
 
 </UserControl>

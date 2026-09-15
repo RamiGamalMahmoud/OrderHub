@@ -7,5 +7,7 @@ internal record MainWindowCommand(
     string Name,
     string Icon = null,
     ICommand Command = null,
-    bool IsEnabled = true,
-    List<MainWindowCommand> ChildrenCommands = null);
+    List<MainWindowCommand> ChildrenCommands = null)
+{
+    public bool IsEnabled => Command is null || Command.CanExecute(null);
+}
