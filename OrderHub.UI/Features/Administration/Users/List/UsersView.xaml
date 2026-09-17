@@ -1,6 +1,7 @@
-﻿<UserControl
+<UserControl
     x:Class="OrderHub.UI.Features.Administration.Users.List.UsersView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:commands="clr-namespace:OrderHub.UI.Commands"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:hc="https://handyorg.github.io/handycontrol"
@@ -53,7 +54,7 @@
                 VerticalAlignment="Center"
                 Background="#2563EB"
                 BorderThickness="0"
-                Command="{Binding AddUserCommand}"
+                Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Users.CreateCommand}"
                 Cursor="Hand"
                 Foreground="White">
 
@@ -218,7 +219,7 @@
                                         Height="auto"
                                         Margin="3,0"
                                         BorderThickness="0"
-                                        Command="{Binding DataContext.EditUserCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Users.EditCommand}"
                                         CommandParameter="{Binding Id}"
                                         Cursor="Hand"
                                         ToolTip="تعديل">

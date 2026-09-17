@@ -62,6 +62,8 @@ public interface IFileStorageService
 }
 
 public sealed record StoredFile(
-    string FileName,
+    string OriginalFileName,
+    string StoredFileName,
+    string Url,
     string Extension,
-    long Size);
+    double Size);

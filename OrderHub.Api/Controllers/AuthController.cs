@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using OrderHub.Application.Configuration;
 using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Application.Interfaces.Services;
@@ -6,7 +7,7 @@ using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace OrderHub.Api.Controllers;
@@ -32,47 +33,87 @@ public sealed class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
-        User? user = await _userRepository.GetByUsernameAsync(request.UserName);
+        User? user = await AuthenticateUserAsync(request);
 
         if (user is null)
             return Unauthorized("بيانات تسجيل الدخول غير صحيحة.");
 
-        if (!_hashShervice.Verify(request.Password, user.PasswordHash))
-            return Unauthorized("بيانات تسجيل الدخول غير صحيحة.");
+        DatabaseInfo? databaseInfo = CreateDatabaseInfo();
 
-        DatabaseSettings? databaseSettings;
+        if (databaseInfo is null)
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                "لم يتم إعداد اتصال قاعدة البيانات على السيرفر.");
+
+        AuthResponse response = CreateAuthResponse(user, databaseInfo);
+
+        return Ok(response);
+    }
+
+    private async Task<User?> AuthenticateUserAsync(LoginRequest request)
+    {
+        User? user = await _userRepository.GetByUsernameAsync(request.UserName);
+
+        if (user is null)
+            return null;
+
+        if (!_hashShervice.Verify(request.Password, user.PasswordHash))
+            return null;
+
+        return user;
+    }
+
+    private DatabaseInfo? CreateDatabaseInfo()
+    {
         try
         {
-            databaseSettings = _databaseConfigurationService.GetSettings();
+            DatabaseSettings settings = _databaseConfigurationService.GetSettings();
+
+            IPAddress? localIpAddress = HttpContext.Connection.LocalIpAddress;
+
+            if (localIpAddress is null)
+                return null;
+
+            string host = localIpAddress.MapToIPv4().ToString();
+
+            return new DatabaseInfo(
+                host,
+                settings.Port,
+                settings.Database,
+                settings.Username,
+                settings.Password);
         }
         catch
         {
-            return StatusCode(503, "لم يتم إعداد اتصال قاعدة البيانات على السيرفر.");
+            return null;
         }
+    }
 
-        if (databaseSettings is null)
-            return StatusCode(503, "لم يتم إعداد اتصال قاعدة البيانات على السيرفر.");
+    private static AuthResponse CreateAuthResponse(
+        User user,
+        DatabaseInfo databaseInfo)
+    {
+        UserInfo userInfo = new(
+            user.Id,
+            user.UserName,
+            user.DisplayName,
+            user.IsAdmin,
+            user.Permissions
+                .Select(CreateUserPermissionInfo)
+                .ToList());
 
-        AuthResponse response = new(
-            new DatabaseInfo(
-                databaseSettings.Host,
-                databaseSettings.Port,
-                databaseSettings.Database,
-                databaseSettings.Username,
-                databaseSettings.Password),
+        return new AuthResponse(
+            databaseInfo,
+            userInfo);
+    }
 
-            new UserInfo(
-                user.Id,
-                user.UserName,
-                user.DisplayName,
-                user.IsActive,
-                user.Permissions.Select(permission => new UserPermissionInfo(
-                    permission.Feature,
-                    permission.CanRead,
-                    permission.CanWrite))
-                .ToList()));
-
-        return Ok(response);
+    private static UserPermissionInfo CreateUserPermissionInfo(
+        UserPermission permission)
+    {
+        return new UserPermissionInfo(
+            permission.Feature,
+            permission.CanRead,
+            permission.CanWrite);
     }
 }
 

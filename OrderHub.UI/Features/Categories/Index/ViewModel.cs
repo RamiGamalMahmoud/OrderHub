@@ -1,15 +1,12 @@
-﻿using OrderHub.UI.Messaging;
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
-using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
-using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using static OrderHub.Application.DTOs.CategoryDtos;
 
@@ -33,24 +30,9 @@ namespace OrderHub.UI.Features.Categories.Index
 
             WeakReferenceMessenger.Default.Register<CategoriesMessages.CategoryDeletedMessage>(this, async (m, r) =>
             {
-                await NavigateToCategory(SelectedCategory);
+                SelectedCategory = null;
+                await LoadAsync();
             });
-        }
-
-        protected override async Task DeleteAsync(CategoryTreeDto dto)
-        {
-            if (!DialogService.Instance.Confirm($"هل تريد حذف قسم الـ ({dto.Name})؟"))
-                return;
-            Result result = await _mediator.Send(new Application.Commands.CategoryCommands.DeleteCategoryCommand(dto.Id));
-            if(result.IsSuccess)
-            {
-                WeakReferenceMessenger.Default.Send(new CategoriesMessages.CategoryDeletedMessage(dto.Id));
-                NotificationService.Instance.ShowSuccess("تم حذف القسم");
-            }
-            else
-            {
-                NotificationService.Instance.ShowError("خطأ أثناء الحذف !");
-            }
         }
 
         protected override async Task LoadAsync()
@@ -64,16 +46,6 @@ namespace OrderHub.UI.Features.Categories.Index
         {
             _allCategories = (await _mediator.Send(new Application.Queries.CategoryQueries.GetCategoryListQuery(null))).ToList();
             ApplyFilter();
-        }
-
-        protected override async Task ShowCreateAsync()
-        {
-            await DialogService.Instance.ShowDialog<Create.View>("إضافة قسم جديد");
-        }
-
-        protected override async Task ShowEditAsync(CategoryTreeDto dto)
-        {
-            await DialogService.Instance.ShowDialog<Update.View>("تعديل بيانات قسم", dto.Id);
         }
 
         [RelayCommand]
@@ -98,45 +70,6 @@ namespace OrderHub.UI.Features.Categories.Index
 
         [RelayCommand]
         private async Task NavigateToHome() => await NavigateToCategory(null);
-
-        [RelayCommand]
-        private async Task Edit(CategoryListDto dto)
-        {
-            await DialogService.Instance.ShowDialog<Update.View>("تعديل بيانات قسم", dto.Id);
-        }
-
-        [RelayCommand]
-        private async Task RemoveAsync(CategoryListDto dto)
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-
-            if(dto.SubCategoriesCount > 0)
-            {
-                stringBuilder.AppendLine($"القسم يحتوي على {dto.SubCategoriesCount} قسم فرعي");
-            }
-
-            if(dto.ProductsCount > 0)
-            {
-                stringBuilder.AppendLine($"القسم يحتوي على {dto.ProductsCount} منتج");
-            }
-            stringBuilder.AppendLine("سوف يتم حذف القسم الذي تم اختياره؟");
-            stringBuilder.AppendLine("و جميع الأقسام التابعة له و كذلك المنتجات المرتبطة به");
-            stringBuilder.AppendLine("و كذلك عمليات الشراء");
-
-            if (!DialogService.Instance.Confirm(stringBuilder.ToString()))
-                return;
-            Result result =await _mediator.Send(new Application.Commands.CategoryCommands.DeleteCategoryCommand(dto.Id));
-            if(result.IsSuccess)
-            {
-                WeakReferenceMessenger.Default.Send(new CategoriesMessages.CategoryDeletedMessage(dto.Id));
-                NotificationService.Instance.ShowError("تم حذف القسم");
-                await LoadAsync();
-            }
-            else
-            {
-                NotificationService.Instance.ShowError(result.ErrorMessage);
-            }
-        }
 
         [ObservableProperty]
         private IEnumerable<CategoryListDto> _categoriesList;

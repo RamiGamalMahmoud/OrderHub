@@ -1,10 +1,9 @@
-﻿using OrderHub.Application.Interfaces;
-using OrderHub.Application.Interfaces.Services;
+﻿using OrderHub.Application.Interfaces.Services;
 using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace OrderHub.Infrastructure.Services;
+namespace OrderHub.Infrastructure.Services.FilesAccess;
 
 internal sealed class LocalFileAccessService
     : ILocalFileAccessService

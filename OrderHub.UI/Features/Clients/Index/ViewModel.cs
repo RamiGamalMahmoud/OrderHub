@@ -1,10 +1,8 @@
-﻿using OrderHub.UI.Messaging;
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
-using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
-using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -23,23 +21,6 @@ public partial class ViewModel : IndexViewModelBase<ClientListDto>
         WeakReferenceMessenger.Default.Register<ClientsMessages.ClientDeletedMessage>(this, async (r, m) => await ReloadAsync());
     }
 
-    protected override async Task DeleteAsync(ClientListDto dto)
-    {
-        if (!DialogService.Instance.Confirm($"هل تريد حذف العميل ( {dto.Name} )؟"))
-            return;
-        Result result = await _mediator.Send(new Application.Commands.ClienCommands.DeleteClientCommand(dto.Id));
-        if (result.IsSuccess)
-        {
-            NotificationService.Instance.ShowSuccess("تم حذف العميل.");
-            WeakReferenceMessenger.Default.Send(new ClientsMessages.ClientDeletedMessage(dto.Id));
-        }
-
-        else
-        {
-            NotificationService.Instance.ShowError(result.ErrorMessage);
-        }
-    }
-
     protected override async Task LoadAsync()
     {
         _allClients = (await _mediator.Send(new Application.Queries.ClientQueries.GetAllClientsQuery())).ToList();
@@ -50,16 +31,6 @@ public partial class ViewModel : IndexViewModelBase<ClientListDto>
     {
         _allClients = (await _mediator.Send(new Application.Queries.ClientQueries.GetAllClientsQuery())).ToList();
         ApplyFilter();
-    }
-
-    protected override async Task ShowEditAsync(ClientListDto dto)
-    {
-        await DialogService.Instance.ShowDialog<Update.View>("تعديل بيانات عميل", dto.Id);
-    }
-
-    protected override async Task ShowCreateAsync()
-    {
-        await DialogService.Instance.ShowDialog<Create.View>("إضافة عميل جديد");
     }
 
     [ObservableProperty]

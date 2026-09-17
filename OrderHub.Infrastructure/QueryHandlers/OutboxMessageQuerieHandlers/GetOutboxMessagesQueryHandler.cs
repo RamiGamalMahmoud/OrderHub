@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Queries;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,7 +27,11 @@ internal class GetOutboxMessagesQueryHandler(AppDbContextFactory appDbContextFac
                 m.Recipient.PhoneNumber,
                 m.CreatedAt,
                 m.LastAttemptAt,
-                m.Attachments.Select(x => new OutboxMessageQueries.Attachment(x.OriginalFileName, x.StoredFileName)).ToList(),
+                m.Attachments.Select(x => new OutboxMessageQueries.Attachment(
+                    x.OriginalFileName, 
+                    x.StoredFileName,
+                    Path.GetExtension(x.StoredFileName),
+                    x.FileSize)).ToList(),
                 m.Notes))
             .ToListAsync(cancellationToken: cancellationToken);
     }

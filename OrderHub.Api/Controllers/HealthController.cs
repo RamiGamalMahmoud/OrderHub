@@ -18,11 +18,11 @@ public class HealthController : Controller
     [HttpGet]
     public async Task<IActionResult> Index()
     {
-        var canConnect = await _databaseService.CanConnectAsync();
+        //var canConnect = await _databaseService.CanConnectAsync();
 
         return Ok(new
         {
-            status = canConnect ? "OK" : "Database unavailable"
+            status = "Api Server Is Connected."
         });
     }
 }

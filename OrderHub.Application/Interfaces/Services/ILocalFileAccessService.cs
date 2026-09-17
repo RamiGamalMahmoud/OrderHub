@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Threading.Tasks;
 
-namespace OrderHub.Application.Interfaces;
+namespace OrderHub.Application.Interfaces.Services;
 
 public interface ILocalFileAccessService
 {

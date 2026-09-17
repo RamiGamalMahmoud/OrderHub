@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using OrderHub.Application.Interfaces;
+using OrderHub.Application.Interfaces.Services;
 using System;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace OrderHub.Api.Controllers.Files;
@@ -40,10 +39,10 @@ public class AttachmentsController : ControllerBase
 
     [HttpPost("{fileName}")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> Upload(
+    public async Task<ActionResult<StoredFile>> Upload(
         string fileName,
         IFormFile file,
-        CancellationToken cancellationToken)
+        [FromForm] string originalFileName)
     {
         if (string.IsNullOrWhiteSpace(fileName) ||
             fileName != Path.GetFileName(fileName))
@@ -60,7 +59,18 @@ public class AttachmentsController : ControllerBase
             fileName,
             stream);
 
-        return Ok();
+        string url = Url.ActionLink(
+            nameof(Get),
+            values: new { fileName })!;
+
+        var storedFile = new StoredFile(
+            OriginalFileName: originalFileName,
+            StoredFileName: fileName,
+            Extension: Path.GetExtension(fileName),
+            Url: url,
+            Size: file.Length);
+
+        return Ok(storedFile);
     }
 
     [HttpDelete("{fileName}")]
@@ -95,3 +105,10 @@ public class AttachmentsController : ControllerBase
         };
     }
 }
+
+public sealed record StoredFile(
+    string OriginalFileName,
+    string StoredFileName,
+    string Url,
+    string Extension,
+    double Size);

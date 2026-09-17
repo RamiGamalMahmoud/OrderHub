@@ -6,7 +6,7 @@ using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace OrderHub.Infrastructure.FileStorage;
+namespace OrderHub.Infrastructure.Services.FilesAccess;
 
 internal sealed class RemoteFileStorageService
     : IFileStorageService
@@ -14,9 +14,9 @@ internal sealed class RemoteFileStorageService
     private readonly HttpClient _httpClient;
 
     public RemoteFileStorageService(
-        HttpClient httpClient)
+        IHttpClientFactory httpClientFactory)
     {
-        _httpClient = httpClient;
+        _httpClient = httpClientFactory.CreateClient("OrderHubApi");
     }
 
     #region Attachments
@@ -33,7 +33,6 @@ internal sealed class RemoteFileStorageService
             FileShare.Read);
 
         using StreamContent fileContent = new(stream);
-
         using MultipartFormDataContent content = new();
 
         content.Add(
@@ -41,9 +40,13 @@ internal sealed class RemoteFileStorageService
             "file",
             destinationName);
 
+        content.Add(
+            new StringContent(Path.GetFileName(sourceFilePath)),
+            "originalFileName");
+
         using HttpResponseMessage response =
             await _httpClient.PostAsync(
-                "api/files/attachments",
+                $"files/attachments/{EncodeFileName(destinationName)}",
                 content,
                 cancellationToken);
 
@@ -59,7 +62,7 @@ internal sealed class RemoteFileStorageService
         CancellationToken cancellationToken = default)
     {
         return await GetFileAsync(
-            $"api/files/attachments/{EncodeFileName(fileName)}",
+            $"files/attachments/{EncodeFileName(fileName)}",
             cancellationToken);
     }
 
@@ -68,7 +71,7 @@ internal sealed class RemoteFileStorageService
         CancellationToken cancellationToken = default)
     {
         await DeleteFileAsync(
-            $"api/files/attachments/{EncodeFileName(fileName)}",
+            $"files/attachments/{EncodeFileName(fileName)}",
             cancellationToken);
     }
 
@@ -83,7 +86,7 @@ internal sealed class RemoteFileStorageService
         CancellationToken cancellationToken = default)
     {
         await UploadDocumentAsync(
-            "api/files/quotations",
+            $"files/quotations/{EncodeFileName(fileName)}",
             document,
             fileName,
             cancellationToken);
@@ -94,7 +97,7 @@ internal sealed class RemoteFileStorageService
         CancellationToken cancellationToken = default)
     {
         return await GetFileAsync(
-            $"api/files/quotations/{EncodeFileName(fileName)}",
+            $"files/quotations/{EncodeFileName(fileName)}",
             cancellationToken);
     }
 
@@ -103,7 +106,7 @@ internal sealed class RemoteFileStorageService
         CancellationToken cancellationToken = default)
     {
         await DeleteFileAsync(
-            $"api/files/quotations/{EncodeFileName(fileName)}",
+            $"files/quotations/{EncodeFileName(fileName)}",
             cancellationToken);
     }
 
@@ -118,7 +121,7 @@ internal sealed class RemoteFileStorageService
         CancellationToken cancellationToken = default)
     {
         await UploadDocumentAsync(
-            "api/files/proforma-invoices",
+            $"files/proforma-invoices/{EncodeFileName(fileName)}",
             document,
             fileName,
             cancellationToken);
@@ -129,7 +132,7 @@ internal sealed class RemoteFileStorageService
         CancellationToken cancellationToken = default)
     {
         return await GetFileAsync(
-            $"api/files/proforma-invoices/{EncodeFileName(fileName)}",
+            $"files/proforma-invoices/{EncodeFileName(fileName)}",
             cancellationToken);
     }
 
@@ -138,7 +141,7 @@ internal sealed class RemoteFileStorageService
         CancellationToken cancellationToken = default)
     {
         await DeleteFileAsync(
-            $"api/files/proforma-invoices/{EncodeFileName(fileName)}",
+            $"files/proforma-invoices/{EncodeFileName(fileName)}",
             cancellationToken);
     }
 
@@ -153,7 +156,7 @@ internal sealed class RemoteFileStorageService
         CancellationToken cancellationToken = default)
     {
         await UploadDocumentAsync(
-            "api/files/invoices",
+            $"files/invoices/{EncodeFileName(fileName)}",
             document,
             fileName,
             cancellationToken);
@@ -164,7 +167,7 @@ internal sealed class RemoteFileStorageService
         CancellationToken cancellationToken = default)
     {
         return await GetFileAsync(
-            $"api/files/invoices/{EncodeFileName(fileName)}",
+            $"files/invoices/{EncodeFileName(fileName)}",
             cancellationToken);
     }
 
@@ -173,7 +176,7 @@ internal sealed class RemoteFileStorageService
         CancellationToken cancellationToken = default)
     {
         await DeleteFileAsync(
-            $"api/files/invoices/{EncodeFileName(fileName)}",
+            $"files/invoices/{EncodeFileName(fileName)}",
             cancellationToken);
     }
 
@@ -240,10 +243,8 @@ internal sealed class RemoteFileStorageService
         CancellationToken cancellationToken)
     {
         return await response.Content
-            .ReadFromJsonAsync<StoredFile>(
-                cancellationToken: cancellationToken)
-            ?? throw new InvalidOperationException(
-                "The server returned an invalid file response.");
+            .ReadFromJsonAsync<StoredFile>(cancellationToken: cancellationToken)
+            ?? throw new InvalidOperationException("The server returned an invalid file response.");
     }
 
     private static string EncodeFileName(

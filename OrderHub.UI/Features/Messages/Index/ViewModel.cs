@@ -1,4 +1,3 @@
-﻿using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -6,11 +5,11 @@ using OrderHub.Application.Common.Extensions;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Features.Messaging;
 using OrderHub.Application.Interfaces;
-using OrderHub.Application.Interfaces.Services;
 using OrderHub.Application.Queries;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
+using OrderHub.UI.Messaging;
 using OrderHub.UI.Services;
 using System;
 using System.Collections.Generic;
@@ -24,20 +23,18 @@ namespace OrderHub.UI.Features.Messages.Index;
 public partial class ViewModel : ObservableObject
 {
     private readonly IRequestExecutor _requestExecutor;
-    private readonly IApplicationDirectoriesService _directoriesService;
     private List<OutboxMessageViewModel> _allOutboxMessages = [];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSelectedMessage))]
     [NotifyCanExecuteChangedFor(nameof(ResendMessageCommand))]
-    [NotifyCanExecuteChangedFor(nameof(DeleteMessageCommand))]
     private OutboxMessageViewModel _selectedMessage;
     public bool HasSelectedMessage => SelectedMessage is not null;
 
     [ObservableProperty]
     private ObservableCollection<MessageSummaryItemViewModel> _statusSummaries = [];
 
-    public ViewModel(IRequestExecutor requestExecutor, IApplicationDirectoriesService directoriesService)
+    public ViewModel(IRequestExecutor requestExecutor)
     {
         _requestExecutor = requestExecutor;
 
@@ -54,7 +51,13 @@ public partial class ViewModel : ObservableObject
 
         WeakReferenceMessenger.Default.Register<MessagesMessages.OutboxMessagesQueuedMessage>(
             this, async (_, _) => await LoadAsync());
-        _directoriesService = directoriesService;
+        WeakReferenceMessenger.Default.Register<MessagesMessages.OutboxMessageDeletedMessage>(
+            this, async (_, message) =>
+            {
+                if (SelectedMessage?.Id == message.MessageId)
+                    SelectedMessage = null;
+                await LoadAsync();
+            });
     }
 
     [RelayCommand]
@@ -77,10 +80,15 @@ public partial class ViewModel : ObservableObject
                     CreatedAt = m.CreatedAt,
                     LastAttemptAt = m.LastAttemptAt,
                 };
+
                 messageViewModel
                     .AddAttachments(
-                        m.Attachments?
-                            .ToDictionary(x => Path.Combine( _directoriesService.AttachmentsDirectory, x.StoredName), x => x.OriginalName));
+                    m.Attachments
+                    .Select(attachment => new MessageAttachmentItem(
+                        $"http://192.168.1.100:5000/api/files/attachments/{attachment.StoredName}",
+                        attachment.OriginalName,
+                        attachment.Extension,
+                        attachment.Size)));
 
                 messageViewModel.AddNotes(m.Notes?.ToList());
                 return messageViewModel;
@@ -184,7 +192,7 @@ public partial class ViewModel : ObservableObject
             return;
         }
         ResendOutboxMessageCommand.Message requestMessage = new ResendOutboxMessageCommand.Message(
-            message.Id, 
+            message.Id,
             message.Text,
             message
                 .Attachments
@@ -207,7 +215,7 @@ public partial class ViewModel : ObservableObject
     [RelayCommand]
     private async Task SendMessage(OutboxMessageViewModel message)
     {
-        if(message is null)
+        if (message is null)
         {
             DialogService.Instance.Confirm("يجب اختيار رسالة أولا.");
             return;
@@ -228,7 +236,7 @@ public partial class ViewModel : ObservableObject
             message.MarkIsSending();
             return;
         }
-        
+
         message.Status = new EnumItem<OutboxMessageStatus>(OutboxMessageStatus.Sending, OutboxMessageStatus.Sending.GetDescription());
         NotificationService.Instance.Show("تمت إعادة جدولة الرسالة للإرسال.");
     }
@@ -243,36 +251,6 @@ public partial class ViewModel : ObservableObject
         }
         message.CancelSending();
         return Task.CompletedTask;
-    }
-
-    [RelayCommand(CanExecute = nameof(HasSelectedMessage))]
-    private async Task DeleteMessage(OutboxMessageViewModel message)
-    {
-        if (!await DialogService.Instance.ConfirmAsync("هل أنت متأكد أنك تريد حذف هذه الرسالة؟"))
-        {
-            return;
-        }
-
-        if (message is null)
-        {
-            return;
-        }
-
-        if (!await DialogService.Instance.ConfirmAsync($"هل تريد حذف الرسالة للمستلم ({message.RecipientName})؟"))
-        {
-            return;
-        }
-
-        Result result = await _requestExecutor.ExecuteAsync(new Application.Features.Messaging.DeleteOutboxMessage.Command(message.Id));
-
-        if (!result.IsSuccess)
-        {
-            NotificationService.Instance.Show(result.ErrorMessage);
-            return;
-        }
-
-        NotificationService.Instance.ShowSuccess("تم حذف الرسالة بنجاح.");
-        OutboxMessages.Remove(message);
     }
 
     [RelayCommand]

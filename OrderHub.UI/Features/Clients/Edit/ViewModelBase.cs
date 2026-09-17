@@ -1,6 +1,5 @@
-﻿using OrderHub.UI.Messaging;
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.UI.Common;
@@ -88,7 +87,5 @@ namespace OrderHub.UI.Features.Clients.Edit
         [ObservableProperty]
         private string _location;
 
-        [RelayCommand]
-        private async Task ShowCreateCity() => await DialogService.Instance.ShowDialog<Features.Cities.Create.CreateCityView>("إضافة مدينة جديدة");
     }
 }

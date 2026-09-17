@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
     x:Class="OrderHub.UI.Components.Buttons.ButtonEdit"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -13,8 +13,8 @@
         Margin="5,0"
         Padding="0"
         BorderThickness="0"
-        Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl, Mode=FindAncestor, AncestorLevel=2}, Path=DataContext.ShowEditCommand}"
-        CommandParameter="{Binding}"
+        Command="{Binding Command, RelativeSource={RelativeSource AncestorType=local:ButtonEdit}}"
+        CommandParameter="{Binding CommandParameter, RelativeSource={RelativeSource AncestorType=local:ButtonEdit}}"
         Cursor="Hand"
         FontFamily="Arial"
         Visibility="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsEnabled, Converter={converters:BoolToVisibilityConverter}}">

@@ -1,9 +1,7 @@
-﻿using OrderHub.UI.Messaging;
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
-using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
-using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -23,25 +21,6 @@ public partial class ViewModel : IndexViewModelBase<ShippingCarrierListDto>
         WeakReferenceMessenger.Default.Register<ShippingCarriersMessages.ShippingCarrierDeletedMessage>(this, async (_, _) => await ReloadAsync());
     }
 
-    protected override async Task DeleteAsync(ShippingCarrierListDto model)
-    {
-        if(!DialogService.Instance.Confirm("هل تريد حذف شركة الشحن؟")) return;
-        Result result = await _mediator.Send(new Application.Commands.ShippingCarriersCommands.DeleteShippingCarrierCommand(model.Id));
-
-        if(result.IsSuccess)
-        {
-            string message = MessageBuilder.Build(MessageBuilder.OperationType.Delete, true, "شركة شحن");
-            NotificationService.Instance.ShowSuccess(message);
-            WeakReferenceMessenger.Default.Send(new ShippingCarriersMessages.ShippingCarrierDeletedMessage(model.Id));
-        }
-
-        else
-        {
-            string message = MessageBuilder.Build(MessageBuilder.OperationType.Delete, false, "شركة شحن");
-            NotificationService.Instance.ShowError(message);
-        }
-    }
-
     protected override async Task LoadAsync()
     {
         _allShippingCarriers = (await _mediator.Send(new Application.Queries.ShippingCarriersQueries.GetShippingCarriersQuery())).ToList();
@@ -52,16 +31,6 @@ public partial class ViewModel : IndexViewModelBase<ShippingCarrierListDto>
     {
         _allShippingCarriers = (await _mediator.Send(new Application.Queries.ShippingCarriersQueries.GetShippingCarriersQuery())).ToList();
         ApplyFilter();
-    }
-
-    protected override async Task ShowCreateAsync()
-    {
-        await DialogService.Instance.ShowDialog<Create.View>("إضافة شركة شحن جديدة");
-    }
-
-    protected override async Task ShowEditAsync(ShippingCarrierListDto model)
-    {
-        await DialogService.Instance.ShowDialog<Edit.View>("تعديل بيانات شركة شحن", model.Id);
     }
 
     public IEnumerable<ShippingCarrierListDto> ShippingCarriers { get => _shippingCarriers; private set => SetProperty(ref _shippingCarriers, value); }

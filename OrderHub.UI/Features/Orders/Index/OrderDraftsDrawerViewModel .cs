@@ -1,4 +1,4 @@
-﻿using OrderHub.UI.Messaging;
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -26,9 +26,9 @@ internal partial class OrderDraftsDrawerViewModel : ObservableObject
             OnPropertyChanged(nameof(Drafts));
         });
 
-        WeakReferenceMessenger.Default.Register<OrderDraftsDrawerViewModel, OrdersMessages.OrderDraftDeletedMessage>(this, (r, m) =>
+        WeakReferenceMessenger.Default.Register<OrderDraftsDrawerViewModel, OrdersMessages.OrderDraftDeletedMessage>(this, async (r, m) =>
         {
-            OnPropertyChanged(nameof(Drafts));
+            await r.LoadAsync();
         });
     }
 
@@ -57,22 +57,7 @@ internal partial class OrderDraftsDrawerViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    private async Task DeleteDraft(OrderDraftSummary draft)
-    {
-        if (draft is null)
-            return;
 
-        bool deleteDraft = DialogService.Instance.Confirm("هل تريد حذف هذه المسودة؟");
-        if (!deleteDraft)
-            return;
-
-        await _draftService.DeleteAsync(
-            new DraftContext(draft.Id));
-
-        Drafts.Remove(draft);
-        OnPropertyChanged(nameof(Drafts.Count));
-    }
 
     [RelayCommand]
     private async Task DeleteAllDrafts()

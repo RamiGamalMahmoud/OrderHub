@@ -9,6 +9,7 @@ public interface IAppCommands
     ApplicationCommands Application { get; }
     DashboardCommands Dashboard { get; }
     OrdersCommands Orders { get; }
+    OrderDraftsCommands OrderDrafts { get; }
     ProductsCommands Products { get; }
     CategoriesCommands Categories { get; }
     CitiesCommands Cities { get; }

@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using OrderHub.Application.Features.Administration.Users.ActivateUser;
@@ -66,12 +66,10 @@ public partial class UsersViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    private async Task AddUser() => await DialogService.Instance.ShowDialog<Create.CreateUserView>("إضافة مستخدم");
 
 
-    [RelayCommand]
-    private async Task EditUser(int id) => await DialogService.Instance.ShowDialog<Details.UserDetailsView>("", id);
+
+
 
     [RelayCommand]
     private async Task ToggleUserStatus(UserListItem user)

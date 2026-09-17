@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using OrderHub.Application;
 using OrderHub.Application.Context;
+using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Enums;
@@ -21,6 +22,7 @@ public class FeatureCommandAuthorizationTests
         services.AddApplication();
         services.AddCommands();
         services.AddSingleton(Mock.Of<IRequestExecutor>());
+        services.AddSingleton(Mock.Of<IDraftService>());
         services.AddSingleton(Mock.Of<IApplicationDirectoriesService>());
         using var provider = services.BuildServiceProvider();
         var context = provider.GetRequiredService<IApplicationContext>();
@@ -55,6 +57,31 @@ public class FeatureCommandAuthorizationTests
             (provider.GetRequiredService<MessagesCommands>().OpenCommand, null, PermissionFeature.Messages, false),
             (provider.GetRequiredService<SettingsCommands>().OpenCommand, null, PermissionFeature.Settings, false),
             (provider.GetRequiredService<UsersCommands>().OpenCommand, null, PermissionFeature.Users, false),
+            (provider.GetRequiredService<ProductsCommands>().CreateCommand, null, PermissionFeature.Products, true),
+            (provider.GetRequiredService<ProductsCommands>().EditCommand, 1, PermissionFeature.Products, true),
+            (provider.GetRequiredService<ProductsCommands>().DeleteCommand, 1, PermissionFeature.Products, true),
+            (provider.GetRequiredService<CitiesCommands>().CreateCommand, null, PermissionFeature.Cities, true),
+            (provider.GetRequiredService<CitiesCommands>().EditCommand, 1, PermissionFeature.Cities, true),
+            (provider.GetRequiredService<CitiesCommands>().DeleteCommand, 1, PermissionFeature.Cities, true),
+            (provider.GetRequiredService<ClientsCommands>().CreateCommand, null, PermissionFeature.Clients, true),
+            (provider.GetRequiredService<ClientsCommands>().EditCommand, 1, PermissionFeature.Clients, true),
+            (provider.GetRequiredService<ClientsCommands>().DeleteCommand, 1, PermissionFeature.Clients, true),
+            (provider.GetRequiredService<SuppliersCommands>().CreateCommand, null, PermissionFeature.Suppliers, true),
+            (provider.GetRequiredService<SuppliersCommands>().EditCommand, 1, PermissionFeature.Suppliers, true),
+            (provider.GetRequiredService<SuppliersCommands>().DeleteCommand, 1, PermissionFeature.Suppliers, true),
+            (provider.GetRequiredService<ShippingCarriersCommands>().CreateCommand, null, PermissionFeature.ShippingCarriers, true),
+            (provider.GetRequiredService<ShippingCarriersCommands>().EditCommand, 1, PermissionFeature.ShippingCarriers, true),
+            (provider.GetRequiredService<ShippingCarriersCommands>().DeleteCommand, 1, PermissionFeature.ShippingCarriers, true),
+            (provider.GetRequiredService<DeliverymenCommands>().CreateCommand, null, PermissionFeature.Deliverymen, true),
+            (provider.GetRequiredService<DeliverymenCommands>().EditCommand, 1, PermissionFeature.Deliverymen, true),
+            (provider.GetRequiredService<DeliverymenCommands>().DeleteCommand, 1, PermissionFeature.Deliverymen, true),
+            (provider.GetRequiredService<WhatsappGroupsCommands>().CreateCommand, null, PermissionFeature.WhatsAppGroups, true),
+            (provider.GetRequiredService<WhatsappGroupsCommands>().EditCommand, 1, PermissionFeature.WhatsAppGroups, true),
+            (provider.GetRequiredService<WhatsappGroupsCommands>().DeleteCommand, 1, PermissionFeature.WhatsAppGroups, true),
+            (provider.GetRequiredService<UsersCommands>().CreateCommand, null, PermissionFeature.Users, true),
+            (provider.GetRequiredService<UsersCommands>().EditCommand, 1, PermissionFeature.Users, true),
+            (provider.GetRequiredService<MessagesCommands>().DeleteCommand, 1, PermissionFeature.Messages, true),
+            (provider.GetRequiredService<OrderDraftsCommands>().DeleteCommand, Guid.NewGuid(), PermissionFeature.Orders, true),
         ];
 
         var notifications = new Dictionary<ICommand, int>();
@@ -89,6 +116,9 @@ public class FeatureCommandAuthorizationTests
             Assert.Equal(expectedNotifications, notifications[entry.Command]);
             Assert.True(entry.Command.CanExecute(entry.Parameter));
         }
+
+        Assert.False(provider.GetRequiredService<MessagesCommands>().DeleteCommand.CanExecute(null));
+        Assert.False(provider.GetRequiredService<OrderDraftsCommands>().DeleteCommand.CanExecute(null));
 
         context.ClearUser();
         expectedNotifications++;

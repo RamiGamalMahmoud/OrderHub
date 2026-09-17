@@ -21,5 +21,9 @@ public static class OutboxMessageQueries
         IReadOnlyList<Attachment> Attachments,
         IReadOnlyList<string> Notes);
 
-    public record Attachment(string OriginalName, string StoredName);
+    public record Attachment(
+        string OriginalName, 
+        string StoredName, 
+        string Extension, 
+        double Size);
 }

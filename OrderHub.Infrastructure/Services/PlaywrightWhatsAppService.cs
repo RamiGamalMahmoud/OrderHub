@@ -93,7 +93,7 @@ internal sealed class PlaywrightWhatsAppService : IWhatsappService, IMessageSend
         // 🚨 تعديل جوهري: انتظر قليلاً بعد إرسال النص قبل البدء في رفع المرفقات لمحاكاة السلوك البشري
         await Task.Delay(Random.Shared.Next(3000, 5000));
 
-        foreach (var attachment in message.Attachments)
+        foreach (string attachment in message.Attachments)
         {
             if (string.IsNullOrWhiteSpace(attachment))
                 continue;

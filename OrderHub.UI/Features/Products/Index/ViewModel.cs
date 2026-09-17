@@ -1,12 +1,10 @@
-﻿using OrderHub.UI.Messaging;
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Features.Products.List;
-using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
-using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -30,26 +28,6 @@ public partial class ViewModel : IndexViewModelBase<ProductItem>
         WeakReferenceMessenger.Default.Register<ProductsMessages.ProductDeletedMessage>(this, async (r, m) => await ReloadAsync());
         WeakReferenceMessenger.Default.Register<ProductsMessages.ProductUpdatedMessage>(this, async (r, m) => await ReloadAsync());
         _productStore = productStore;
-    }
-
-    protected override async Task DeleteAsync(ProductItem dto)
-    {
-        if (!DialogService.Instance.Confirm($"هل تريد حذف المنتج( {dto.Name})"))
-        {
-            return;
-        }
-
-        Result result = await _mediator.Send(new Application.Features.Products.Delete.DeleteProductCommand(dto.Id));
-        if (result.IsSuccess)
-        {
-            NotificationService.Instance.ShowSuccess("تم حذف المنتج");
-            WeakReferenceMessenger.Default.Send(new ProductsMessages.ProductDeletedMessage(dto.Id));
-
-        }
-        else
-        {
-            NotificationService.Instance.ShowError("خطأ أثناء حذف المنتج");
-        }
     }
 
     protected override async Task LoadAsync()
@@ -163,16 +141,6 @@ public partial class ViewModel : IndexViewModelBase<ProductItem>
             p.Code,
             p.CategoryName,
             p.Suppliers.Select(s => new ProductSupplierItem(s.Id, s.Name)).ToList()));
-    }
-
-    protected override async Task ShowEditAsync(ProductItem model)
-    {
-        await DialogService.Instance.ShowDialog<Update.View>("تعديل بيانات منتج", model.Id);
-    }
-
-    protected override async Task ShowCreateAsync()
-    {
-        await DialogService.Instance.ShowDialog<Create.View>("إضافة منتج جديد");
     }
 
     [ObservableProperty]

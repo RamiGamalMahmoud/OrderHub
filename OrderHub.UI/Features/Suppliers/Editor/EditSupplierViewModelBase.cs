@@ -1,4 +1,4 @@
-﻿using OrderHub.UI.Messaging;
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -92,9 +92,6 @@ public abstract partial class EditSupplierViewModelBase : EditorViewModelBase
     [NotifyDataErrorInfo]
     private Application.DTOs.WhatsappGroupDtos.WhatsappGroupInfoDto _selectedWhatsappGroup;
 
-    [RelayCommand]
-    private async Task ShowCreateCity() => await DialogService.Instance.ShowDialog<Cities.Create.CreateCityView>("إضافة مدينة جديدة");
-
     public virtual async Task LoadAsync()
     {
         Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
@@ -103,10 +100,6 @@ public abstract partial class EditSupplierViewModelBase : EditorViewModelBase
 
     [RelayCommand]
     private void CloseEdit() => OnRequestClose();
-
-    [RelayCommand]
-    private async Task ShowCreateWhatsappGroup() => await DialogService.Instance.ShowDialog<Features.WhatsappGroups.Create.View>("إنشاء مجموعة واستاب جديدة");
-
 
     public override string Title => "انشاء مورد جديد";
 }

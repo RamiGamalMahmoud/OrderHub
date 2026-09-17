@@ -28,20 +28,20 @@ public static class SendMessageCommand
     internal sealed class Handler : IRequestHandler<Command, Result>
     {
         private readonly IMessageService _messageService;
-        private readonly IApplicationDirectoriesService _directoriesService;
+        private readonly IFileStorageService _fileStorageService;
         private readonly IOutboxMessageRepository _messageRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public Handler(
             IMessageService messageService,
-            IApplicationDirectoriesService directoriesService,
             IOutboxMessageRepository messageRepository,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IFileStorageService fileStorageService)
         {
             _messageService = messageService;
-            _directoriesService = directoriesService;
             _messageRepository = messageRepository;
             _unitOfWork = unitOfWork;
+            _fileStorageService = fileStorageService;
         }
 
         public async Task<Result> Handle(Command request, CancellationToken cancellationToken)
@@ -52,11 +52,9 @@ public static class SendMessageCommand
                 request.Request.Destination,
                 request.Request.RecipientType);
 
-            List<OutboxMessageAttachment> attachments = request.Request
-                .Message
-                .Attachments
-                .Select(CreateAttachment)
-                .ToList();
+            IEnumerable<Task<OutboxMessageAttachment>> tasks = request.Request.Message.Attachments.Select(CreateAttachment).ToList();
+
+            var attachments = (await Task.WhenAll(tasks)).ToList();
 
             OutboxMessage outboxMessage = new OutboxMessage()
             {
@@ -118,16 +116,21 @@ public static class SendMessageCommand
             };
         }
 
-        private OutboxMessageAttachment CreateAttachment(string file)
+        private async Task<OutboxMessageAttachment> CreateAttachment(string file)
         {
-            string originalFileName = Path.GetFileName(file);
             string extension = Path.GetExtension(file);
             string storedFileName = $"{Guid.NewGuid()}{extension}";
 
-            string destinationPath = Path.Combine(_directoriesService.AttachmentsDirectory, storedFileName);
-            File.Copy(file, destinationPath, true);
-            var attachment = new OutboxMessageAttachment(originalFileName, storedFileName, extension, new FileInfo(destinationPath).Length);
-            return attachment;
+            StoredFile storedFile =
+                await _fileStorageService.SaveAttachmentAsync(
+                    file,
+                    storedFileName);
+
+            return new OutboxMessageAttachment(
+                storedFile.OriginalFileName,
+                storedFile.StoredFileName,
+                Path.GetExtension(storedFile.OriginalFileName),
+                (long)storedFile.Size);
         }
     }
 }

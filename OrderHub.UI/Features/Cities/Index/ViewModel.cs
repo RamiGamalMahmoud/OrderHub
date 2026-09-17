@@ -1,10 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
-using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
 using OrderHub.UI.Messaging;
-using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -46,34 +44,6 @@ public partial class ViewModel : IndexViewModelBase<CityListDto>
     {
         _allCities = (await _mediator.Send(new Application.Queries.CityQueries.GetAllCitiesQuery())).ToList();
         ApplyFilter();
-    }
-
-    protected override async Task ShowCreateAsync()
-    {
-        await DialogService.Instance.ShowDialog<Create.CreateCityView>("إضافة مدينة جديدة");
-    }
-
-    protected override async Task ShowEditAsync(CityListDto model)
-    {
-        await DialogService.Instance.ShowDialog<Edit.EditCityView>("إضافة مدينة جديدة", model.Id);
-    }
-
-    protected override async Task DeleteAsync(CityListDto model)
-    {
-        if (!DialogService.Instance.Confirm($"هل تريد حذف المدينة ({model.Name})؟"))
-        {
-            return;
-        }
-
-        Result result = await _mediator.Send(new Application.Commands.CityCommands.DeleteCityCommand(model.Id));
-        if (result.IsSuccess)
-        {
-            NotificationService.Instance.ShowSuccess($"تم حذف المدينة ({model.Name}) بنجاح.");
-            WeakReferenceMessenger.Default.Send(new CitiesMessages.CityDeletedMessage(model.Id));
-            return;
-        }
-
-        NotificationService.Instance.ShowError(result.ErrorMessage);
     }
 
     private void ApplyFilter()

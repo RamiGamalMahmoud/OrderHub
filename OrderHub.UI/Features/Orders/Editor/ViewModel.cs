@@ -77,7 +77,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
         Items.PropertyChanged += Items_PropertyChanged;
 
         ProductsPanel = new OrderProductsPanelViewModel(mediator, productStore);
-        PartyPanel = new OrderPartyPanelViewModel(mediator, lookupService);
+        PartyPanel = new OrderPartyPanelViewModel(lookupService);
         DeliveryMethodsViewModel = new DeliveryMethodsViewModel(mediator);
 
         ProductsPanel.ProductSelected += ProductsPanel_ProductSelected;
@@ -242,12 +242,6 @@ internal abstract partial class ViewModel : EditorViewModelBase
             SaveCommand.NotifyCanExecuteChanged();
         }
     }
-
-    [RelayCommand]
-    private async Task AddProduct() => await DialogService.Instance.ShowDialog<Features.Products.Create.View>("≈÷«›… „‰ Ã");
-
-    [RelayCommand]
-    private async Task AddSupplier() => await DialogService.Instance.ShowDialog<Features.Suppliers.Create.View>("≈÷«›… „Ê—œ");
 
     private void ProductsPanel_ProductSelected(ProductSelectedEventArgs e)
     {

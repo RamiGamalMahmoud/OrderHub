@@ -1,6 +1,5 @@
-﻿using OrderHub.UI.Messaging;
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Enums;
@@ -90,9 +89,6 @@ public abstract partial class ViewModel : EditorViewModelBase, IDisposable
     public IEnumerable<WhatsappGroupInfoDto> WhatsappGroupsOptions =>
         new[] { new WhatsappGroupInfoDto(0, "بدون مجموعة", WhatsappGroupType.Deliverymen) }
         .Concat(WhatsappGroups ?? []);
-
-    [RelayCommand]
-    private async Task ShowCreateCity() => await DialogService.Instance.ShowDialog<Features.Cities.Create.CreateCityView>("إضافة مدينة جديدة");
 
     private async Task LoadWhatsappGroupsAsync()
     {
