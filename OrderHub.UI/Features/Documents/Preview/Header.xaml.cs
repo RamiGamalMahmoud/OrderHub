@@ -13,16 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace OrderHub.UI.Features.Orders.Index
+namespace OrderHub.UI.Features.Documents.Preview;
+/// <summary>
+/// Interaction logic for Header.xaml
+/// </summary>
+public partial class Header : UserControl
 {
-    /// <summary>
-    /// Interaction logic for Paginator.xaml
-    /// </summary>
-    public partial class Paginator : UserControl
+    public Header()
     {
-        public Paginator()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

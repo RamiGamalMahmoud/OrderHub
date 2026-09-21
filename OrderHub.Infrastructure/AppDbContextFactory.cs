@@ -10,10 +10,14 @@ internal class AppDbContextFactory
 {
     private readonly DbContextOptions<AppDbContext> _options;
     private readonly IDatabaseConfigurationService _databaseConfigurationService;
+    private readonly IServerConfiguration _serverConfiguration;
 
-    public AppDbContextFactory(IDatabaseConfigurationService databaseConfigurationService)
+    public AppDbContextFactory(
+        IDatabaseConfigurationService databaseConfigurationService,
+        IServerConfiguration serverConfiguration)
     {
         _databaseConfigurationService = databaseConfigurationService;
+        _serverConfiguration = serverConfiguration;
     }
 
     // Used by tests
@@ -35,7 +39,7 @@ internal class AppDbContextFactory
 
         NpgsqlConnectionStringBuilder connectionStringBuilder = new()
         {
-            Host = databaseSettings.Host,
+            Host = _serverConfiguration.ServerAddress,
             Port = databaseSettings.Port,
             Database = databaseSettings.Database,
             Username = databaseSettings.Username,

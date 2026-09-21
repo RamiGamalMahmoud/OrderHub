@@ -141,7 +141,11 @@ public partial class SendMessageViewModel : ObservableObject, IParameterizedView
             throw new System.ArgumentException(null, nameof(parameter));
 
         Message = data.Text;
-        AttachedFiles.Add(new MessageAttachmentItem(data.Attachments[0]));
+        AttachedFiles.Add(new MessageAttachmentItem(
+            data.Attachments[0],
+            "",
+            "",
+            0));
         await LoadAsync();
         SelectedRecipient = Recipients.Where(recipient => recipient.Destination == data.Destination).FirstOrDefault();
     }

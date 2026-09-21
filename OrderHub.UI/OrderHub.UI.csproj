@@ -49,20 +49,24 @@
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
 		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4129.50" />
 		<PackageReference Include="Notification.Wpf" Version="8.0.0" />
+		<PackageReference Include="QRCoder" Version="1.8.0" />
 		<PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
+		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<Content Include="Resources\Images\documents-background.png">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
 		<Content Include="Resources\Images\almasajid.png">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 		<Content Include="Resources\Images\order-hub-banner.png">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
-		<Content Include="Resources\Images\order-hub-icon.ico" />
+		<Content Include="Resources\Images\order-hub-icon.ico">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
 		<Content Include="Resources\Images\OrderHub.png">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
@@ -75,45 +79,45 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\OrderHub.Api\OrderHub.Api.csproj" />
-	  <ProjectReference Include="..\OrderHub.Application\OrderHub.Application.csproj" />
-	  <ProjectReference Include="..\OrderHub.Domain\OrderHub.Domain.csproj" />
-	  <ProjectReference Include="..\OrderHub.Infrastructure\OrderHub.Infrastructure.csproj" />
+		<ProjectReference Include="..\OrderHub.Api\OrderHub.Api.csproj" />
+		<ProjectReference Include="..\OrderHub.Application\OrderHub.Application.csproj" />
+		<ProjectReference Include="..\OrderHub.Domain\OrderHub.Domain.csproj" />
+		<ProjectReference Include="..\OrderHub.Infrastructure\OrderHub.Infrastructure.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="Properties\Settings.settings">
-	    <Generator>SettingsSingleFileGenerator</Generator>
-	    <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-	  </None>
-	  <None Update="response.txt">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+		<None Update="Properties\Settings.settings">
+			<Generator>SettingsSingleFileGenerator</Generator>
+			<LastGenOutput>Settings.Designer.cs</LastGenOutput>
+		</None>
+		<None Update="response.txt">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Resources\Fonts\Tajawal\" />
-	  <Folder Include="Resources\Theme\" />
+		<Folder Include="Resources\Fonts\Tajawal\" />
+		<Folder Include="Resources\Theme\" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Resource Include="Resources\Fonts\Cairo.ttf">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Resource>
-	  <Resource Include="Resources\Fonts\Tajawal-Regular.ttf">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Resource>
+		<Resource Include="Resources\Fonts\Cairo.ttf">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Resources\Fonts\Tajawal-Regular.ttf">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</Resource>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="Features\Suppliers\Editor\EditSupplierView.xaml.cs">
-	    <SubType>Code</SubType>
-	  </Compile>
-	  <Compile Update="Properties\Settings.Designer.cs">
-	    <DesignTimeSharedInput>True</DesignTimeSharedInput>
-	    <AutoGen>True</AutoGen>
-	    <DependentUpon>Settings.settings</DependentUpon>
-	  </Compile>
+		<Compile Update="Features\Suppliers\Editor\EditSupplierView.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Properties\Settings.Designer.cs">
+			<DesignTimeSharedInput>True</DesignTimeSharedInput>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Settings.settings</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 </Project>

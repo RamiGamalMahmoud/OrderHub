@@ -41,6 +41,9 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<ProformaInvoice> ProformaInvoices { get; set; }
     public DbSet<ProformaInvoiceItem> ProformaInvoiceItems { get; set; }
     public DbSet<User> Users { get; set; }
+    public DbSet<TelegramAccount> TelegramAccounts { get; set; }
+    public DbSet<TelegramLink> TelegramLinks { get; set; }
+    public DbSet<DraftRecord> DraftRecords { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

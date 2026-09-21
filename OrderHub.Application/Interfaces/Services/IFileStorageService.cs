@@ -1,10 +1,17 @@
-﻿using System.Threading;
+﻿using OrderHub.Domain.Enums;
+using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OrderHub.Application.Interfaces.Services;
 
 public interface IFileStorageService
 {
+    Task SaveFileAsync(
+    string source,
+    string destinationPath,
+    CancellationToken cancellationToken = default);
+
     Task<StoredFile> SaveAttachmentAsync(
         string sourceFilePath,
         string destinationName,
@@ -59,6 +66,7 @@ public interface IFileStorageService
     Task DeleteInvoiceDocumentAsync(
         string fileName,
         CancellationToken cancellationToken = default);
+    Uri GetDocumentUri(DocumentType documentType, string fileName);
 }
 
 public sealed record StoredFile(

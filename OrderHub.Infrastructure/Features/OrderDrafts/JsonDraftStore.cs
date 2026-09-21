@@ -92,4 +92,9 @@ internal sealed class JsonDraftStore : IDraftStore
             .OrderByDescending(x => x.UpdatedAt)
             .ToList();
     }
+
+    public Task<IReadOnlyList<OrderDraftSummary>> GetUserDraftsAsync(int userId)
+    {
+        return GetAllAsync();
+    }
 }

@@ -33,6 +33,14 @@ internal class OutboxMessageRepository : IOutboxMessageRepository
         return Task.CompletedTask;
     }
 
+    public async Task<OutboxMessage> GetById(int messageId)
+    {
+        return await _dbContext.OutboxMessages
+            .SingleOrDefaultAsync(m => m.Id == messageId);
+    }
+
+    public void Add(OutboxMessage message) => _dbContext.OutboxMessages.Add(message);
+
     public async Task<OutboxMessage> GetForResend(int id, CancellationToken cancellationToken = default)
     {
         return await _dbContext.OutboxMessages

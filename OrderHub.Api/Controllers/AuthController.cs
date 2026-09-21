@@ -33,12 +33,12 @@ public sealed class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
-        User? user = await AuthenticateUserAsync(request);
+        User user = await AuthenticateUserAsync(request);
 
         if (user is null)
             return Unauthorized("بيانات تسجيل الدخول غير صحيحة.");
 
-        DatabaseInfo? databaseInfo = CreateDatabaseInfo();
+        DatabaseInfo databaseInfo = CreateDatabaseInfo();
 
         if (databaseInfo is null)
             return StatusCode(
@@ -50,9 +50,9 @@ public sealed class AuthController : ControllerBase
         return Ok(response);
     }
 
-    private async Task<User?> AuthenticateUserAsync(LoginRequest request)
+    private async Task<User> AuthenticateUserAsync(LoginRequest request)
     {
-        User? user = await _userRepository.GetByUsernameAsync(request.UserName);
+        User user = await _userRepository.GetByUsernameAsync(request.UserName);
 
         if (user is null)
             return null;
@@ -63,13 +63,13 @@ public sealed class AuthController : ControllerBase
         return user;
     }
 
-    private DatabaseInfo? CreateDatabaseInfo()
+    private DatabaseInfo CreateDatabaseInfo()
     {
         try
         {
             DatabaseSettings settings = _databaseConfigurationService.GetSettings();
 
-            IPAddress? localIpAddress = HttpContext.Connection.LocalIpAddress;
+            IPAddress localIpAddress = HttpContext.Connection.LocalIpAddress;
 
             if (localIpAddress is null)
                 return null;

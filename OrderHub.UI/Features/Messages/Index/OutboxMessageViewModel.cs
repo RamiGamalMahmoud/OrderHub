@@ -40,11 +40,15 @@ public partial class OutboxMessageViewModel : ObservableObject
 
     public string OrderNumber { get; init; }
     public string RecipientName { get; init; }
+    public int RecipientId { get; init; }
     public EnumItem<RecipientType> RecipientType { get; init; }
     public string Text { get; init; }
     public string PhoneNumber { get; init; }
-    public DateTime CreatedAt { get; init; }
-    public DateTime? LastAttemptAt { get; init; }
+    [ObservableProperty]
+    private DateTime _createdAt;
+
+    [ObservableProperty]
+    private DateTime? _lastAttemptAt;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddNoteCommand))]

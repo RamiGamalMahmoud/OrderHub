@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:buttons="clr-namespace:OrderHub.UI.Components.Buttons"
     xmlns:commands="clr-namespace:OrderHub.UI.Commands"
+    xmlns:controls="clr-namespace:OrderHub.UI.Common.Controls"
     xmlns:converters="clr-namespace:Hoax.WpfConverters;assembly=Hoax.WpfConverters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:hc="https://handyorg.github.io/handycontrol"
@@ -52,7 +53,7 @@
                         hc:InfoElement.Placeholder="ابحث عن طلب باسم العميل ..."
                         hc:InfoElement.ShowClearButton="True"
                         Style="{StaticResource SearchBarPlus}"
-                        Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}" />
+                        Text="{Binding Filter.SearchTerm, UpdateSourceTrigger=PropertyChanged}" />
 
                     <Button
                         Margin="5,0"
@@ -157,7 +158,12 @@
 
                 <local:OrdersTable Grid.Row="1" Margin="0,5,0,0" />
 
-                <local:Paginator Grid.Row="2" Margin="0,6,0,0" />
+                <controls:Paginator
+                    Grid.Row="2"
+                    Margin="0,6,0,0"
+                    NextCommand="{Binding Pagination.MoveNextCommand}"
+                    PreviousCommand="{Binding Pagination.MovePreviousCommand}"
+                    Summary="{Binding Pagination.Summary}" />
 
                 <orderDetailsPanel:Panel
                     Grid.Row="1"

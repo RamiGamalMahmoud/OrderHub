@@ -63,7 +63,7 @@
                             Cursor="Hand"
                             DisplayMemberPath="DisplayName"
                             FontSize="12"
-                            ItemsSource="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.PaymentMethods}"
+                            ItemsSource="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.Filter.PaymentMethods}"
                             SelectedItem="{Binding PaymentMethod, UpdateSourceTrigger=PropertyChanged}" />
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>

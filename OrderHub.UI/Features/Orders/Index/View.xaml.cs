@@ -1,27 +1,26 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 
-namespace OrderHub.UI.Features.Orders.Index
+namespace OrderHub.UI.Features.Orders.Index;
+
+internal partial class View : UserControl
 {
-    internal partial class View : UserControl
+    private bool _isLoaded;
+
+    public View(ViewModel viewModel)
     {
-        private bool _isLoaded;
+        InitializeComponent();
+        DataContext = viewModel;
 
-        public View(ViewModel viewModel)
+        Loaded += View_Loaded;
+    }
+
+    private async void View_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is ViewModel viewModel && !_isLoaded)
         {
-            InitializeComponent();
-            DataContext = viewModel;
-
-            Loaded += View_Loaded;
-        }
-
-        private void View_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (DataContext is ViewModel viewModel && !_isLoaded)
-            {
-                Dispatcher.Invoke(() => viewModel.LoadCommand.ExecuteAsync(null));
-                _isLoaded = true;
-            }
+            await Dispatcher.Invoke(() => viewModel.LoadCommand.ExecuteAsync(null));
+            _isLoaded = true;
         }
     }
 }

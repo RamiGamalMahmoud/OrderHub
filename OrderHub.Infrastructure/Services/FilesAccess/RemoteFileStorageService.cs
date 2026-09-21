@@ -1,4 +1,5 @@
 ﻿using OrderHub.Application.Interfaces.Services;
+using OrderHub.Domain.Enums;
 using System;
 using System.IO;
 using System.Net.Http;
@@ -17,6 +18,30 @@ internal sealed class RemoteFileStorageService
         IHttpClientFactory httpClientFactory)
     {
         _httpClient = httpClientFactory.CreateClient("OrderHubApi");
+    }
+
+    public Uri GetDocumentUri(
+        DocumentType documentType,
+        string fileName)
+    {
+        string path = documentType switch
+        {
+            DocumentType.Quotation =>
+                "files/quotations",
+
+            DocumentType.ProformaInvoice =>
+                "files/proforma-invoices",
+
+            DocumentType.Invoice =>
+                "files/invoices",
+
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(documentType))
+        };
+
+        return new Uri(
+            _httpClient.BaseAddress!,
+            $"{path}/{Uri.EscapeDataString(fileName)}");
     }
 
     #region Attachments
@@ -251,6 +276,32 @@ internal sealed class RemoteFileStorageService
         string fileName)
     {
         return Uri.EscapeDataString(fileName);
+    }
+
+    public async Task SaveFileAsync(
+        string url,
+        string destinationPath,
+        CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await _httpClient.GetAsync(
+            url,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
+
+        response.EnsureSuccessStatusCode();
+
+        await using Stream source =
+            await response.Content.ReadAsStreamAsync(cancellationToken);
+
+        await using FileStream destination = new(
+            destinationPath,
+            FileMode.Create,
+            FileAccess.Write,
+            FileShare.None);
+
+        await source.CopyToAsync(
+            destination,
+            cancellationToken);
     }
 
     #endregion

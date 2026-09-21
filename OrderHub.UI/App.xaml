@@ -2,6 +2,7 @@
     x:Class="OrderHub.UI.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:OrderHub.UI.Converters"
     xmlns:hc="https://handyorg.github.io/handycontrol"
     xmlns:local="clr-namespace:OrderHub.UI"
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
@@ -11,6 +12,7 @@
 
         <ResourceDictionary>
 
+            <converters:UtcToLocalTimeConverter x:Key="UtcToLocalTimeConverter" />
             <FontFamily x:Key="Tajawal">./Resources/Fonts/Tajawal-Regular.ttf#Tajawal</FontFamily>
             <FontFamily x:Key="Cairo">./Resources/Fonts/Cairo.ttf#Cairo</FontFamily>
             <FontFamily x:Key="FontFamily">./Resources/Fonts/Cairo.ttf#Cairo</FontFamily>

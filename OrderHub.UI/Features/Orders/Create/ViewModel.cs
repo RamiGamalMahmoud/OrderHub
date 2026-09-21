@@ -1,5 +1,4 @@
-﻿using OrderHub.UI.Messaging;
-using CommunityToolkit.Mvvm.Input;
+﻿using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Common.Extensions;
@@ -10,15 +9,14 @@ using OrderHub.Application.Features.Orders.Create;
 using OrderHub.Application.Features.Orders.Queries;
 using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Interfaces;
-using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
 using OrderHub.UI.Features.Orders.Editor;
+using OrderHub.UI.Messaging;
 using OrderHub.UI.Services;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,7 +27,6 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
 {
     private readonly IDraftService _draftService;
     private DraftContext _draftContext;
-    private readonly IApplicationDirectoriesService _directoriesService;
     private CancellationTokenSource _draftSaveCancellation;
     private readonly IRequestExecutor _requestExecutor;
 
@@ -38,8 +35,7 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
         IProductStore productStore,
         ILookupService lookupService,
         IDraftService draftService,
-        IRequestExecutor requestExecutor,
-        IApplicationDirectoriesService directoriesService)
+        IRequestExecutor requestExecutor)
         : base(
             mediator,
             productStore,
@@ -66,8 +62,6 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
         };
 
         IsDocumentingReady = true;
-
-        _directoriesService = directoriesService;
     }
 
     public override string Title => "إنشاء طلب جديد";
@@ -102,11 +96,12 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
             .ToList());
 
         string quotationNumber = await _requestExecutor.ExecuteAsync(new CreateQuotationCommand.Command(quotation));
-        string path = Path.Combine(_directoriesService.QuotationsDirectory, $"{quotationNumber}.pdf");
+        
         await DialogService.Instance.ShowDialog<Features.Documents.Preview.PreviewDocumentView>(
             "عرض سعر",
             new Features.Documents.Preview.Data(
-                path,
+                $"{quotationNumber}.pdf",
+                DocumentType.Quotation,
                 PartyPanel.SelectedClient.Name,
                 PartyPanel.SelectedClient.PhoneNumber));
     }
@@ -129,12 +124,12 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
             .ToList());
 
         string documentNumber = await _requestExecutor.ExecuteAsync(new CreateProformaInvoiceCommand.Command(data));
-        string path = Path.Combine(_directoriesService.ProformaInvoicesDirectory, $"{documentNumber}.pdf");
 
         await DialogService.Instance.ShowDialog<Features.Documents.Preview.PreviewDocumentView>(
             "فاتورة أولية",
             new Features.Documents.Preview.Data(
-                path,
+                $"{documentNumber}.pdf",
+                DocumentType.ProformaInvoice,
                 PartyPanel.SelectedClient.Name,
                 PartyPanel.SelectedClient.PhoneNumber));
     }

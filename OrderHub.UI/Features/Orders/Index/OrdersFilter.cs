@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Domain.Enums;
 using System;
@@ -27,6 +28,53 @@ internal partial class OrdersFilter : ObservableObject
     [ObservableProperty]
     private IEnumerable<PaymentMethod> _paymentMethods;
 
+    public event EventHandler FilterChanged;
+
+    private bool _suppressChanged;
+
+    public void Initialize(
+    IEnumerable<PaymentMethod> paymentMethods)
+    {
+        _suppressChanged = true;
+
+        try
+        {
+            PaymentMethods = paymentMethods.ToList();
+
+            SelectedPaymentMethod =
+                PaymentMethodFilters.FirstOrDefault();
+
+            SelectedOrderStatus =
+                OrderStatusFilters.FirstOrDefault();
+        }
+        finally
+        {
+            _suppressChanged = false;
+        }
+    }
+
+    private void OnFilterChanged()
+    {
+        if (!_suppressChanged)
+            FilterChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void Update(Action action)
+    {
+        _suppressChanged = true;
+
+        try
+        {
+            action();
+        }
+        finally
+        {
+            _suppressChanged = false;
+        }
+
+        OnFilterChanged();
+    }
+
     public IEnumerable<PaymentMethod> PaymentMethodFilters =>
         new[]
         {
@@ -53,23 +101,36 @@ internal partial class OrdersFilter : ObservableObject
             ? null
             : SelectedOrderStatus.Value;
 
+    [RelayCommand]
     public void SetToday()
     {
-        FromDate = DateTime.Today;
-        ToDate = DateTime.Today;
+        Update(() =>
+        {
+            FromDate = DateTime.Today;
+            ToDate = DateTime.Today;
+        });
     }
 
-    public void MoveDay(int days)
+    [RelayCommand]
+    public void MoveDay(string daysText)
     {
-        if (FromDate is null || ToDate is null)
+        if (!int.TryParse(daysText, out int days))
             return;
 
-        FromDate = FromDate.Value.AddDays(days);
-        ToDate = ToDate.Value.AddDays(days);
+        if (FromDate is null || ToDate is null)
+            return;
+        Update(() =>
+        {
+
+            FromDate = FromDate.Value.AddDays(days);
+            ToDate = ToDate.Value.AddDays(days);
+        });
     }
 
+    [RelayCommand]
     public void SetCurrentWeek()
     {
+
         DateTime today = DateTime.Today;
 
         int diff =
@@ -77,21 +138,52 @@ internal partial class OrdersFilter : ObservableObject
 
         DateTime startOfWeek =
             today.AddDays(-diff);
-
-        FromDate = startOfWeek;
-        ToDate = startOfWeek.AddDays(6);
+        Update(() =>
+        {
+            FromDate = startOfWeek;
+            ToDate = startOfWeek.AddDays(6);
+        });
     }
 
+    [RelayCommand]
     public void SetCurrentMonth()
     {
         DateTime today = DateTime.Today;
 
         DateTime startOfMonth =
             new(today.Year, today.Month, 1);
+        Update(() =>
+        {
+            FromDate = startOfMonth;
+            ToDate = startOfMonth
+                .AddMonths(1)
+                .AddDays(-1);
+        });
+    }
 
-        FromDate = startOfMonth;
-        ToDate = startOfMonth
-            .AddMonths(1)
-            .AddDays(-1);
+    partial void OnSearchTermChanged(string value)
+    {
+        OnFilterChanged();
+    }
+
+    partial void OnFromDateChanged(DateTime? value)
+    {
+        OnFilterChanged();
+    }
+
+    partial void OnToDateChanged(DateTime? value)
+    {
+        OnFilterChanged();
+    }
+
+    partial void OnSelectedPaymentMethodChanged(PaymentMethod value)
+    {
+        OnFilterChanged();
+    }
+
+    partial void OnSelectedOrderStatusChanged(
+        EnumItem<OrderStatus> value)
+    {
+        OnFilterChanged();
     }
 }

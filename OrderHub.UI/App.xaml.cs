@@ -51,7 +51,7 @@ public partial class App : System.Windows.Application
             _host.Services.GetRequiredService<AppState>();
     }
 
-    protected override void OnStartup(StartupEventArgs e)
+    protected async override void OnStartup(StartupEventArgs e)
     {
         QuestPDF.Settings.License = LicenseType.Community;
         CultureInfo culture = new CultureInfo("en-US");
@@ -68,7 +68,8 @@ public partial class App : System.Windows.Application
         base.OnStartup(e);
 
         DialogService.Instance.SwitchWindow<Features.Splash>();
-        _ = StartAsync();
+        await StartAsync();
+        await _host.StartAsync();
     }
 
     private async Task StartAsync()
@@ -163,10 +164,12 @@ public partial class App : System.Windows.Application
 
     protected override async void OnExit(ExitEventArgs e)
     {
-        base.OnExit(e);
         await GetService<IMessageService>().StopAsync();
         GetService<IWhatsappService>().Stop();
+
         await _host.StopAsync();
+
+        base.OnExit(e);
     }
 
     #endregion

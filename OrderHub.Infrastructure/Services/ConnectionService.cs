@@ -6,105 +6,46 @@ using System.Threading.Tasks;
 
 namespace OrderHub.Infrastructure.Services;
 
-internal class ConnectionService : IConnectionService
+internal sealed class ConnectionService : IConnectionService
 {
-    private readonly SemaphoreSlim _stateLock = new(1, 1);
-    private readonly Ping _ping = new();
-    private readonly SynchronizationContext _context = SynchronizationContext.Current;
-
-    private CancellationTokenSource _cts;
-    private Task _worker;
+    private const string HOST = "8.8.8.8";
 
     public bool IsConnected { get; private set; }
 
     public event EventHandler<bool> ConnectionChanged;
 
-    public async Task StartAsync()
+    public async Task CheckConnectionAsync(
+        CancellationToken cancellationToken = default)
     {
-        await _stateLock.WaitAsync();
+        bool isConnected = await CheckAsync(cancellationToken);
+
+        if (isConnected == IsConnected)
+            return;
+
+        IsConnected = isConnected;
+
+        ConnectionChanged?.Invoke(this, isConnected);
+    }
+
+    private static async Task<bool> CheckAsync(
+        CancellationToken cancellationToken)
+    {
+        using Ping ping = new();
 
         try
         {
-            if (_worker is { IsCompleted: false })
-                return;
+            PingReply reply = await ping.SendPingAsync(HOST);
 
-            _cts?.Dispose();
-            _cts = new CancellationTokenSource();
-
-            _worker = Task.Run(() => MonitorConnection(_cts.Token));
+            return reply.Status == IPStatus.Success;
         }
-        finally
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
         {
-            _stateLock.Release();
+            throw;
         }
-    }
-
-    public async Task StopAsync()
-    {
-        await _stateLock.WaitAsync();
-
-        try
+        catch
         {
-            _cts?.Cancel();
-
-            if (_worker != null)
-            {
-                try
-                {
-                    await _worker;
-                }
-                catch (OperationCanceledException)
-                {
-                }
-            }
-
-            _worker = null;
-            _cts?.Dispose();
-            _cts = null;
-        }
-        finally
-        {
-            _stateLock.Release();
-        }
-    }
-
-    private async Task MonitorConnection(CancellationToken token)
-    {
-        while (!token.IsCancellationRequested)
-        {
-            try
-            {
-                await Task.Delay(2000, token);
-
-                PingReply reply = await _ping.SendPingAsync("8.8.8.8");
-                bool newState = reply.Status == IPStatus.Success;
-
-                if (newState != IsConnected)
-                {
-                    IsConnected = newState;
-                    RaiseConnectionChanged(newState);
-                }
-            }
-            catch
-            {
-                if (IsConnected)
-                {
-                    IsConnected = false;
-                    RaiseConnectionChanged(false);
-                }
-            }
-        }
-    }
-
-    private void RaiseConnectionChanged(bool state)
-    {
-        if (_context != null)
-        {
-            _context.Post(_ => ConnectionChanged?.Invoke(this, state), null);
-        }
-        else
-        {
-            ConnectionChanged?.Invoke(this, state);
+            return false;
         }
     }
 }

@@ -36,6 +36,7 @@ internal static class ServicesRegistration
         services.AddSingleton<ICacheService, CacheService>();
         services.AddSingleton<IConnectionConfigurationStorage, DpapiConnectionConfigurationStorage>();
         services.AddSingleton<IApplicationConfigurationProvider, ApplicationConfigurationProvider>();
+        services.AddSingleton<IServerConfiguration, ServerConfiguration>();
         return services;
     }
 }

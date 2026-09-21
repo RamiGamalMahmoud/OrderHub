@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using OrderHub.Application.Common;
 using OrderHub.Domain.Enums;
 using System;
 using System.Collections.Generic;
@@ -7,11 +8,20 @@ namespace OrderHub.Application.Queries;
 
 public static class OutboxMessageQueries
 {
-    public record GetOutboxMessagesQuery() : IRequest<IEnumerable<OutboxMessageListItem>>;
+    public sealed record GetOutboxMessagesQuery(
+        int PageNumber,
+        int PageSize,
+        string SearchTerm = null,
+        OutboxMessageStatus? Status = null,
+        DateTime? FromDate = null,
+        DateTime? ToDate = null)
+        : IRequest<PagedResult<OutboxMessageListItem>>;
+
     public sealed record OutboxMessageListItem(
         int Id,
         OutboxMessageStatus Status,
         string OrderNumber,
+        int RecipientId,
         string RecipientName,
         RecipientType RecipientType,
         string Text,
@@ -21,9 +31,9 @@ public static class OutboxMessageQueries
         IReadOnlyList<Attachment> Attachments,
         IReadOnlyList<string> Notes);
 
-    public record Attachment(
-        string OriginalName, 
-        string StoredName, 
-        string Extension, 
+    public sealed record Attachment(
+        string OriginalName,
+        string StoredName,
+        string Extension,
         double Size);
 }

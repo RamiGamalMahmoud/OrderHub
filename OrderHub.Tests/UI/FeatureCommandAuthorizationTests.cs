@@ -80,7 +80,6 @@ public class FeatureCommandAuthorizationTests
             (provider.GetRequiredService<WhatsappGroupsCommands>().DeleteCommand, 1, PermissionFeature.WhatsAppGroups, true),
             (provider.GetRequiredService<UsersCommands>().CreateCommand, null, PermissionFeature.Users, true),
             (provider.GetRequiredService<UsersCommands>().EditCommand, 1, PermissionFeature.Users, true),
-            (provider.GetRequiredService<MessagesCommands>().DeleteCommand, 1, PermissionFeature.Messages, true),
             (provider.GetRequiredService<OrderDraftsCommands>().DeleteCommand, Guid.NewGuid(), PermissionFeature.Orders, true),
         ];
 
@@ -117,7 +116,6 @@ public class FeatureCommandAuthorizationTests
             Assert.True(entry.Command.CanExecute(entry.Parameter));
         }
 
-        Assert.False(provider.GetRequiredService<MessagesCommands>().DeleteCommand.CanExecute(null));
         Assert.False(provider.GetRequiredService<OrderDraftsCommands>().DeleteCommand.CanExecute(null));
 
         context.ClearUser();

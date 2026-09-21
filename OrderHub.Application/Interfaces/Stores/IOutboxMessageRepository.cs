@@ -11,4 +11,5 @@ public interface IOutboxMessageRepository
     void AddRange(IEnumerable<OutboxMessage> messages);
     Task DeleteAsync(OutboxMessage message, CancellationToken cancellationToken = default);
     Task<OutboxMessage> GetForResend(int id, CancellationToken cancellationToken = default);
+    Task<OutboxMessage> GetById(int messageId);
 }

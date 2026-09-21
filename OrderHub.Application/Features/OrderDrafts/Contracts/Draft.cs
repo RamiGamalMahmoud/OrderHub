@@ -6,6 +6,7 @@ namespace OrderHub.Application.Features.OrderDrafts.Contracts;
 
 public record Draft(
     Guid Id,
+    int UserId,
     DateTime LastModified,
     OrderDraftData Data);
 
