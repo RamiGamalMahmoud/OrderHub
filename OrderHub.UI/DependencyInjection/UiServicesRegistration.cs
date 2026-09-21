@@ -2,7 +2,6 @@
 using Notification.Wpf;
 using OrderHub.UI.Commands;
 using OrderHub.UI.Services;
-using OrderHub.UI.Services.ApiServer;
 using OrderHub.UI.StartUpSteps;
 using OrderHub.UI.States;
 
@@ -19,7 +18,7 @@ public static class UiServicesRegistration
         services.AddSingleton<INotificationManager, NotificationManager>();
 
         services.AddSingleton<IApplicationInitializationService, ApplicationInitializationService>();
-        services.AddSingleton<IApiServerService, EmbeddedApiServerService>();
+        //services.AddSingleton<IApiServerService, EmbeddedApiServerService>();
         services.AddCommands();
         services.AddStates();
 

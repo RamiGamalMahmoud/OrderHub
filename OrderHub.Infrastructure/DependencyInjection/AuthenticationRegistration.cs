@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Application.Services;
 using OrderHub.Infrastructure.Services;

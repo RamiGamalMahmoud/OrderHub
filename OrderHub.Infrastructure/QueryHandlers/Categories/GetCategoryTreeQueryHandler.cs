@@ -1,8 +1,5 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
-using OrderHub.Application.Common;
-using OrderHub.Application.Interfaces.Services;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -12,26 +9,19 @@ using static OrderHub.Application.Queries.CategoryQueries;
 
 namespace OrderHub.Infrastructure.QueryHandlers.Categories;
 
-internal class GetCategoryTreeQueryHandler : IRequestHandler<GetCategoryTreeQuery, IEnumerable<CategoryTreeDto>>
+internal class GetCategoryTreeQueryHandler
+    : IRequestHandler<GetCategoryTreeQuery, IEnumerable<CategoryTreeDto>>
 {
     private readonly AppDbContextFactory _appDbContextFactory;
-    private readonly ICacheService _cacheService;
 
-    public GetCategoryTreeQueryHandler(AppDbContextFactory appDbContextFactory, ICacheService cacheService)
+    public GetCategoryTreeQueryHandler(AppDbContextFactory appDbContextFactory)
     {
         _appDbContextFactory = appDbContextFactory;
-        _cacheService = cacheService;
     }
 
-    public async Task<IEnumerable<CategoryTreeDto>> Handle(GetCategoryTreeQuery request, CancellationToken cancellationToken)
-    {
-        return await _cacheService.GetOrCreateAsync(
-            CacheKeys.AllCategories,
-            async () => await FetchCategoryTreeAsync(cancellationToken),
-            TimeSpan.FromMinutes(30));
-    }
-
-    private async Task<IEnumerable<CategoryTreeDto>> FetchCategoryTreeAsync(CancellationToken cancellationToken)
+    public async Task<IEnumerable<CategoryTreeDto>> Handle(
+        GetCategoryTreeQuery request,
+        CancellationToken cancellationToken)
     {
         await using var appDbContext = _appDbContextFactory.CreateDbContext();
 
@@ -48,27 +38,29 @@ internal class GetCategoryTreeQueryHandler : IRequestHandler<GetCategoryTreeQuer
         return BuildCategoryTree(allCategories);
     }
 
-    private static List<CategoryTreeDto> BuildCategoryTree(IEnumerable<CategoryFlatDto> flatCategories)
+    private static List<CategoryTreeDto> BuildCategoryTree(
+        IEnumerable<CategoryFlatDto> flatCategories)
     {
-        ILookup<int?, CategoryFlatDto> lookup = flatCategories.ToLookup(c => c.ParentCategoryId);
+        ILookup<int?, CategoryFlatDto> lookup =
+            flatCategories.ToLookup(c => c.ParentCategoryId);
 
-        List<CategoryTreeDto> BuildTree(int? parentId, int level)
+        List<CategoryTreeDto> BuildTree(int? parentId)
         {
             return lookup[parentId]
                 .Select(child => new CategoryTreeDto(
                     child.Id,
                     child.Name,
                     child.IsRootCategory,
-                    BuildTree(child.Id, level + 1)))
+                    BuildTree(child.Id)))
                 .ToList();
         }
 
-        return BuildTree(null, 0);
+        return BuildTree(null);
     }
 
     private record CategoryFlatDto(
-    int Id,
-    string Name,
-    bool IsRootCategory,
-    int? ParentCategoryId);
+        int Id,
+        string Name,
+        bool IsRootCategory,
+        int? ParentCategoryId);
 }

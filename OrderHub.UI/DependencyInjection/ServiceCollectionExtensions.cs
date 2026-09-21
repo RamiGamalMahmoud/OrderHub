@@ -3,7 +3,6 @@ using OrderHub.Application;
 using OrderHub.Application.Options;
 using OrderHub.Domain;
 using OrderHub.Infrastructure.DependencyInjection;
-using OrderHub.UI.Commands;
 using OrderHub.UI.Workers;
 
 namespace OrderHub.UI.DependencyInjection;

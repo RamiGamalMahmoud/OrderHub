@@ -1,7 +1,5 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
-using OrderHub.Application.Common;
-using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using System.Threading;
@@ -10,26 +8,33 @@ using static OrderHub.Application.Commands.CategoryCommands;
 
 namespace OrderHub.Infrastructure.CommandHandlers.Categories;
 
-internal class UpdateCategoryCommandHandler(AppDbContextFactory appDbContextFactory, ICacheService cacheService) : IRequestHandler<UpdateCategoryCommand, Result>
+internal class UpdateCategoryCommandHandler(AppDbContextFactory appDbContextFactory)
+    : IRequestHandler<UpdateCategoryCommand, Result>
 {
     private readonly AppDbContextFactory _appDbContextFactory = appDbContextFactory;
-    private readonly ICacheService _cacheService = cacheService;
 
-    public async Task<Result> Handle(UpdateCategoryCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(
+        UpdateCategoryCommand request,
+        CancellationToken cancellationToken)
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
 
-        Category category = await appDbContext.Categories.FindAsync(request.CategoryUpdateDto.Id);
+        Category category = await appDbContext.Categories.FindAsync(
+            [request.CategoryUpdateDto.Id],
+            cancellationToken);
+
+        if (category is null)
+        {
+            return Result.Failure("القسم غير موجود.");
+        }
+
         category.UpdateName(request.CategoryUpdateDto.Name);
         category.ParentCategoryId = request.CategoryUpdateDto.ParentId;
 
         try
         {
-            await appDbContext.SaveChangesAsync();
-            
-            // Invalidate category cache
-            _cacheService.Remove(CacheKeys.AllCategories);
-            
+            await appDbContext.SaveChangesAsync(cancellationToken);
+
             return Result.Success();
         }
         catch (DbUpdateException)

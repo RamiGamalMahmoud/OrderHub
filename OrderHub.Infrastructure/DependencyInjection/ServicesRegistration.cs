@@ -33,7 +33,7 @@ internal static class ServicesRegistration
         services.AddSingleton<IEncryptionService, EncryptionService>();
         services.AddSingleton<ICredentialsService, FileCredentialsService>();
         services.AddSingleton<ITokenStorageService, FieTokenStorageService>();
-        services.AddSingleton<ICacheService, CacheService>();
+        //services.AddSingleton<ICacheService, CacheService>();
         services.AddSingleton<IConnectionConfigurationStorage, DpapiConnectionConfigurationStorage>();
         services.AddSingleton<IApplicationConfigurationProvider, ApplicationConfigurationProvider>();
         services.AddSingleton<IServerConfiguration, ServerConfiguration>();
