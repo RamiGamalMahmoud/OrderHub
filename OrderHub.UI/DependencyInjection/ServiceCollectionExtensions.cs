@@ -18,7 +18,6 @@ public static class ServiceCollectionExtensions
         services.AddUiServices();
         services.AddViewModels();
         services.AddViews();
-        services.AddCommands();
         services.AddWorkers();
 
         services.Configure<TelegramLinkOptions>(options =>

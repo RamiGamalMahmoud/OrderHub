@@ -1,10 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Web.WebView2.Core;
 using OrderHub.Application.Configuration;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.UI.Services;
-using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 
 namespace OrderHub.UI.Features.DatabaseConfiguration;

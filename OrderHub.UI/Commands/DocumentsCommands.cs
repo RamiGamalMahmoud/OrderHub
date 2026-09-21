@@ -16,13 +16,11 @@ public partial class DocumentsCommands
 {
     private readonly IRequestExecutor _requestExecutor;
     private readonly IFileStorageService _fileStorageService;
-    private readonly IServerConfiguration _serverConfiguration;
 
     public DocumentsCommands(
         IAuthorizationService authorization,
         IRequestExecutor requestExecutor,
-        IFileStorageService fileStorageService,
-        IServerConfiguration serverConfiguration)
+        IFileStorageService fileStorageService)
         : base(authorization)
     {
         _requestExecutor = requestExecutor;
@@ -31,7 +29,6 @@ public partial class DocumentsCommands
             GenerateInvoiceCommand,
             GenerateDeliveryNoteCommand);
         _fileStorageService = fileStorageService;
-        _serverConfiguration = serverConfiguration;
     }
 
     private bool CanWrite =>
@@ -112,7 +109,3 @@ public partial class DocumentsCommands
     }
 }
 
-public sealed record GenerateInvoiceArgs(
-    int OrderId,
-    string ClientName,
-    string ClientPhoneNumber);
