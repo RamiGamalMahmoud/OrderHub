@@ -11,7 +11,6 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
-        services.AddMemoryCache();
         services.AddSingleton<IAuthorizationService, AuthorizationService>();
 
         services.AddSingleton<ISessionManager, SessionManager>();

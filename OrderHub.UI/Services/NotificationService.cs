@@ -1,4 +1,5 @@
-﻿using Notification.Wpf;
+﻿using Notification.Core;
+using Notification.Wpf;
 
 namespace OrderHub.UI.Services;
 

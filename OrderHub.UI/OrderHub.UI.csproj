@@ -16,16 +16,16 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-		<PackageReference Include="HandyControls" Version="3.6.0" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+		<PackageReference Include="HandyControls" Version="3.7.0" />
 		<PackageReference Include="Hoax.WpfConverters" Version="1.0.0" />
-		<PackageReference Include="Material.Icons.WPF" Version="2.4.1" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
-		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4129.50" />
-		<PackageReference Include="Notification.Wpf" Version="8.0.0" />
+		<PackageReference Include="Material.Icons.WPF" Version="3.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
+		<PackageReference Include="Notification.Wpf" Version="11.0.0" />
 		<PackageReference Include="QRCoder" Version="1.8.0" />
 		<PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
-		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.12" />
 	</ItemGroup>
 
 	<ItemGroup>
