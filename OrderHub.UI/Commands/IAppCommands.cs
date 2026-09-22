@@ -22,4 +22,5 @@ public interface IAppCommands
     SettingsCommands Settings { get; }
     UsersCommands Users { get; }
     DocumentsCommands Documents { get; }
+    ApiServerCommands ApiServer { get; }
 }

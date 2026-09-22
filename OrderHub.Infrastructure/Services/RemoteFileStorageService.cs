@@ -7,7 +7,7 @@ using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace OrderHub.Infrastructure.Services.FilesAccess;
+namespace OrderHub.Infrastructure.Services;
 
 internal sealed class RemoteFileStorageService
     : IFileStorageService

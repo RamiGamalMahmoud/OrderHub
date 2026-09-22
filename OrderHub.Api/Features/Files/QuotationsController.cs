@@ -1,18 +1,18 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using OrderHub.Application.Interfaces.Services;
+using OrderHub.Api.Interfaces;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace OrderHub.Api.Controllers.Files;
+namespace OrderHub.Api.Features.Files;
 
 [ApiController]
-[Route("api/files/invoices")]
-public sealed class InvoicesController : ControllerBase
+[Route("api/files/quotations")]
+public sealed class QuotationsController : ControllerBase
 {
     private readonly ILocalFileAccessService _localAccessService;
 
-    public InvoicesController(
+    public QuotationsController(
         ILocalFileAccessService localAccessService)
     {
         _localAccessService = localAccessService;
@@ -35,7 +35,7 @@ public sealed class InvoicesController : ControllerBase
 
         await stream.CopyToAsync(memoryStream);
 
-        await _localAccessService.SaveInvoiceAsync(
+        await _localAccessService.SaveQuotationAsync(
             fileName,
             memoryStream.ToArray());
 
@@ -49,7 +49,7 @@ public sealed class InvoicesController : ControllerBase
             return BadRequest("Invalid file name.");
 
         string filePath =
-            await _localAccessService.GetInvoiceAsync(fileName);
+            await _localAccessService.GetQuotationAsync(fileName);
 
         if (!_localAccessService.FileExists(filePath))
             return NotFound();
@@ -65,7 +65,7 @@ public sealed class InvoicesController : ControllerBase
         if (!IsValidFileName(fileName))
             return BadRequest("Invalid file name.");
 
-        await _localAccessService.DeleteInvoiceAsync(fileName);
+        await _localAccessService.DeleteQuotationAsync(fileName);
 
         return NoContent();
     }

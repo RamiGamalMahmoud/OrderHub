@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using OrderHub.Application.Interfaces.Services;
+using OrderHub.Api.Interfaces;
 using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace OrderHub.Api.Controllers.Files;
+namespace OrderHub.Api.Features.Files;
 
 [ApiController]
 [Route("api/files/attachments")]

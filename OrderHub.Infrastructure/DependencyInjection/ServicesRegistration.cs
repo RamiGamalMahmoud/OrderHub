@@ -11,7 +11,6 @@ using OrderHub.Infrastructure.Execution;
 using OrderHub.Infrastructure.Features.Documents;
 using OrderHub.Infrastructure.Orders;
 using OrderHub.Infrastructure.Services;
-using OrderHub.Infrastructure.Services.FilesAccess;
 
 namespace OrderHub.Infrastructure.DependencyInjection;
 
@@ -24,7 +23,7 @@ internal static class ServicesRegistration
         services.AddSingleton<IDatabaseConfigurationService, DatabaseConfigurationService>();
         services.AddSingleton<IRequestExecutor, RequestExecutor>();
         services.AddSingleton<IPdfDocumentFactory, PdfDocumentFactory>();
-        services.AddSingleton<ILocalFileAccessService, LocalFileAccessService>();
+        //services.AddSingleton<ILocalFileAccessService, LocalFileAccessService>();
         services.AddSingleton<IFileStorageService, RemoteFileStorageService>();
         services.AddTransient<OrderWriteService>();
         services.AddSingleton<IOrderService, OrderService>();
@@ -33,7 +32,6 @@ internal static class ServicesRegistration
         services.AddSingleton<IEncryptionService, EncryptionService>();
         services.AddSingleton<ICredentialsService, FileCredentialsService>();
         services.AddSingleton<ITokenStorageService, FieTokenStorageService>();
-        //services.AddSingleton<ICacheService, CacheService>();
         services.AddSingleton<IConnectionConfigurationStorage, DpapiConnectionConfigurationStorage>();
         services.AddSingleton<IApplicationConfigurationProvider, ApplicationConfigurationProvider>();
         services.AddSingleton<IServerConfiguration, ServerConfiguration>();

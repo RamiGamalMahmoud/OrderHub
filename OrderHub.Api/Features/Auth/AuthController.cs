@@ -10,7 +10,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace OrderHub.Api.Controllers;
+namespace OrderHub.Api.Features.Auth;
 
 [ApiController]
 [Route("api/auth")]

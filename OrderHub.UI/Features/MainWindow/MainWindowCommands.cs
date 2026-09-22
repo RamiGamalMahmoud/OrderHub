@@ -103,6 +103,16 @@ internal partial class MainWindowCommands : ObservableObject
             "إدارة المستخدمون",
             "AccountGroup",
             _appCommands.Users.OpenCommand));
+
+        NavigationCommands.Add(new MainWindowCommand(
+            "تشغيل السيرفر",
+            "ServerNetwork",
+            _appCommands.ApiServer.RunCommand));
+
+        NavigationCommands.Add(new MainWindowCommand(
+            "إيقاف السيرفر",
+            "ServerNetworkOff",
+            _appCommands.ApiServer.StopCommand));
     }
 
 }

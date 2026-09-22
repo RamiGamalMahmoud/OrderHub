@@ -23,6 +23,7 @@ public sealed class AppCommands : IAppCommands
         WhatsappGroupsCommands whatsappGroups,
         MessagesCommands messages,
         SettingsCommands settings,
+        ApiServerCommands apiServer,
         UsersCommands users)
     {
         Auth = auth;
@@ -45,6 +46,7 @@ public sealed class AppCommands : IAppCommands
         WhatsappGroups = whatsappGroups;
         Messages = messages;
         Settings = settings;
+        ApiServer = apiServer;
         Users = users;
     }
 
@@ -70,6 +72,7 @@ public sealed class AppCommands : IAppCommands
     public WhatsappGroupsCommands WhatsappGroups { get; }
     public MessagesCommands Messages { get; }
     public SettingsCommands Settings { get; }
+    public ApiServerCommands ApiServer { get; }
     public UsersCommands Users { get; }
 
     public static void SetInstance(IAppCommands instance)
