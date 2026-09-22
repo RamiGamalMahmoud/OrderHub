@@ -5,6 +5,7 @@ using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -19,35 +20,86 @@ public sealed class AuthController : ControllerBase
     private readonly IUserRepository _userRepository;
     private readonly IDatabaseConfigurationService _databaseConfigurationService;
     private readonly IHashShervice _hashShervice;
+    private readonly IAppLogger _appLogger;
 
     public AuthController(
         IUserRepository userRepository,
         IDatabaseConfigurationService databaseConfigurationService,
-        IHashShervice hashShervice)
+        IHashShervice hashShervice,
+        IAppLogger appLogger)
     {
         _userRepository = userRepository;
         _databaseConfigurationService = databaseConfigurationService;
         _hashShervice = hashShervice;
+        _appLogger = appLogger;
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
-        User user = await AuthenticateUserAsync(request);
+        try
+        {
+            await _appLogger.LogInfoAsync(
+                $"[Auth] Login started. UserName: {request.UserName}");
 
-        if (user is null)
-            return Unauthorized("بيانات تسجيل الدخول غير صحيحة.");
+            await _appLogger.LogInfoAsync(
+                $"[Auth] Windows Identity: {System.Security.Principal.WindowsIdentity.GetCurrent().Name}");
 
-        DatabaseInfo databaseInfo = CreateDatabaseInfo();
+            // 1. Authenticate
+            await _appLogger.LogInfoAsync(
+                "[Auth] Before AuthenticateUserAsync.");
 
-        if (databaseInfo is null)
-            return StatusCode(
-                StatusCodes.Status503ServiceUnavailable,
-                "لم يتم إعداد اتصال قاعدة البيانات على السيرفر.");
+            User user = await AuthenticateUserAsync(request);
 
-        AuthResponse response = CreateAuthResponse(user, databaseInfo);
+            await _appLogger.LogInfoAsync(
+                $"[Auth] After AuthenticateUserAsync. User found: {user is not null}");
 
-        return Ok(response);
+            if (user is null)
+            {
+                await _appLogger.LogInfoAsync(
+                    "[Auth] Authentication failed.");
+
+                return Unauthorized("بيانات تسجيل الدخول غير صحيحة.");
+            }
+
+            // 2. Database configuration
+            await _appLogger.LogInfoAsync(
+                "[Auth] Before CreateDatabaseInfo.");
+
+            DatabaseInfo databaseInfo = await CreateDatabaseInfoAsync();
+
+            await _appLogger.LogInfoAsync(
+                $"[Auth] After CreateDatabaseInfo. Found: {databaseInfo is not null}");
+
+            if (databaseInfo is null)
+            {
+                await _appLogger.LogErrorAsync(
+                    "[Auth] DatabaseInfo could not be created.");
+
+                return StatusCode(
+                    StatusCodes.Status503ServiceUnavailable,
+                    "لم يتم إعداد اتصال قاعدة البيانات على السيرفر.");
+            }
+
+            // 3. Response
+            await _appLogger.LogInfoAsync(
+                "[Auth] Before CreateAuthResponse.");
+
+            AuthResponse response = CreateAuthResponse(user, databaseInfo);
+
+            await _appLogger.LogInfoAsync(
+                "[Auth] Login completed successfully.");
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            await _appLogger.LogErrorAsync(
+                "[Auth] Unhandled exception during login.",
+                ex);
+
+            throw;
+        }
     }
 
     private async Task<User> AuthenticateUserAsync(LoginRequest request)
@@ -63,18 +115,44 @@ public sealed class AuthController : ControllerBase
         return user;
     }
 
-    private DatabaseInfo CreateDatabaseInfo()
+    private async Task<DatabaseInfo> CreateDatabaseInfoAsync()
     {
         try
         {
-            DatabaseSettings settings = _databaseConfigurationService.GetSettings();
+            await _appLogger.LogInfoAsync(
+                "[Auth] Reading database settings.");
 
-            IPAddress localIpAddress = HttpContext.Connection.LocalIpAddress;
+            DatabaseSettings settings =
+                _databaseConfigurationService.GetSettings();
+
+            if (settings is null)
+            {
+                await _appLogger.LogErrorAsync(
+                    "[Auth] Database settings are null.");
+
+                return null;
+            }
+
+            await _appLogger.LogInfoAsync(
+                "[Auth] Database settings loaded successfully.");
+
+            IPAddress localIpAddress =
+                HttpContext.Connection.LocalIpAddress;
 
             if (localIpAddress is null)
-                return null;
+            {
+                await _appLogger.LogErrorAsync(
+                    "[Auth] LocalIpAddress is null.");
 
-            string host = localIpAddress.MapToIPv4().ToString();
+                return null;
+            }
+
+            string host = localIpAddress
+                .MapToIPv4()
+                .ToString();
+
+            await _appLogger.LogInfoAsync(
+                $"[Auth] Local IP resolved: {host}");
 
             return new DatabaseInfo(
                 host,
@@ -83,8 +161,12 @@ public sealed class AuthController : ControllerBase
                 settings.Username,
                 settings.Password);
         }
-        catch
+        catch (Exception ex)
         {
+            await _appLogger.LogErrorAsync(
+                "[Auth] CreateDatabaseInfo failed.",
+                ex);
+
             return null;
         }
     }

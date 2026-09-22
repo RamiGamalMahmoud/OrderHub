@@ -7,7 +7,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace OrderHub.Application.Features.Telegram.Links.Complete;
+namespace OrderHub.Api.Features.Telegram.Links.Complete;
 internal class CompleteTelegramLinkingHandler : IRequestHandler<CompleteTelegramLinkingCommand, Result>
 {
     private readonly ITelegramAccountRepository _telegramAccountRepository;

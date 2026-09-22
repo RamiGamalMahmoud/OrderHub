@@ -10,6 +10,7 @@ using OrderHub.Application;
 using OrderHub.Application.Options;
 using OrderHub.Infrastructure.DependencyInjection;
 using System;
+using System.Reflection;
 
 namespace OrderHub.Api;
 
@@ -32,6 +33,8 @@ public static class SrviceCollectionExtensions
         services.AddControllers().AddApplicationPart(typeof(ApiConfiguration).Assembly);
 
         services.AddOpenApi();
+
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 
         services.AddInfrastructure();
 

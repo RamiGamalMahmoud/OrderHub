@@ -11,11 +11,11 @@ internal class ApplicationDirectoriesService : IApplicationDirectoriesService
     public string AppDirectory =>
 #if DEBUG
         Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
             $"{APP_NAME} - Dev");
 #else
         Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
             APP_NAME);
 #endif
 

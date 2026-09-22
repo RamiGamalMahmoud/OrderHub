@@ -11,11 +11,11 @@ internal class EncryptionService : IEncryptionService
         => ProtectedData.Protect(
             data,
             _key,
-            DataProtectionScope.CurrentUser);
+            DataProtectionScope.LocalMachine);
 
     public byte[] Decrypt(byte[] data)
         => ProtectedData.Unprotect(
             data,
             _key,
-            DataProtectionScope.CurrentUser);
+            DataProtectionScope.LocalMachine);
 }

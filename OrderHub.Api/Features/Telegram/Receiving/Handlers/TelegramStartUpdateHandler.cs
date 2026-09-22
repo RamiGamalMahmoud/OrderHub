@@ -1,7 +1,7 @@
-﻿using OrderHub.Api.Features.Telegram.Models;
+﻿using MediatR;
+using OrderHub.Api.Features.Telegram.Links.Complete;
+using OrderHub.Api.Features.Telegram.Models;
 using OrderHub.Api.Features.Telegram.Services;
-using OrderHub.Application.Features.Telegram.Links.Complete;
-using OrderHub.Application.Interfaces;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,15 +9,15 @@ namespace OrderHub.Api.Features.Telegram.Receiving.Handlers;
 
 public class TelegramStartUpdateHandler : ITelegramUpdateHandler
 {
-    private readonly IRequestExecutor _requestExecutor;
     private readonly ITelegramHttpClient _httpClient;
+    private readonly IMediator _mediator;
 
     public TelegramStartUpdateHandler(
-        IRequestExecutor requestExecutor,
-        ITelegramHttpClient httpClient)
+        ITelegramHttpClient httpClient,
+        IMediator mediator)
     {
-        _requestExecutor = requestExecutor;
         _httpClient = httpClient;
+        _mediator = mediator;
     }
 
     public bool CanHandle(TelegramUpdate update)
@@ -38,7 +38,7 @@ public class TelegramStartUpdateHandler : ITelegramUpdateHandler
             update.Message.From.FirstName,
             update.Message.From.LastName);
 
-        var result = await _requestExecutor.ExecuteAsync(command, cancellationToken);
+        var result = await _mediator.Send(command, cancellationToken);
         string responseMessage = result.IsSuccess
             ? "تم ربط حسابك في Telegram بـ OrderHub بنجاح"
             : result.ErrorMessage;

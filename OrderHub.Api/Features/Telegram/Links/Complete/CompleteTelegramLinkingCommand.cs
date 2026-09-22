@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using OrderHub.Domain.Common;
 
-namespace OrderHub.Application.Features.Telegram.Links.Complete;
+namespace OrderHub.Api.Features.Telegram.Links.Complete;
 public record CompleteTelegramLinkingCommand(
     string Token,
     long TelegramUserId,
