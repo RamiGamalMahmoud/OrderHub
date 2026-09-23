@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using OrderHub.Api.Features.Telegram.Models;
 using OrderHub.Api.Features.Telegram.Services;
 using System;
@@ -12,27 +13,15 @@ namespace OrderHub.Api.Features.Telegram.Receiving;
 
 public class TelegramReceiver : BackgroundService
 {
-    private readonly IEnumerable<ITelegramUpdateHandler> _handlers;
     private readonly ITelegramHttpClient _client;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
     public TelegramReceiver(
-        IEnumerable<ITelegramUpdateHandler> handlers,
-        ITelegramHttpClient client)
+        ITelegramHttpClient client,
+        IServiceScopeFactory serviceScopeFactory)
     {
-        _handlers = handlers;
         _client = client;
-    }
-
-    public async Task ReceiveAsync(
-        TelegramUpdate update,
-        CancellationToken cancellationToken)
-    {
-        var handler = _handlers.SingleOrDefault(x => x.CanHandle(update));
-
-        if (handler is null)
-            return;
-
-        await handler.HandleAsync(update, cancellationToken);
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -65,7 +54,9 @@ public class TelegramReceiver : BackgroundService
         TelegramUpdate update,
         CancellationToken cancellationToken)
     {
-        var handler = _handlers.FirstOrDefault(x => x.CanHandle(update));
+        using IServiceScope scope = _serviceScopeFactory.CreateScope();
+        var handlers = scope.ServiceProvider.GetRequiredService<IEnumerable<ITelegramUpdateHandler>>();
+        var handler = handlers.FirstOrDefault(x => x.CanHandle(update));
         if (handler is null)
             return;
         await handler.HandleAsync(update, cancellationToken);

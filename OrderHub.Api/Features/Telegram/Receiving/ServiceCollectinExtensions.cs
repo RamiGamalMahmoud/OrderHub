@@ -16,7 +16,7 @@ public static class ServiceCollectinExtensions
 
         foreach(var handler in handlers)
         {
-            services.AddSingleton(typeof(ITelegramUpdateHandler), handler);
+            services.AddScoped(typeof(ITelegramUpdateHandler), handler);
         }
 
         services.AddHostedService<TelegramReceiver>();

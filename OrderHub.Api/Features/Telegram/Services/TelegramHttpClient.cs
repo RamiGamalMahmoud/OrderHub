@@ -29,6 +29,7 @@ public class TelegramHttpClient : ITelegramHttpClient
 
     public async Task<IReadOnlyList<TelegramUpdate>> GetUpdatesAsync(long? offset, CancellationToken cancellationToken = default)
     {
+        await _connectionService.CheckConnectionAsync();
         if (!_connectionService.IsConnected)
             return [];
 
