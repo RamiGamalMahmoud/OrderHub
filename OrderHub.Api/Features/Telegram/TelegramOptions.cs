@@ -1,4 +1,4 @@
-﻿namespace OrderHub.Api.Features.Telegram;
+﻿namespace OrderHub.Api.Features.TelegramIntegration;
 
 public class TelegramOptions
 {

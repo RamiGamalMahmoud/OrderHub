@@ -7,8 +7,8 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace OrderHub.Api.Features.Telegram.Links.Complete;
-internal class CompleteTelegramLinkingHandler : IRequestHandler<CompleteTelegramLinkingCommand, Result>
+namespace OrderHub.Api.Features.TelegramIntegration.Linking.Complete;
+internal class CompleteTelegramLinkingHandler : IRequestHandler<CompleteTelegramLinkingCommand, Result<TelegramAccount>>
 {
     private readonly ITelegramAccountRepository _telegramAccountRepository;
     private readonly ITelegramLinkRepository _telegramLinkRepository;
@@ -24,25 +24,25 @@ internal class CompleteTelegramLinkingHandler : IRequestHandler<CompleteTelegram
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Result> Handle(CompleteTelegramLinkingCommand request, CancellationToken cancellationToken)
+    public async Task<Result<TelegramAccount>> Handle(CompleteTelegramLinkingCommand request, CancellationToken cancellationToken)
     {
         var link = await _telegramLinkRepository.GetByToken(request.Token);
 
         if (link is null)
-            return Result.Failure("رابط الربط غير صالح.");
+            return Result<TelegramAccount>.Failure("رابط الربط غير صالح.");
 
         if (link.IsUsed)
-            return Result.Failure("تم استخدام رابط الربط من قبل.");
+            return  Result<TelegramAccount>.Failure("تم استخدام رابط الربط من قبل.");
 
         if (link.IsExpired(DateTime.UtcNow))
-            return Result.Failure("انتهت صلاحية رابط الربط.");
+            return Result<TelegramAccount>.Failure("انتهت صلاحية رابط الربط.");
 
         var telegramAccount = await _telegramAccountRepository.GetByTelegramUserId(request.TelegramUserId);
 
         var existingAccount = await _telegramAccountRepository.GetByOwner(link.OwnerType, link.OwnerId);
 
         if (existingAccount is not null || telegramAccount is not null)
-            return Result.Failure("حساب Telegram مربوط بالفعل.");
+            return Result<TelegramAccount>.Failure("حساب Telegram مربوط بالفعل.");
 
         TelegramAccount newAccount = new TelegramAccount(
             link.OwnerType,
@@ -63,7 +63,7 @@ internal class CompleteTelegramLinkingHandler : IRequestHandler<CompleteTelegram
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             await _unitOfWork.CommitTransactionAsync(cancellationToken);
-            return Result.Success();
+            return Result<TelegramAccount>.Success(newAccount);
         }
         catch
         {

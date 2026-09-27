@@ -5,7 +5,7 @@ using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using System.Threading.Tasks;
 
-namespace OrderHub.Api.Features.Telegram;
+namespace OrderHub.Api.Features.TelegramIntegration;
 [ApiController]
 [Route("api/telegram")]
 public class TelegramController : Controller
