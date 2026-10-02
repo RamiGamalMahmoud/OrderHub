@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace OrderHub.Web.Components.Pages.Features.Orders.Editor.Products;
 
-public partial class AddProductDialog
+public partial class AddProductDialog : IDisposable
 {
 
     // =========================
@@ -30,6 +30,12 @@ public partial class AddProductDialog
     private string? _searchTerm;
 
     private IReadOnlyList<ProductLookupItem> _products = [];
+
+    private const int SearchDebounceMilliseconds = 300;
+
+    private CancellationTokenSource? _searchCancellation;
+
+    private bool _isDisposed;
 
 
     // =========================
@@ -82,16 +88,47 @@ public partial class AddProductDialog
 
     private async Task TextChanged(string value)
     {
+        if (_isDisposed)
+            return;
+
         _searchTerm = value;
+        _searchCancellation?.Cancel();
+        _searchCancellation = null;
+        _products = [];
 
         if (string.IsNullOrWhiteSpace(value))
-        {
-            _products = [];
             return;
-        }
 
-        _products = (await ProductStore.GetProductsByName(value))
-            .ToList();
+        using var cancellation = new CancellationTokenSource();
+        _searchCancellation = cancellation;
+
+        try
+        {
+            await Task.Delay(SearchDebounceMilliseconds, cancellation.Token);
+
+            var products = await ProductStore.GetProductsByName(value, cancellation.Token);
+
+            // Request identity protects ordering even if the store ignores cancellation.
+            if (!_isDisposed && ReferenceEquals(_searchCancellation, cancellation))
+                _products = products.ToList();
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            // A newer search or dialog disposal superseded this request.
+        }
+        finally
+        {
+            if (ReferenceEquals(_searchCancellation, cancellation))
+                _searchCancellation = null;
+        }
+    }
+
+    public void Dispose()
+    {
+        _isDisposed = true;
+        var cancellation = _searchCancellation;
+        _searchCancellation = null;
+        cancellation?.Cancel();
     }
 
 
