@@ -9,6 +9,34 @@ namespace OrderHub.Tests.Web;
 
 public class ProductWorkingCopyTests
 {
+    [Theory]
+    [InlineData(OrderHub.Domain.Enums.PropertyType.Text, true, null, false)]
+    [InlineData(OrderHub.Domain.Enums.PropertyType.Text, true, "   ", false)]
+    [InlineData(OrderHub.Domain.Enums.PropertyType.Text, false, null, true)]
+    [InlineData(OrderHub.Domain.Enums.PropertyType.Boolean, true, "false", true)]
+    [InlineData(OrderHub.Domain.Enums.PropertyType.Boolean, true, null, false)]
+    [InlineData(OrderHub.Domain.Enums.PropertyType.Boolean, false, "invalid", false)]
+    [InlineData(OrderHub.Domain.Enums.PropertyType.List, true, "Available", true)]
+    [InlineData(OrderHub.Domain.Enums.PropertyType.List, false, "Removed", false)]
+    public async Task Property_validation_uses_original_definitions_before_any_mutation(
+        OrderHub.Domain.Enums.PropertyType type, bool required, string value, bool valid)
+    {
+        var original = new OrderItemEditorState
+        {
+            ProductName = "P", CategoryName = "C", UnitPrice = 5,
+            Properties = [new() { PropertyId = 1, Name = "Field", Type = type, IsRequired = required, Options = [new(1, "Available")] }]
+        };
+        using var step = new ProductsStep { Items = [original], SessionId = Guid.NewGuid() };
+        var working = original.CreateWorkingCopy();
+        working.UnitPrice = 10;
+        working.Properties[0].Value = value;
+        var result = await (Task<Result>)typeof(ProductsStep).GetMethod("CommitItemAsync", BindingFlags.NonPublic | BindingFlags.Instance)
+            .Invoke(step, new object[] { original, step.SessionId, working });
+        Assert.Equal(valid, result.IsSuccess);
+        Assert.Equal(valid ? 10m : 5m, original.UnitPrice);
+        Assert.Equal(valid ? value : null, original.Properties[0].Value);
+    }
+
     [Fact]
     public async Task Supplier_save_targets_the_original_row_and_rejects_unavailable_supplier()
     {

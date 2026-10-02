@@ -154,6 +154,12 @@ public partial class ProductsStep : IDisposable
             return Result.Failure("المورد المحدد غير متاح لهذا المنتج.");
         if (!original.Properties.Select(p => p.PropertyId).SequenceEqual(working.Properties.Select(p => p.PropertyId)))
             return Result.Failure("تغيرت خصائص المنتج. افتح المحرر مرة أخرى.");
+        for (var index = 0; index < original.Properties.Count; index++)
+        {
+            var error = original.Properties[index].ValidateValue(working.Properties[index].Value);
+            if (error is not null)
+                return Result.Failure(error);
+        }
 
         original.UnitPrice = working.UnitPrice;
         original.Quantity = working.Quantity;

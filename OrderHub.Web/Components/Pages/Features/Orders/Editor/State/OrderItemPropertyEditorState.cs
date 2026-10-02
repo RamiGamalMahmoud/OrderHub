@@ -15,4 +15,16 @@ public sealed class OrderItemPropertyEditorState
     public string? Value { get; set; }
 
     public IReadOnlyList<OrderItemPropertyOptionEditorState> Options { get; init; } = [];
+
+    public string? ValidateValue(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return IsRequired ? $"{Name}: القيمة مطلوبة." : null;
+        return Type switch
+        {
+            PropertyType.Boolean when value is not ("true" or "false") => $"{Name}: اختر نعم أو لا.",
+            PropertyType.List when !Options.Any(option => option.Value == value) => $"{Name}: الاختيار لم يعد متاحاً. اختر قيمة متاحة.",
+            _ => null
+        };
+    }
 }
