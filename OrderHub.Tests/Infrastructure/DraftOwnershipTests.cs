@@ -30,6 +30,10 @@ public class DraftOwnershipTests
         await owner.SaveAsync(context, data);
 
         Assert.Single(await owner.GetAllAsync());
+        await db.Database.ExecuteSqlRawAsync(
+            "INSERT INTO order_drafts (Id, UserId, Data, LastModified) VALUES ({0}, {1}, {2}, {3})",
+            Guid.NewGuid(), 11, "{}", DateTime.UtcNow);
+        Assert.Single(await owner.GetAllAsync());
         Assert.Empty(await other.GetAllAsync());
         Assert.Null(await other.GetAsync(context));
         await other.DeleteAsync(context);

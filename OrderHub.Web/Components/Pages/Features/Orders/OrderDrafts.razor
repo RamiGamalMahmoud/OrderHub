@@ -2,6 +2,8 @@
 @using OrderHub.Application.Interfaces
 @inject IDraftService DraftService
 @inject IDialogService DialogService
+@inject ILogger<OrderDrafts> Logger
+@implements IDisposable
 
 <MudDrawer Open="@IsOpen"
            Anchor="Anchor.End"
@@ -16,10 +18,22 @@
             <MudIcon Icon="@Icons.Material.Outlined.Description" Color="Color.Primary" />
             <MudText Class="font-weight-bold" Color="Color.Primary">الطلبات المعلقة</MudText>
             <MudSpacer />
-            <MudIconButton Icon="@Icons.Material.Outlined.Close" Size="Size.Small" OnClick="OnCloseClicked" />
+            <MudIconButton Icon="@Icons.Material.Outlined.Close" Size="Size.Small" OnClick="OnCloseClicked" aria-label="إغلاق المسودات" />
         </MudStack>
 
         <MudText Typo="Typo.caption">طلبات لم يتم إكمالها بعد, اضغط متابعة لإكمال الطلب أو حذف.</MudText>
+
+        @if (_busy)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        @if (_error is not null)
+        {
+            <MudAlert Severity="Severity.Error" role="alert">
+                @_error
+                <MudButton OnClick="RefreshAsync" Disabled="_busy">إعادة المحاولة</MudButton>
+            </MudAlert>
+        }
 
         @foreach (OrderDraftSummary draftSummary in _drafts)
         {
@@ -73,12 +87,13 @@
 
                     <MudStack Row Justify="Justify.FlexEnd" Spacing="1">
 
-                        <MudButton Color="Color.Primary" Size="Size.Small" Href=@($"/orders/continue/{draftSummary.Id}")>
+                        <MudButton Color="Color.Primary" Size="Size.Small" Disabled="_busy" Href=@($"/orders/continue/{draftSummary.Id}")>
                             متابعة
                         </MudButton>
 
                         <MudButton Color="Color.Error"
                                    Size="Size.Small"
+                                   Disabled="_busy"
                                    OnClick="@(() => DeleteDraftAsync(draftSummary.Id))">
                             حذف
                         </MudButton>
@@ -96,6 +111,12 @@
 @code
 {
     private IReadOnlyList<OrderDraftSummary> _drafts { get; set; } = [];
+    private bool _wasOpen;
+    private bool _busy;
+    private bool _refreshPending;
+    private bool _disposed;
+    private long _loadVersion;
+    private string? _error;
 
     [Parameter]
     public bool IsOpen { get; set; }
@@ -108,28 +129,88 @@
         return IsOpenChanged.InvokeAsync(value);
     }
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnParametersSetAsync()
     {
-        _drafts = await DraftService.GetAllAsync();
+        var opening = IsOpen && !_wasOpen;
+        _wasOpen = IsOpen;
+        if (!IsOpen)
+            _loadVersion++;
+        return opening ? RefreshAsync() : Task.CompletedTask;
     }
-    private void OnCloseClicked(MouseEventArgs args)
+
+    private Task OnCloseClicked() => IsOpenChanged.InvokeAsync(false);
+
+    public async Task RefreshAsync()
     {
-        IsOpen = false;
+        if (_disposed || !IsOpen)
+            return;
+        if (_busy)
+        {
+            _refreshPending = true;
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            do
+            {
+                _refreshPending = false;
+                _error = null;
+                var version = ++_loadVersion;
+                try
+                {
+                    var drafts = await DraftService.GetAllAsync();
+                    if (!_disposed && IsOpen && version == _loadVersion)
+                        _drafts = drafts;
+                }
+                catch (Exception exception)
+                {
+                    Logger.LogError(exception, "Failed to refresh order drafts.");
+                    if (!_disposed && IsOpen && version == _loadVersion)
+                        _error = "تعذر تحميل المسودات. حاول مرة أخرى.";
+                }
+            } while (_refreshPending && IsOpen && !_disposed);
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private async Task DeleteDraftAsync(Guid draftId)
     {
-        var result = await DialogService.ShowMessageBoxAsync(
-            "حذف مسودة",
-            "هل تريد حذف هذه المسودة؟",
-            yesText: "نعم",
-            cancelText: "لا");
-
-        if (result is true)
+        if (_busy || _disposed)
+            return;
+        _busy = true;
+        _error = null;
+        try
         {
-            await DraftService.DeleteAsync(new DraftContext(draftId));
-
-            _drafts = await DraftService.GetAllAsync();
+            var result = await DialogService.ShowMessageBoxAsync(
+                "حذف مسودة", "هل تريد حذف هذه المسودة؟", yesText: "نعم", cancelText: "لا");
+            if (result is true && !_disposed)
+            {
+                await DraftService.DeleteAsync(new DraftContext(draftId));
+                _refreshPending = true;
+            }
         }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to delete draft {DraftId}.", draftId);
+            if (!_disposed)
+                _error = "تعذر حذف المسودة. حاول مرة أخرى.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+        if (_refreshPending && IsOpen && !_disposed)
+            await RefreshAsync();
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        _loadVersion++;
     }
 }

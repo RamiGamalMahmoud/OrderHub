@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using OrderHub.Infrastructure.Models;
 using System;
 using System.Collections.Generic;
@@ -11,10 +13,12 @@ namespace OrderHub.Infrastructure.Features.OrderDrafts;
 internal class DatabaseDraftStore : IDraftStore
 {
     private readonly AppDbContextFactory _dbContextFactory;
+    private readonly ILogger<DatabaseDraftStore> _logger;
 
-    public DatabaseDraftStore(AppDbContextFactory appDbContextFactory)
+    public DatabaseDraftStore(AppDbContextFactory appDbContextFactory, ILogger<DatabaseDraftStore> logger = null)
     {
         _dbContextFactory = appDbContextFactory;
+        _logger = logger ?? NullLogger<DatabaseDraftStore>.Instance;
     }
 
     public async Task DeleteAsync(Guid id, int userId)
@@ -40,16 +44,23 @@ internal class DatabaseDraftStore : IDraftStore
             .Where(d => d.UserId == userId)
             .ToListAsync();
 
-        return draftRecords.Select(draftRecord =>
+        var summaries = new List<OrderDraftSummary>();
+        foreach (var draftRecord in draftRecords)
         {
-            Draft draft = JsonSerializer.Deserialize<Draft>(draftRecord.Data);
-            return new OrderDraftSummary(
-                draftRecord.Id,
-                draft.Data.ClientName,
-                draft.Data.Items.Count,
-                draft.LastModified);
-        })
-            .ToList();
+            try
+            {
+                Draft draft = JsonSerializer.Deserialize<Draft>(draftRecord.Data);
+                if (draft?.Data?.Items is null)
+                    throw new JsonException("Draft data is incomplete or invalid.");
+                summaries.Add(new OrderDraftSummary(
+                    draftRecord.Id, draft.Data.ClientName, draft.Data.Items.Count, draftRecord.LastModified));
+            }
+            catch (JsonException exception)
+            {
+                _logger.LogWarning(exception, "Skipping malformed draft {DraftId} in summaries.", draftRecord.Id);
+            }
+        }
+        return summaries;
     }
 
     public async Task<Draft> GetAsync(Guid id, int userId)
