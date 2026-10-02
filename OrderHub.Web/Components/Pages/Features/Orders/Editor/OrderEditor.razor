@@ -74,7 +74,7 @@
             }
             else if (_activeStep == OrderEditorStep.Details)
             {
-                <DetailsStep />
+                <DetailsStep @key="_sessionId" State="_state" DetailsChanged="OnEditorChanged" />
             }
 
         </MudPaper>
