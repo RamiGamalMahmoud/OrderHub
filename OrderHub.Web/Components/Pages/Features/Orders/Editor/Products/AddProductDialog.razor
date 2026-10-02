@@ -97,6 +97,7 @@
                     <MudNumericField T="decimal"
                                      Label="سعر الوحدة"
                                      @bind-Value="_unitPrice"
+                                     Validation="@(new Func<decimal, string?>(value => value > 0 ? null : "يجب أن يكون السعر أكبر من صفر."))"
                                      Disabled="_isAdding"
                                      Variant="Variant.Outlined"
                                      Margin="Margin.Dense" />

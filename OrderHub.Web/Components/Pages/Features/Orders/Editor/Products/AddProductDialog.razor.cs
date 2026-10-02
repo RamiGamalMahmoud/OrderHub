@@ -86,7 +86,7 @@ public partial class AddProductDialog : IDisposable
     private bool CanAdd =>
         !_isAdding &&
         _selectedProduct is not null &&
-        _unitPrice >= 0 &&
+        _unitPrice > 0 &&
         _quantity > 0 &&
         _vatRate is >= 0 and <= 100;
 

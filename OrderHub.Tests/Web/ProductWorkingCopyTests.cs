@@ -1,9 +1,36 @@
 using OrderHub.Web.Components.Pages.Features.Orders.Editor.State;
+using System;
+using System.Reflection;
+using System.Threading.Tasks;
+using OrderHub.Domain.Common;
+using OrderHub.Web.Components.Pages.Features.Orders.Editor.Products;
 
 namespace OrderHub.Tests.Web;
 
 public class ProductWorkingCopyTests
 {
+    [Theory]
+    [InlineData(0, 1, 0)]
+    [InlineData(5, 0, 0)]
+    [InlineData(5, 1, -1)]
+    [InlineData(5, 1, 101)]
+    public async Task Invalid_basic_values_cannot_commit(decimal price, int quantity, decimal vat)
+    {
+        var original = new OrderItemEditorState { ProductName = "P", CategoryName = "C", UnitPrice = 5, Quantity = 1 };
+        using var step = new ProductsStep { Items = [original], SessionId = Guid.NewGuid() };
+        var working = original.CreateWorkingCopy();
+        working.UnitPrice = price;
+        working.Quantity = quantity;
+        working.VatRate = vat;
+        var result = await (Task<Result>)typeof(ProductsStep)
+            .GetMethod("CommitItemAsync", BindingFlags.NonPublic | BindingFlags.Instance)
+            .Invoke(step, new object[] { original, step.SessionId, working });
+        Assert.False(result.IsSuccess);
+        Assert.Equal(5m, original.UnitPrice);
+        Assert.Equal(1, original.Quantity);
+        Assert.Equal(0m, original.VatRate);
+    }
+
     [Fact]
     public void Working_copy_changes_cannot_mutate_original_or_nested_collections()
     {

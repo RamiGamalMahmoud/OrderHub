@@ -7,6 +7,16 @@
     {
         <MudStack Spacing="3">
             <MudText Typo="Typo.h6">@_workingCopy.ProductName</MudText>
+            <MudForm @ref="_form">
+                <MudStack>
+                    <MudNumericField T="decimal" Label="سعر الوحدة" @bind-Value="_workingCopy.UnitPrice"
+                                     Disabled="_saving" Validation="@(new Func<decimal, string?>(value => value > 0 ? null : "يجب أن يكون السعر أكبر من صفر."))" />
+                    <MudNumericField T="int" Label="الكمية" @bind-Value="_workingCopy.Quantity" Min="1"
+                                     Disabled="_saving" Validation="@(new Func<int, string?>(value => value > 0 ? null : "يجب أن تكون الكمية أكبر من صفر."))" />
+                    <MudNumericField T="decimal" Label="الضريبة (%)" @bind-Value="_workingCopy.VatRate" Min="0" Max="100"
+                                     Disabled="_saving" Validation="@(new Func<decimal, string?>(value => value is >= 0 and <= 100 ? null : "الضريبة يجب أن تكون بين 0 و100."))" />
+                </MudStack>
+            </MudForm>
             @if (_error is not null)
             {
                 <MudAlert Severity="Severity.Error" role="alert">@_error</MudAlert>
@@ -33,6 +43,7 @@
     private bool _wasOpen;
     private bool _saving;
     private string? _error;
+    private MudForm? _form;
 
     protected override void OnParametersSet()
     {
@@ -63,6 +74,12 @@
         _saving = true;
         try
         {
+            if (_form is not null)
+            {
+                await _form.ValidateAsync();
+                if (!_form.IsValid)
+                    return;
+            }
             var result = await Commit(_original, _originalSession, _workingCopy);
             if (result.IsSuccess)
             {
