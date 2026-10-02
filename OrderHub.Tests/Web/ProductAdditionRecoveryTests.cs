@@ -75,6 +75,8 @@ public class ProductAdditionRecoveryTests
             setup.ReturnsAsync((GetOrderItemEditor.OrderItemEditorDto)null);
 
         var step = new ProductsStep { Items = [] };
+        var notifications = 0;
+        step.ItemsChanged = EventCallback.Factory.Create(new object(), () => notifications++);
         Inject(step, "RequestExecutor", executor.Object);
         Inject(step, "Logger", NullLogger<ProductsStep>.Instance);
 
@@ -82,6 +84,7 @@ public class ProductAdditionRecoveryTests
         Assert.False(result.IsSuccess);
         Assert.NotEmpty(result.ErrorMessage);
         Assert.Empty(step.Items);
+        Assert.Equal(0, notifications);
     }
 
     [Fact]
@@ -91,6 +94,8 @@ public class ProductAdditionRecoveryTests
         executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderItemEditor.Query>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GetOrderItemEditor.OrderItemEditorDto(7, 12, "Product", "Category", [], []));
         var step = new HeadlessProductsStep { Items = [] };
+        var notifications = 0;
+        step.ItemsChanged = EventCallback.Factory.Create(new object(), () => notifications++);
         Inject(step, "RequestExecutor", executor.Object);
         Inject(step, "Logger", NullLogger<ProductsStep>.Instance);
         using var renderer = new TestRenderer();
@@ -104,6 +109,12 @@ public class ProductAdditionRecoveryTests
         Assert.Equal(15m, item.UnitPrice);
         Assert.Equal(3, item.Quantity);
         Assert.Equal(10m, item.VatRate);
+        Assert.Equal(1, notifications);
+        await InvokeTask(step, "RemoveItem", item);
+        Assert.Equal(2, notifications);
+        Assert.Empty(step.Items);
+        await InvokeTask(step, "RemoveItem", item);
+        Assert.Equal(2, notifications);
     }
 
     [Fact]

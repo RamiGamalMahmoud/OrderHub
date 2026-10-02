@@ -23,6 +23,9 @@ public partial class ProductsStep
     [EditorRequired]
     public required List<OrderItemEditorState> Items { get; set; }
 
+    [Parameter]
+    public EventCallback ItemsChanged { get; set; }
+
     private async Task AddProductAsync()
     {
         DialogOptions options = new()
@@ -98,6 +101,7 @@ public partial class ProductsStep
         };
 
         Items.Add(item);
+        await ItemsChanged.InvokeAsync();
         await InvokeAsync(StateHasChanged);
         return Result.Success();
     }
@@ -107,8 +111,9 @@ public partial class ProductsStep
         // سنضيف ProductEditorDrawer في الخطوة التالية.
     }
 
-    private void RemoveItem(OrderItemEditorState item)
+    private async Task RemoveItem(OrderItemEditorState item)
     {
-        Items.Remove(item);
+        if (Items.Remove(item))
+            await ItemsChanged.InvokeAsync();
     }
 }

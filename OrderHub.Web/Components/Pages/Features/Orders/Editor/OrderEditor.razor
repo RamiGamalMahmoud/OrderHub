@@ -70,7 +70,7 @@
             @* Step Content *@
             @if (_activeStep == OrderEditorStep.Products)
             {
-                <ProductsStep Items="_state.Items" />
+                <ProductsStep Items="_state.Items" ItemsChanged="OnEditorChanged" />
             }
             else if (_activeStep == OrderEditorStep.Details)
             {

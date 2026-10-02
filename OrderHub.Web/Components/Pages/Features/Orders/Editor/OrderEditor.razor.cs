@@ -12,6 +12,10 @@ public partial class OrderEditor
 
     private OrderEditorState _state = new();
 
+    private long _changeVersion;
+
+    private void OnEditorChanged() => _changeVersion++;
+
     [Parameter]
     public int? OrderId { get; set; }
 
