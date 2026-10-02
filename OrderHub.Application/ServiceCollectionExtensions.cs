@@ -16,6 +16,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISessionManager, SessionManager>();
         services.AddScoped<IOrderEntitySequenceService, OrderEntitySequenceService>();
         services.AddSingleton<IApplicationContext, ApplicationContext>();
+        services.AddSingleton<ICurrentUser, DesktopCurrentUser>();
 
         services.AddHttpClient("OrderHubApi", (sp, client) =>
         {

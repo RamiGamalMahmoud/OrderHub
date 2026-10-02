@@ -6,23 +6,23 @@ using System.Threading.Tasks;
 
 namespace OrderHub.Infrastructure.Features.OrderDrafts;
 
-internal sealed class DraftService(
+public sealed class DraftService(
     IDraftStore store,
-    IApplicationContext applicationContext) : IDraftService
+    ICurrentUser currentUser) : IDraftService
 {
-    private readonly IApplicationContext _applicationContext = applicationContext;
-
-    public Task SaveAsync(
+    public async Task SaveAsync(
         DraftContext context,
         OrderDraftData data)
     {
+        int userId = await currentUser.GetUserIdAsync()
+            ?? throw new UnauthorizedAccessException("Authentication is required for draft operations.");
         Draft draft = new(
             context.Id,
-            _applicationContext.User.Id,
+            userId,
             DateTime.UtcNow,
             data);
 
-        return store.SaveAsync(draft);
+        await store.SaveAsync(draft);
     }
 
     public Task<Draft> GetAsync(DraftContext context)
@@ -38,6 +38,5 @@ internal sealed class DraftService(
     public async Task<IReadOnlyList<OrderDraftSummary>> GetAllAsync()
     {
         return await store.GetAllAsync();
-        //return await store.GetUserDraftsAsync(_applicationContext.User.Id);
     }
 }

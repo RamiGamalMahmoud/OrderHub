@@ -5,6 +5,7 @@ using OrderHub.Domain;
 using Microsoft.Extensions.Hosting;
 using OrderHub.Infrastructure.DependencyInjection;
 using OrderHub.Web.Components;
+using OrderHub.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,6 +51,7 @@ builder.Services
 
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddEditorServices();
 
 
 // =========================
