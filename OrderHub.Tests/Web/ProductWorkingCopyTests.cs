@@ -9,6 +9,78 @@ namespace OrderHub.Tests.Web;
 
 public class ProductWorkingCopyTests
 {
+    [Fact]
+    public async Task Commit_notifies_once_for_a_change_and_rejects_removed_or_stale_targets()
+    {
+        var original = new OrderItemEditorState { ProductName = "P", CategoryName = "C", UnitPrice = 5 };
+        var notifications = 0;
+        using var step = new ProductsStep
+        {
+            Items = [original], SessionId = Guid.NewGuid(),
+            ItemsChanged = Microsoft.AspNetCore.Components.EventCallback.Factory.Create(new object(), () => notifications++)
+        };
+        var method = typeof(ProductsStep).GetMethod("CommitItemAsync", BindingFlags.NonPublic | BindingFlags.Instance);
+        Task<Result> Commit(Guid session, OrderItemEditorState copy) => (Task<Result>)method.Invoke(step, new object[] { original, session, copy });
+        var working = original.CreateWorkingCopy();
+        Assert.True((await Commit(step.SessionId, working)).IsSuccess);
+        Assert.Equal(0, notifications);
+        working.UnitPrice = 10;
+        Assert.False((await Commit(Guid.NewGuid(), working)).IsSuccess);
+        Assert.Equal(5m, original.UnitPrice);
+        Assert.True((await Commit(step.SessionId, working)).IsSuccess);
+        Assert.Equal(1, notifications);
+        Assert.True((await Commit(step.SessionId, working)).IsSuccess);
+        Assert.Equal(1, notifications);
+        step.Items.Clear();
+        working.UnitPrice = 20;
+        Assert.False((await Commit(step.SessionId, working)).IsSuccess);
+        Assert.Equal(10m, original.UnitPrice);
+        Assert.Equal(1, notifications);
+    }
+
+    [Fact]
+    public async Task Drawer_cancel_discards_nested_changes_and_save_closes_only_after_success()
+    {
+        var original = new OrderItemEditorState
+        {
+            ProductName = "P", CategoryName = "C", UnitPrice = 5,
+            Properties = [new() { PropertyId = 1, Name = "Field", Value = "Original" }]
+        };
+        var closed = 0;
+        var commits = 0;
+        var outcome = Result.Failure("Retry");
+        var drawer = new ProductEditorDrawer
+        {
+            Item = original, IsOpen = true, SessionId = Guid.NewGuid(),
+            IsOpenChanged = Microsoft.AspNetCore.Components.EventCallback.Factory.Create<bool>(new object(), open => { if (!open) closed++; }),
+            Commit = (_, _, _) => { commits++; return Task.FromResult(outcome); }
+        };
+        var type = typeof(ProductEditorDrawer);
+        void Open() => type.GetMethod("OnParametersSet", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(drawer, null);
+        Task Invoke(string method) => (Task)type.GetMethod(method, BindingFlags.NonPublic | BindingFlags.Instance).Invoke(drawer, null);
+        OrderItemEditorState Copy() => (OrderItemEditorState)type.GetField("_workingCopy", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(drawer);
+        Open();
+        Copy().Properties[0].Value = "Cancelled";
+        await Invoke("Cancel");
+        Assert.Equal("Original", original.Properties[0].Value);
+        Assert.Equal(0, commits);
+        Assert.Equal(1, closed);
+        drawer.IsOpen = false;
+        Open();
+        drawer.IsOpen = true;
+        Open();
+        Copy().Properties[0].Value = "Pending";
+        await Invoke("SaveAsync");
+        Assert.Equal(1, commits);
+        Assert.Equal(1, closed);
+        Assert.Equal("Pending", Copy().Properties[0].Value);
+        outcome = Result.Success();
+        await Invoke("SaveAsync");
+        Assert.Equal(2, commits);
+        Assert.Equal(2, closed);
+        Assert.Null(Copy());
+    }
+
     [Theory]
     [InlineData(OrderHub.Domain.Enums.PropertyType.Text, true, null, false)]
     [InlineData(OrderHub.Domain.Enums.PropertyType.Text, true, "   ", false)]

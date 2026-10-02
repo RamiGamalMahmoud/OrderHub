@@ -161,6 +161,11 @@ public partial class ProductsStep : IDisposable
                 return Result.Failure(error);
         }
 
+        if (original.UnitPrice == working.UnitPrice && original.Quantity == working.Quantity &&
+            original.VatRate == working.VatRate && original.SupplierId == working.SupplierId &&
+            original.Properties.Select(p => p.Value).SequenceEqual(working.Properties.Select(p => p.Value)))
+            return Result.Success();
+
         original.UnitPrice = working.UnitPrice;
         original.Quantity = working.Quantity;
         original.VatRate = working.VatRate;
