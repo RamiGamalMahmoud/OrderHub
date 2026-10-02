@@ -8,11 +8,9 @@ public interface IDraftStore
 {
     Task SaveAsync(Draft draft);
 
-    Task<Draft> GetAsync(Guid id);
-
-    Task<IReadOnlyList<OrderDraftSummary>> GetAllAsync();
+    Task<Draft> GetAsync(Guid id, int userId);
 
     Task<IReadOnlyList<OrderDraftSummary>> GetUserDraftsAsync(int userId);
 
-    Task DeleteAsync(Guid id);
+    Task DeleteAsync(Guid id, int userId);
 }

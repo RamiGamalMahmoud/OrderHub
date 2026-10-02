@@ -14,8 +14,7 @@ public sealed class DraftService(
         DraftContext context,
         OrderDraftData data)
     {
-        int userId = await currentUser.GetUserIdAsync()
-            ?? throw new UnauthorizedAccessException("Authentication is required for draft operations.");
+        int userId = await RequireUserAsync();
         Draft draft = new(
             context.Id,
             userId,
@@ -25,18 +24,25 @@ public sealed class DraftService(
         await store.SaveAsync(draft);
     }
 
-    public Task<Draft> GetAsync(DraftContext context)
+    public async Task<Draft> GetAsync(DraftContext context)
     {
-        return store.GetAsync(context.Id);
+        return await store.GetAsync(context.Id, await RequireUserAsync());
     }
 
-    public Task DeleteAsync(DraftContext context)
+    public async Task DeleteAsync(DraftContext context)
     {
-        return store.DeleteAsync(context.Id);
+        await store.DeleteAsync(context.Id, await RequireUserAsync());
     }
 
     public async Task<IReadOnlyList<OrderDraftSummary>> GetAllAsync()
     {
-        return await store.GetAllAsync();
+        return await store.GetUserDraftsAsync(await RequireUserAsync());
+    }
+
+    private async Task<int> RequireUserAsync()
+    {
+        var userId = await currentUser.GetUserIdAsync();
+        return userId is > 0 ? userId.Value
+            : throw new UnauthorizedAccessException("Authentication is required for draft operations.");
     }
 }

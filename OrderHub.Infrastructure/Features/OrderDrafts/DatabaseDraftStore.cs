@@ -17,38 +17,17 @@ internal class DatabaseDraftStore : IDraftStore
         _dbContextFactory = appDbContextFactory;
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task DeleteAsync(Guid id, int userId)
     {
         using AppDbContext dbContext = _dbContextFactory.CreateDbContext();
         DraftRecord draft = await dbContext.DraftRecords
-            .SingleOrDefaultAsync(x => x.Id == id);
+            .SingleOrDefaultAsync(x => x.Id == id && x.UserId == userId);
 
         if(draft is not null)
         {
             dbContext.DraftRecords.Remove(draft);
             await dbContext.SaveChangesAsync();
         }
-    }
-
-    public async Task<IReadOnlyList<OrderDraftSummary>> GetAllAsync()
-    {
-        using AppDbContext dbContext = _dbContextFactory.CreateDbContext();
-
-        IReadOnlyList<DraftRecord> draftRecords = await dbContext.DraftRecords
-            .AsNoTracking()
-            .OrderByDescending(x => x.LastModified)
-            .ToListAsync();
-
-        return draftRecords.Select(draftRecord =>
-        {
-            Draft draft = JsonSerializer.Deserialize<Draft>(draftRecord.Data);
-            return new OrderDraftSummary(
-                draftRecord.Id,
-                draft.Data.ClientName,
-                draft.Data.Items.Count,
-                draft.LastModified);
-        })
-            .ToList();
     }
 
     public async Task<IReadOnlyList<OrderDraftSummary>> GetUserDraftsAsync(int userId)
@@ -73,23 +52,33 @@ internal class DatabaseDraftStore : IDraftStore
             .ToList();
     }
 
-    public async Task<Draft> GetAsync(Guid id)
+    public async Task<Draft> GetAsync(Guid id, int userId)
     {
         using AppDbContext dbContext = _dbContextFactory.CreateDbContext();
         DraftRecord draftRecord = await dbContext.DraftRecords
-            .SingleOrDefaultAsync(x => x.Id == id);
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == id && x.UserId == userId);
 
         if (draftRecord is null || draftRecord.Data is null)
             return null;
 
-        return JsonSerializer.Deserialize<Draft>(draftRecord.Data);
+        var draft = JsonSerializer.Deserialize<Draft>(draftRecord.Data);
+        return draft is null ? null : draft with
+        {
+            Id = draftRecord.Id,
+            UserId = draftRecord.UserId,
+            LastModified = draftRecord.LastModified
+        };
     }
 
     public async Task SaveAsync(Draft draft)
     {
         using AppDbContext dbContext = _dbContextFactory.CreateDbContext();
         DraftRecord draftRecord = await dbContext.DraftRecords
-            .SingleOrDefaultAsync(orderDraft => orderDraft.Id == draft.Id && orderDraft.UserId == draft.UserId);
+            .SingleOrDefaultAsync(orderDraft => orderDraft.Id == draft.Id);
+
+        if (draftRecord is not null && draftRecord.UserId != draft.UserId)
+            throw new UnauthorizedAccessException("The draft is not available to this user.");
 
         string data = JsonSerializer.Serialize(draft);
 
