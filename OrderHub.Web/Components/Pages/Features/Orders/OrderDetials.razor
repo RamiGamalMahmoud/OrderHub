@@ -1,0 +1,165 @@
+﻿@page "/orders/{id:int}"
+@using static OrderHub.Application.Features.Orders.Queries.GetOrderDetials
+@using OrderHub.Application.Features.Orders.Queries
+@using OrderHub.Application.Interfaces;
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+@inject IRequestExecutor RequestExecuter
+
+<MudContainer MaxWidth="MaxWidth.Large">
+
+    <MudStack Spacing="3">
+
+        @*Header*@
+        <MudPaper Elevation="0" Class="pa-4">
+
+            <MudStack Spacing="2">
+
+
+                <MudStack Row
+                          AlignItems="AlignItems.Center">
+                    <MudText Typo="Typo.h6">
+                        تفاصيل الطلب
+                    </MudText>
+
+                    <MudSpacer />
+
+                    <MudChip T="string"
+                        Class="px-4"
+                             Size="Size.Small"
+                             Color="Color.Warning">
+                        @_order?.Header.OrderStatus
+                    </MudChip>
+
+                </MudStack>
+
+                <MudStack Row Spacing="2">
+
+                    <MudText Typo="Typo.body2"
+                             Color="Color.Secondary">
+                        رقم الطلب:
+                    </MudText>
+
+                    <MudText Typo="Typo.body2"
+                             @onclick="OrderNumberClicked"
+                             style="cursor: pointer">
+                        @_order?.Header.OrderNumber
+                    </MudText>
+
+                </MudStack>
+
+            </MudStack>
+        </MudPaper>
+
+        @*Customer Informatino*@
+        <MudPaper Elevation="0" Class="pa-4">
+
+            <MudStack>
+
+                <MudStack Row Spacing="2">
+
+                    <MudIcon Icon="@Icons.Material.Outlined.PersonOutline"
+                             Color="Color.Primary" />
+
+                    <MudText Color="Color.Primary" Typo="Typo.subtitle1">
+                        بيانات العميل
+                    </MudText>
+
+                </MudStack>
+
+                <MudStack Row Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Outlined.Person" Size="Size.Small" />
+                    <MudText Typo="Typo.subtitle2">@_order?.Client.Name</MudText>
+                </MudStack>
+
+                <MudStack Row Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Outlined.Phone" Size="Size.Small" />
+                    <MudText Typo="Typo.body2" Style="direction: ltr">@_order?.Client.PhoneNumber</MudText>
+                </MudStack>
+
+                <MudStack Row>
+                    <MudIcon Icon="@Icons.Material.Outlined.LocationOn" />
+                    <MudText Typo="Typo.body2">@_order?.Client.Address</MudText>
+                </MudStack>
+
+            </MudStack>
+
+        </MudPaper>
+
+        @*Delivery Information*@
+        <MudPaper Elevation="0" Class="pa-4">
+
+            <MudStack Row Spacing="2">
+                <MudIcon Icon="@Icons.Material.Filled.DeliveryDining" />
+                <MudText Typo="Typo.subtitle1"
+                         Color="Color.Primary">التوصيل</MudText>
+            </MudStack>
+
+            <MudChip T="string" Color="Color.Primary" Variant="Variant.Text">@_order?.Delivery.DeliveryMethod</MudChip>
+
+        </MudPaper>
+
+        @*Order Items*@
+        <MudPaper Elevation="0" Class="pa-4">
+
+            <MudStack Row Spacing="2">
+                <MudIcon Icon="@Icons.Material.Outlined.Inventory2" Color="Color.Primary" />
+                <MudText Typo="Typo.subtitle1"
+                         Color="Color.Primary">محتويات الطلب</MudText>
+                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@_order?.Items.ToList().Count()</MudChip>
+            </MudStack>
+
+            <MudDataGrid Items="@_order?.Items" Hover Class="mt-4">
+                <Columns>
+                    <PropertyColumn Property="x => x.ProductName" Title="المنتج" />
+                    <PropertyColumn Property="x => x.UnitPrice" Title="السعر" />
+                    <PropertyColumn Property="x => x.Quantity" Title="الكمية" />
+                    <PropertyColumn Property="x => x.Total" Title="الإجمالي" />
+                </Columns>
+            </MudDataGrid>
+
+        </MudPaper>
+
+        @*Invoice Summary*@
+        <MudPaper Elevation="0" Class="pa-4">
+
+            <MudStack Row Spacing="2">
+                <MudIcon Icon="@Icons.Material.Filled.LocalAtm" Color="Color.Primary" />
+                <MudText Typo="Typo.subtitle1"
+                         Color="Color.Primary">ملخص الفاتورة</MudText>
+            </MudStack>
+
+            <MudStack Row Spacing="2">
+                <MudText Style="font-weight: 600" Color="Color.Primary">الإجمالي</MudText>
+                <MudSpacer />
+                <MudText Style="font-weight: 600" Color="Color.Primary">@($"{_order?.Payment.GrandTotal} ر.س")</MudText>
+            </MudStack>
+
+        </MudPaper>
+
+        @*Orders Button*@
+        <MudButton Variant="Variant.Filled" Style="align-self: end;" Size="Size.Small" Color="Color.Primary" Href="/orders">الطلبات</MudButton>
+
+
+    </MudStack>
+
+</MudContainer>
+
+@code
+{
+    [Parameter]
+    public int Id { get; set; }
+
+    private OrderDetailsItem? _order;
+
+    private async Task OrderNumberClicked()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _order?.Header.OrderNumber);
+        Snackbar.Add($"تم نسخ رقم الطلب : {_order?.Header.OrderNumber}");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _order = await RequestExecuter.ExecuteAsync(new GetOrderDetials.Query(Id));
+    }
+}

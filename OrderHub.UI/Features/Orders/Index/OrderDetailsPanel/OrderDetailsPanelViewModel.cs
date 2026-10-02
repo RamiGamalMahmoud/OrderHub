@@ -21,7 +21,7 @@ public partial class OrderDetailsPanelViewModel : ObservableObject
     private int? _selectedOrderId;
 
     [ObservableProperty]
-    private GetOrderDetials.Order _selectedOrderDetails;
+    private GetOrderDetials.OrderDetailsItem _selectedOrderDetails;
 
     public bool HasSelectedOrder => SelectedOrderId != null;
 

@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace OrderHub.Application.Features.Authentication.DatabaseLogin;
-internal class DatabaseLoginCommandHandler : IRequestHandler<DatabaseLoginCommand, Result<UserInfoDto>>
+internal class DatabaseLoginCommandHandler : IRequestHandler<DatabaseLoginCommand, Result<UserSession>>
 {
     private readonly IUserRepository _userRepository;
     private readonly IHashShervice _hashShervice;
@@ -29,15 +29,15 @@ internal class DatabaseLoginCommandHandler : IRequestHandler<DatabaseLoginComman
         _userSessionStorage = userSessionStorage;
     }
 
-    public async Task<Result<UserInfoDto>> Handle(DatabaseLoginCommand request, CancellationToken cancellationToken)
+    public async Task<Result<UserSession>> Handle(DatabaseLoginCommand request, CancellationToken cancellationToken)
     {
         User user = await _userRepository.GetByUsernameAsync(request.UserName);
 
         if (user is null)
-            return Result<UserInfoDto>.Failure("بيانات تسجيل الدخول غير صحيحة.");
+            return Result<UserSession>.Failure("بيانات تسجيل الدخول غير صحيحة.");
 
         if (!_hashShervice.Verify(request.Password, user.PasswordHash))
-            return Result<UserInfoDto>.Failure("بيانات تسجيل الدخول غير صحيحة.");
+            return Result<UserSession>.Failure("بيانات تسجيل الدخول غير صحيحة.");
 
         UserSession userSession = new UserSession(
             user.Id,
@@ -62,6 +62,6 @@ internal class DatabaseLoginCommandHandler : IRequestHandler<DatabaseLoginComman
             user.UserName,
             user.DisplayName);
 
-        return Result<UserInfoDto>.Success(userInfo);
+        return Result<UserSession>.Success(userSession);
     }
 }

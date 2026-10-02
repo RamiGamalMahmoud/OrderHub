@@ -1,0 +1,23 @@
+﻿.product-dialog-content {
+    height: 70vh;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 12px;
+}
+
+.product-list-container {
+    border-radius: .5rem;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+::deep .list-item {
+    background-color: var(--mud-palette-background-gray);
+    border: solid .5px;
+    border-color: lightgray;
+    border-radius: .5rem
+}
+
+::deep .list-item.mud-selected-item {
+    border: solid 1px var(--mud-palette-primary);
+}

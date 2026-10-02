@@ -6,9 +6,9 @@ namespace OrderHub.Application.Features.Orders.Queries;
 
 public static class GetOrderDetials
 {
-    public record Query(int Id) : IRequest<Order>;
+    public record Query(int Id) : IRequest<OrderDetailsItem>;
 
-    public record Order(
+    public record OrderDetailsItem(
         Header Header,
         Client Client,
         Delivery Delivery,

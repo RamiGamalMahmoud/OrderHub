@@ -22,7 +22,7 @@ public class DatabaseLoginViewModel : LoginViewModel
 
     protected override async Task Login()
     {
-        Result<UserInfoDto> result = await _requestExecutor
+        Result<UserSession> result = await _requestExecutor
             .ExecuteAsync(new DatabaseLoginCommand(
                 Username,
                 Password,

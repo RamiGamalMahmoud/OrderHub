@@ -37,6 +37,7 @@ internal sealed class DraftService(
 
     public async Task<IReadOnlyList<OrderDraftSummary>> GetAllAsync()
     {
-        return await store.GetUserDraftsAsync(_applicationContext.User.Id);
+        return await store.GetAllAsync();
+        //return await store.GetUserDraftsAsync(_applicationContext.User.Id);
     }
 }

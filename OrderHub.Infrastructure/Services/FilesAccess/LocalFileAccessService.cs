@@ -1,243 +1,243 @@
-﻿//using OrderHub.Application.Interfaces.Services;
-//using System;
-//using System.IO;
-//using System.Threading.Tasks;
+﻿using OrderHub.Application.Interfaces.Services;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 
-//namespace OrderHub.Infrastructure.Services.FilesAccess;
+namespace OrderHub.Infrastructure.Services.FilesAccess;
 
-//internal sealed class LocalFileAccessService
-//    : ILocalFileAccessService
-//{
-//    private readonly IApplicationDirectoriesService _directories;
+internal sealed class LocalFileAccessService
+    : ILocalFileAccessService
+{
+    private readonly IApplicationDirectoriesService _directories;
 
-//    public LocalFileAccessService(
-//        IApplicationDirectoriesService directories)
-//    {
-//        _directories = directories;
-//    }
+    public LocalFileAccessService(
+        IApplicationDirectoriesService directories)
+    {
+        _directories = directories;
+    }
 
-//    // Attachments
+    // Attachments
 
-//    public async Task SaveAttachmentAsync(
-//        string fileName,
-//        Stream content)
-//    {
-//        string filePath = GetAttachmentPath(fileName);
+    public async Task SaveAttachmentAsync(
+        string fileName,
+        Stream content)
+    {
+        string filePath = GetAttachmentPath(fileName);
 
-//        await SaveAsync(filePath, content);
-//    }
+        await SaveAsync(filePath, content);
+    }
 
-//    public Task<string> GetAttachmentAsync(
-//        string fileName)
-//    {
-//        string filePath = GetAttachmentPath(fileName);
+    public Task<string> GetAttachmentAsync(
+        string fileName)
+    {
+        string filePath = GetAttachmentPath(fileName);
 
-//        return Task.FromResult(
-//            File.Exists(filePath)
-//                ? filePath
-//                : null);
-//    }
+        return Task.FromResult(
+            File.Exists(filePath)
+                ? filePath
+                : null);
+    }
 
-//    public Task DeleteAttachmentAsync(
-//        string fileName)
-//    {
-//        DeleteFile(GetAttachmentPath(fileName));
+    public Task DeleteAttachmentAsync(
+        string fileName)
+    {
+        DeleteFile(GetAttachmentPath(fileName));
 
-//        return Task.CompletedTask;
-//    }
+        return Task.CompletedTask;
+    }
 
-//    // Quotations
+    // Quotations
 
-//    public async Task SaveQuotationAsync(
-//        string fileName,
-//        byte[] content)
-//    {
-//        string filePath = GetQuotationPath(fileName);
+    public async Task SaveQuotationAsync(
+        string fileName,
+        byte[] content)
+    {
+        string filePath = GetQuotationPath(fileName);
 
-//        await SaveAsync(filePath, content);
-//    }
+        await SaveAsync(filePath, content);
+    }
 
-//    public Task<string> GetQuotationAsync(
-//        string fileName)
-//    {
-//        string filePath = GetQuotationPath(fileName);
+    public Task<string> GetQuotationAsync(
+        string fileName)
+    {
+        string filePath = GetQuotationPath(fileName);
 
-//        return Task.FromResult(
-//            File.Exists(filePath)
-//                ? filePath
-//                : null);
-//    }
+        return Task.FromResult(
+            File.Exists(filePath)
+                ? filePath
+                : null);
+    }
 
-//    public Task DeleteQuotationAsync(
-//        string fileName)
-//    {
-//        DeleteFile(GetQuotationPath(fileName));
+    public Task DeleteQuotationAsync(
+        string fileName)
+    {
+        DeleteFile(GetQuotationPath(fileName));
 
-//        return Task.CompletedTask;
-//    }
+        return Task.CompletedTask;
+    }
 
-//    // Invoices
+    // Invoices
 
-//    public async Task SaveInvoiceAsync(
-//        string fileName,
-//        byte[] content)
-//    {
-//        string filePath = GetInvoicePath(fileName);
+    public async Task SaveInvoiceAsync(
+        string fileName,
+        byte[] content)
+    {
+        string filePath = GetInvoicePath(fileName);
 
-//        await SaveAsync(filePath, content);
-//    }
+        await SaveAsync(filePath, content);
+    }
 
-//    public Task<string> GetInvoiceAsync(
-//        string fileName)
-//    {
-//        string filePath = GetInvoicePath(fileName);
+    public Task<string> GetInvoiceAsync(
+        string fileName)
+    {
+        string filePath = GetInvoicePath(fileName);
 
-//        return Task.FromResult(
-//            File.Exists(filePath)
-//                ? filePath
-//                : null);
-//    }
+        return Task.FromResult(
+            File.Exists(filePath)
+                ? filePath
+                : null);
+    }
 
-//    public Task DeleteInvoiceAsync(
-//        string fileName)
-//    {
-//        DeleteFile(GetInvoicePath(fileName));
+    public Task DeleteInvoiceAsync(
+        string fileName)
+    {
+        DeleteFile(GetInvoicePath(fileName));
 
-//        return Task.CompletedTask;
-//    }
+        return Task.CompletedTask;
+    }
 
-//    // Proforma Invoices
+    // Proforma Invoices
 
-//    public async Task SaveProformaInvoiceAsync(
-//        string fileName,
-//        byte[] content)
-//    {
-//        string filePath =
-//            GetProformaInvoicePath(fileName);
+    public async Task SaveProformaInvoiceAsync(
+        string fileName,
+        byte[] content)
+    {
+        string filePath =
+            GetProformaInvoicePath(fileName);
 
-//        await SaveAsync(filePath, content);
-//    }
+        await SaveAsync(filePath, content);
+    }
 
-//    public Task<string> GetProformaInvoiceAsync(
-//        string fileName)
-//    {
-//        string filePath =
-//            GetProformaInvoicePath(fileName);
+    public Task<string> GetProformaInvoiceAsync(
+        string fileName)
+    {
+        string filePath =
+            GetProformaInvoicePath(fileName);
 
-//        return Task.FromResult(
-//            File.Exists(filePath)
-//                ? filePath
-//                : null);
-//    }
+        return Task.FromResult(
+            File.Exists(filePath)
+                ? filePath
+                : null);
+    }
 
-//    public Task DeleteProformaInvoiceAsync(
-//        string fileName)
-//    {
-//        DeleteFile(
-//            GetProformaInvoicePath(fileName));
+    public Task DeleteProformaInvoiceAsync(
+        string fileName)
+    {
+        DeleteFile(
+            GetProformaInvoicePath(fileName));
 
-//        return Task.CompletedTask;
-//    }
+        return Task.CompletedTask;
+    }
 
-//    // Paths
+    // Paths
 
-//    private string GetAttachmentPath(
-//        string fileName)
-//    {
-//        ValidateFileName(fileName);
+    private string GetAttachmentPath(
+        string fileName)
+    {
+        ValidateFileName(fileName);
 
-//        return Path.Combine(
-//            _directories.AttachmentsDirectory,
-//            fileName);
-//    }
+        return Path.Combine(
+            _directories.AttachmentsDirectory,
+            fileName);
+    }
 
-//    private string GetQuotationPath(
-//        string fileName)
-//    {
-//        ValidateFileName(fileName);
+    private string GetQuotationPath(
+        string fileName)
+    {
+        ValidateFileName(fileName);
 
-//        return Path.Combine(
-//            _directories.QuotationsDirectory,
-//            fileName);
-//    }
+        return Path.Combine(
+            _directories.QuotationsDirectory,
+            fileName);
+    }
 
-//    private string GetInvoicePath(
-//        string fileName)
-//    {
-//        ValidateFileName(fileName);
+    private string GetInvoicePath(
+        string fileName)
+    {
+        ValidateFileName(fileName);
 
-//        return Path.Combine(
-//            _directories.InvoicesDirecoty,
-//            fileName);
-//    }
+        return Path.Combine(
+            _directories.InvoicesDirecoty,
+            fileName);
+    }
 
-//    private string GetProformaInvoicePath(
-//        string fileName)
-//    {
-//        ValidateFileName(fileName);
+    private string GetProformaInvoicePath(
+        string fileName)
+    {
+        ValidateFileName(fileName);
 
-//        return Path.Combine(
-//            _directories.ProformaInvoicesDirectory,
-//            fileName);
-//    }
+        return Path.Combine(
+            _directories.ProformaInvoicesDirectory,
+            fileName);
+    }
 
-//    private static async Task SaveAsync(
-//        string filePath,
-//        Stream content)
-//    {
-//        string directory =
-//            Path.GetDirectoryName(filePath);
+    private static async Task SaveAsync(
+        string filePath,
+        Stream content)
+    {
+        string directory =
+            Path.GetDirectoryName(filePath);
 
-//        if (!string.IsNullOrEmpty(directory))
-//            Directory.CreateDirectory(directory);
+        if (!string.IsNullOrEmpty(directory))
+            Directory.CreateDirectory(directory);
 
-//        await using FileStream fileStream = new(
-//            filePath,
-//            FileMode.Create,
-//            FileAccess.Write,
-//            FileShare.None,
-//            bufferSize: 81920,
-//            useAsync: true);
+        await using FileStream fileStream = new(
+            filePath,
+            FileMode.Create,
+            FileAccess.Write,
+            FileShare.None,
+            bufferSize: 81920,
+            useAsync: true);
 
-//        await content.CopyToAsync(fileStream);
-//    }
+        await content.CopyToAsync(fileStream);
+    }
 
-//    private static async Task SaveAsync(
-//        string filePath,
-//        byte[] content)
-//    {
-//        string directory =
-//            Path.GetDirectoryName(filePath);
+    private static async Task SaveAsync(
+        string filePath,
+        byte[] content)
+    {
+        string directory =
+            Path.GetDirectoryName(filePath);
 
-//        if (!string.IsNullOrEmpty(directory))
-//            Directory.CreateDirectory(directory);
+        if (!string.IsNullOrEmpty(directory))
+            Directory.CreateDirectory(directory);
 
-//        await File.WriteAllBytesAsync(
-//            filePath,
-//            content);
-//    }
+        await File.WriteAllBytesAsync(
+            filePath,
+            content);
+    }
 
-//    private static void DeleteFile(
-//        string filePath)
-//    {
-//        if (File.Exists(filePath))
-//            File.Delete(filePath);
-//    }
+    private static void DeleteFile(
+        string filePath)
+    {
+        if (File.Exists(filePath))
+            File.Delete(filePath);
+    }
 
-//    private static void ValidateFileName(
-//        string fileName)
-//    {
-//        if (string.IsNullOrWhiteSpace(fileName) ||
-//            fileName != Path.GetFileName(fileName))
-//        {
-//            throw new ArgumentException(
-//                "Invalid file name.",
-//                nameof(fileName));
-//        }
-//    }
+    private static void ValidateFileName(
+        string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName) ||
+            fileName != Path.GetFileName(fileName))
+        {
+            throw new ArgumentException(
+                "Invalid file name.",
+                nameof(fileName));
+        }
+    }
 
-//    public bool FileExists(string fileName)
-//    {
-//        return Path.Exists(fileName);
-//    }
-//}
+    public bool FileExists(string fileName)
+    {
+        return Path.Exists(fileName);
+    }
+}

@@ -8,16 +8,16 @@ using System.Threading.Tasks;
 
 namespace OrderHub.Infrastructure.Features.Orders.Queries;
 
-internal class GetOrderDetialsQeuryHandler(AppDbContextFactory dbContextFactory) : IRequestHandler<GetOrderDetials.Query, GetOrderDetials.Order>
+internal class GetOrderDetialsQeuryHandler(AppDbContextFactory dbContextFactory) : IRequestHandler<GetOrderDetials.Query, GetOrderDetials.OrderDetailsItem>
 {
-    public async Task<GetOrderDetials.Order> Handle(GetOrderDetials.Query request, CancellationToken cancellationToken)
+    public async Task<GetOrderDetials.OrderDetailsItem> Handle(GetOrderDetials.Query request, CancellationToken cancellationToken)
     {
         using AppDbContext dbContext = dbContextFactory.CreateDbContext();
         return await dbContext.Orders
             .AsNoTracking()
             .Include(o => o.OrderItems)
             .Where(o => o.Id == request.Id)
-            .Select(order => new GetOrderDetials.Order(
+            .Select(order => new GetOrderDetials.OrderDetailsItem(
                 new GetOrderDetials.Header(
                     order.Id,
                     order.OrderNumber,

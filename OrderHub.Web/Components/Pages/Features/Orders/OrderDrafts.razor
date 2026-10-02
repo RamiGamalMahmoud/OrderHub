@@ -1,0 +1,135 @@
+﻿@using OrderHub.Application.Features.OrderDrafts.Contracts
+@using OrderHub.Application.Interfaces
+@inject IDraftService DraftService
+@inject IDialogService DialogService
+
+<MudDrawer Open="@IsOpen"
+           Anchor="Anchor.End"
+           OpenChanged="OnOpenChanged"
+           Variant="@DrawerVariant.Temporary"
+           Class="main-content-bg pa-4"
+           Width="350px">
+
+    <MudStack>
+
+        <MudStack Row>
+            <MudIcon Icon="@Icons.Material.Outlined.Description" Color="Color.Primary" />
+            <MudText Class="font-weight-bold" Color="Color.Primary">الطلبات المعلقة</MudText>
+            <MudSpacer />
+            <MudIconButton Icon="@Icons.Material.Outlined.Close" Size="Size.Small" OnClick="OnCloseClicked" />
+        </MudStack>
+
+        <MudText Typo="Typo.caption">طلبات لم يتم إكمالها بعد, اضغط متابعة لإكمال الطلب أو حذف.</MudText>
+
+        @foreach (OrderDraftSummary draftSummary in _drafts)
+        {
+            <MudPaper Class="pa-4" Elevation="0">
+
+                <MudStack>
+
+                    @*Header*@
+                    <MudStack Row>
+
+                        <MudIcon Icon="@Icons.Material.Filled.History" />
+
+                        <MudSpacer />
+
+                        <MudText>@draftSummary.UpdatedAtHumanized</MudText>
+
+                    </MudStack>
+
+                    @*Client*@
+                    <MudStack Row>
+                        <MudIcon Icon="@Icons.Material.Outlined.Person" Size="Size.Small" />
+                        <MudText Typo="Typo.body2">العميل: </MudText>
+
+                        <MudSpacer />
+
+                        <MudText Typo="Typo.body2">@draftSummary.ClientName</MudText>
+
+                    </MudStack>
+
+                    @*Products Count*@
+                    <MudStack Row>
+                        <MudIcon Icon="@Icons.Material.Outlined.ShoppingBag" Size="Size.Small" />
+
+                        <MudText Typo="Typo.body2">عدد المنتجات: </MudText>
+
+                        <MudText Typo="Typo.body2">@draftSummary.ItemsCount</MudText>
+
+                    </MudStack>
+
+                    @*Modfied At*@
+                    <MudStack Row>
+
+                        <MudIcon Icon="@Icons.Material.Outlined.Timer" Size="Size.Small" />
+
+                        <MudText Typo="Typo.body2">آخر تعديل: </MudText>
+
+
+                        <MudText Typo="Typo.body2">@draftSummary.UpdatedAtLocal</MudText>
+
+                    </MudStack>
+
+                    <MudStack Row Justify="Justify.FlexEnd" Spacing="1">
+
+                        <MudButton Color="Color.Primary" Size="Size.Small" Href=@($"/orders/continue/{draftSummary.Id}")>
+                            متابعة
+                        </MudButton>
+
+                        <MudButton Color="Color.Error"
+                                   Size="Size.Small"
+                                   OnClick="@(() => DeleteDraftAsync(draftSummary.Id))">
+                            حذف
+                        </MudButton>
+
+                    </MudStack>
+
+                </MudStack>
+
+            </MudPaper>
+        }
+    </MudStack>
+
+</MudDrawer>
+
+@code
+{
+    private IReadOnlyList<OrderDraftSummary> _drafts { get; set; } = [];
+
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsOpenChanged { get; set; }
+
+    private Task OnOpenChanged(bool value)
+    {
+        return IsOpenChanged.InvokeAsync(value);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _drafts = await DraftService.GetAllAsync();
+    }
+    private void OnCloseClicked(MouseEventArgs args)
+    {
+        IsOpen = false;
+    }
+
+    private async Task DeleteDraftAsync(Guid draftId)
+    {
+        var result = await DialogService.ShowMessageBoxAsync(
+            "حذف مسودة",
+            "هل تريد حذف هذه المسودة؟",
+            yesText: "نعم",
+            cancelText: "لا");
+
+        if (result is true)
+        {
+            await DraftService.DeleteAsync(new DraftContext(draftId));
+
+            _drafts = await DraftService.GetAllAsync();
+        }
+    }
+}

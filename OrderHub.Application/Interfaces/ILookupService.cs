@@ -1,5 +1,4 @@
 ﻿using OrderHub.Application.Common.Lookups;
-using OrderHub.Domain.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 

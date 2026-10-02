@@ -1,0 +1,66 @@
+﻿<MudNavMenu Class="orderhub-nav custom-modern-nav" Bordered="false">
+
+    <!-- قسم: عام -->
+    <div class="nav-section-container">
+        <MudText Typo="Typo.caption" Class="nav-section-title">عام</MudText>
+
+        <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.SpaceDashboard" ForceIconColor="true">
+            الرئيسية
+        </MudNavLink>
+
+        <MudNavLink Href="/orders" Icon="@Icons.Material.Filled.ShoppingBag" ForceIconColor="true">
+            الطلبات
+        </MudNavLink>
+    </div>
+
+    <MudDivider Class="nav-divider" />
+
+    <!-- قسم: إدارة الأعمال -->
+    <div class="nav-section-container">
+        <MudText Typo="Typo.caption" Class="nav-section-title">إدارة الأعمال</MudText>
+
+        <MudNavGroup Title="المنتجات" Icon="@Icons.Material.Filled.Inventory2" ExpandIcon="@Icons.Material.Filled.ExpandMore">
+            <MudNavLink Href="/products" Icon="@Icons.Material.Outlined.Layers">المنتجات</MudNavLink>
+            <MudNavLink Href="/categories" Icon="@Icons.Material.Outlined.Category">الأقسام</MudNavLink>
+            <MudNavLink Href="/product-properties" Icon="@Icons.Material.Outlined.Tune">خصائص المنتجات</MudNavLink>
+        </MudNavGroup>
+
+        <MudNavGroup Title="جهات التعامل" Icon="@Icons.Material.Filled.Groups" ExpandIcon="@Icons.Material.Filled.ExpandMore">
+            <MudNavLink Href="/clients" Icon="@Icons.Material.Outlined.Person">العملاء</MudNavLink>
+            <MudNavLink Href="/suppliers" Icon="@Icons.Material.Outlined.Storefront">الموردون</MudNavLink>
+            <MudNavLink Href="/deliverymen" Icon="@Icons.Material.Outlined.Moped">المناديب</MudNavLink>
+            <MudNavLink Href="/shipping-carriers" Icon="@Icons.Material.Outlined.LocalShipping">شركات الشحن</MudNavLink>
+        </MudNavGroup>
+
+        <MudNavGroup Title="المستندات والوثائق" Icon="@Icons.Material.Filled.Description" ExpandIcon="@Icons.Material.Filled.ExpandMore">
+            <MudNavLink Href="/invoices" Icon="@Icons.Material.Outlined.ReceiptLong">الفواتير</MudNavLink>
+            <MudNavLink Href="/quotations" Icon="@Icons.Material.Outlined.RequestPage">عروض الأسعار</MudNavLink>
+            <MudNavLink Href="/proforma-invoices" Icon="@Icons.Material.Outlined.FactCheck">الفواتير الأولية</MudNavLink>
+        </MudNavGroup>
+    </div>
+
+    <MudDivider Class="nav-divider" />
+
+    <!-- قسم: التواصل -->
+    <div class="nav-section-container">
+        <MudText Typo="Typo.caption" Class="nav-section-title">التواصل</MudText>
+
+        <MudNavLink Href="/messages" Icon="@Icons.Material.Filled.Forum" ForceIconColor="true">
+            الرسائل
+        </MudNavLink>
+    </div>
+
+    <MudDivider Class="nav-divider" />
+
+    <!-- قسم: النظام -->
+    <div class="nav-section-container">
+        <MudText Typo="Typo.caption" Class="nav-section-title">النظام</MudText>
+
+        <MudNavGroup Title="الإدارة" Icon="@Icons.Material.Filled.AdminPanelSettings" ExpandIcon="@Icons.Material.Filled.ExpandMore">
+            <MudNavLink Href="/cities" Icon="@Icons.Material.Outlined.LocationOn">المدن</MudNavLink>
+            <MudNavLink Href="/users" Icon="@Icons.Material.Outlined.PeopleOutline">المستخدمون</MudNavLink>
+            <MudNavLink Href="/permissions" Icon="@Icons.Material.Outlined.GppGood">الصلاحيات</MudNavLink>
+        </MudNavGroup>
+    </div>
+
+</MudNavMenu>

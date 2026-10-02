@@ -1,0 +1,84 @@
+﻿@page "/orders/create"
+@page "/orders/continue/{DraftId:guid}"
+@page "/orders/{OrderId:int}/edit"
+
+@using Microsoft.AspNetCore.Authorization
+@using OrderHub.Web.Components.Pages.Features.Orders.Editor.OrderDetails
+@using OrderHub.Web.Components.Pages.Features.Orders.Editor.Products
+@attribute [Authorize]
+
+<PageTitle>@_pageTitle</PageTitle>
+
+<OrderDrafts @bind-IsOpen="_isDraftsOpen" />
+
+<MudContainer MaxWidth="MaxWidth.Large">
+
+    <MudStack Spacing="3">
+
+        @* Header *@
+        <MudStack Row
+                  AlignItems="AlignItems.Center"
+                  Justify="Justify.SpaceBetween">
+
+            <div>
+                <MudText Typo="Typo.h5">
+                    @_pageTitle
+                </MudText>
+
+                <MudText Typo="Typo.body2"
+                         Color="Color.Secondary">
+                    إضافة المنتجات وتحديد بيانات الطلب
+                </MudText>
+            </div>
+
+            @if (CanShowDrafts)
+            {
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           OnClick="ShowDrafts"
+                           StartIcon="@Icons.Material.Outlined.Description">
+                    المسودات
+                </MudButton>
+            }
+
+        </MudStack>
+
+        @* Editor *@
+        <MudPaper Elevation="0"
+                  Class="pa-2">
+
+            @* Steps *@
+            <MudStack Row
+                      Spacing="2">
+
+                <MudButton Variant="@GetStepVariant(OrderEditorStep.Products)"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Outlined.Inventory2"
+                           OnClick="@(() => SelectStep(OrderEditorStep.Products))">
+                    المنتجات
+                </MudButton>
+
+                <MudButton Variant="@GetStepVariant(OrderEditorStep.Details)"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Outlined.ReceiptLong"
+                           OnClick="@(() => SelectStep(OrderEditorStep.Details))">
+                    تفاصيل الطلب
+                </MudButton>
+
+            </MudStack>
+
+            @* Step Content *@
+            @if (_activeStep == OrderEditorStep.Products)
+            {
+                <ProductsStep Items="_state.Items" />
+            }
+            else if (_activeStep == OrderEditorStep.Details)
+            {
+                <DetailsStep />
+            }
+
+        </MudPaper>
+
+    </MudStack>
+
+</MudContainer>
