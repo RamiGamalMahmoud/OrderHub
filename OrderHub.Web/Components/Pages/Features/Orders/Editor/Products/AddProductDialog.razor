@@ -32,6 +32,7 @@
                           Variant="Variant.Outlined"
                           Margin="Margin.Dense"
                           TextChanged="TextChanged"
+                          Disabled="_isAdding"
                           Adornment="Adornment.Start"
                           AdornmentIcon="@Icons.Material.Outlined.Search"
                           Immediate />
@@ -41,6 +42,7 @@
 
                 <MudList T="ProductLookupItem"
                          SelectedValue="@_selectedProduct"
+                         Disabled="_isAdding"
                          SelectedValueChanged="SelectProduct">
 
                     @foreach (var product in _products)
@@ -85,6 +87,7 @@
                     <MudNumericField T="decimal"
                                      Label="سعر الوحدة"
                                      @bind-Value="_unitPrice"
+                                     Disabled="_isAdding"
                                      Variant="Variant.Outlined"
                                      Margin="Margin.Dense" />
                 </MudItem>
@@ -93,6 +96,7 @@
                     <MudNumericField T="int"
                                      Label="الكمية"
                                      @bind-Value="_quantity"
+                                     Disabled="_isAdding"
                                      Variant="Variant.Outlined"
                                      Margin="Margin.Dense" />
                 </MudItem>
@@ -101,6 +105,7 @@
                     <MudNumericField T="decimal"
                                      Label="الضريبة (%)"
                                      @bind-Value="_vatRate"
+                                     Disabled="_isAdding"
                                      Variant="Variant.Outlined"
                                      Margin="Margin.Dense" />
                 </MudItem>
@@ -114,7 +119,7 @@
 
     <DialogActions>
 
-        <MudButton OnClick="Cancel">
+        <MudButton OnClick="Cancel" Disabled="_isAdding">
             إلغاء
         </MudButton>
 

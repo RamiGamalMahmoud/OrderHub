@@ -49,6 +49,8 @@ public partial class AddProductDialog
 
     private decimal _vatRate;
 
+    private bool _isAdding;
+
 
     // =========================
     // Calculations
@@ -67,6 +69,7 @@ public partial class AddProductDialog
 
 
     private bool CanAdd =>
+        !_isAdding &&
         _selectedProduct is not null &&
         _unitPrice >= 0 &&
         _quantity > 0 &&
@@ -98,6 +101,9 @@ public partial class AddProductDialog
 
     private void SelectProduct(ProductLookupItem product)
     {
+        if (_isAdding)
+            return;
+
         _selectedProduct = product;
 
         _unitPrice = product.Price;
@@ -112,6 +118,9 @@ public partial class AddProductDialog
 
     private void Cancel()
     {
+        if (_isAdding)
+            return;
+
         MudDialog.Cancel();
     }
 
@@ -127,9 +136,27 @@ public partial class AddProductDialog
             Quantity: _quantity,
             VatRate: _vatRate);
 
-        await ProductAdded.InvokeAsync(result);
+        _isAdding = true;
+        var originalOptions = MudDialog.Options;
 
-        ResetProduct();
+        try
+        {
+            await MudDialog.SetOptionsAsync(originalOptions with
+            {
+                CloseButton = false,
+                CloseOnEscapeKey = false,
+                BackdropClick = false
+            });
+
+            await ProductAdded.InvokeAsync(result);
+
+            ResetProduct();
+        }
+        finally
+        {
+            _isAdding = false;
+            await MudDialog.SetOptionsAsync(originalOptions);
+        }
     }
 
     private void ResetProduct()
