@@ -9,6 +9,23 @@ namespace OrderHub.Tests.Web;
 
 public class ProductWorkingCopyTests
 {
+    [Fact]
+    public async Task Supplier_save_targets_the_original_row_and_rejects_unavailable_supplier()
+    {
+        var original = new OrderItemEditorState { ProductId = 7, ProductName = "P", CategoryName = "C", UnitPrice = 5, Suppliers = [new(3, "S")] };
+        var duplicate = original.CreateWorkingCopy();
+        using var step = new ProductsStep { Items = [original, duplicate], SessionId = Guid.NewGuid() };
+        var working = original.CreateWorkingCopy();
+        working.SupplierId = 99;
+        var commit = typeof(ProductsStep).GetMethod("CommitItemAsync", BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.False((await (Task<Result>)commit.Invoke(step, new object[] { original, step.SessionId, working })).IsSuccess);
+        Assert.Null(original.SupplierId);
+        working.SupplierId = 3;
+        Assert.True((await (Task<Result>)commit.Invoke(step, new object[] { original, step.SessionId, working })).IsSuccess);
+        Assert.Equal(3, original.SupplierId);
+        Assert.Null(duplicate.SupplierId);
+    }
+
     [Theory]
     [InlineData(0, 1, 0)]
     [InlineData(5, 0, 0)]

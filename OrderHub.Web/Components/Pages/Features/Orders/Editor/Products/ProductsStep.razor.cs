@@ -150,6 +150,8 @@ public partial class ProductsStep : IDisposable
             return Result.Failure("المنتج أو جلسة التحرير لم يعد متاحاً. لم يتم الحفظ.");
         if (working.UnitPrice <= 0 || working.Quantity <= 0 || working.VatRate is < 0 or > 100)
             return Result.Failure("تحقق من السعر والكمية والضريبة قبل الحفظ.");
+        if (working.SupplierId.HasValue && !original.Suppliers.Any(s => s.Id == working.SupplierId))
+            return Result.Failure("المورد المحدد غير متاح لهذا المنتج.");
         if (!original.Properties.Select(p => p.PropertyId).SequenceEqual(working.Properties.Select(p => p.PropertyId)))
             return Result.Failure("تغيرت خصائص المنتج. افتح المحرر مرة أخرى.");
 

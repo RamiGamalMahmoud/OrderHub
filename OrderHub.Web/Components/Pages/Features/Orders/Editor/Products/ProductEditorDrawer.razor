@@ -9,6 +9,16 @@
             <MudText Typo="Typo.h6">@_workingCopy.ProductName</MudText>
             <MudForm @ref="_form">
                 <MudStack>
+                    <MudSelect T="int?" Label="المورد" @bind-Value="_workingCopy.SupplierId" Clearable="true" Disabled="_saving">
+                        @foreach (var supplier in _workingCopy.Suppliers)
+                        {
+                            <MudSelectItem T="int?" Value="@((int?)supplier.Id)">@supplier.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                    @if (_workingCopy.SupplierId.HasValue && !_workingCopy.Suppliers.Any(s => s.Id == _workingCopy.SupplierId))
+                    {
+                        <MudAlert Severity="Severity.Warning">المورد المحدد لم يعد متاحاً. اختر مورداً متاحاً أو امسح الاختيار.</MudAlert>
+                    }
                     <MudNumericField T="decimal" Label="سعر الوحدة" @bind-Value="_workingCopy.UnitPrice"
                                      Disabled="_saving" Validation="@(new Func<decimal, string?>(value => value > 0 ? null : "يجب أن يكون السعر أكبر من صفر."))" />
                     <MudNumericField T="int" Label="الكمية" @bind-Value="_workingCopy.Quantity" Min="1"
