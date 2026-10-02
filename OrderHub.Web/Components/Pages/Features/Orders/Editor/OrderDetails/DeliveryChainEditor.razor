@@ -1,0 +1,125 @@
+﻿@using OrderHub.Application.Common.Lookups
+@using OrderHub.Domain.Enums
+@using OrderHub.Web.Components.Pages.Features.Orders.Editor.State
+
+<MudStack Spacing="2">
+
+    <MudStack Row
+              AlignItems="AlignItems.Center"
+              Justify="Justify.SpaceBetween">
+
+        <div>
+            <MudText Typo="Typo.subtitle2">
+                سلسلة التوصيل
+            </MudText>
+
+            <MudText Typo="Typo.body2"
+                     Color="Color.Secondary">
+                حدد مراحل انتقال الطلب بالترتيب
+            </MudText>
+        </div>
+
+        <MudButton Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Outlined.Add"
+                   Disabled="Disabled"
+                   OnClick="AddStepAsync">
+            إضافة خطوة
+        </MudButton>
+
+    </MudStack>
+
+    @if (Steps.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info"
+                  Variant="Variant.Outlined">
+            لم تتم إضافة أي خطوات للتوصيل بعد.
+        </MudAlert>
+    }
+    else
+    {
+        @for (var index = 0; index < Steps.Count; index++)
+        {
+            var step = Steps[index];
+            var stepIndex = index;
+
+            <DeliveryChainStep @key="step"
+                               Step="step"
+                               StepNumber="@(stepIndex + 1)"
+                               Deliverymen="Deliverymen"
+                               ShippingCarriers="ShippingCarriers"
+                               CanMoveUp="@(stepIndex > 0)"
+                               CanMoveDown="@(stepIndex < Steps.Count - 1)"
+                               Disabled="Disabled"
+                               Changed="Changed"
+                               MoveUp="@(() => MoveStepAsync(step, -1))"
+                               MoveDown="@(() => MoveStepAsync(step, 1))"
+                               Remove="@(() => RemoveStepAsync(step))" />
+        }
+    }
+
+</MudStack>
+
+@code
+{
+    [Parameter, EditorRequired]
+    public List<DeliveryStepEditorState> Steps { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<DeliverymanLookup> Deliverymen { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ShippingCarrierLookup> ShippingCarriers { get; set; } = [];
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    private async Task AddStepAsync()
+    {
+        if (Disabled)
+            return;
+
+        Steps.Add(new DeliveryStepEditorState
+        {
+            Method = DeliveryMethod.DeliveryMan
+        });
+
+        await Changed.InvokeAsync();
+    }
+
+    private async Task RemoveStepAsync(DeliveryStepEditorState step)
+    {
+        if (Disabled)
+            return;
+
+        if (!Steps.Remove(step))
+            return;
+
+        await Changed.InvokeAsync();
+    }
+
+    private async Task MoveStepAsync(
+        DeliveryStepEditorState step,
+        int offset)
+    {
+        if (Disabled || offset == 0)
+            return;
+
+        var index = Steps.IndexOf(step);
+
+        if (index < 0)
+            return;
+
+        var targetIndex = index + offset;
+
+        if (targetIndex < 0 || targetIndex >= Steps.Count)
+            return;
+
+        Steps.RemoveAt(index);
+        Steps.Insert(targetIndex, step);
+
+        await Changed.InvokeAsync();
+    }
+}

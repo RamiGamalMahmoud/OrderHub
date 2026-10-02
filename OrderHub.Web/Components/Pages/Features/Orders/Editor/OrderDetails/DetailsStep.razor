@@ -1,100 +1,87 @@
-<MudText Typo="Typo.h6">تفاصيل الطلب</MudText>
-
 @using OrderHub.Application.Common.Lookups
+@using OrderHub.Application.Interfaces
 @using OrderHub.Domain.Enums
+@using OrderHub.Web.Components.Pages.Features.Orders.Editor.State
 
-<MudStack Spacing="3">
+@implements IDisposable
+
+@inject ILookupService Lookups
+@inject ILogger<DetailsStep> Logger
+
+<MudStack Spacing="4">
+
+    <div>
+        <MudText Typo="Typo.h6">
+            تفاصيل الطلب
+        </MudText>
+
+        <MudText Typo="Typo.body2"
+                 Color="Color.Secondary">
+            بيانات العميل والدفع ومصدر الطلب وطريقة التوصيل
+        </MudText>
+    </div>
+
     @if (_loading)
     {
-        <MudProgressLinear Indeterminate="true" aria-label="تحميل بيانات الطلب" />
+        <MudProgressLinear Indeterminate="true"
+                           aria-label="تحميل بيانات الطلب" />
     }
+
     @if (_error is not null)
     {
-        <MudAlert Severity="Severity.Error" role="alert">
-            @_error
-            <MudButton OnClick="LoadLookupsAsync" Disabled="_loading">إعادة المحاولة</MudButton>
+        <MudAlert Severity="Severity.Error"
+                  Variant="Variant.Outlined"
+                  role="alert">
+
+            <MudStack Row
+                      AlignItems="AlignItems.Center"
+                      Justify="Justify.SpaceBetween">
+
+                <MudText Typo="Typo.body2">
+                    @_error
+                </MudText>
+
+                <MudButton Variant="Variant.Text"
+                           Disabled="_loading"
+                           OnClick="LoadLookupsAsync">
+                    إعادة المحاولة
+                </MudButton>
+
+            </MudStack>
+
         </MudAlert>
     }
-    <MudSelect T="int?" Label="العميل" Value="State.ClientId" ValueChanged="SetClientAsync" Clearable="true" Disabled="_loading">
-        @foreach (var client in _clients)
-        {
-            <MudSelectItem T="int?" Value="@((int?)client.Id)">@client.Name — @client.PhoneNumber</MudSelectItem>
-        }
-    </MudSelect>
-    <MudSelect T="int?" Label="طريقة الدفع" Value="State.PaymentMethodId" ValueChanged="SetPaymentAsync" Clearable="true" Disabled="_loading">
-        @foreach (var payment in _payments)
-        {
-            <MudSelectItem T="int?" Value="@((int?)payment.Id)">@payment.DisplayName</MudSelectItem>
-        }
-    </MudSelect>
-    <MudSelect T="OrderSource?" Label="مصدر الطلب" Value="State.OrderSource" ValueChanged="SetSourceAsync" Clearable="true">
-        @foreach (var source in EnumItems.For<OrderSource>())
-        {
-            <MudSelectItem T="OrderSource?" Value="@((OrderSource?)source.Value)">@source.DisplayName</MudSelectItem>
-        }
-    </MudSelect>
-    <MudSelect T="DeliveryMethod?" Label="طريقة التسليم" Value="State.Delivery.Method" ValueChanged="SetDeliveryAsync" Clearable="true">
-        @foreach (var method in EnumItems.For<DeliveryMethod>())
-        {
-            <MudSelectItem T="DeliveryMethod?" Value="@((DeliveryMethod?)method.Value)">@method.DisplayName</MudSelectItem>
-        }
-    </MudSelect>
-    @if (State.Delivery.Method == DeliveryMethod.DeliveryMan)
-    {
-        <MudSelect T="int?" Label="مندوب التوصيل" Value="State.Delivery.DeliverymanId" ValueChanged="SetDeliverymanAsync" Clearable="true" Disabled="_loading">
-            @foreach (var handler in _deliverymen)
-            {
-                <MudSelectItem T="int?" Value="@((int?)handler.Id)">@handler.Name</MudSelectItem>
-            }
-        </MudSelect>
-    }
-    else if (State.Delivery.Method == DeliveryMethod.ShippingCompany)
-    {
-        <MudSelect T="int?" Label="شركة الشحن" Value="State.Delivery.ShippingCarrierId" ValueChanged="SetCarrierAsync" Clearable="true" Disabled="_loading">
-            @foreach (var handler in _carriers)
-            {
-                <MudSelectItem T="int?" Value="@((int?)handler.Id)">@handler.Name</MudSelectItem>
-            }
-        </MudSelect>
-    }
-    else if (State.Delivery.Method == DeliveryMethod.DeliveryChain)
-    {
-        @foreach (var step in State.Delivery.Steps)
-        {
-            var index = State.Delivery.Steps.IndexOf(step);
-            <MudPaper @key="step" Class="pa-3" Outlined="true">
-                <MudStack>
-                    <MudText>خطوة @(index + 1)</MudText>
-                    <MudSelect T="DeliveryMethod" Label="طريقة التسليم" Value="step.Method" ValueChanged="@((DeliveryMethod value) => SetStepMethodAsync(step, value))">
-                        @foreach (var method in EnumItems.For<DeliveryMethod>().Where(m => m.Value is DeliveryMethod.DeliveryMan or DeliveryMethod.ShippingCompany))
-                        {
-                            <MudSelectItem T="DeliveryMethod" Value="method.Value">@method.DisplayName</MudSelectItem>
-                        }
-                    </MudSelect>
-                    <MudSelect T="int?" Label="المسؤول عن الخطوة" Value="step.HandlerId" ValueChanged="@((int? value) => SetStepHandlerAsync(step, value))" Clearable="true" Disabled="_loading">
-                        @if (step.Method == DeliveryMethod.DeliveryMan)
-                        {
-                            @foreach (var handler in _deliverymen)
-                            {
-                                <MudSelectItem T="int?" Value="@((int?)handler.Id)">@handler.Name</MudSelectItem>
-                            }
-                        }
-                        else if (step.Method == DeliveryMethod.ShippingCompany)
-                        {
-                            @foreach (var handler in _carriers)
-                            {
-                                <MudSelectItem T="int?" Value="@((int?)handler.Id)">@handler.Name</MudSelectItem>
-                            }
-                        }
-                    </MudSelect>
-                    <MudStack Row>
-                        <MudIconButton Icon="@Icons.Material.Outlined.ArrowUpward" aria-label="نقل الخطوة لأعلى" Disabled="@(index == 0)" OnClick="@(() => MoveStepAsync(step, -1))" />
-                        <MudIconButton Icon="@Icons.Material.Outlined.ArrowDownward" aria-label="نقل الخطوة لأسفل" Disabled="@(index == State.Delivery.Steps.Count - 1)" OnClick="@(() => MoveStepAsync(step, 1))" />
-                        <MudIconButton Icon="@Icons.Material.Outlined.Delete" aria-label="حذف الخطوة" OnClick="@(() => RemoveStepAsync(step))" />
-                    </MudStack>
-                </MudStack>
-            </MudPaper>
-        }
-        <MudButton OnClick="AddStepAsync" StartIcon="@Icons.Material.Outlined.Add">إضافة خطوة توصيل</MudButton>
-    }
+
+    <ClientSection ClientId="State.ClientId"
+                   ClientIdChanged="SetClientAsync"
+                   Clients="_clients"
+                   Disabled="_loading" />
+
+    <MudGrid Spacing="3">
+
+        <MudItem xs="12" md="6">
+            <PaymentSection PaymentMethodId="State.PaymentMethodId"
+                            PaymentMethodIdChanged="SetPaymentAsync"
+                            PaymentMethods="_payments"
+                            Disabled="_loading" />
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <OrderSourceSection OrderSource="State.OrderSource"
+                                OrderSourceChanged="SetSourceAsync" />
+        </MudItem>
+
+    </MudGrid>
+
+    <DeliverySection Delivery="State.Delivery"
+                     Deliverymen="_deliverymen"
+                     ShippingCarriers="_carriers"
+                     Disabled="_loading"
+                     Changed="NotifyChangedAsync" />
+
 </MudStack>
+
+@code
+{
+    
+}

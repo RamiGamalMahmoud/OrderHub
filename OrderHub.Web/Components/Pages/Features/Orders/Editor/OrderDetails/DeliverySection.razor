@@ -1,0 +1,146 @@
+﻿@using OrderHub.Application.Common.Lookups
+@using OrderHub.Domain.Enums
+@using OrderHub.Web.Components.Pages.Features.Orders.Editor.State
+
+<MudPaper Outlined="true" Class="pa-4">
+    <MudStack Spacing="3">
+
+        <MudStack Row
+                  AlignItems="AlignItems.Center"
+                  Spacing="2">
+
+            <MudIcon Icon="@Icons.Material.Outlined.LocalShipping"
+                     Size="Size.Medium"
+                     Color="Color.Primary" />
+
+            <div>
+                <MudText Typo="Typo.subtitle1">
+                    التوصيل
+                </MudText>
+
+                <MudText Typo="Typo.body2"
+                         Color="Color.Secondary">
+                    حدد طريقة تسليم الطلب
+                </MudText>
+            </div>
+
+        </MudStack>
+
+        <MudToggleGroup T="DeliveryMethod?"
+                        Value="Delivery.Method"
+                        FixedContent
+                        CheckMark
+                        ValueChanged="OnDeliveryMethodChangedAsync"
+                        SelectionMode="SelectionMode.SingleSelection"
+                        Outlined="true">
+
+            @foreach (var method in EnumItems.For<DeliveryMethod>())
+            {
+                <MudToggleItem T="DeliveryMethod?"
+                               Value="@((DeliveryMethod?)method.Value)"
+                               Text="@method.DisplayName" />
+            }
+
+        </MudToggleGroup>
+
+        @if (Delivery.Method == DeliveryMethod.DeliveryMan)
+        {
+            <MudSelect T="int?"
+                       Label="مندوب التوصيل"
+                       Value="Delivery.DeliverymanId"
+                       ValueChanged="OnDeliverymanChangedAsync"
+                       Clearable="true"
+                       Disabled="Disabled"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense">
+
+                @foreach (var deliveryman in Deliverymen)
+                {
+                    <MudSelectItem T="int?"
+                                   Value="@((int?)deliveryman.Id)">
+                        @deliveryman.Name
+                    </MudSelectItem>
+                }
+
+            </MudSelect>
+        }
+        else if (Delivery.Method == DeliveryMethod.ShippingCompany)
+        {
+            <MudSelect T="int?"
+                       Label="شركة الشحن"
+                       Value="Delivery.ShippingCarrierId"
+                       ValueChanged="OnShippingCarrierChangedAsync"
+                       Clearable="true"
+                       Disabled="Disabled"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense">
+
+                @foreach (var carrier in ShippingCarriers)
+                {
+                    <MudSelectItem T="int?"
+                                   Value="@((int?)carrier.Id)">
+                        @carrier.Name
+                    </MudSelectItem>
+                }
+
+            </MudSelect>
+        }
+        else if (Delivery.Method == DeliveryMethod.DeliveryChain)
+        {
+            <DeliveryChainEditor Steps="Delivery.Steps"
+                                 Deliverymen="Deliverymen"
+                                 ShippingCarriers="ShippingCarriers"
+                                 Disabled="Disabled"
+                                 Changed="Changed" />
+        }
+
+    </MudStack>
+</MudPaper>
+
+@code
+{
+    [Parameter, EditorRequired]
+    public DeliveryEditorState Delivery { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<DeliverymanLookup> Deliverymen { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ShippingCarrierLookup> ShippingCarriers { get; set; } = [];
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    private async Task OnDeliveryMethodChangedAsync(DeliveryMethod? value)
+    {
+        if (value == Delivery.Method)
+            return;
+
+        Delivery.Method = value;
+
+        await Changed.InvokeAsync();
+    }
+
+    private async Task OnDeliverymanChangedAsync(int? value)
+    {
+        if (value == Delivery.DeliverymanId)
+            return;
+
+        Delivery.DeliverymanId = value;
+
+        await Changed.InvokeAsync();
+    }
+
+    private async Task OnShippingCarrierChangedAsync(int? value)
+    {
+        if (value == Delivery.ShippingCarrierId)
+            return;
+
+        Delivery.ShippingCarrierId = value;
+
+        await Changed.InvokeAsync();
+    }
+}
