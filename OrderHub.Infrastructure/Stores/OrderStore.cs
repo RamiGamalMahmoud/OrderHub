@@ -23,7 +23,7 @@ internal class OrderStore : IOrderStore
         _orderWriteService = orderWriteService;
     }
 
-    public async Task<Result<int>> Create(OrderDetails.Order dto, CancellationToken cancellationToken)
+    public async Task<Result<int>> Create(OrderInput.Order dto, CancellationToken cancellationToken)
     {
         using AppDbContext appDbContext = _dbContextFactory.CreateDbContext();
 
@@ -35,9 +35,9 @@ internal class OrderStore : IOrderStore
         order.ChangeDeliveryMethod(dto.DeliveryMethod);
         order.ChangeDeliveryman(dto.DeliveryManId);
         order.ChangeShippingCarrier(dto.ShippingCarrierId);
-        order.ChangePaymentMethod(dto.PaymentMothodId);
+        order.ChangePaymentMethod(dto.PaymentMethodId);
 
-        foreach (OrderDetails.Item item in dto.OrderItems ?? Enumerable.Empty<OrderDetails.Item>())
+        foreach (OrderInput.Item item in dto.OrderItems ?? Enumerable.Empty<OrderInput.Item>())
         {
             Result<OrderItem> result = order.AddOrderItem(
                 item.ProductId,
@@ -55,7 +55,7 @@ internal class OrderStore : IOrderStore
             OrderItem orderItem = result.Value;
         }
 
-        foreach (OrderDetails.DeliveryStep stepDto in dto.DeliverySteps ?? Enumerable.Empty<OrderDetails.DeliveryStep>())
+        foreach (OrderInput.DeliveryStep stepDto in dto.DeliverySteps ?? Enumerable.Empty<OrderInput.DeliveryStep>())
         {
             order.AddDeliveryStep(new OrderDeliveryStep
             {
@@ -105,7 +105,7 @@ internal class OrderStore : IOrderStore
         return $"ORD-{DateTime.Now:yyyyMMdd}-{number.ToString().PadLeft(4, '0')}";
     }
 
-    public async Task<Result> UpdateOrder(int orderId, OrderDetails.Order order, CancellationToken cancellationToken = default)
+    public async Task<Result> UpdateOrder(int orderId, OrderInput.Order order, CancellationToken cancellationToken = default)
     {
         using AppDbContext appDbContext = _dbContextFactory.CreateDbContext();
 

@@ -3,27 +3,29 @@ using System.Collections.Generic;
 
 namespace OrderHub.Application.Features.Orders.Contracts;
 
-public static class OrderDetails
+public static class OrderInput
 {
     public record Order(
-            int ClientId,
-            DeliveryMethod DeliveryMethod,
-            int? DeliveryManId,
-            int? ShippingCarrierId,
-            IEnumerable<Item> OrderItems,
-            IEnumerable<DeliveryStep> DeliverySteps,
-            int? PaymentMothodId);
+        int ClientId,
+        OrderSource OrderSource,
+        DeliveryMethod DeliveryMethod,
+        int? DeliveryManId,
+        int? ShippingCarrierId,
+        IEnumerable<Item> OrderItems,
+        IEnumerable<DeliveryStep> DeliverySteps,
+        int? PaymentMethodId);
 
     public record DeliveryStep(
-            int StepOrder,
-            DeliveryMethod DeliveryMethod,
-            int HandlerId);
+        int StepOrder,
+        DeliveryMethod DeliveryMethod,
+        int HandlerId);
 
     public record Item(
         int ProductId,
         string ProductName,
         int Quantity,
         decimal UnitPrice,
+        decimal VatRate,
         string SupplierName,
         int? SupplierId,
         IEnumerable<Property> Properties);

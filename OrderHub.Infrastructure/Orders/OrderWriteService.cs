@@ -9,9 +9,9 @@ namespace OrderHub.Infrastructure.Orders;
 internal class OrderWriteService
 {
 
-    public void Update(AppDbContext appDbContext, Order order, OrderDetails.Order orderDetials)
+    public void Update(AppDbContext appDbContext, Order order, OrderInput.Order orderDetials)
     {
-        ApplyHeader(order, orderDetials.ClientId, orderDetials.DeliveryMethod, orderDetials.DeliveryManId, orderDetials.ShippingCarrierId, orderDetials.PaymentMothodId);
+        ApplyHeader(order, orderDetials.ClientId, orderDetials.DeliveryMethod, orderDetials.DeliveryManId, orderDetials.ShippingCarrierId, orderDetials.PaymentMethodId);
         ResetDetails(appDbContext, order);
         PopulateDetails(order, orderDetials.OrderItems, orderDetials.DeliverySteps);
     }
@@ -42,10 +42,10 @@ internal class OrderWriteService
 
     private static void PopulateDetails(
         Order order,
-        IEnumerable<OrderDetails.Item> orderItems,
-        IEnumerable<OrderDetails.DeliveryStep> deliverySteps)
+        IEnumerable<OrderInput.Item> orderItems,
+        IEnumerable<OrderInput.DeliveryStep> deliverySteps)
     {
-        foreach (OrderDetails.Item orderItemDto in orderItems ?? Enumerable.Empty<OrderDetails.Item>())
+        foreach (OrderInput.Item orderItemDto in orderItems ?? Enumerable.Empty<OrderInput.Item>())
         {
             order.AddOrderItem(
                 orderItemDto.ProductId,
@@ -59,13 +59,13 @@ internal class OrderWriteService
                     .AsReadOnly());
         }
 
-        foreach (OrderDetails.DeliveryStep deliveryStep in deliverySteps ?? Enumerable.Empty<OrderDetails.DeliveryStep>())
+        foreach (OrderInput.DeliveryStep deliveryStep in deliverySteps ?? Enumerable.Empty<OrderInput.DeliveryStep>())
         {
             order.AddDeliveryStep(BuildDeliveryStep(order.Id, deliveryStep));
         }
     }
 
-    private static OrderDeliveryStep BuildDeliveryStep(int orderId, OrderDetails.DeliveryStep deliveryStep)
+    private static OrderDeliveryStep BuildDeliveryStep(int orderId, OrderInput.DeliveryStep deliveryStep)
     {
         return new OrderDeliveryStep
         {

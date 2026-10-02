@@ -8,7 +8,6 @@ using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using OrderHub.Domain.Models.CommercialDocuments;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,7 +16,7 @@ namespace OrderHub.Application.Features.Orders.Create;
 
 public static class CreateOrderCommand
 {
-    public record Command(OrderInput Order) : IRequest<Result<int>>;
+    public record Command(Guid? OrderDraftId, OrderInput.Order Order) : IRequest<Result<int>>;
 
     internal class Handler : IRequestHandler<Command, Result<int>>
     {
@@ -66,9 +65,10 @@ public static class CreateOrderCommand
                     request.Order.DeliveryMethod,
                     request.Order.DeliveryManId,
                     request.Order.ShippingCarrierId,
-                    request.Order.PaymentMothodId);
+                    request.Order.PaymentMethodId
+                    );
 
-                foreach (Item item in request.Order.OrderItems)
+                foreach (OrderInput.Item item in request.Order.OrderItems)
                 {
                     Result<OrderItem> result = order.AddOrderItem(
                         item.ProductId,
@@ -88,8 +88,8 @@ public static class CreateOrderCommand
                         return Result<int>.Failure(result.ErrorMessage);
                 }
 
-                foreach (DeliveryStep step in
-                    request.Order.DeliverySteps ?? Enumerable.Empty<DeliveryStep>())
+                foreach (OrderInput.DeliveryStep step in
+                    request.Order.DeliverySteps ?? Enumerable.Empty<OrderInput.DeliveryStep>())
                 {
                     order.AddDeliveryStep(new OrderDeliveryStep
                     {
@@ -112,7 +112,7 @@ public static class CreateOrderCommand
                 // 4. Add order
                 _orderRepository.Add(order);
 
-                Guid draftReference = request.Order.DraftReference.Value;
+                Guid draftReference = request.OrderDraftId.Value;
 
                 var quotations = await _quotationRepository.GetByDraftReference(
                     draftReference,
@@ -143,32 +143,4 @@ public static class CreateOrderCommand
             }
         }
     }
-
-    public record OrderInput(
-    int ClientId,
-    DeliveryMethod DeliveryMethod,
-    int? DeliveryManId,
-    int? ShippingCarrierId,
-    IEnumerable<Item> OrderItems,
-    IEnumerable<DeliveryStep> DeliverySteps,
-    int? PaymentMothodId,
-    Guid? DraftReference);
-
-    public record DeliveryStep(
-        int StepOrder,
-        DeliveryMethod DeliveryMethod,
-        int HandlerId);
-
-    public record Item(
-        int ProductId,
-        string ProductName,
-        int Quantity,
-        decimal UnitPrice,
-        string SupplierName,
-        int? SupplierId,
-        IEnumerable<Property> Properties);
-
-    public record Property(
-        int PropertyId,
-        string Value);
 }

@@ -6,7 +6,7 @@ namespace OrderHub.Application.Features.Orders.Contracts;
 
 public interface IOrderStore
 {
-    Task<Result<int>> Create(OrderDetails.Order order, CancellationToken cancellationToken = default);
-    Task<Result> UpdateOrder(int orderId, OrderDetails.Order order, CancellationToken cancellationToken = default);
+    Task<Result<int>> Create(OrderInput.Order order, CancellationToken cancellationToken = default);
+    Task<Result> UpdateOrder(int orderId, OrderInput.Order order, CancellationToken cancellationToken = default);
     Task<Result> Delete(int orderId);
 }

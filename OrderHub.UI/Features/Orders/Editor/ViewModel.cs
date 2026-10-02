@@ -297,26 +297,28 @@ internal abstract partial class ViewModel : EditorViewModelBase
         MarkAsChanged();
     }
 
-    protected OrderDetails.Order BuildOrder()
+    protected OrderInput.Order BuildOrder()
     {
-        return new OrderDetails.Order(
+        return new OrderInput.Order(
             PartyPanel.SelectedClient.Id,
+            SelectedOrderSource.OrderSource,
             DeliveryMethodsViewModel.SelecteddDeliveryMethod.Value,
             DeliveryMethodsViewModel.SelectedDeliveryman?.Id,
             DeliveryMethodsViewModel.SelectedShippingCarrier?.Id,
 
-            Items.Items.Select(item => new OrderDetails.Item(
+            Items.Items.Select(item => new OrderInput.Item(
                 item.ProductId,
                 item.ProductName,
                 item.Quantity,
                 item.Price,
+                0,
                 item.Supplier?.Name,
                 item.Supplier?.Id,
-                item.Properties.Select(property => new OrderDetails.Property(
+                item.Properties.Select(property => new OrderInput.Property(
                     property.Id,
                     property.Value)))),
 
-            DeliveryMethodsViewModel.BuildDeliverySteps().Select(deliveryStep => new OrderDetails.DeliveryStep(
+            DeliveryMethodsViewModel.BuildDeliverySteps().Select(deliveryStep => new OrderInput.DeliveryStep(
                     deliveryStep.StepOrder,
                     deliveryStep.DeliveryMethod,
                     deliveryStep.HandlerId)),

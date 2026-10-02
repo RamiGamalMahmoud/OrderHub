@@ -1,10 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using OrderHub.Application.Common.Extensions;
 using OrderHub.Application.Features.Documents.ProformaInvoices;
 using OrderHub.Application.Features.Documents.Quotations;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
+using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Features.Orders.Create;
 using OrderHub.Application.Features.Orders.Queries;
 using OrderHub.Application.Features.Products.Contracts;
@@ -180,28 +182,30 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
 
         Result<int> result =
             await _mediator.Send(
-                new CreateOrderCommand.Command(new CreateOrderCommand.OrderInput(
+                new CreateOrderCommand.Command(_draftContext.Id, new OrderInput.Order(
                     order.ClientId,
+                    SelectedOrderSource.OrderSource,
                     order.DeliveryMethod,
                     order.DeliveryManId,
                     order.ShippingCarrierId,
 
-                    order.OrderItems.Select(item => new CreateOrderCommand.Item(
+                    order.OrderItems.Select(item => new OrderInput.Item(
                         item.ProductId,
                         item.ProductName,
                         item.Quantity,
                         item.UnitPrice,
+                        0,
                         item.SupplierName,
                         item.SupplierId,
-                        item.Properties.Select(property => new CreateOrderCommand.Property(
+                        item.Properties.Select(property => new OrderInput.Property(
                             property.PropertyId,
                             property.Value)))),
-                    order.DeliverySteps.Select(step => new CreateOrderCommand.DeliveryStep(
+                    order.DeliverySteps.Select(step => new OrderInput.DeliveryStep(
                         step.StepOrder,
                         step.DeliveryMethod,
                         step.HandlerId)), 
-                    order.PaymentMothodId,
-                    _draftContext.Id)));
+                    order.PaymentMethodId
+                    )));
 
         if (!result.IsSuccess)
         {
