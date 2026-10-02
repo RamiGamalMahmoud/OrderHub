@@ -13,6 +13,8 @@ public partial class ProductsStep : IDisposable
     private bool _disposed;
     private bool _openingDialog;
     private IDialogReference? _addDialog;
+    private OrderItemEditorState? _editingItem;
+    private bool _isEditorOpen;
 
     [Parameter]
     public Guid SessionId { get; set; }
@@ -136,7 +138,27 @@ public partial class ProductsStep : IDisposable
 
     private void EditItem(OrderItemEditorState item)
     {
-        // سنضيف ProductEditorDrawer في الخطوة التالية.
+        if (_disposed || !Items.Contains(item))
+            return;
+        _editingItem = item;
+        _isEditorOpen = true;
+    }
+
+    private async Task<Result> CommitItemAsync(OrderItemEditorState original, Guid sessionId, OrderItemEditorState working)
+    {
+        if (_disposed || SessionId != sessionId || !Items.Contains(original))
+            return Result.Failure("المنتج أو جلسة التحرير لم يعد متاحاً. لم يتم الحفظ.");
+        if (!original.Properties.Select(p => p.PropertyId).SequenceEqual(working.Properties.Select(p => p.PropertyId)))
+            return Result.Failure("تغيرت خصائص المنتج. افتح المحرر مرة أخرى.");
+
+        original.UnitPrice = working.UnitPrice;
+        original.Quantity = working.Quantity;
+        original.VatRate = working.VatRate;
+        original.SupplierId = working.SupplierId;
+        for (var index = 0; index < original.Properties.Count; index++)
+            original.Properties[index].Value = working.Properties[index].Value;
+        await ItemsChanged.InvokeAsync();
+        return Result.Success();
     }
 
     private async Task RemoveItem(OrderItemEditorState item)

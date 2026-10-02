@@ -1,0 +1,80 @@
+@using OrderHub.Web.Components.Pages.Features.Orders.Editor.State
+@using OrderHub.Domain.Common
+
+<MudDrawer Open="IsOpen" OpenChanged="OnOpenChanged" Anchor="Anchor.End"
+           Variant="DrawerVariant.Temporary" Width="min(420px, 100vw)" Class="pa-4">
+    @if (_workingCopy is not null)
+    {
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.h6">@_workingCopy.ProductName</MudText>
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" role="alert">@_error</MudAlert>
+            }
+            <MudStack Row Justify="Justify.FlexEnd">
+                <MudButton OnClick="Cancel" Disabled="_saving">إلغاء</MudButton>
+                <MudButton OnClick="SaveAsync" Disabled="_saving" Color="Color.Primary" Variant="Variant.Filled">حفظ</MudButton>
+            </MudStack>
+        </MudStack>
+    }
+</MudDrawer>
+
+@code {
+    [Parameter, EditorRequired] public OrderItemEditorState Item { get; set; } = null!;
+    [Parameter] public Guid SessionId { get; set; }
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter, EditorRequired]
+    public Func<OrderItemEditorState, Guid, OrderItemEditorState, Task<Result>> Commit { get; set; } = null!;
+
+    private OrderItemEditorState? _workingCopy;
+    private OrderItemEditorState? _original;
+    private Guid _originalSession;
+    private bool _wasOpen;
+    private bool _saving;
+    private string? _error;
+
+    protected override void OnParametersSet()
+    {
+        if (IsOpen && (!_wasOpen || !ReferenceEquals(Item, _original) || SessionId != _originalSession))
+        {
+            _original = Item;
+            _originalSession = SessionId;
+            _workingCopy = Item.CreateWorkingCopy();
+            _error = null;
+        }
+        _wasOpen = IsOpen;
+    }
+
+    private Task OnOpenChanged(bool open) => open || _saving ? Task.CompletedTask : Cancel();
+
+    private Task Cancel()
+    {
+        if (_saving)
+            return Task.CompletedTask;
+        _workingCopy = null;
+        return IsOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_saving || _workingCopy is null || _original is null)
+            return;
+        _saving = true;
+        try
+        {
+            var result = await Commit(_original, _originalSession, _workingCopy);
+            if (result.IsSuccess)
+            {
+                _workingCopy = null;
+                await IsOpenChanged.InvokeAsync(false);
+            }
+            else
+                _error = result.ErrorMessage;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

@@ -19,4 +19,25 @@ public sealed class OrderItemEditorState
     public IReadOnlyList<OrderItemSupplierEditorState> Suppliers { get; init; } = [];
 
     public List<OrderItemPropertyEditorState> Properties { get; init; } = [];
+
+    public OrderItemEditorState CreateWorkingCopy() => new()
+    {
+        ProductId = ProductId,
+        ProductName = ProductName,
+        CategoryName = CategoryName,
+        UnitPrice = UnitPrice,
+        Quantity = Quantity,
+        VatRate = VatRate,
+        SupplierId = SupplierId,
+        Suppliers = Suppliers.ToArray(),
+        Properties = Properties.Select(property => new OrderItemPropertyEditorState
+        {
+            PropertyId = property.PropertyId,
+            Name = property.Name,
+            IsRequired = property.IsRequired,
+            Type = property.Type,
+            Value = property.Value,
+            Options = property.Options.ToArray()
+        }).ToList()
+    };
 }

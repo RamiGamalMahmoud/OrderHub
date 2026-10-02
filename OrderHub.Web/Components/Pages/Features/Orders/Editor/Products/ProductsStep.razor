@@ -119,3 +119,8 @@
     }
 
 </MudStack>
+
+@if (_editingItem is not null)
+{
+    <ProductEditorDrawer Item="_editingItem" SessionId="SessionId" @bind-IsOpen="_isEditorOpen" Commit="CommitItemAsync" />
+}
