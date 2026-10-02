@@ -2,6 +2,7 @@
 using MudBlazor;
 using OrderHub.Application.Features.Orders;
 using OrderHub.Application.Interfaces;
+using OrderHub.Domain.Common;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor.State;
 using static OrderHub.Web.Components.Pages.Features.Orders.Editor.Products.AddProductDialog;
 
@@ -14,6 +15,9 @@ public partial class ProductsStep
 
     [Inject]
     private IDialogService DialogService { get; set; } = default!;
+
+    [Inject]
+    private ILogger<ProductsStep> Logger { get; set; } = default!;
 
     [Parameter]
     [EditorRequired]
@@ -33,9 +37,7 @@ public partial class ProductsStep
         {
             {
                 x => x.ProductAdded,
-                EventCallback.Factory.Create<AddProductResult>(
-                    this,
-                    OnProductAddedAsync)
+                (Func<AddProductResult, Task<Result>>)OnProductAddedAsync
             }
         };
 
@@ -45,10 +47,22 @@ public partial class ProductsStep
             options);
     }
 
-    private async Task OnProductAddedAsync(AddProductResult result)
+    private async Task<Result> OnProductAddedAsync(AddProductResult result)
     {
-        var product = await RequestExecutor.ExecuteAsync(
-            new GetOrderItemEditor.Query(result.Product.Id));
+        GetOrderItemEditor.OrderItemEditorDto product;
+        try
+        {
+            product = await RequestExecutor.ExecuteAsync(
+                new GetOrderItemEditor.Query(result.Product.Id));
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load product {ProductId} for addition.", result.Product.Id);
+            return Result.Failure("تعذر تحميل بيانات المنتج. لم تتم الإضافة؛ حاول مرة أخرى.");
+        }
+
+        if (product is null)
+            return Result.Failure("المنتج لم يعد متاحاً. اختر منتجاً آخر.");
 
         OrderItemEditorState item = new()
         {
@@ -84,6 +98,8 @@ public partial class ProductsStep
         };
 
         Items.Add(item);
+        await InvokeAsync(StateHasChanged);
+        return Result.Success();
     }
 
     private void EditItem(OrderItemEditorState item)

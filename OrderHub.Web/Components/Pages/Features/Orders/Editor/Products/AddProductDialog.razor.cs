@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using OrderHub.Application.Features.Products.Contracts;
+using OrderHub.Domain.Common;
 using System.Threading.Tasks;
 
 namespace OrderHub.Web.Components.Pages.Features.Orders.Editor.Products;
@@ -15,12 +16,16 @@ public partial class AddProductDialog : IDisposable
     [Inject]
     private IProductStore ProductStore { get; set; } = null!;
 
+    [Inject]
+    private ILogger<AddProductDialog> Logger { get; set; } = null!;
+
 
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; } = null!;
 
     [Parameter]
-    public EventCallback<AddProductResult> ProductAdded { get; set; }
+    [EditorRequired]
+    public Func<AddProductResult, Task<Result>> ProductAdded { get; set; } = null!;
 
 
     // =========================
@@ -36,6 +41,10 @@ public partial class AddProductDialog : IDisposable
     private CancellationTokenSource? _searchCancellation;
 
     private bool _isDisposed;
+
+    private string? _searchError;
+
+    private string? _addError;
 
 
     // =========================
@@ -95,6 +104,7 @@ public partial class AddProductDialog : IDisposable
         _searchCancellation?.Cancel();
         _searchCancellation = null;
         _products = [];
+        _searchError = null;
 
         if (string.IsNullOrWhiteSpace(value))
             return;
@@ -115,6 +125,12 @@ public partial class AddProductDialog : IDisposable
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
             // A newer search or dialog disposal superseded this request.
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Product lookup failed.");
+            if (!_isDisposed && ReferenceEquals(_searchCancellation, cancellation))
+                _searchError = "تعذر البحث عن المنتجات. حاول مرة أخرى.";
         }
         finally
         {
@@ -142,6 +158,7 @@ public partial class AddProductDialog : IDisposable
             return;
 
         _selectedProduct = product;
+        _addError = null;
 
         _unitPrice = product.Price;
         _quantity = 0;
@@ -174,6 +191,7 @@ public partial class AddProductDialog : IDisposable
             VatRate: _vatRate);
 
         _isAdding = true;
+        _addError = null;
         var originalOptions = MudDialog.Options;
 
         try
@@ -185,9 +203,11 @@ public partial class AddProductDialog : IDisposable
                 BackdropClick = false
             });
 
-            await ProductAdded.InvokeAsync(result);
-
-            ResetProduct();
+            var outcome = await ProductAdded(result);
+            if (outcome.IsSuccess)
+                ResetProduct();
+            else
+                _addError = outcome.ErrorMessage;
         }
         finally
         {

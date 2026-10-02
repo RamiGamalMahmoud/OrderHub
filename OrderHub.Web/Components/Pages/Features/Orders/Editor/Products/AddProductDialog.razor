@@ -40,6 +40,15 @@
             @* الجزء الوحيد الذي يعمل Scroll *@
             <div class="product-list-container">
 
+                @if (_searchError is not null)
+                {
+                    <MudAlert Severity="Severity.Error" role="alert">
+                        @_searchError
+                        <MudButton OnClick="@(() => TextChanged(_searchTerm ?? string.Empty))"
+                                   Disabled="_isAdding">إعادة المحاولة</MudButton>
+                    </MudAlert>
+                }
+
                 <MudList T="ProductLookupItem"
                          SelectedValue="@_selectedProduct"
                          Disabled="_isAdding"
@@ -81,6 +90,7 @@
             </div>
 
             @* ثابت تحت *@
+            <div>
             <MudGrid Spacing="2">
 
                 <MudItem xs="12" sm="4">
@@ -111,6 +121,12 @@
                 </MudItem>
 
             </MudGrid>
+
+            @if (_addError is not null)
+            {
+                <MudAlert Severity="Severity.Error" role="alert">@_addError</MudAlert>
+            }
+            </div>
 
         </div>
 

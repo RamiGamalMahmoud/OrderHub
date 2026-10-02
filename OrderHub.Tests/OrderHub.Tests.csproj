@@ -25,6 +25,7 @@
 	  <ProjectReference Include="..\OrderHub.Domain\OrderHub.Domain.csproj" />
 	  <ProjectReference Include="..\OrderHub.Infrastructure\OrderHub.Infrastructure.csproj" />
 	  <ProjectReference Include="..\OrderHub.UI\OrderHub.UI.csproj" />
+	  <ProjectReference Include="..\OrderHub.Web\OrderHub.Web.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
