@@ -13,6 +13,8 @@ public partial class OrderEditor
     private OrderEditorState _state = new();
 
     private long _changeVersion;
+    private (int? OrderId, Guid? DraftId)? _routeIdentity;
+    private Guid _sessionId;
 
     private void OnEditorChanged() => _changeVersion++;
 
@@ -28,8 +30,19 @@ public partial class OrderEditor
 
     private bool CanShowDrafts => !IsEdit;
 
-    protected override async Task OnParametersSetAsync()
+    protected override Task OnParametersSetAsync()
     {
+        var identity = (OrderId, DraftId: OrderId.HasValue ? null : DraftId);
+        if (_routeIdentity == identity)
+            return Task.CompletedTask;
+
+        _routeIdentity = identity;
+        _sessionId = Guid.NewGuid();
+        _state = new OrderEditorState();
+        _changeVersion = 0;
+        _activeStep = OrderEditorStep.Products;
+        _isDraftsOpen = false;
+
         if (OrderId.HasValue)
         {
             _pageTitle = $"تعديل طلب {OrderId.Value}";
@@ -37,7 +50,7 @@ public partial class OrderEditor
             // لاحقًا:
             // _state = await LoadOrderAsync(OrderId.Value);
 
-            return;
+            return Task.CompletedTask;
         }
 
         if (DraftId.HasValue)
@@ -47,17 +60,10 @@ public partial class OrderEditor
             // لاحقًا:
             // _state = await LoadDraftAsync(DraftId.Value);
 
-            return;
+            return Task.CompletedTask;
         }
 
         _pageTitle = "إنشاء طلب جديد";
-
-        await InitializeNewOrderAsync();
-    }
-
-    private Task InitializeNewOrderAsync()
-    {
-        _state = new OrderEditorState();
 
         return Task.CompletedTask;
     }

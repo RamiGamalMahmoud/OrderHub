@@ -8,8 +8,14 @@ using static OrderHub.Web.Components.Pages.Features.Orders.Editor.Products.AddPr
 
 namespace OrderHub.Web.Components.Pages.Features.Orders.Editor.Products;
 
-public partial class ProductsStep
+public partial class ProductsStep : IDisposable
 {
+    private bool _disposed;
+    private bool _openingDialog;
+    private IDialogReference? _addDialog;
+
+    [Parameter]
+    public Guid SessionId { get; set; }
     [Inject]
     private IRequestExecutor RequestExecutor { get; set; } = default!;
 
@@ -28,6 +34,11 @@ public partial class ProductsStep
 
     private async Task AddProductAsync()
     {
+        if (_disposed || _openingDialog || _addDialog is not null)
+            return;
+        _openingDialog = true;
+        try
+        {
         DialogOptions options = new()
         {
             Position = DialogPosition.TopCenter,
@@ -44,14 +55,28 @@ public partial class ProductsStep
             }
         };
 
-        await DialogService.ShowAsync<AddProductDialog>(
+        var dialog = await DialogService.ShowAsync<AddProductDialog>(
             "إضافة منتج",
             parameters,
             options);
+        _addDialog = dialog;
+        if (_disposed)
+            dialog.Close(DialogResult.Cancel());
+        await dialog.Result;
+        }
+        finally
+        {
+            _openingDialog = false;
+            _addDialog = null;
+        }
     }
 
     private async Task<Result> OnProductAddedAsync(AddProductResult result)
     {
+        if (_disposed)
+            return Result.Failure("جلسة التحرير لم تعد متاحة.");
+        var sessionId = SessionId;
+        var items = Items;
         GetOrderItemEditor.OrderItemEditorDto product;
         try
         {
@@ -66,6 +91,9 @@ public partial class ProductsStep
 
         if (product is null)
             return Result.Failure("المنتج لم يعد متاحاً. اختر منتجاً آخر.");
+
+        if (_disposed || SessionId != sessionId || !ReferenceEquals(Items, items))
+            return Result.Failure("تغيرت جلسة التحرير. لم تتم إضافة المنتج.");
 
         OrderItemEditorState item = new()
         {
@@ -113,7 +141,13 @@ public partial class ProductsStep
 
     private async Task RemoveItem(OrderItemEditorState item)
     {
-        if (Items.Remove(item))
+        if (!_disposed && Items.Remove(item))
             await ItemsChanged.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        _addDialog?.Close(DialogResult.Cancel());
     }
 }
