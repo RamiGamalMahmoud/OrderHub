@@ -21,8 +21,4 @@
 	  <ProjectReference Include="..\OrderHub.Domain\OrderHub.Domain.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Session\" />
-	</ItemGroup>
-
 </Project>

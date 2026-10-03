@@ -37,14 +37,14 @@ public static class CreateQuotationCommand
     internal class Handler : IRequestHandler<Command, string>
     {
         private readonly IPdfDocumentFactory _documentFactory;
-        private readonly IFileStorageService _fileStorageService;
+        private readonly ILocalFileAccessService _fileStorageService;
         private readonly IDocumentSequenceRepository _sequenceRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IQuotationRepository _quotationRepository;
 
         public Handler(
             IPdfDocumentFactory documentFactory,
-            IFileStorageService fileStorageService,
+            ILocalFileAccessService fileStorageService,
             IDocumentSequenceRepository sequenceRepository,
             IQuotationRepository quotationRepository,
             IUnitOfWork unitOfWork)
@@ -187,7 +187,7 @@ public static class CreateQuotationCommand
 
             //    - Build the PDF.
             byte[] documentBytes = document.Build();
-            await _fileStorageService.SaveQuotationDocumentAsync(documentBytes, $"{quotation.DocumentNumber}.pdf");
+            await _fileStorageService.SaveQuotationAsync($"{quotation.DocumentNumber}.pdf", documentBytes);
         }
     }
 }

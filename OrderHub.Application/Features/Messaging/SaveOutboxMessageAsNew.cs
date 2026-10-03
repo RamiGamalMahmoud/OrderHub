@@ -21,12 +21,12 @@ public static class SaveOutboxMessageAsNew
     {
         private readonly IOutboxMessageRepository _messageRepository;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IFileStorageService _fileStorageService;
+        private readonly ILocalFileAccessService _fileStorageService;
 
         public Handler(
             IOutboxMessageRepository messageRepository,
             IUnitOfWork unitOfWork,
-            IFileStorageService fileStorageService)
+            ILocalFileAccessService fileStorageService)
         {
             _messageRepository = messageRepository;
             _unitOfWork = unitOfWork;
@@ -76,9 +76,9 @@ public static class SaveOutboxMessageAsNew
 
             foreach (var file in filesToStore)
             {
-                await _fileStorageService.SaveAttachmentAsync(
-                    file.SourcePath,
-                    file.StoredFileName);
+                //await _fileStorageService.SaveAttachmentAsync(
+                //    file.SourcePath,
+                //    file.StoredFileName);
             }
 
             return Result.Success();

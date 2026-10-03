@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Npgsql;
-using OrderHub.Application.Configuration;
 
 namespace OrderHub.Infrastructure;
 
@@ -10,18 +9,13 @@ internal class DesignTimeAppDbContextFactrory
 {
     public AppDbContext CreateDbContext(string[] args)
     {
-        DatabaseSettings databaseSettings = new()
-        {
-            Database = "orderhub_dev"
-        };
-
         NpgsqlConnectionStringBuilder connectionStringBuilder = new()
         {
-            Host = databaseSettings.Host,
-            Port = databaseSettings.Port,
-            Database = databaseSettings.Database,
-            Username = databaseSettings.Username,
-            Password = databaseSettings.Password
+            Host = "localhost",
+            Port = 5432,
+            Database = "orderhub",
+            Username = "postgres",
+            Password = "12015",
         };
 
         DbContextOptionsBuilder<AppDbContext> optionsBuilder = new();

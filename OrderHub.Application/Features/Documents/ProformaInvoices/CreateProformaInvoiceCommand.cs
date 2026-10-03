@@ -36,14 +36,14 @@ public static class CreateProformaInvoiceCommand
     internal class Handler : IRequestHandler<Command, string>
     {
         private readonly IPdfDocumentFactory _documentFactory;
-        private readonly IFileStorageService _fileStorageService;
+        private readonly ILocalFileAccessService _fileStorageService;
         private readonly IDocumentSequenceRepository _sequenceRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IProformaInvoiceRepository _proformaInvoiceRepository;
 
         public Handler(
             IPdfDocumentFactory documentFactory,
-            IFileStorageService fileStorageService,
+            ILocalFileAccessService fileStorageService,
             IDocumentSequenceRepository sequenceRepository,
             IUnitOfWork unitOfWork,
             IProformaInvoiceRepository proformaInvoiceRepository)
@@ -185,7 +185,9 @@ public static class CreateProformaInvoiceCommand
 
             //    - Build the PDF.
             byte[] documentBytes = document.Build();
-            await _fileStorageService.SaveProformaInvoiceDocumentAsync(documentBytes, $"{proformaInvoice.DocumentNumber}.pdf");
+            await _fileStorageService.SaveProformaInvoiceAsync(
+                $"{proformaInvoice.DocumentNumber}.pdf",
+                documentBytes);
         }
     }
 }

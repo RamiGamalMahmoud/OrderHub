@@ -4,7 +4,7 @@ using OrderHub.Application.Interfaces.Services;
 namespace OrderHub.Web.Controllers.Files;
 
 [ApiController]
-[Route("api/files/proforma-invoices")]
+[Route("files/proforma-invoices")]
 public sealed class ProformaInvoicesController : ControllerBase
 {
     private readonly ILocalFileAccessService _localAccessService;

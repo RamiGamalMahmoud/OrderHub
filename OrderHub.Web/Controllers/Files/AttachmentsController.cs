@@ -4,7 +4,7 @@ using OrderHub.Application.Interfaces.Services;
 namespace OrderHub.Web.Controllers.Files;
 
 [ApiController]
-[Route("api/files/attachments")]
+[Route("files/attachments")]
 public class AttachmentsController : ControllerBase
 {
     private readonly ILocalFileAccessService _localAccessService;

@@ -4,7 +4,7 @@ using OrderHub.Application.Interfaces.Services;
 namespace OrderHub.Web.Controllers.Files;
 
 [ApiController]
-[Route("api/files/quotations")]
+[Route("files/quotations")]
 public sealed class QuotationsController : ControllerBase
 {
     private readonly ILocalFileAccessService _localAccessService;

@@ -13,20 +13,17 @@ namespace OrderHub.Infrastructure.DependencyInjection;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
     {
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 
-        services.AddPersistence();
+        services.AddPersistence(connectionString);
         services.AddStores();
         services.AddRepositories();
         services.AddQueries();
         services.AddReadServices();
         services.AddDrafts();
 
-        services.AddAuthenticationServices();
-        services.AddMessaging();
-        services.AddIntegrations();
         services.AddServices();
 
         services.AddTransient<UserReadService>();

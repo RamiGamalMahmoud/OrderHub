@@ -167,7 +167,7 @@ internal sealed class LocalFileAccessService
         ValidateFileName(fileName);
 
         return Path.Combine(
-            _directories.InvoicesDirecoty,
+            _directories.InvoicesDirectory,
             fileName);
     }
 

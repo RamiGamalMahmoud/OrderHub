@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using OrderHub.Application.Configuration;
 using OrderHub.Application.Interfaces.Services;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,19 +48,6 @@ internal class DatabaseService : IDatabaseService
         using (AppDbContext context = _appDbContextFactory.CreateDbContext())
         {
             await context.Database.ExecuteSqlRawAsync("UPDATE categories SET parent_category_id = NULL WHERE id = parent_category_id");
-        }
-    }
-
-    public async Task<bool> CanConnectAsync(DatabaseSettings databaseSettings)
-    {
-        using (AppDbContext context = _appDbContextFactory.CreateDbContext(
-            databaseSettings.Host,
-            databaseSettings.Port,
-            databaseSettings.Database,
-            databaseSettings.Username,
-            databaseSettings.Password))
-        {
-            return await context.Database.CanConnectAsync();
         }
     }
 }

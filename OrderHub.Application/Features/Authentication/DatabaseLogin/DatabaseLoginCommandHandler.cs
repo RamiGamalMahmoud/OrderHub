@@ -2,7 +2,6 @@
 using OrderHub.Application.Context;
 using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Application.Interfaces.Services;
-using OrderHub.Application.Services;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using System.Linq;
@@ -14,19 +13,13 @@ internal class DatabaseLoginCommandHandler : IRequestHandler<DatabaseLoginComman
 {
     private readonly IUserRepository _userRepository;
     private readonly IHashShervice _hashShervice;
-    private readonly IApplicationContext _applicationContext;
-    private readonly IUserSessionStorage _userSessionStorage;
 
     public DatabaseLoginCommandHandler(
         IUserRepository userRepository,
-        IHashShervice hashShervice,
-        IApplicationContext applicationContext,
-        IUserSessionStorage userSessionStorage)
+        IHashShervice hashShervice)
     {
         _userRepository = userRepository;
         _hashShervice = hashShervice;
-        _applicationContext = applicationContext;
-        _userSessionStorage = userSessionStorage;
     }
 
     public async Task<Result<UserSession>> Handle(DatabaseLoginCommand request, CancellationToken cancellationToken)
@@ -49,18 +42,6 @@ internal class DatabaseLoginCommandHandler : IRequestHandler<DatabaseLoginComman
                 permission.CanRead,
                 permission.CanWrite))
             .ToList());
-
-        _applicationContext.SetUser(userSession);
-
-        if (request.RememberMe)
-            _userSessionStorage.Save(userSession);
-        else
-            _userSessionStorage.Clear();
-
-        UserInfoDto userInfo = new UserInfoDto(
-            user.Id,
-            user.UserName,
-            user.DisplayName);
 
         return Result<UserSession>.Success(userSession);
     }

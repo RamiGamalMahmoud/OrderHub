@@ -1,79 +1,50 @@
-﻿using OrderHub.Application.Interfaces.Services;
-using System;
+﻿using Microsoft.Extensions.Options;
+using OrderHub.Application.Interfaces.Services;
+using OrderHub.Infrastructure.Options;
 using System.IO;
 
 namespace OrderHub.Infrastructure.Services;
 
-internal class ApplicationDirectoriesService : IApplicationDirectoriesService
+internal sealed class ApplicationDirectoriesService
+    : IApplicationDirectoriesService
 {
-    private const string APP_NAME = "OrderHub";
-
-    public string AppDirectory =>
-#if DEBUG
-        Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-            $"{APP_NAME} - Dev");
-#else
-        Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-            APP_NAME);
-#endif
-
-    public string StorageDirectory => Path.Combine(AppDirectory, "Storage");
-
-    public string AttachmentsDirectory => Path.Combine(StorageDirectory, "Attachments");
-
-    public string DataDirectory => Path.Combine(AppDirectory, "Data");
-
-    public string WhatsAppProfilesDirectory => Path.Combine(AppDirectory, "WhatsAppProfiles");
-
-    public string DefaultWhatsAppProfileDirectory => Path.Combine(WhatsAppProfilesDirectory, "Default");
-
-    public string DocumentsDirectory => Path.Combine(AppDirectory, "Documents");
-
-    public string DraftsDirectory => Path.Combine(AppDirectory, "Drafts");
-
-    public string LogsDirectory => Path.Combine(StorageDirectory, "Logs");
-
-    public string CredentialsFilePath => Path.Combine(StorageDirectory, "creditals.bin");
-
-    public string TokenFilePath => Path.Combine(StorageDirectory, "token.bin");
-
-    public string DatabaseFilePath => Path.Combine(DataDirectory, "order_hub.db");
-
-    public string InvoicesDirecoty => Path.Combine(DocumentsDirectory, "Invoices");
-    public string ProformaInvoicesDirectory => Path.Combine(DocumentsDirectory, "ProformaInvoices");
-    public string QuotationsDirectory => Path.Combine(DocumentsDirectory, "Quotations");
-    public string GetWhatsAppProfileDirectory(string profileName)
+    public ApplicationDirectoriesService(IOptions<ApplicationDataOptions> options)
     {
-        string profilePath = Path.Combine(WhatsAppProfilesDirectory, profileName);
-        Directory.CreateDirectory(profilePath);
-        return profilePath;
+        RootDirectory = Path.GetFullPath(options.Value.RootPath);
     }
+
+    public string RootDirectory { get; }
+
+    public string AttachmentsDirectory =>
+        Path.Combine(RootDirectory, "Attachments");
+
+    public string DocumentsDirectory =>
+        Path.Combine(RootDirectory, "Documents");
+
+    public string InvoicesDirectory =>
+        Path.Combine(DocumentsDirectory, "Invoices");
+
+    public string ProformaInvoicesDirectory =>
+        Path.Combine(DocumentsDirectory, "ProformaInvoices");
+
+    public string QuotationsDirectory =>
+        Path.Combine(DocumentsDirectory, "Quotations");
+
+    public string BackupsDirectory =>
+        Path.Combine(RootDirectory, "Backups");
+
+    public string LogsDirectory =>
+        Path.Combine(RootDirectory, "Logs");
 
     public void EnsureDirectoriesCreated()
     {
-        Directory.CreateDirectory(AppDirectory);
-        Directory.CreateDirectory(StorageDirectory);
-        Directory.CreateDirectory(DataDirectory);
-        Directory.CreateDirectory(WhatsAppProfilesDirectory);
-        Directory.CreateDirectory(DefaultWhatsAppProfileDirectory);
-        Directory.CreateDirectory(DocumentsDirectory);
-        Directory.CreateDirectory(DraftsDirectory);
-        Directory.CreateDirectory(LogsDirectory);
+        Directory.CreateDirectory(RootDirectory);
         Directory.CreateDirectory(AttachmentsDirectory);
-        Directory.CreateDirectory(InvoicesDirecoty);
+        Directory.CreateDirectory(DocumentsDirectory);
+        Directory.CreateDirectory(InvoicesDirectory);
         Directory.CreateDirectory(ProformaInvoicesDirectory);
         Directory.CreateDirectory(QuotationsDirectory);
-
-        if (!File.Exists(DatabaseFilePath))
-        {
-            var sourcePath = Path.Combine(
-                AppContext.BaseDirectory,
-                "Data",
-                "order_hub.db");
-
-            File.Copy(sourcePath, DatabaseFilePath);
-        }
+        Directory.CreateDirectory(BackupsDirectory);
+        Directory.CreateDirectory(LogsDirectory);
     }
 }

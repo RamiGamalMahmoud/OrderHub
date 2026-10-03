@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using MudBlazor.Services;
 using OrderHub.Application;
 using OrderHub.Domain;
-using Microsoft.Extensions.Hosting;
 using OrderHub.Infrastructure.DependencyInjection;
+using OrderHub.Infrastructure.Options;
 using OrderHub.Web.Components;
 using OrderHub.Web.Services;
 
@@ -22,10 +22,21 @@ builder.Services.AddWindowsService(options =>
     options.ServiceName = "OrderHubWeb";
 });
 
-builder.WebHost.UseUrls("http://0.0.0.0:5000");
 
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure();
+string connectionString =
+    builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException(
+        "Connection string 'DefaultConnection' is not configured.");
+
+builder.Services.AddOptions<ApplicationDataOptions>()
+    .Bind(builder.Configuration.GetSection(ApplicationDataOptions.SECTION_NAME))
+    .Validate(options => 
+        !string.IsNullOrWhiteSpace(options.RootPath),
+        "Application data root path is required.")
+    .ValidateOnStart();
+
+builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddDomain();
 
 builder.Services.AddMudServices();

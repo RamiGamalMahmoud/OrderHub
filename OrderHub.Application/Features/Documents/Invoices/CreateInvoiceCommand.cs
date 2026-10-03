@@ -26,7 +26,7 @@ public static class CreateInvoiceCommand
         private readonly IInvoiceRepository _invoiceRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IPdfDocumentFactory _documentFactory;
-        private readonly IFileStorageService _fileStorageService;
+        private readonly ILocalFileAccessService _fileStorageService;
         private readonly IOrderRepository _orderRepository;
 
         public Handler(
@@ -34,7 +34,7 @@ public static class CreateInvoiceCommand
             IInvoiceRepository invoiceRepository,
             IUnitOfWork unitOfWork,
             IPdfDocumentFactory documentFactory,
-            IFileStorageService fileStorageService,
+            ILocalFileAccessService fileStorageService,
             IOrderRepository orderRepository)
         {
             _documentSequenceRepository = documentSequenceRepository;
@@ -165,9 +165,9 @@ public static class CreateInvoiceCommand
 
             byte[] pdfBytes = document.Build();
 
-            await _fileStorageService.SaveInvoiceDocumentAsync(
-                pdfBytes,
-                $"{createdInvoice.DocumentNumber}.pdf");
+            await _fileStorageService.SaveInvoiceAsync(
+                $"{createdInvoice.DocumentNumber}.pdf",
+                pdfBytes);
         }
     }
 }

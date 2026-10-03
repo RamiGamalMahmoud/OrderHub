@@ -4,7 +4,7 @@ using OrderHub.Application.Interfaces.Services;
 namespace OrderHub.Web.Controllers.Files;
 
 [ApiController]
-[Route("api/files/invoices")]
+[Route("files/invoices")]
 public sealed class InvoicesController : ControllerBase
 {
     private readonly ILocalFileAccessService _localAccessService;
