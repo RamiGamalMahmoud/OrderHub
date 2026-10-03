@@ -82,9 +82,3 @@ public partial class Orders
     private int? _selectedPaymentMethodId = null;
     private IEnumerable<PaymentMethodListDto?> _paymentMethods = [];
 }
-
-class Filter
-{
-    private int? _selectedPaymentMethodId = null;
-    private IEnumerable<PaymentMethodListDto?> _paymentMethods = [];
-}
