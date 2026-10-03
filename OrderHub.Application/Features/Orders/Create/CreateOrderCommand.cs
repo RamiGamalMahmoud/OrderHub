@@ -21,20 +21,17 @@ public static class CreateOrderCommand
     internal class Handler : IRequestHandler<Command, Result<int>>
     {
         private readonly IOrderRepository _orderRepository;
-        private readonly IOrderEntitySequenceService _orderEntitySequenceService;
         private readonly IQuotationRepository _quotationRepository;
         private readonly IProformaInvoiceRepository _proformaInvoiceRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public Handler(
             IOrderRepository orderRepository,
-            IOrderEntitySequenceService orderEntitySequenceService,
             IUnitOfWork unitOfWork,
             IQuotationRepository quotationRepository,
             IProformaInvoiceRepository proformaInvoiceRepository)
         {
             _orderRepository = orderRepository;
-            _orderEntitySequenceService = orderEntitySequenceService;
             _unitOfWork = unitOfWork;
             _quotationRepository = quotationRepository;
             _proformaInvoiceRepository = proformaInvoiceRepository;
@@ -105,9 +102,6 @@ public static class CreateOrderCommand
                 }
 
                 // 3. Ensure entity sequences
-                await _orderEntitySequenceService.EnsureEntitySequencesAsync(
-                    order,
-                    cancellationToken);
 
                 // 4. Add order
                 _orderRepository.Add(order);

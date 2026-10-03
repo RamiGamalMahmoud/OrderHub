@@ -12,8 +12,6 @@ public static class ServiceCollectionExtensions
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
         services.AddSingleton<IAuthorizationService, AuthorizationService>();
 
-        services.AddScoped<IOrderEntitySequenceService, OrderEntitySequenceService>();
-
         return services;
     }
 }

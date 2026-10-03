@@ -29,11 +29,6 @@ internal class DeleteShippingCarrierCommandHandler(AppDbContextFactory appDbCont
             return Result.Failure("لا يمكن حذف شركة الشحن لأنها مستخدمة في سلسلة التوصيل.");
         }
 
-        if (await appDbContext.ShippingCarrierRecipients.AnyAsync(recipient => recipient.ShippingCarrierId == request.Id, cancellationToken))
-        {
-            return Result.Failure("لا يمكن حذف شركة الشحن لأنها مرتبطة بسجل الرسائل.");
-        }
-
         appDbContext.ShippingCarriers.Remove(shippingCarrier);
 
         try

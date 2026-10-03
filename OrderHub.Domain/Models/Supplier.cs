@@ -25,8 +25,6 @@ public class Supplier : ModelBase
     public Phone Phone { get; private set; }
 
     public Address Address { get; private set; }
-    public WhatsappGroup WhatsappGroup { get; set; }
-
     public BusinessHours BusinessHours { get; private set; }
 
     public void UpdatePhone(Phone phone)

@@ -17,7 +17,6 @@ internal class UpdateSupplierCommandHandler(AppDbContextFactory appDbContextFact
     {
         using AppDbContext appDbContext = _appDbContextFactory.CreateDbContext();
         City city = await appDbContext.Cities.FindAsync(request.Dto.CityId);
-        WhatsappGroup whatsappGroup = await appDbContext.WhatsappGroups.FindAsync(request.Dto.WhatsappGroupId);
 
         Supplier supplier = await appDbContext
             .Suppliers
@@ -36,12 +35,6 @@ internal class UpdateSupplierCommandHandler(AppDbContextFactory appDbContextFact
         supplier.UpdateBuisnessHours(request.Dto.OpenAt, request.Dto.CloseAt);
         supplier.Address.ChangeCity(city);
         supplier.Address.ChangeStreet(request.Dto.Street);
-        supplier.WhatsappGroup = whatsappGroup;
-        await Services.OutboxRecipientPhoneUpdater.UpdateSupplierPhoneAsync(
-            appDbContext,
-            supplier.Id,
-            supplier.Phone.Number.FullNumber,
-            cancellationToken);
 
         try
         {

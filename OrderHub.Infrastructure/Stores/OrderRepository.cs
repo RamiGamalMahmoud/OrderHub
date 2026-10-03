@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Interfaces.Stores;
-using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using System;
 using System.Linq;
@@ -32,23 +31,6 @@ internal class OrderRepository : IOrderRepository
     public void Add(Order order)
     {
         _dbContext.Orders.Add(order);
-    }
-
-    public async Task<int> GetLastEntitySequenceNumberAsync(
-        RecipientType recipientType,
-        int entityId,
-        DateTime referenceDate,
-        CancellationToken cancellationToken)
-    {
-        return await _dbContext.OrderEntitySequences
-            .Where(sequence =>
-                sequence.RecipientType == recipientType
-                && sequence.EntityId == entityId
-                && sequence.SequenceYear == referenceDate.Year
-                && sequence.SequenceMonth == referenceDate.Month)
-            .Select(sequence => (int?)sequence.SequenceNumber)
-            .MaxAsync(cancellationToken)
-            ?? 0;
     }
 
     public async Task<int> GetNextOrderNumberAsync(CancellationToken cancellationToken = default)

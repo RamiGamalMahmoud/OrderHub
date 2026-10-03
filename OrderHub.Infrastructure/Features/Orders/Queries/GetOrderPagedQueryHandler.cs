@@ -26,10 +26,7 @@ internal class GetOrderPagedQueryHandler(AppDbContextFactory dbContextFactory) :
             .Select(order => new GetOrderPaged.Order(
                 order.Id,
                 order.OrderNumber,
-                order.EntitySequences
-                    .Where(sequence => sequence.RecipientType == RecipientType.Client && sequence.EntityId == order.ClientId)
-                    .Select(sequence => sequence.DisplayTitle)
-                    .FirstOrDefault() ?? order.OrderNumber,
+                "",
                 order.Client.Name.Value,
                 order.Client.Phone.Number.FullNumber,
                 order.OrderItems.Count,
@@ -46,15 +43,7 @@ internal class GetOrderPagedQueryHandler(AppDbContextFactory dbContextFactory) :
                     order.PaymentMethod.Description,
                     order.PaymentMethod.IsActive),
 
-                order.CreatedAt,
-                true,
-                order.OrderItems.Any(item => item.SupplierId != null),
-                order.ShippingCarrierId != null || order.DeliverySteps.Any(step => step.ShippingCarrierId != null),
-                order.DeliverymanId != null || order.DeliverySteps.Any(step => step.DeliverymanId != null),
-                order.OutboxMessages.Any(message => message.RecipientType == RecipientType.Client && message.Status == OutboxMessageStatus.Sent),
-                order.OutboxMessages.Any(message => message.RecipientType == RecipientType.Supplier && message.Status == OutboxMessageStatus.Sent),
-                order.OutboxMessages.Any(message => message.RecipientType == RecipientType.ShippingCarrier && message.Status == OutboxMessageStatus.Sent),
-                order.OutboxMessages.Any(message => message.RecipientType == RecipientType.Deliveryman && message.Status == OutboxMessageStatus.Sent)
+                order.CreatedAt
             ));
 
         return await query.ToPagedResultAsync(request.PageNumber, request.PageSize, cancellationToken);
@@ -77,11 +66,7 @@ internal static class OrderQueryFilters
         return query.Where(order =>
             (string.IsNullOrWhiteSpace(searchTerm)
                 || order.Client.Name.Value.Contains(searchTerm)
-                || order.OrderNumber.Contains(searchTerm)
-                || order.EntitySequences.Any(sequence =>
-                    sequence.RecipientType == RecipientType.Client
-                    && sequence.EntityId == order.ClientId
-                    && sequence.DisplayTitle.Contains(searchTerm)))
+                || order.OrderNumber.Contains(searchTerm))
             && (!fromDateUtc.HasValue || order.CreatedAt >= fromDateUtc.Value)
             && (!toDateUtc.HasValue || order.CreatedAt < toDateUtc.Value)
             && (!paymentMethodId.HasValue || order.PaymentMethodId == paymentMethodId.Value)

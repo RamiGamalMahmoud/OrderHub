@@ -10,9 +10,7 @@ public class Order : ModelBase
 {
     private readonly List<OrderItem> _orderItems = [];
     private readonly List<OrderDeliveryStep> _deliverySteps = [];
-    private readonly List<OrderEntitySequence> _entitySequences = [];
-    private readonly List<OutboxMessage> _outboxMessages = [];
-
+    
     private Order()
     {
     }
@@ -45,8 +43,6 @@ public class Order : ModelBase
 
     public IReadOnlyCollection<OrderItem> OrderItems => _orderItems.AsReadOnly();
     public IReadOnlyCollection<OrderDeliveryStep> DeliverySteps => _deliverySteps.AsReadOnly();
-    public IReadOnlyCollection<OrderEntitySequence> EntitySequences => _entitySequences.AsReadOnly();
-    public IReadOnlyCollection<OutboxMessage> OutboxMessages => _outboxMessages.AsReadOnly();
 
     public void UpdateHeader(
         int clientId,
@@ -137,41 +133,9 @@ public class Order : ModelBase
         _deliverySteps.Clear();
     }
 
-    public void AddEntitySequence(OrderEntitySequence entitySequence)
-    {
-        _entitySequences.Add(entitySequence);
-    }
-
-    public void RemoveEntitySequence(OrderEntitySequence entitySequence)
-    {
-        _entitySequences.Remove(entitySequence);
-    }
-
     public void ChangeOrderStatus(OrderStatus orderStatus)
     {
         OrderStatus = orderStatus;
-    }
-
-    public string GetDisplayTitle(
-        RecipientType recipientType,
-        int? entityId = null)
-    {
-        int resolvedEntityId = entityId ?? recipientType switch
-        {
-            RecipientType.Client => ClientId,
-            RecipientType.Deliveryman => DeliverymanId ?? 0,
-            _ => 0
-        };
-
-        if (resolvedEntityId <= 0)
-            return OrderNumber;
-
-        return _entitySequences
-            .FirstOrDefault(sequence =>
-                sequence.RecipientType == recipientType &&
-                sequence.EntityId == resolvedEntityId)
-            ?.DisplayTitle
-            ?? OrderNumber;
     }
 
     public void ChangeDeliveryMethod(DeliveryMethod deliveryMethod)

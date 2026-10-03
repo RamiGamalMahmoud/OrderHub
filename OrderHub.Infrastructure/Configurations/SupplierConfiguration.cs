@@ -50,16 +50,6 @@ internal class SupplierConfiguration
             .IsRequired(false)
             .OnDelete(DeleteBehavior.NoAction);
 
-        builder.Property<int?>("whatsapp_group_id")
-            .HasColumnType("integer")
-            .IsRequired(false);
-
-        builder.HasOne(x => x.WhatsappGroup)
-            .WithMany()
-            .HasForeignKey("whatsapp_group_id")
-            .IsRequired(false)
-            .OnDelete(DeleteBehavior.Restrict);
-
         builder.OwnsOne(x => x.BusinessHours, navigationBuilder =>
         {
             navigationBuilder.Property(x => x.OpenAt)

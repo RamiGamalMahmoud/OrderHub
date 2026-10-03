@@ -85,11 +85,5 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
             .HasForeignKey(x => x.OrderId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
-
-        builder.HasMany(x => x.EntitySequences)
-            .WithOne(x => x.Order)
-            .HasForeignKey(x => x.OrderId)
-            .IsRequired()
-            .OnDelete(DeleteBehavior.Cascade);
     }
 }

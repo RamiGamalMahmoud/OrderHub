@@ -26,11 +26,6 @@ internal class DeleteClientCommandHandler(AppDbContextFactory appDbContextFactor
             return Result.Failure("لا يمكن حذف العميل لأنه مرتبط بطلبات.");
         }
 
-        if (await appDbContext.ClientRecipients.AnyAsync(recipient => recipient.ClientId == request.Id, cancellationToken))
-        {
-            return Result.Failure("لا يمكن حذف العميل لأنه مرتبط بسجل الرسائل.");
-        }
-
         appDbContext.Clients.Remove(client);
 
         try

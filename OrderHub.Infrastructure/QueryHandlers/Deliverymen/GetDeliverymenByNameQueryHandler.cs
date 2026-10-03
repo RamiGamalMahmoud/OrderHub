@@ -23,8 +23,7 @@ internal class GetDeliverymenByNameQueryHandler(AppDbContextFactory appDbContext
             query = query.Where(deliveryman =>
                 deliveryman.Name.Value.Contains(term) ||
                 deliveryman.PhoneNumber.Contains(term) ||
-                deliveryman.City.Name.Value.Contains(term) ||
-                (deliveryman.WhatsappGroup != null && deliveryman.WhatsappGroup.GroupName.Contains(term)));
+                deliveryman.City.Name.Value.Contains(term));
         }
 
         return await query
@@ -34,8 +33,7 @@ internal class GetDeliverymenByNameQueryHandler(AppDbContextFactory appDbContext
                 deliveryman.Id,
                 deliveryman.Name.Value,
                 deliveryman.City.Name.Value,
-                deliveryman.PhoneNumber,
-                deliveryman.WhatsappGroup != null ? deliveryman.WhatsappGroup.GroupName : null))
+                deliveryman.PhoneNumber))
             .ToListAsync(cancellationToken);
     }
 }
@@ -53,8 +51,7 @@ internal class GetDeliverymanByIdQueryHandler(AppDbContextFactory appDbContextFa
                 deliveryman.Id,
                 deliveryman.Name.Value,
                 deliveryman.City.Name.Value,
-                deliveryman.PhoneNumber,
-                deliveryman.WhatsappGroup != null ? deliveryman.WhatsappGroup.GroupName : null))
+                deliveryman.PhoneNumber))
             .FirstOrDefaultAsync(cancellationToken);
     }
 }

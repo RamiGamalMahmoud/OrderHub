@@ -32,11 +32,6 @@ internal class DeleteDeliverymanCommandHandler(AppDbContextFactory appDbContextF
             return Result.Failure("لا يمكن حذف المندوب لأنه مستخدم في سلسلة التوصيل.");
         }
 
-        if (await appDbContext.DeliverymanRecipients.AnyAsync(recipient => recipient.DeliveryManId == request.Id, cancellationToken))
-        {
-            return Result.Failure("لا يمكن حذف المندوب لأنه مرتبط بسجل الرسائل.");
-        }
-
         appDbContext.Deliverymen.Remove(deliveryman);
 
         try

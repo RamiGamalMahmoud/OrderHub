@@ -3,7 +3,6 @@ using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
-using OrderHub.Infrastructure.Helpers;
 using OrderHub.Infrastructure.Orders;
 using System;
 using System.Linq;
@@ -72,8 +71,6 @@ internal class OrderStore : IOrderStore
 
         appDbContext.Orders.Add(order);
 
-        await OrderEntitySequenceManager.SyncAsync(appDbContext, order, cancellationToken);
-
         await appDbContext.SaveChangesAsync(cancellationToken);
 
         return order.Id;
@@ -112,7 +109,6 @@ internal class OrderStore : IOrderStore
         Order storedOrder = await appDbContext.Orders
             .Include(o => o.OrderItems)
             .Include(o => o.DeliverySteps)
-            .Include(o => o.EntitySequences)
             .SingleOrDefaultAsync(o => o.Id == orderId, cancellationToken);
 
         if (order is null)
@@ -121,7 +117,6 @@ internal class OrderStore : IOrderStore
         }
 
         _orderWriteService.Update(appDbContext, storedOrder, order);
-        await OrderEntitySequenceManager.SyncAsync(appDbContext, storedOrder, cancellationToken);
         await appDbContext.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }

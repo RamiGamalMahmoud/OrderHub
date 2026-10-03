@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using Npgsql;
 
 namespace OrderHub.Infrastructure;
 
@@ -9,19 +8,10 @@ internal class DesignTimeAppDbContextFactrory
 {
     public AppDbContext CreateDbContext(string[] args)
     {
-        NpgsqlConnectionStringBuilder connectionStringBuilder = new()
-        {
-            Host = "localhost",
-            Port = 5432,
-            Database = "orderhub",
-            Username = "postgres",
-            Password = "12015",
-        };
-
         DbContextOptionsBuilder<AppDbContext> optionsBuilder = new();
 
         optionsBuilder
-            .UseNpgsql(connectionStringBuilder.ConnectionString)
+            .UseNpgsql("Host=localhost;Port=5432;Database=orderhub;Username=postgres;Password=12015")
             .UseSnakeCaseNamingConvention();
 
         return new AppDbContext(optionsBuilder.Options);

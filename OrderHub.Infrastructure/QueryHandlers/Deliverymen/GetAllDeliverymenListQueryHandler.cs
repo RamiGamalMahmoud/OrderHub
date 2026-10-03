@@ -21,9 +21,8 @@ internal class GetAllDeliverymenListQueryHandler(AppDbContextFactory appDbContex
                 d.Id,
                 d.Name.Value,
                 d.City.Name.Value,
-                d.PhoneNumber,
-                d.WhatsappGroup != null ? d.WhatsappGroup.GroupName : null))
+                d.PhoneNumber))
             .AsNoTracking()
-            .ToListAsync();
+            .ToListAsync(cancellationToken: cancellationToken);
     }
 }

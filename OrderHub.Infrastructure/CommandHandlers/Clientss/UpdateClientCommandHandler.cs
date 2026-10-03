@@ -32,11 +32,6 @@ internal class UpdateClientCommandHandler(AppDbContextFactory appDbContextFactor
         client.UpdateName(dto.Name);
         client.UpdatePhone(dto.CountryCode, dto.PhoneNumber);
         client.UpdateAddress(newCity, dto.Street);
-        await Services.OutboxRecipientPhoneUpdater.UpdateClientPhoneAsync(
-            appDbContext,
-            client.Id,
-            client.Phone.Number.FullNumber,
-            cancellationToken);
 
         try
         {

@@ -18,17 +18,9 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<Deliveryman> Deliverymen {  get; set; }
     public DbSet<ShippingCarrier> ShippingCarriers { get; set; }
     public DbSet<Order> Orders { get; set; }
-    public DbSet<OrderEntitySequence> OrderEntitySequences { get; set; }
     public DbSet<OrderDeliveryStep> OrderDeliverySteps { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<PaymentMethod> PaymentMethods { get; set; }
-    public DbSet<OutboxMessage> OutboxMessages { get; set; }
-    public DbSet<OutboxMessageAttachment> MessageAttachments { get; set; }
-    public DbSet<ClientRecipient> ClientRecipients { get; set; }
-    public DbSet<SupplierRecipient> SupplierRecipients { get; set; }
-    public DbSet<DeliverymanRecipient> DeliverymanRecipients { get; set; }
-    public DbSet<ShippingCarrierRecipient> ShippingCarrierRecipients { get; set; }
-    public DbSet<WhatsappGroup> WhatsappGroups { get; set; }
     public DbSet<Property> Properties { get; set; }
     public DbSet<PropertyOption> PropertyOptions { get; set; }
     public DbSet<ProductProperty> ProductProperties { get; set; }
@@ -41,8 +33,6 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<ProformaInvoice> ProformaInvoices { get; set; }
     public DbSet<ProformaInvoiceItem> ProformaInvoiceItems { get; set; }
     public DbSet<User> Users { get; set; }
-    public DbSet<TelegramAccount> TelegramAccounts { get; set; }
-    public DbSet<TelegramLink> TelegramLinks { get; set; }
     public DbSet<DraftRecord> DraftRecords { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

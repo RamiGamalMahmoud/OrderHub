@@ -28,15 +28,7 @@ public static class GetOrderPaged
     OrderStatus OrderStatus,
     EnumItem<OrderStatus> EnumItem,
     PaymentMethod PaymentMethod,
-    DateTime CreatedAt,
-    bool HasClientRecipient,
-    bool HasSupplierRecipient,
-    bool HasShippingCarrierRecipient,
-    bool HasDeliverymanRecipient,
-    bool IsClientMessageSent,
-    bool IsSupplierMessageSent,
-    bool IsShippingCarrierMessageSent,
-    bool IsDeliverymanMessageSent);
+    DateTime CreatedAt);
 
     public record PaymentMethod(int Id, string DisplayName, string Description, bool IsActive);
 }

@@ -3,7 +3,6 @@ using OrderHub.Application.Features.Administration.Users.GetUser;
 using OrderHub.Application.Features.Administration.Users.GetUsers;
 using OrderHub.Infrastructure.Features.Administration.Users;
 using OrderHub.Infrastructure.Features.OrderDrafts;
-using OrderHub.Infrastructure.Queries;
 using OrderHub.Infrastructure.ReadServices;
 using OrderHub.Infrastructure.Reopsitories;
 using OrderHub.Infrastructure.Stores;
@@ -20,7 +19,6 @@ public static class ServiceCollectionExtensions
         services.AddPersistence(connectionString);
         services.AddStores();
         services.AddRepositories();
-        services.AddQueries();
         services.AddReadServices();
         services.AddDrafts();
 

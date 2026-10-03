@@ -20,8 +20,6 @@ internal class CrateSupplierCommandHandler(AppDbContextFactory appDbContextFacto
         if (city is null)
             return Result.Failure("City not found.");
 
-        WhatsappGroup whatsappGroup = await appDbContext.WhatsappGroups.FindAsync(request.Dto.WhatsappGroupId);
-
         Result<Phone> phoneResult = Phone.Create(request.Dto.PhoneNumber, request.Dto.CountryCode);
         if (!phoneResult.IsSuccess)
             return Result.Failure(phoneResult.ErrorMessage);
@@ -36,10 +34,7 @@ internal class CrateSupplierCommandHandler(AppDbContextFactory appDbContextFacto
             request.Dto.CloseAt,
             addressResult.Value,
             phoneResult.Value
-            )
-        { 
-            WhatsappGroup = whatsappGroup
-        };
+            );
 
         appDbContext.Suppliers.Add(supplier);
 

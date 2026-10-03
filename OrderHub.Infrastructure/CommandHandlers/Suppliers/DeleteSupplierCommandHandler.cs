@@ -28,11 +28,6 @@ internal class DeleteSupplierCommandHandler(AppDbContextFactory appDbContextFact
             return Result.Failure("لا يمكن حذف المورد لأنه مرتبط بطلبات.");
         }
 
-        if (await appDbContext.SupplierRecipients.AnyAsync(recipient => recipient.SupplierId == request.Id, cancellationToken))
-        {
-            return Result.Failure("لا يمكن حذف المورد لأنه مرتبط بسجل الرسائل.");
-        }
-
         if (await appDbContext.Products.AnyAsync(product => product.Suppliers.Any(s => s.Id == request.Id), cancellationToken))
         {
             return Result.Failure("لا يمكن حذف المورد لأنه مرتبط بمنتجات.");

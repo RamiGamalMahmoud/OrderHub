@@ -34,16 +34,6 @@ internal class DeliverymanConfiguration
             .IsRequired()
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.Property<int?>("whatsapp_group_id")
-            .HasColumnType("integer")
-            .IsRequired(false);
-
-        builder.HasOne(x => x.WhatsappGroup)
-            .WithMany()
-            .HasForeignKey("whatsapp_group_id")
-            .IsRequired(false)
-            .OnDelete(DeleteBehavior.Restrict);
-
         builder.Property(x => x.PhoneNumber)
             .HasColumnName("phone_number")
             .HasColumnType("varchar(15)")
