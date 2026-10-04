@@ -17,12 +17,12 @@
 
                 <MudAvatar Size="Size.Small"
                            Color="Color.Primary">
-                    @StepNumber
+                    @Step.StepOrder
                 </MudAvatar>
 
                 <div>
                     <MudText Typo="Typo.subtitle2">
-                        خطوة @StepNumber
+                        خطوة @Step.StepOrder
                     </MudText>
 
                     <MudText Typo="Typo.caption"
@@ -132,9 +132,6 @@
 {
     [Parameter, EditorRequired]
     public DeliveryStepEditorState Step { get; set; } = null!;
-
-    [Parameter]
-    public int StepNumber { get; set; }
 
     [Parameter, EditorRequired]
     public IReadOnlyList<DeliverymanLookup> Deliverymen { get; set; } = [];

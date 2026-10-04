@@ -42,9 +42,10 @@
             var step = Steps[index];
             var stepIndex = index;
 
+            step.StepOrder = stepIndex + 1;
+
             <DeliveryChainStep @key="step"
                                Step="step"
-                               StepNumber="@(stepIndex + 1)"
                                Deliverymen="Deliverymen"
                                ShippingCarriers="ShippingCarriers"
                                CanMoveUp="@(stepIndex > 0)"
