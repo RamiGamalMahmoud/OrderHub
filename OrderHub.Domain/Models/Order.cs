@@ -25,6 +25,7 @@ public class Order : ModelBase
     public Client Client { get; private set; }
 
     public string OrderNumber { get; private set; }
+    public OrderSource? OrderSource { get; private set; }
 
     public DeliveryMethod? DeliveryMethod { get; private set; }
 
@@ -46,12 +47,14 @@ public class Order : ModelBase
 
     public void UpdateHeader(
         int clientId,
+        OrderSource orderSource,
         DeliveryMethod deliveryMethod,
         int? deliverymanId,
         int? shippingCarrierId,
         int? paymentMethodId)
     {
         ClientId = clientId;
+        OrderSource = orderSource;
         DeliveryMethod = deliveryMethod;
         DeliverymanId = deliverymanId;
         ShippingCarrierId = shippingCarrierId;
@@ -63,6 +66,7 @@ public class Order : ModelBase
         string productName,
         decimal unitPrice,
         int quantity,
+        decimal vatRate,
         string supplierName,
         int? supplierId,
         IReadOnlyCollection<OrderItemPropertyData> properties)
@@ -72,6 +76,7 @@ public class Order : ModelBase
             productName,
             unitPrice,
             quantity,
+            vatRate,
             supplierName,
             supplierId,
             properties);

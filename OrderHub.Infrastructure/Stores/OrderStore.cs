@@ -43,6 +43,7 @@ internal class OrderStore : IOrderStore
                 item.ProductName,
                 item.UnitPrice,
                 item.Quantity,
+                item.VatRate,
                 item.SupplierName,
                 item.SupplierId,
                 item.Properties.Select(p => new OrderItemPropertyData( p.PropertyId, p.Value)).ToList().AsReadOnly()

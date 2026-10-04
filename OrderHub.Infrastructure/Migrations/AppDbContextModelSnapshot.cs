@@ -670,6 +670,10 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("varchar(20)")
                         .HasColumnName("order_number");
 
+                    b.Property<string>("OrderSource")
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("order_source");
+
                     b.Property<string>("OrderStatus")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -802,6 +806,12 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)")
                         .HasColumnName("supplier_name");
+
+                    b.Property<decimal>("VatRate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("vat_rate");
 
                     b.HasKey("Id")
                         .HasName("pk_order_items");

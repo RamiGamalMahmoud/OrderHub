@@ -11,9 +11,22 @@ internal class OrderWriteService
 
     public void Update(AppDbContext appDbContext, Order order, OrderInput.Order orderDetials)
     {
-        ApplyHeader(order, orderDetials.ClientId, orderDetials.DeliveryMethod, orderDetials.DeliveryManId, orderDetials.ShippingCarrierId, orderDetials.PaymentMethodId);
-        ResetDetails(appDbContext, order);
-        PopulateDetails(order, orderDetials.OrderItems, orderDetials.DeliverySteps);
+        ApplyHeader(
+            order,
+            orderDetials.ClientId,
+            orderDetials.DeliveryMethod,
+            orderDetials.DeliveryManId,
+            orderDetials.ShippingCarrierId,
+            orderDetials.PaymentMethodId);
+
+        ResetDetails(
+            appDbContext, 
+            order);
+
+        PopulateDetails(
+            order,
+            orderDetials.OrderItems,
+            orderDetials.DeliverySteps);
     }
 
     private static void ApplyHeader(
@@ -45,16 +58,19 @@ internal class OrderWriteService
         IEnumerable<OrderInput.Item> orderItems,
         IEnumerable<OrderInput.DeliveryStep> deliverySteps)
     {
-        foreach (OrderInput.Item orderItemDto in orderItems ?? Enumerable.Empty<OrderInput.Item>())
+        foreach (OrderInput.Item item in orderItems ?? Enumerable.Empty<OrderInput.Item>())
         {
             order.AddOrderItem(
-                orderItemDto.ProductId,
-                orderItemDto.ProductName,
-                orderItemDto.UnitPrice,
-                orderItemDto.Quantity,
-                orderItemDto.SupplierName,
-                orderItemDto.SupplierId,
-                orderItemDto.Properties.Select(property => new OrderItemPropertyData(property.PropertyId, property.Value))
+                item.ProductId,
+                item.ProductName,
+                item.UnitPrice,
+                item.Quantity,
+                item.VatRate,
+                item.SupplierName,
+                item.SupplierId,
+                item.Properties.Select(property => new OrderItemPropertyData(
+                    property.PropertyId,
+                    property.Value))
                     .ToList()
                     .AsReadOnly());
         }

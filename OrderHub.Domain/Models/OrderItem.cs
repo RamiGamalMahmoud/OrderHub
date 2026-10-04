@@ -16,6 +16,7 @@ public class OrderItem : ModelBase
         string productName,
         decimal unitPrice,
         int quantity,
+        decimal vatRate,
         string supplierName,
         int? supplierId,
         IReadOnlyCollection<OrderItemPropertyData> properties)
@@ -24,6 +25,7 @@ public class OrderItem : ModelBase
         ProductName = productName;
         UnitPrice = new Money(unitPrice);
         Quantity = quantity;
+        VatRate = vatRate;
         SupplierName = supplierName;
         SupplierId = supplierId;
 
@@ -55,6 +57,7 @@ public class OrderItem : ModelBase
     public Money UnitPrice { get; private set; }
 
     public int Quantity { get; private set; }
+    public decimal VatRate { get; private set; }
 
     public Money SubTotal => UnitPrice * Quantity;
 
@@ -63,6 +66,7 @@ public class OrderItem : ModelBase
         string productName,
         decimal unitPrice,
         int quantity,
+        decimal vatRate,
         string supplierName,
         int? supplierId,
         IReadOnlyCollection<OrderItemPropertyData> properties)
@@ -79,6 +83,7 @@ public class OrderItem : ModelBase
                 productName,
                 unitPrice,
                 quantity,
+                vatRate,
                 supplierName,
                 supplierId,
                 properties));

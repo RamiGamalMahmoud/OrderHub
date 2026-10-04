@@ -85,5 +85,11 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
             .HasForeignKey(x => x.OrderId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Property(x => x.OrderSource)
+            .HasConversion<string>()
+            .HasColumnName("order_source")
+            .HasColumnType("varchar(30)")
+            .IsRequired(false);
     }
 }

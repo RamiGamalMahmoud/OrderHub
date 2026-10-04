@@ -59,6 +59,7 @@ public static class CreateOrderCommand
 
                 order.UpdateHeader(
                     request.Order.ClientId,
+                    request.Order.OrderSource,
                     request.Order.DeliveryMethod,
                     request.Order.DeliveryManId,
                     request.Order.ShippingCarrierId,
@@ -72,6 +73,7 @@ public static class CreateOrderCommand
                         item.ProductName,
                         item.UnitPrice,
                         item.Quantity,
+                        item.VatRate,
                         item.SupplierName,
                         item.SupplierId,
                         item.Properties

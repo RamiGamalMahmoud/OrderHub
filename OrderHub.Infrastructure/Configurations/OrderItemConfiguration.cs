@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using OrderHub.Domain.Models;
+using System.Net.NetworkInformation;
 
 namespace OrderHub.Infrastructure.Configurations;
 
@@ -65,5 +66,11 @@ internal class OrderItemConfiguration : ModelConfigurationBase<OrderItem>
             .IsRequired(false);
 
         builder.Ignore(x => x.SubTotal);
+
+        builder.Property(x => x.VatRate)
+            .HasColumnName("vat_rate")
+            .HasColumnType("numeric(18,2)")
+            .HasDefaultValue(0m)
+            .IsRequired();
     }
 }
