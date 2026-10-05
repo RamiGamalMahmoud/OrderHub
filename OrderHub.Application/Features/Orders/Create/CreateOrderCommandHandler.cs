@@ -46,8 +46,18 @@ CancellationToken cancellationToken)
     {
         try
         {
-            // 1. Validate order
-            // ...
+            var input = request.Order;
+            if (!Enum.IsDefined(input.DeliveryMethod) || !Enum.IsDefined(input.OrderSource))
+                return Result<int>.Failure("مصدر الطلب أو طريقة التوصيل غير صالح.");
+            if (input.DeliveryMethod == DeliveryMethod.DeliveryMan && !input.DeliveryManId.HasValue ||
+                input.DeliveryMethod == DeliveryMethod.ShippingCompany && !input.ShippingCarrierId.HasValue)
+                return Result<int>.Failure("يجب اختيار جهة التوصيل.");
+            var steps = input.DeliveryMethod == DeliveryMethod.DeliveryChain
+                ? (input.DeliverySteps ?? Enumerable.Empty<OrderInput.DeliveryStep>()).ToList()
+                : [];
+            if (steps.Any(step => step.DeliveryMethod is not (DeliveryMethod.DeliveryMan or DeliveryMethod.ShippingCompany) ||
+                    step.StepOrder <= 0) || steps.Select(step => step.StepOrder).Distinct().Count() != steps.Count)
+                return Result<int>.Failure("خطوات التوصيل أو ترتيبها غير صالح.");
 
             // 2. Create order
             int nextOrderNumber =
@@ -64,12 +74,12 @@ CancellationToken cancellationToken)
                 request.Order.ClientId,
                 request.Order.OrderSource,
                 request.Order.DeliveryMethod,
-                request.Order.DeliveryManId,
-                request.Order.ShippingCarrierId,
+                input.DeliveryMethod == DeliveryMethod.DeliveryMan ? input.DeliveryManId : null,
+                input.DeliveryMethod == DeliveryMethod.ShippingCompany ? input.ShippingCarrierId : null,
                 request.Order.PaymentMethodId
                 );
 
-            foreach (OrderInput.Item item in request.Order.OrderItems)
+            foreach (OrderInput.Item item in request.Order.OrderItems ?? Enumerable.Empty<OrderInput.Item>())
             {
                 Result<OrderItem> result = order.AddOrderItem(
                     item.ProductId,
@@ -90,8 +100,11 @@ CancellationToken cancellationToken)
                     return Result<int>.Failure(result.ErrorMessage);
             }
 
+            if (order.OrderItems.Count == 0)
+                return Result<int>.Failure("يجب إضافة منتج واحد على الأقل.");
+
             foreach (OrderInput.DeliveryStep step in
-                request.Order.DeliverySteps ?? Enumerable.Empty<OrderInput.DeliveryStep>())
+                steps.OrderBy(step => step.StepOrder))
             {
                 order.AddDeliveryStep(new OrderDeliveryStep
                 {

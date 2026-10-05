@@ -20,7 +20,7 @@ public partial class OrderEditor
 
     private OrderEditorState _state = new();
 
-    private IReadOnlyList<string> ValidationErrors => IsEdit ? GetUpdateValidationErrors(_state) : GetValidationErrors(_state);
+    private IReadOnlyList<string> ValidationErrors => GetFinalValidationErrors(_state, IsEdit);
 
     private bool CanSave => ValidationErrors.Count == 0;
 
@@ -305,35 +305,6 @@ public partial class OrderEditor
 
     private OrderInput.Order BuildOrderInput()
     {
-        if (IsEdit)
-            return BuildUpdateInput();
-
-        return new OrderInput.Order(
-            _state.ClientId!.Value,
-            _state.OrderSource!.Value,
-            _state.Delivery.Method!.Value,
-            _state.Delivery.DeliverymanId,
-            _state.Delivery.ShippingCarrierId,
-            _state.Items.Select(item => new OrderInput.Item(
-                item.ProductId,
-                item.ProductName,
-                item.Quantity,
-                item.UnitPrice,
-                item.VatRate,
-                item.SupplierId.HasValue ? item.Suppliers.Single(s => s.Id == item.SupplierId).Name : null,
-                item.SupplierId,
-                item.Properties.Select(property => new OrderInput.Property(
-                    property.PropertyId,
-                    property.Value)))),
-            _state.Delivery.Steps.Select(step => new OrderInput.DeliveryStep(
-                step.StepOrder,
-                step.Method,
-                step.HandlerId!.Value)),
-            _state.PaymentMethodId);
-    }
-
-    private OrderInput.Order BuildUpdateInput()
-    {
         var method = _state.Delivery.Method!.Value;
         var steps = _state.Delivery.Steps;
         var preserveStepOrder = steps.All(step => step.StepOrder > 0) &&
@@ -342,7 +313,7 @@ public partial class OrderEditor
             method == DeliveryMethod.DeliveryMan ? _state.Delivery.DeliverymanId : null,
             method == DeliveryMethod.ShippingCompany ? _state.Delivery.ShippingCarrierId : null,
             _state.Items.Select(item => new OrderInput.Item(item.ProductId, item.ProductName, item.Quantity,
-                item.UnitPrice, item.VatRate, ResolveUpdateSupplierName(item), item.SupplierId,
+                item.UnitPrice, item.VatRate, ResolveSupplierName(item, IsEdit), item.SupplierId,
                 item.Properties.Select(property => new OrderInput.Property(property.PropertyId, property.Value)).ToList())).ToList(),
             method == DeliveryMethod.DeliveryChain
                 ? steps.Select((step, index) => new OrderInput.DeliveryStep(
@@ -351,18 +322,21 @@ public partial class OrderEditor
             _state.PaymentMethodId);
     }
 
-    private static string? ResolveUpdateSupplierName(OrderItemEditorState item)
+    private static string? ResolveSupplierName(OrderItemEditorState item, bool preservePersistedSnapshot)
     {
         if (!item.SupplierId.HasValue)
             return null;
-        if (item.SupplierId == item.PersistedSupplierId)
+        if (preservePersistedSnapshot && item.SupplierId == item.PersistedSupplierId)
             return item.SupplierName;
         return item.Suppliers.FirstOrDefault(supplier => supplier.Id == item.SupplierId)?.Name;
     }
 
     private static IReadOnlyList<string> GetUpdateValidationErrors(OrderEditorState state)
+        => GetFinalValidationErrors(state, true);
+
+    private static IReadOnlyList<string> GetFinalValidationErrors(OrderEditorState state, bool preservePersistedSnapshot)
     {
-        // Inactive steps are convenience state, not part of the final Update input.
+        // Inactive steps are convenience state, not part of the final input.
         var activeState = new OrderEditorState
         {
             ClientId = state.ClientId, OrderSource = state.OrderSource, PaymentMethodId = state.PaymentMethodId,
@@ -380,7 +354,7 @@ public partial class OrderEditor
             errors.Add("مصدر الطلب أو طريقة التوصيل غير صالح.");
         foreach (var item in state.Items)
         {
-            if (item.SupplierId.HasValue && item.SupplierId != item.PersistedSupplierId &&
+            if (item.SupplierId.HasValue && !(preservePersistedSnapshot && item.SupplierId == item.PersistedSupplierId) &&
                 item.Suppliers.Count(supplier => supplier.Id == item.SupplierId) != 1)
                 errors.Add($"{item.ProductName}: المورد المحدد غير متاح.");
         }
