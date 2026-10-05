@@ -6,6 +6,8 @@ public sealed class OrderEditorState
 {
     public int? ClientId { get; set; }
 
+    public string? ClientName { get; set; }
+
     public int? PaymentMethodId { get; set; }
 
     public OrderSource? OrderSource { get; set; }

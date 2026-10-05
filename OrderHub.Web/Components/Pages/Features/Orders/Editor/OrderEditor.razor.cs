@@ -3,6 +3,9 @@ using MudBlazor;
 using OrderHub.Application.Context;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Application.Features.Orders.Contracts;
+using OrderHub.Application.Features.Orders;
+using OrderHub.Application.Features.Orders.Queries;
+using OrderHub.Application.Features.Setup.Properties.Get;
 using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Enums;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor.State;
@@ -39,7 +42,7 @@ public partial class OrderEditor
     {
         OrderDraftData orderDraftData = new OrderDraftData(
             _state.ClientId,
-            "",
+            _state.ClientName ?? "",
             _state.OrderSource,
             _state.PaymentMethodId,
             _state.Delivery.Method,
@@ -147,30 +150,13 @@ public partial class OrderEditor
         OrderEditorState state = new OrderEditorState()
         {
             ClientId = order.ClientId,
-            Items = order.Items.Select(draftItem => new OrderItemEditorState()
-            {
-                ProductId = draftItem.ProductId,
-                CategoryName = draftItem.CategoryName,
-                ProductName = draftItem.ProductName,
-                UnitPrice = draftItem.Price,
-                Quantity = draftItem.Quantity,
-                VatRate = draftItem.VAT,
-                SupplierId = draftItem.SupplierId,
-                Properties = draftItem.Properties.Select(property => new OrderItemPropertyEditorState()
-                {
-                  PropertyId = property.PropertyId,
-                  Value = property.Value,
-                  Name = ""
-                })
-                .ToList()
-            })
-            .ToList(),
+            ClientName = string.IsNullOrWhiteSpace(order.ClientName) ? null : order.ClientName,
             Delivery = new DeliveryEditorState()
             {
                 DeliverymanId = order.DeliverymanId,
                 ShippingCarrierId = order.ShippingCarrierId,
                 Method = order.DeliveryMethod,
-                Steps = order.DeliverySteps.Select(step => new DeliveryStepEditorState()
+                Steps = order.DeliverySteps.OrderBy(step => step.StepOrder).Select(step => new DeliveryStepEditorState()
                 {
                     HandlerId = step.HandlerId,
                     Method = step.DeliveryMethod,
@@ -180,6 +166,68 @@ public partial class OrderEditor
             OrderSource = order.OrderSource,
             PaymentMethodId = order.PaymentMethodId,
         };
+
+        var products = new Dictionary<int, GetOrderItemEditor.OrderItemEditorDto?>();
+        var historicalProperties = new Dictionary<int, PropertyDetailsDto?>();
+        foreach (var item in order.Items)
+        {
+            if (!products.TryGetValue(item.ProductId, out var product))
+            {
+                try
+                {
+                    product = await RequestExecutor!.ExecuteAsync(new GetOrderItemEditor.Query(item.ProductId));
+                }
+                catch (Exception)
+                {
+                    // Preserve the draft even when catalog metadata cannot currently be read.
+                    product = null;
+                }
+                products[item.ProductId] = product;
+            }
+            var definitions = product?.Properties.ToList() ?? [];
+            var properties = definitions.Select(definition => RestoreProperty(new GetOrderEdit.Property(
+                definition.Id, definition.Name, definition.IsRequired, definition.PropertyType,
+                definition.Options.Select(option => new GetOrderEdit.Option(option.Id, option.Name)),
+                item.Properties.FirstOrDefault(saved => saved.PropertyId == definition.Id)?.Value))).ToList();
+
+            foreach (var saved in item.Properties.Where(saved => !definitions.Any(current => current.Id == saved.PropertyId)))
+            {
+                if (!historicalProperties.TryGetValue(saved.PropertyId, out var metadata))
+                {
+                    try
+                    {
+                        metadata = await RequestExecutor!.ExecuteAsync(new GetPropertyQuery(saved.PropertyId));
+                    }
+                    catch (Exception)
+                    {
+                        metadata = null;
+                    }
+                    historicalProperties[saved.PropertyId] = metadata;
+                }
+                properties.Add(metadata is null
+                    ? new OrderItemPropertyEditorState
+                    {
+                        PropertyId = saved.PropertyId, Name = "", Value = saved.Value, HasMetadata = false
+                    }
+                    : RestoreProperty(new GetOrderEdit.Property(
+                        metadata.Id, metadata.Name,
+                        // As in persisted-order restoration, removed associations have no current requirement.
+                        false, metadata.PropertyType,
+                        metadata.Options.Select(option => new GetOrderEdit.Option(option.Id, option.Value)), saved.Value)));
+            }
+
+            state.Items.Add(new OrderItemEditorState
+            {
+                ProductId = item.ProductId, ProductName = item.ProductName, CategoryName = item.CategoryName,
+                UnitPrice = item.Price, Quantity = item.Quantity, VatRate = item.VAT, SupplierId = item.SupplierId,
+                MetadataRestorationError = product is null
+                    ? "تعذر تحميل بيانات المنتج. بيانات المسودة محفوظة؛ أعد فتحها بعد استعادة المنتج أو احذف المنتج وأضفه من جديد."
+                    : null,
+                Suppliers = product?.Suppliers.Select(supplier => new OrderItemSupplierEditorState(
+                    supplier.Id, supplier.Name)).ToList() ?? [],
+                Properties = properties
+            });
+        }
 
         return state;
     }
@@ -218,16 +266,7 @@ public partial class OrderEditor
                 // Preserve unavailable selections; the drawer already warns when the ID is absent.
                 Suppliers = item.Suppliers.Select(supplier => new OrderItemSupplierEditorState(
                     supplier.Id, supplier.Name)).ToList(),
-                Properties = item.Properties.Select(property => new OrderItemPropertyEditorState
-                {
-                    PropertyId = property.PropertyId,
-                    Name = property.Name,
-                    IsRequired = property.IsRequired,
-                    Type = property.PropertyType,
-                    Value = property.SelectedValue,
-                    Options = property.Options.Select(option => new OrderItemPropertyOptionEditorState(
-                        option.OptionId, option.Value)).ToList()
-                }).ToList(),
+                Properties = item.Properties.Select(RestoreProperty).ToList(),
             }).ToList()
         };
 
@@ -238,6 +277,17 @@ public partial class OrderEditor
     {
         _isDraftsOpen = true;
     }
+
+    private static OrderItemPropertyEditorState RestoreProperty(GetOrderEdit.Property property) => new()
+    {
+        PropertyId = property.PropertyId,
+        Name = property.Name,
+        IsRequired = property.IsRequired,
+        Type = property.PropertyType,
+        Value = property.SelectedValue,
+        Options = property.Options.Select(option => new OrderItemPropertyOptionEditorState(
+            option.OptionId, option.Value)).ToList()
+    };
 
     private void SelectStep(OrderEditorStep step)
     {
@@ -332,6 +382,9 @@ public partial class OrderEditor
 
         foreach (var item in state.Items)
         {
+            if (item.MetadataRestorationError is { } metadataError)
+                errors.Add($"{item.ProductName} - {metadataError}");
+
             foreach (var property in item.Properties)
             {
                 string? error = property.ValidateValue(property.Value);

@@ -28,6 +28,11 @@
                                      Disabled="_saving" Validation="@(new Func<decimal, string?>(value => value is >= 0 and <= 100 ? null : "الضريبة يجب أن تكون بين 0 و100."))" />
                     @foreach (var property in _workingCopy.Properties)
                     {
+                        @if (!property.HasMetadata)
+                        {
+                            <MudAlert Severity="Severity.Warning">@property.ValidateValue(property.Value) — @property.Value</MudAlert>
+                            continue;
+                        }
                         @switch (property.Type)
                         {
                             case PropertyType.Text:

@@ -8,6 +8,8 @@ public sealed class OrderItemPropertyEditorState
 
     public required string Name { get; init; }
 
+    public bool HasMetadata { get; init; } = true;
+
     public bool IsRequired { get; init; }
 
     public PropertyType Type { get; init; }
@@ -18,6 +20,9 @@ public sealed class OrderItemPropertyEditorState
 
     public string? ValidateValue(string? value)
     {
+        if (!HasMetadata)
+            return $"تعذر تحميل تعريف الخاصية رقم {PropertyId}. القيمة المحفوظة لم تُحذف.";
+
         if (string.IsNullOrWhiteSpace(value))
             return IsRequired ? $"{Name}: القيمة مطلوبة." : null;
         return Type switch

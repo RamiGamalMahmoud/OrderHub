@@ -82,7 +82,11 @@ public partial class DetailsStep : IDisposable
         return ChangeAsync(
             State.ClientId,
             value,
-            newValue => State.ClientId = newValue);
+            newValue =>
+            {
+                State.ClientId = newValue;
+                State.ClientName = _clients.FirstOrDefault(client => client.Id == newValue)?.Name;
+            });
     }
 
     private Task SetPaymentAsync(int? value)
