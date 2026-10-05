@@ -1,14 +1,13 @@
 using Microsoft.AspNetCore.Components.Authorization;
-using OrderHub.Application.Context;
 using System.Security.Claims;
 
 namespace OrderHub.Web.Services;
 
 public sealed class AuthenticatedUser(
     AuthenticationStateProvider authenticationStateProvider,
-    IHttpContextAccessor httpContextAccessor) : ICurrentUser
+    IHttpContextAccessor httpContextAccessor)
 {
-    public async Task<int?> GetUserIdAsync(CancellationToken cancellationToken = default)
+    public async Task<CurrentUserIdentity> GetIdentityAsync(CancellationToken cancellationToken = default)
     {
         ClaimsPrincipal principal;
         try
@@ -22,8 +21,12 @@ public sealed class AuthenticatedUser(
             principal = httpContextAccessor.HttpContext.User;
         }
 
-        return principal.Identity?.IsAuthenticated == true
-            && int.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
+        if (principal.Identity?.IsAuthenticated != true)
+            return new CurrentUserIdentity(null, null, null, false, false);
+
+        int? userId = int.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
             && id > 0 ? id : null;
+        return new CurrentUserIdentity(userId, principal.FindFirstValue(ClaimTypes.Name),
+            principal.FindFirstValue("DisplayName"), true, principal.IsInRole("Admin"));
     }
 }

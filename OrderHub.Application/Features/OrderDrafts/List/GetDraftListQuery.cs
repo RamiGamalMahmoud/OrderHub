@@ -13,5 +13,5 @@ internal sealed class GetDraftListQueryHandler(ICurrentUser currentUser, IDraftR
     : IRequestHandler<GetDraftListQuery, IReadOnlyList<OrderDraftSummary>>
 {
     public async Task<IReadOnlyList<OrderDraftSummary>> Handle(GetDraftListQuery request, CancellationToken cancellationToken) =>
-        await reads.GetUserDraftsAsync(await DraftUser.RequireAsync(currentUser, cancellationToken), cancellationToken);
+        await reads.GetUserDraftsAsync(DraftUser.Require(currentUser), cancellationToken);
 }

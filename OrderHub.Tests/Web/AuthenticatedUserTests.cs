@@ -15,22 +15,50 @@ namespace OrderHub.Tests.Web;
 
 public class AuthenticatedUserTests
 {
-    [Fact]
-    public async Task Independent_circuits_resolve_their_own_cookie_identity_without_global_context()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Authenticated_identity_exposes_all_claim_values(bool isAdmin)
     {
-        var first = new AuthenticatedUser(Provider(11), new HttpContextAccessor());
-        var second = new AuthenticatedUser(Provider(22), new HttpContextAccessor());
-        var ids = await Task.WhenAll(first.GetUserIdAsync(), second.GetUserIdAsync());
-        Assert.Equal(new int?[] { 11, 22 }, ids);
+        var operation = new OperationUser();
+        operation.Initialize(await User(11, isAdmin).GetIdentityAsync());
+        Assert.Equal(Expected(11, isAdmin), Read(operation));
     }
 
     [Fact]
-    public async Task Anonymous_user_has_no_effective_identity()
+    public async Task Anonymous_claims_do_not_become_an_effective_identity()
     {
-        var provider = new Mock<AuthenticationStateProvider>();
-        provider.Setup(x => x.GetAuthenticationStateAsync())
-            .ReturnsAsync(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity())));
-        Assert.Null(await new AuthenticatedUser(provider.Object, new HttpContextAccessor()).GetUserIdAsync());
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, "11"), new Claim(ClaimTypes.Name, "ignored"),
+            new Claim("DisplayName", "ignored"), new Claim(ClaimTypes.Role, "Admin")
+        }));
+        var operation = new OperationUser();
+        operation.Initialize(await new AuthenticatedUser(Provider(principal), new HttpContextAccessor()).GetIdentityAsync());
+        Assert.Equal(new CurrentUserIdentity(null, null, null, false, false), Read(operation));
+    }
+
+    [Theory]
+    [InlineData("invalid")]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData(null)]
+    public async Task Invalid_user_identifier_does_not_manufacture_an_id(string identifier)
+    {
+        var claims = identifier is null ? Array.Empty<Claim>()
+            : new[] { new Claim(ClaimTypes.NameIdentifier, identifier) };
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "Cookies"));
+        var identity = await new AuthenticatedUser(Provider(principal), new HttpContextAccessor()).GetIdentityAsync();
+        Assert.Null(identity.Id);
+        Assert.True(identity.IsAuthenticated);
+        Assert.False(identity.IsAdmin);
+    }
+
+    [Fact]
+    public async Task Circuit_identity_takes_precedence_over_ambient_http_context()
+    {
+        var accessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext { User = Principal(22) } };
+        Assert.Equal(Expected(11, true), await new AuthenticatedUser(Provider(Principal(11, true)), accessor).GetIdentityAsync());
     }
 
     [Fact]
@@ -38,48 +66,124 @@ public class AuthenticatedUserTests
     {
         var provider = new Mock<AuthenticationStateProvider>();
         provider.Setup(x => x.GetAuthenticationStateAsync()).Throws(new InvalidOperationException());
-        var accessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext { User = Principal(33) } };
-        Assert.Equal(33, await new AuthenticatedUser(provider.Object, accessor).GetUserIdAsync());
+        var accessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext { User = Principal(33, true) } };
+        Assert.Equal(Expected(33, true), await new AuthenticatedUser(provider.Object, accessor).GetIdentityAsync());
     }
 
     [Fact]
-    public async Task Executor_transfers_identity_to_a_fresh_scope_and_keeps_operations_isolated()
+    public async Task Executor_transfers_complete_identity_and_keeps_concurrent_operations_isolated()
+    {
+        using var provider = Services().BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        var first = new AuthenticatedRequestExecutor(provider.GetRequiredService<IServiceScopeFactory>(), User(11, true));
+        var second = new AuthenticatedRequestExecutor(provider.GetRequiredService<IServiceScopeFactory>(), User(22));
+        var identities = await Task.WhenAll(first.ExecuteAsync(new ReadOperationIdentity()), second.ExecuteAsync(new ReadOperationIdentity()));
+        Assert.Equal(new[] { Expected(11, true), Expected(22, false) }, identities);
+        await Task.WhenAll(first.ExecuteAsync(new AssertOperationIdentity(Expected(11, true))),
+            second.ExecuteAsync(new AssertOperationIdentity(Expected(22, false))));
+        using var outsideOperation = provider.CreateScope();
+        var currentUser = outsideOperation.ServiceProvider.GetRequiredService<ICurrentUser>();
+        Assert.Same(outsideOperation.ServiceProvider.GetRequiredService<OperationUser>(), currentUser);
+        Assert.Throws<InvalidOperationException>(() => currentUser.Id);
+    }
+
+    [Fact]
+    public async Task Executor_preserves_anonymous_identity_in_the_fresh_scope()
+    {
+        using var provider = Services().BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        var anonymous = new AuthenticatedUser(Provider(new ClaimsPrincipal(new ClaimsIdentity())), new HttpContextAccessor());
+        var executor = new AuthenticatedRequestExecutor(provider.GetRequiredService<IServiceScopeFactory>(), anonymous);
+        Assert.Equal(new CurrentUserIdentity(null, null, null, false, false),
+            await executor.ExecuteAsync(new ReadOperationIdentity()));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Initialized_identity_cannot_be_replaced_including_anonymous_identity(bool authenticated)
+    {
+        var identity = authenticated ? Expected(11, true) : new CurrentUserIdentity(null, null, null, false, false);
+        var operation = new OperationUser();
+        operation.Initialize(identity);
+        Assert.True(operation.IsInitialized);
+        Assert.Throws<InvalidOperationException>(() => operation.Initialize(Expected(22, false)));
+        Assert.Equal(identity, Read(operation));
+    }
+
+    [Fact]
+    public void Web_registration_explicitly_replaces_the_infrastructure_executor()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IRequestExecutor, OrderHub.Infrastructure.Execution.RequestExecutor>();
+        services.AddEditorServices();
+        var executor = Assert.Single(services, descriptor => descriptor.ServiceType == typeof(IRequestExecutor));
+        Assert.Equal(ServiceLifetime.Scoped, executor.Lifetime);
+        Assert.Equal(typeof(AuthenticatedRequestExecutor), executor.ImplementationType);
+        Assert.All(services, descriptor =>
+        {
+            if (descriptor.ServiceType == typeof(ICurrentUser) || descriptor.ServiceType == typeof(OperationUser)
+                || descriptor.ServiceType == typeof(AuthenticatedUser))
+                Assert.Equal(ServiceLifetime.Scoped, descriptor.Lifetime);
+        });
+    }
+
+    private static ServiceCollection Services()
     {
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddEditorServices();
-        services.AddSingleton(Provider(99));
+        services.AddScoped(_ => Provider(Principal(99, true)));
         services.AddMediatR(options => options.RegisterServicesFromAssemblyContaining<ReadOperationIdentity>());
-        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
-        var first = new AuthenticatedRequestExecutor(provider.GetRequiredService<IServiceScopeFactory>(), User(11));
-        var second = new AuthenticatedRequestExecutor(provider.GetRequiredService<IServiceScopeFactory>(), User(22));
-        var ids = await Task.WhenAll(first.ExecuteAsync(new ReadOperationIdentity()), second.ExecuteAsync(new ReadOperationIdentity()));
-        Assert.Equal(new int?[] { 11, 22 }, ids);
-        using var outsideOperation = provider.CreateScope();
-        Assert.Equal(99, await outsideOperation.ServiceProvider.GetRequiredService<ICurrentUser>().GetUserIdAsync());
+        return services;
     }
 
-    private static ICurrentUser User(int id)
-    {
-        var user = new Mock<ICurrentUser>();
-        user.Setup(x => x.GetUserIdAsync(It.IsAny<CancellationToken>())).ReturnsAsync(id);
-        return user.Object;
-    }
+    private static AuthenticatedUser User(int id, bool isAdmin = false) =>
+        new(Provider(Principal(id, isAdmin)), new HttpContextAccessor());
 
-    private static AuthenticationStateProvider Provider(int id)
+    private static AuthenticationStateProvider Provider(ClaimsPrincipal principal)
     {
         var provider = new Mock<AuthenticationStateProvider>();
-        provider.Setup(x => x.GetAuthenticationStateAsync()).ReturnsAsync(new AuthenticationState(Principal(id)));
+        provider.Setup(x => x.GetAuthenticationStateAsync()).ReturnsAsync(new AuthenticationState(principal));
         return provider.Object;
     }
 
-    private static ClaimsPrincipal Principal(int id) => new(new ClaimsIdentity(
-        new[] { new Claim(ClaimTypes.NameIdentifier, id.ToString()) }, "Cookie"));
-
-    public record ReadOperationIdentity : IRequest<int?>;
-    public sealed class ReadOperationIdentityHandler(ICurrentUser user) : IRequestHandler<ReadOperationIdentity, int?>
+    private static ClaimsPrincipal Principal(int id, bool isAdmin = false)
     {
-        public Task<int?> Handle(ReadOperationIdentity request, CancellationToken cancellationToken) =>
-            user.GetUserIdAsync(cancellationToken);
+        var identity = new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, id.ToString()), new Claim(ClaimTypes.Name, $"user{id}"),
+            new Claim("DisplayName", $"User {id}")
+        }, "Cookies");
+        if (isAdmin)
+            identity.AddClaim(new Claim(ClaimTypes.Role, "Admin"));
+        return new ClaimsPrincipal(identity);
+    }
+
+    private static CurrentUserIdentity Expected(int id, bool isAdmin) =>
+        new(id, $"user{id}", $"User {id}", true, isAdmin);
+
+    private static CurrentUserIdentity Read(ICurrentUser user) =>
+        new(user.Id, user.UserName, user.DisplayName, user.IsAuthenticated, user.IsAdmin);
+
+    public record ReadOperationIdentity : IRequest<CurrentUserIdentity>;
+    public sealed class ReadOperationIdentityHandler(ICurrentUser user)
+        : IRequestHandler<ReadOperationIdentity, CurrentUserIdentity>
+    {
+        public async Task<CurrentUserIdentity> Handle(ReadOperationIdentity request, CancellationToken cancellationToken)
+        {
+            var before = Read(user);
+            await Task.Yield();
+            Assert.Equal(before, Read(user));
+            return before;
+        }
+    }
+
+    public record AssertOperationIdentity(CurrentUserIdentity Expected) : IRequest;
+    public sealed class AssertOperationIdentityHandler(ICurrentUser user) : IRequestHandler<AssertOperationIdentity>
+    {
+        public Task Handle(AssertOperationIdentity request, CancellationToken cancellationToken)
+        {
+            Assert.Equal(request.Expected, Read(user));
+            return Task.CompletedTask;
+        }
     }
 }

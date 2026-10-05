@@ -5,17 +5,22 @@ namespace OrderHub.Web.Services;
 // Trusted server-side snapshot for one executor-created scope, including anonymous operations.
 public sealed class OperationUser : ICurrentUser
 {
-    public bool IsInitialized { get; private set; }
-    private int? _userId;
+    private CurrentUserIdentity? _identity;
+    private CurrentUserIdentity Identity => _identity
+        ?? throw new InvalidOperationException("Operation identity has not been initialized.");
+    public bool IsInitialized => _identity is not null;
+    public int? Id => Identity.Id;
+    public string? UserName => Identity.UserName;
+    public string? DisplayName => Identity.DisplayName;
+    public bool IsAuthenticated => Identity.IsAuthenticated;
+    public bool IsAdmin => Identity.IsAdmin;
 
-    public void Initialize(int? userId)
+    public void Initialize(CurrentUserIdentity identity)
     {
         if (IsInitialized)
             throw new InvalidOperationException("Operation identity has already been initialized.");
-        _userId = userId;
-        IsInitialized = true;
+        ArgumentNullException.ThrowIfNull(identity);
+        _identity = identity;
     }
 
-    public Task<int?> GetUserIdAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult(_userId);
 }

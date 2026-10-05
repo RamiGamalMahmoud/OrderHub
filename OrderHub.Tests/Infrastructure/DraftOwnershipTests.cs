@@ -183,7 +183,7 @@ public class DraftOwnershipTests
     private static ICurrentUser Identity(int? id)
     {
         var user = new Mock<ICurrentUser>();
-        user.Setup(u => u.GetUserIdAsync(It.IsAny<CancellationToken>())).ReturnsAsync(id);
+        user.SetupGet(u => u.Id).Returns(id);
         return user.Object;
     }
     private static Mock<IUnitOfWork> Unit(AppDbContext db)

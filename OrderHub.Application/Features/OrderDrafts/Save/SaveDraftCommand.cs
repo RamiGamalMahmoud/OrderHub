@@ -18,7 +18,7 @@ internal sealed class SaveDraftCommandHandler(ICurrentUser currentUser, IDraftRe
     {
         try
         {
-            var userId = await DraftUser.RequireAsync(currentUser, cancellationToken);
+            var userId = DraftUser.Require(currentUser);
             await repository.StageSaveAsync(new Draft(request.DraftId, userId, DateTime.UtcNow, request.Data), cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             return Result.Success();

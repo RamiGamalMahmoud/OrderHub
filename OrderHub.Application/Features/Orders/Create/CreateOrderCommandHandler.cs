@@ -126,7 +126,7 @@ CancellationToken cancellationToken)
 
             if (request.OrderDraftId is Guid draftReference)
             {
-                int? userId = await _currentUser.GetUserIdAsync(cancellationToken);
+                int? userId = _currentUser.Id;
                 var quotations = await _quotationRepository.GetByDraftReference(
                     draftReference,
                     cancellationToken);

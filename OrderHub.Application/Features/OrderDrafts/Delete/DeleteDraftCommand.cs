@@ -18,7 +18,7 @@ internal sealed class DeleteDraftCommandHandler(ICurrentUser currentUser, IDraft
     {
         try
         {
-            var userId = await DraftUser.RequireAsync(currentUser, cancellationToken);
+            var userId = DraftUser.Require(currentUser);
             await repository.StageDeleteAsync(request.DraftId, userId, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             return Result.Success();

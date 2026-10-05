@@ -1,9 +1,12 @@
-using System.Threading;
-using System.Threading.Tasks;
+#nullable enable
 
 namespace OrderHub.Application.Context;
 
 public interface ICurrentUser
 {
-    Task<int?> GetUserIdAsync(CancellationToken cancellationToken = default);
+    int? Id { get; }
+    string? UserName { get; }
+    string? DisplayName { get; }
+    bool IsAuthenticated { get; }
+    bool IsAdmin { get; }
 }

@@ -12,5 +12,5 @@ public sealed record GetDraftQuery(Guid DraftId) : IRequest<Draft>;
 internal sealed class GetDraftQueryHandler(ICurrentUser currentUser, IDraftReadService reads) : IRequestHandler<GetDraftQuery, Draft>
 {
     public async Task<Draft> Handle(GetDraftQuery request, CancellationToken cancellationToken) =>
-        await reads.GetOwnedAsync(request.DraftId, await DraftUser.RequireAsync(currentUser, cancellationToken), cancellationToken);
+        await reads.GetOwnedAsync(request.DraftId, DraftUser.Require(currentUser), cancellationToken);
 }
