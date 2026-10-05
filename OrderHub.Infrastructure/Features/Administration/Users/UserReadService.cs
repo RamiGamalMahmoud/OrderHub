@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace OrderHub.Infrastructure.Features.Administration.Users;
+
 internal sealed class UserReadService :
     IUserListingService,
     IUserDetailsService
@@ -18,9 +19,10 @@ internal sealed class UserReadService :
         _dbContextFactory = dbContextFactory;
     }
 
-    public async Task<IReadOnlyList<UserListItem>> GetAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<UserListItem>> GetAsync(
+        CancellationToken cancellationToken = default)
     {
-        AppDbContext dbContext = _dbContextFactory.CreateDbContext();
+        using var dbContext = _dbContextFactory.CreateDbContext();
 
         return await dbContext.Users
             .AsNoTracking()
@@ -30,9 +32,10 @@ internal sealed class UserReadService :
                 user.DisplayName,
                 user.IsActive,
                 user.IsAdmin,
+                user.RoleId,
+                user.Role != null ? user.Role.Name : null,
                 user.CreatedAt))
             .ToListAsync(cancellationToken);
-        ;
     }
 
     public async Task<GetUserResponse> GetUserDetailsAsync(
@@ -43,13 +46,15 @@ internal sealed class UserReadService :
 
         return await dbContext.Users
             .AsNoTracking()
-            .Where(x => x.Id == userId)
+            .Where(user => user.Id == userId)
             .Select(user => new GetUserResponse(
                 user.Id,
                 user.UserName,
                 user.DisplayName,
                 user.IsActive,
                 user.IsAdmin,
+                user.RoleId,
+                user.Role != null ? user.Role.Name : null,
                 user.CreatedAt))
             .FirstOrDefaultAsync(cancellationToken);
     }

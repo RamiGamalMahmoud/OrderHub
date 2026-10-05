@@ -4,7 +4,6 @@ using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,15 +13,18 @@ internal sealed class CreateUserCommandHandler
     : IRequestHandler<CreateUserCommand, Result>
 {
     private readonly IUserRepository _userRepository;
+    private readonly IRoleRepository _roleRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IHashShervice _hashService;
 
     public CreateUserCommandHandler(
         IUserRepository userRepository,
+        IRoleRepository roleRepository,
         IUnitOfWork unitOfWork,
         IHashShervice hashService)
     {
         _userRepository = userRepository;
+        _roleRepository = roleRepository;
         _unitOfWork = unitOfWork;
         _hashService = hashService;
     }
@@ -31,22 +33,38 @@ internal sealed class CreateUserCommandHandler
         CreateUserCommand request,
         CancellationToken cancellationToken)
     {
+        var input = request.Request;
+
         bool usernameExists = await _userRepository.UsernameExistsAsync(
-            request.Request.UserName,
+            input.UserName,
             cancellationToken: cancellationToken);
 
         if (usernameExists)
             return Result.Failure("اسم المستخدم مستخدم بالفعل.");
 
-        string passwordHash = _hashService.Hash(
-            request.Request.Password);
+        Role role = null;
+
+        if (input.RoleId.HasValue)
+        {
+            role = await _roleRepository.GetByIdAsync(
+                input.RoleId.Value,
+                cancellationToken);
+
+            if (role is null)
+                return Result.Failure("الدور المحدد غير موجود.");
+        }
+
+        string passwordHash = _hashService.Hash(input.Password);
 
         var user = User.Create(
-            request.Request.UserName,
+            input.UserName,
             passwordHash,
-            request.Request.DisplayName);
+            input.DisplayName,
+            input.IsActive,
+            input.IsAdmin);
 
-        ApplyStatus(user, request);
+        if (role is not null)
+            user.AssignRole(role);
 
         _userRepository.Add(user);
 
@@ -54,13 +72,4 @@ internal sealed class CreateUserCommandHandler
 
         return Result.Success();
     }
-
-    private static void ApplyStatus(
-        User user,
-        CreateUserCommand request)
-    {
-        user.SetActive(request.Request.IsActive);
-        user.SetAdmin(request.Request.IsAdmin);
-    }
-
 }

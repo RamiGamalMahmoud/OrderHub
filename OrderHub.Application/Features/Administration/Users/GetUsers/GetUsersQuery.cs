@@ -12,4 +12,6 @@ public sealed record UserListItem(
     string DisplayName,
     bool IsActive,
     bool IsAdmin,
+    int? RoleId,
+    string RoleName,
     DateTime CreatedAt);

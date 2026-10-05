@@ -3,23 +3,25 @@ using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace OrderHub.Application.Features.Administration.Users.Update;
 
-internal class UpdateUserCommandHandler
+internal sealed class UpdateUserCommandHandler
     : IRequestHandler<UpdateUserCommand, Result>
 {
     private readonly IUserRepository _userRepository;
+    private readonly IRoleRepository _roleRepository;
     private readonly IUnitOfWork _unitOfWork;
 
     public UpdateUserCommandHandler(
         IUserRepository userRepository,
+        IRoleRepository roleRepository,
         IUnitOfWork unitOfWork)
     {
         _userRepository = userRepository;
+        _roleRepository = roleRepository;
         _unitOfWork = unitOfWork;
     }
 
@@ -27,23 +29,48 @@ internal class UpdateUserCommandHandler
         UpdateUserCommand request,
         CancellationToken cancellationToken)
     {
-        User existingUser = await _userRepository.GetByIdAsync(
+        User user = await _userRepository.GetByIdAsync(
             request.UserId,
             cancellationToken);
 
-        if (existingUser is null)
+        if (user is null)
             return Result.Failure("المستخدم غير موجود.");
 
-        existingUser.ChangeUserName(request.Request.UserName);
-        existingUser.ChangeDisplayName(request.Request.DisplayName);
+        bool usernameExists = await _userRepository.UsernameExistsAsync(
+            request.Request.UserName,
+            user.Id,
+            cancellationToken);
+
+        if (usernameExists)
+            return Result.Failure("اسم المستخدم مستخدم بالفعل.");
+
+        Role role = null;
+
+        if (request.Request.RoleId.HasValue)
+        {
+            role = await _roleRepository.GetByIdAsync(
+                request.Request.RoleId.Value,
+                cancellationToken);
+
+            if (role is null)
+                return Result.Failure("الدور المحدد غير موجود.");
+        }
 
         Result statusResult = await UpdateStatusAsync(
-            existingUser,
+            user,
             request,
             cancellationToken);
 
         if (!statusResult.IsSuccess)
             return statusResult;
+
+        user.ChangeUserName(request.Request.UserName);
+        user.ChangeDisplayName(request.Request.DisplayName);
+
+        if (role is null)
+            user.RemoveRole();
+        else
+            user.AssignRole(role);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -63,7 +90,9 @@ internal class UpdateUserCommandHandler
         if (removingActiveAdmin)
         {
             bool hasOtherActiveAdmin =
-                await _userRepository.AnyOtherActiveAdminAsync(user.Id, cancellationToken);
+                await _userRepository.AnyOtherActiveAdminAsync(
+                    user.Id,
+                    cancellationToken);
 
             if (!hasOtherActiveAdmin)
             {

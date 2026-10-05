@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using OrderHub.Application.Interfaces.Repositories;
+using OrderHub.Infrastructure.Repositories;
 
 namespace OrderHub.Infrastructure.Reopsitories;
 
@@ -13,6 +14,7 @@ internal static class ServiceCollectionExtensions
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IQuotationRepository, QuotationRepository>();
         services.AddScoped<IProformaInvoiceRepository, ProformaInvoiceRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
         return services;
     }
 }
