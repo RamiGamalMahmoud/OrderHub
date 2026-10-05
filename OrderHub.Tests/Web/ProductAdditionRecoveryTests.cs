@@ -1,3 +1,5 @@
+using OrderHub.Application.Features.Orders.GetItemEditor;
+using OrderHub.Application.Features.Products.Search;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -68,11 +70,11 @@ public class ProductAdditionRecoveryTests
     {
         var executor = new Mock<IRequestExecutor>();
         var setup = executor.Setup(x => x.ExecuteAsync(
-            It.IsAny<GetOrderItemEditor.Query>(), It.IsAny<CancellationToken>()));
+            It.IsAny<GetOrderItemEditorQuery>(), It.IsAny<CancellationToken>()));
         if (throws)
             setup.ThrowsAsync(new TimeoutException("Database timeout"));
         else
-            setup.ReturnsAsync((GetOrderItemEditor.OrderItemEditorDto)null);
+            setup.ReturnsAsync((OrderItemEditorData)null);
 
         var step = new ProductsStep { Items = [] };
         var notifications = 0;
@@ -91,8 +93,8 @@ public class ProductAdditionRecoveryTests
     public async Task Successful_hydration_adds_complete_item_and_returns_success()
     {
         var executor = new Mock<IRequestExecutor>();
-        executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderItemEditor.Query>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new GetOrderItemEditor.OrderItemEditorDto(7, 12, "Product", "Category", [], []));
+        executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderItemEditorQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new OrderItemEditorData(7, 12, "Product", "Category", [], []));
         var step = new HeadlessProductsStep { Items = [] };
         var notifications = 0;
         step.ItemsChanged = EventCallback.Factory.Create(new object(), () => notifications++);
@@ -120,12 +122,12 @@ public class ProductAdditionRecoveryTests
     [Fact]
     public async Task Search_failure_is_recoverable_and_retry_can_succeed()
     {
-        var store = new Mock<IProductStore>();
-        store.SetupSequence(x => x.GetProductsByName("Product", It.IsAny<CancellationToken>()))
+        var executor = new Mock<IRequestExecutor>();
+        executor.SetupSequence(x => x.ExecuteAsync(It.Is<SearchProductsQuery>(query => query.SearchTerm == "Product"), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new TimeoutException("Database timeout"))
             .ReturnsAsync(new[] { Lookup });
         using var dialog = new AddProductDialog();
-        Inject(dialog, "ProductStore", store.Object);
+        Inject(dialog, "RequestExecutor", executor.Object);
         Inject(dialog, "Logger", NullLogger<AddProductDialog>.Instance);
 
         await InvokeTask(dialog, "TextChanged", "Product");

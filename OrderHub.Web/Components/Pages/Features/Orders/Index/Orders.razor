@@ -1,4 +1,5 @@
-﻿@using static OrderHub.Application.DTOs.PaymentMothodsDtos
+@using OrderHub.Application.Features.Orders.GetPage
+@using OrderHub.Application.Features.Setup.PaymentMethods.Contracts
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using OrderHub.Application.Features.Orders.Queries
@@ -144,7 +145,7 @@
 
     <MudPaper Elevation="0">
 
-        <MudTable T="GetOrderPaged.Order"
+        <MudTable T="OrderListItem"
                   @ref="_table"
                   ServerData="LoadOrdersAsync"
                   Hover="true"

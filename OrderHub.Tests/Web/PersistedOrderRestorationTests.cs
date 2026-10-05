@@ -1,15 +1,18 @@
+using OrderHub.Application.Features.Orders.GetForEdit;
 using System;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Moq;
-using OrderHub.Application.Features.Orders.Queries;
+
 using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using OrderHub.Domain.ValueObjects;
-using OrderHub.Infrastructure.Features.Orders.Queries;
+using OrderHub.Infrastructure.Features.Orders;
+using Microsoft.EntityFrameworkCore;
+using OrderHub.Tests.Infrastructure;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor.State;
 
@@ -43,7 +46,7 @@ public class PersistedOrderRestorationTests
         item.Properties.Single(p => p.PropertyId == 21).Property = definition;
         item.Properties.Single(p => p.PropertyId == 22).Property = historical;
 
-        var dto = GetOrderEditQueryHandler.MapOrder(order);
+        var dto = await Read(order);
         var state = await Load(dto);
 
         Assert.Equal(5, state.ClientId);
@@ -69,8 +72,8 @@ public class PersistedOrderRestorationTests
         Assert.True(current.IsRequired);
         Assert.Equal(PropertyType.List, current.Type);
         Assert.Equal("Saved", current.Value);
-        Assert.Equal(new[] { "Saved", "Other" }, current.Options.Select(o => o.Value));
-        Assert.Equal(definition.Options.Select(o => o.Id), current.Options.Select(o => o.Id));
+        Assert.Equal(definition.Options.OrderBy(o => o.Id).Select(o => (o.Id, o.Value)),
+            current.Options.OrderBy(o => o.Id).Select(o => (o.Id, o.Value)));
         var removed = restored.Properties.Single(p => p.PropertyId == 22);
         Assert.Equal("Removed boolean", removed.Name);
         Assert.Equal(PropertyType.Boolean, removed.Type);
@@ -86,7 +89,7 @@ public class PersistedOrderRestorationTests
         order.AddDeliveryStep(new() { StepOrder = 3, DeliveryMethod = DeliveryMethod.DeliveryMan, ShippingCarrierId = 999 });
         order.AddDeliveryStep(new() { StepOrder = 2, DeliveryMethod = DeliveryMethod.ShippingCompany, ShippingCarrierId = 52, DeliverymanId = 999 });
         order.AddDeliveryStep(new() { StepOrder = 1, DeliveryMethod = DeliveryMethod.DeliveryMan, DeliverymanId = 51, ShippingCarrierId = 999 });
-        var dto = GetOrderEditQueryHandler.MapOrder(order);
+        var dto = await Read(order);
         Assert.Equal(new[] { 1, 2, 3 }, dto.DeliverySteps.Select(s => s.StepOrder));
         var state = await Load(dto);
         Assert.Equal(DeliveryMethod.DeliveryChain, state.Delivery.Method);
@@ -99,25 +102,39 @@ public class PersistedOrderRestorationTests
     public async Task Legacy_null_delivery_and_shipping_selection_are_preserved()
     {
         var legacy = new Order(5, "ORD-LEGACY");
-        var state = await Load(GetOrderEditQueryHandler.MapOrder(legacy));
+        var state = await Load(await Read(legacy));
         Assert.Null(state.OrderSource);
         Assert.Null(state.Delivery.Method);
         var shipping = new Order(5, "ORD-SHIPPING");
         shipping.UpdateHeader(5, OrderSource.Online, DeliveryMethod.ShippingCompany, null, 77, null);
-        state = await Load(GetOrderEditQueryHandler.MapOrder(shipping));
+        state = await Load(await Read(shipping));
         Assert.Equal(DeliveryMethod.ShippingCompany, state.Delivery.Method);
         Assert.Equal(77, state.Delivery.ShippingCarrierId);
         Assert.Null(state.Delivery.DeliverymanId);
     }
 
-    private static async Task<OrderEditorState> Load(GetOrderEdit.Order dto)
+    private static async Task<OrderEditorState> Load(OrderEditorData dto)
     {
         var executor = new Mock<IRequestExecutor>();
-        executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderEdit.Query>(), It.IsAny<CancellationToken>())).ReturnsAsync(dto);
+        executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderForEditQuery>(), It.IsAny<CancellationToken>())).ReturnsAsync(dto);
         var editor = new OrderEditor();
         typeof(OrderEditor).GetProperty("RequestExecutor", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(editor, executor.Object);
         return await (Task<OrderEditorState>)typeof(OrderEditor)
             .GetMethod("LoadOrderAsync", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(editor, new object[] { dto.Id });
+    }
+
+    private static async Task<OrderEditorData> Read(Order order)
+    {
+        using var factory = TestDb.CreateFactory();
+        using var context = factory.CreateDbContext();
+        // These existing restoration cases intentionally model unavailable legacy references.
+        // Relax FK enforcement only on this fixture's isolated connection, preserving the schema.
+        await context.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys = OFF;");
+        foreach (var item in order.OrderItems)
+            Set(item.Product, nameof(ModelBase.Id), item.ProductId);
+        context.Orders.Add(order);
+        await context.SaveChangesAsync();
+        return await new OrderReader(factory).GetForEditAsync(order.Id, default);
     }
 
     private static void Set(object target, string property, object value) =>

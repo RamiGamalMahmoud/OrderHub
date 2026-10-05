@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using OrderHub.Application.Features.Products.Contracts;
+using OrderHub.Application.Features.Products.Search;
+using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Common;
 using System.Threading.Tasks;
 
@@ -14,7 +16,7 @@ public partial class AddProductDialog : IDisposable
     // =========================
 
     [Inject]
-    private IProductStore ProductStore { get; set; } = null!;
+    private IRequestExecutor RequestExecutor { get; set; } = null!;
 
     [Inject]
     private ILogger<AddProductDialog> Logger { get; set; } = null!;
@@ -116,7 +118,7 @@ public partial class AddProductDialog : IDisposable
         {
             await Task.Delay(SearchDebounceMilliseconds, cancellation.Token);
 
-            var products = await ProductStore.GetProductsByName(value, cancellation.Token);
+            var products = await RequestExecutor.ExecuteAsync(new SearchProductsQuery(value), cancellation.Token);
 
             // Request identity protects ordering even if the store ignores cancellation.
             if (!_isDisposed && ReferenceEquals(_searchCancellation, cancellation))

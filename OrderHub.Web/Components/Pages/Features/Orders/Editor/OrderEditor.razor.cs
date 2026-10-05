@@ -1,11 +1,13 @@
-﻿using Microsoft.AspNetCore.Components;
+using OrderHub.Application.Features.Orders.GetItemEditor;
+using OrderHub.Application.Features.Orders.GetForEdit;
+using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using OrderHub.Application.Features.OrderDrafts.Save;
 using OrderHub.Application.Features.OrderDrafts.Get;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Features.Orders;
-using OrderHub.Application.Features.Orders.Queries;
+
 using OrderHub.Application.Features.Setup.Properties.Get;
 using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Enums;
@@ -191,15 +193,15 @@ public partial class OrderEditor : IDisposable
             PaymentMethodId = order.PaymentMethodId,
         };
 
-        var products = new Dictionary<int, GetOrderItemEditor.OrderItemEditorDto?>();
-        var historicalProperties = new Dictionary<int, PropertyDetailsDto?>();
+        var products = new Dictionary<int, OrderItemEditorData?>();
+        var historicalProperties = new Dictionary<int, PropertyDetails?>();
         foreach (var item in order.Items)
         {
             if (!products.TryGetValue(item.ProductId, out var product))
             {
                 try
                 {
-                    product = await RequestExecutor!.ExecuteAsync(new GetOrderItemEditor.Query(item.ProductId));
+                    product = await RequestExecutor!.ExecuteAsync(new GetOrderItemEditorQuery(item.ProductId));
                 }
                 catch (Exception)
                 {
@@ -209,9 +211,9 @@ public partial class OrderEditor : IDisposable
                 products[item.ProductId] = product;
             }
             var definitions = product?.Properties.ToList() ?? [];
-            var properties = definitions.Select(definition => RestoreProperty(new GetOrderEdit.Property(
+            var properties = definitions.Select(definition => RestoreProperty(new OrderEditorProperty(
                 definition.Id, definition.Name, definition.IsRequired, definition.PropertyType,
-                definition.Options.Select(option => new GetOrderEdit.Option(option.Id, option.Name)),
+                definition.Options.Select(option => new OrderEditorOption(option.Id, option.Name)),
                 item.Properties.FirstOrDefault(saved => saved.PropertyId == definition.Id)?.Value))).ToList();
 
             foreach (var saved in item.Properties.Where(saved => !definitions.Any(current => current.Id == saved.PropertyId)))
@@ -231,19 +233,27 @@ public partial class OrderEditor : IDisposable
                 properties.Add(metadata is null
                     ? new OrderItemPropertyEditorState
                     {
-                        PropertyId = saved.PropertyId, Name = "", Value = saved.Value, HasMetadata = false
+                        PropertyId = saved.PropertyId,
+                        Name = "",
+                        Value = saved.Value,
+                        HasMetadata = false
                     }
-                    : RestoreProperty(new GetOrderEdit.Property(
+                    : RestoreProperty(new OrderEditorProperty(
                         metadata.Id, metadata.Name,
                         // As in persisted-order restoration, removed associations have no current requirement.
                         false, metadata.PropertyType,
-                        metadata.Options.Select(option => new GetOrderEdit.Option(option.Id, option.Value)), saved.Value)));
+                        metadata.Options.Select(option => new OrderEditorOption(option.Id, option.Value)), saved.Value)));
             }
 
             state.Items.Add(new OrderItemEditorState
             {
-                ProductId = item.ProductId, ProductName = item.ProductName, CategoryName = item.CategoryName,
-                UnitPrice = item.Price, Quantity = item.Quantity, VatRate = item.VAT, SupplierId = item.SupplierId,
+                ProductId = item.ProductId,
+                ProductName = item.ProductName,
+                CategoryName = item.CategoryName,
+                UnitPrice = item.Price,
+                Quantity = item.Quantity,
+                VatRate = item.VAT,
+                SupplierId = item.SupplierId,
                 MetadataRestorationError = product is null
                     ? "تعذر تحميل بيانات المنتج. بيانات المسودة محفوظة؛ أعد فتحها بعد استعادة المنتج أو احذف المنتج وأضفه من جديد."
                     : null,
@@ -258,7 +268,7 @@ public partial class OrderEditor : IDisposable
 
     private async Task<OrderEditorState> LoadOrderAsync(int value)
     {
-        var order = await RequestExecutor!.ExecuteAsync(new Application.Features.Orders.Queries.GetOrderEdit.Query(value));
+        var order = await RequestExecutor!.ExecuteAsync(new Application.Features.Orders.GetForEdit.GetOrderForEditQuery(value));
 
         OrderEditorState state = new OrderEditorState()
         {
@@ -304,7 +314,7 @@ public partial class OrderEditor : IDisposable
         _isDraftsOpen = true;
     }
 
-    private static OrderItemPropertyEditorState RestoreProperty(GetOrderEdit.Property property) => new()
+    private static OrderItemPropertyEditorState RestoreProperty(OrderEditorProperty property) => new()
     {
         PropertyId = property.PropertyId,
         Name = property.Name,
@@ -363,11 +373,14 @@ public partial class OrderEditor : IDisposable
         // Inactive steps are convenience state, not part of the final input.
         var activeState = new OrderEditorState
         {
-            ClientId = state.ClientId, OrderSource = state.OrderSource, PaymentMethodId = state.PaymentMethodId,
+            ClientId = state.ClientId,
+            OrderSource = state.OrderSource,
+            PaymentMethodId = state.PaymentMethodId,
             Items = state.Items,
             Delivery = new DeliveryEditorState
             {
-                Method = state.Delivery.Method, DeliverymanId = state.Delivery.DeliverymanId,
+                Method = state.Delivery.Method,
+                DeliverymanId = state.Delivery.DeliverymanId,
                 ShippingCarrierId = state.Delivery.ShippingCarrierId,
                 Steps = state.Delivery.Method == DeliveryMethod.DeliveryChain ? state.Delivery.Steps : []
             }

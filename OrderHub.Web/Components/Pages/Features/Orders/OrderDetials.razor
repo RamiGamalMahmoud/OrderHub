@@ -1,5 +1,6 @@
-﻿@page "/orders/{id:int}"
-@using static OrderHub.Application.Features.Orders.Queries.GetOrderDetials
+@using OrderHub.Application.Features.Orders.GetDetails
+@page "/orders/{id:int}"
+
 @using OrderHub.Application.Features.Orders.Queries
 @using OrderHub.Application.Interfaces;
 @inject IJSRuntime JS
@@ -150,7 +151,7 @@
     [Parameter]
     public int Id { get; set; }
 
-    private OrderDetailsItem? _order;
+    private OrderDetails? _order;
 
     private async Task OrderNumberClicked()
     {
@@ -160,6 +161,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _order = await RequestExecuter.ExecuteAsync(new GetOrderDetials.Query(Id));
+        _order = await RequestExecuter.ExecuteAsync(new GetOrderDetailsQuery(Id));
     }
 }

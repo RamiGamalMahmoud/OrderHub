@@ -1,3 +1,4 @@
+using OrderHub.Application.Features.Orders.GetForEdit;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -8,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 using MudBlazor;
 using OrderHub.Application.Features.Orders.Contracts;
-using OrderHub.Application.Features.Orders.Queries;
+
 using OrderHub.Application.Features.Orders.Update;
 using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Common;
@@ -16,7 +17,7 @@ using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using OrderHub.Domain.ValueObjects;
 using OrderHub.Infrastructure;
-using OrderHub.Infrastructure.Features.Orders.Queries;
+using OrderHub.Infrastructure.Features.Orders;
 using OrderHub.Infrastructure.Services;
 using OrderHub.Infrastructure.Stores;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor;
@@ -102,8 +103,12 @@ public class OrderUpdateFlowTests
         else
             Assert.Empty(input.DeliverySteps);
         // Also exercise store-level normalization against a caller supplying stale data.
-        input = input with { DeliveryManId = 31, ShippingCarrierId = 32,
-            DeliverySteps = input.DeliverySteps.Any() ? input.DeliverySteps : [new(1, DeliveryMethod.DeliveryMan, 51)] };
+        input = input with
+        {
+            DeliveryManId = 31,
+            ShippingCarrierId = 32,
+            DeliverySteps = input.DeliverySteps.Any() ? input.DeliverySteps : [new(1, DeliveryMethod.DeliveryMan, 51)]
+        };
         Assert.True((await fixture.UpdateOrder(id, input)).IsSuccess);
         var after = await fixture.Read(id);
         Assert.Equal(method == DeliveryMethod.DeliveryMan ? (int?)31 : null, after.DeliveryManId);
@@ -155,8 +160,11 @@ public class OrderUpdateFlowTests
         var id = await fixture.Seed(DeliveryMethod.DeliveryChain, true);
         var input = Build(await Editor(await fixture.Read(id)));
         // The real mapped product_name column is required. Domain reconstruction permits null.
-        input = input with { OrderSource = OrderSource.Salla,
-            OrderItems = [input.OrderItems.Single() with { ProductName = null }] };
+        input = input with
+        {
+            OrderSource = OrderSource.Salla,
+            OrderItems = [input.OrderItems.Single() with { ProductName = null }]
+        };
         Assert.False((await fixture.UpdateOrder(id, input)).IsSuccess);
         var after = await fixture.Read(id);
         Assert.Equal(OrderSource.Online, after.OrderSource);
@@ -254,11 +262,11 @@ public class OrderUpdateFlowTests
         Assert.Equal(new[] { 52, 51 }, input.DeliverySteps.Select(s => s.HandlerId));
     }
 
-    private static async Task<OrderEditor> Editor(GetOrderEdit.Order dto)
+    private static async Task<OrderEditor> Editor(OrderEditorData dto)
     {
         var editor = new OrderEditor { OrderId = dto.Id };
         var executor = new Mock<IRequestExecutor>();
-        executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderEdit.Query>(), It.IsAny<CancellationToken>())).ReturnsAsync(dto);
+        executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderForEditQuery>(), It.IsAny<CancellationToken>())).ReturnsAsync(dto);
         SetService(editor, "RequestExecutor", executor.Object);
         var state = await (Task<OrderEditorState>)Method("LoadOrderAsync").Invoke(editor, new object[] { dto.Id });
         typeof(OrderEditor).GetField("_state", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(editor, state);
@@ -288,7 +296,7 @@ public class OrderUpdateFlowTests
         }
         public override AppDbContext CreateDbContext() => new(new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite(_connection).UseSnakeCaseNamingConvention().Options);
-        public Task<GetOrderEdit.Order> Read(int id) => new GetOrderEditQueryHandler(this).Handle(new(id), default);
+        public Task<OrderEditorData> Read(int id) => new OrderReader(this).GetForEditAsync(id, default);
         public async Task<Result> UpdateOrder(int id, OrderInput.Order input)
         {
             using var db = CreateDbContext();

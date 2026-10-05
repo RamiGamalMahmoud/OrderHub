@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using OrderHub.Application.Features.Orders.GetEditorLookups;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Domain.Enums;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor.State;
@@ -37,18 +38,19 @@ public partial class DetailsStep : IDisposable
 
         try
         {
-            var clients = (await Lookups.GetClients()).ToArray();
+            var lookups = await RequestExecutor.ExecuteAsync(new GetOrderEditorLookupsQuery());
+            var clients = lookups.Clients.ToArray();
 
-            var payments = (await Lookups.GetPaymentMethods())
+            var payments = lookups.PaymentMethods
                 .Where(payment =>
                     payment.IsActive ||
                     payment.Id == State.PaymentMethodId)
                 .ToArray();
 
-            var deliverymen = (await Lookups.GetDeliveryMethods())
+            var deliverymen = lookups.Deliverymen
                 .ToArray();
 
-            var carriers = (await Lookups.GetShippingCarriers())
+            var carriers = lookups.ShippingCarriers
                 .ToArray();
 
             if (_disposed)

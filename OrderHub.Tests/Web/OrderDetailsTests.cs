@@ -1,3 +1,5 @@
+using OrderHub.Application.Features.Orders.GetEditorLookups;
+using OrderHub.Application.Interfaces;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -16,14 +18,11 @@ public class OrderDetailsTests
     {
         var state = new OrderEditorState { ClientId = 7 };
         using var details = new DetailsStep { State = state };
-        var lookups = new Moq.Mock<OrderHub.Application.Interfaces.ILookupService>();
-        lookups.SetupSequence(x => x.GetClients())
+        var executor = new Mock<IRequestExecutor>();
+        executor.SetupSequence(x => x.ExecuteAsync(It.IsAny<GetOrderEditorLookupsQuery>(), It.IsAny<System.Threading.CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Unavailable"))
-            .ReturnsAsync(Array.Empty<OrderHub.Application.Common.Lookups.ClientLookup>());
-        lookups.Setup(x => x.GetPaymentMethods()).ReturnsAsync(Array.Empty<OrderHub.Application.Common.Lookups.PaymentMethodLookup>());
-        lookups.Setup(x => x.GetDeliveryMethods()).ReturnsAsync(Array.Empty<OrderHub.Application.Common.Lookups.DeliverymanLookup>());
-        lookups.Setup(x => x.GetShippingCarriers()).ReturnsAsync(Array.Empty<OrderHub.Application.Common.Lookups.ShippingCarrierLookup>());
-        typeof(DetailsStep).GetProperty("Lookups", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(details, lookups.Object);
+            .ReturnsAsync(new OrderEditorLookups([], [], [], []));
+        typeof(DetailsStep).GetProperty("RequestExecutor", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(details, executor.Object);
         typeof(DetailsStep).GetProperty("Logger", BindingFlags.NonPublic | BindingFlags.Instance)
             .SetValue(details, Microsoft.Extensions.Logging.Abstractions.NullLogger<DetailsStep>.Instance);
         await Invoke(details, "LoadLookupsAsync");
@@ -76,7 +75,8 @@ public class OrderDetailsTests
         var notifications = 0;
         using var details = new DetailsStep
         {
-            State = state, DetailsChanged = EventCallback.Factory.Create(new object(), () => notifications++)
+            State = state,
+            DetailsChanged = EventCallback.Factory.Create(new object(), () => notifications++)
         };
         var callback = details.DetailsChanged;
         var chain = new DeliveryChainEditor { Steps = state.Delivery.Steps, Changed = callback };

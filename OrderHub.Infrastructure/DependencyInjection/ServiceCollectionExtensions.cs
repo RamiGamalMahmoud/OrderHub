@@ -3,10 +3,11 @@ using OrderHub.Application.Features.Administration.Users.GetUser;
 using OrderHub.Application.Features.Administration.Users.GetUsers;
 using OrderHub.Infrastructure.Features.Administration.Users;
 using OrderHub.Infrastructure.Features.OrderDrafts;
-using OrderHub.Infrastructure.ReadServices;
 using OrderHub.Infrastructure.Reopsitories;
-using OrderHub.Infrastructure.Stores;
 using System.Reflection;
+using OrderHub.Infrastructure.Features.Orders;
+using OrderHub.Infrastructure.Features.Products;
+using OrderHub.Infrastructure.Features.Setup;
 
 namespace OrderHub.Infrastructure.DependencyInjection;
 
@@ -17,10 +18,11 @@ public static class ServiceCollectionExtensions
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 
         services.AddPersistence(connectionString);
-        services.AddStores();
+        services.AddOrderReads();
         services.AddRepositories();
-        services.AddReadServices();
         services.AddDrafts();
+        services.AddSetupPersistence();
+        services.AddCatalogPersistence();
 
         services.AddServices();
 

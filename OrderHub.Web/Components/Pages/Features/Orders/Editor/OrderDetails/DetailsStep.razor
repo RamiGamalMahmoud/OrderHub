@@ -1,3 +1,4 @@
+@using OrderHub.Application.Features.Orders.GetEditorLookups
 @using OrderHub.Application.Common.Lookups
 @using OrderHub.Application.Interfaces
 @using OrderHub.Domain.Enums
@@ -5,7 +6,7 @@
 
 @implements IDisposable
 
-@inject ILookupService Lookups
+@inject IRequestExecutor RequestExecutor
 @inject ILogger<DetailsStep> Logger
 
 <MudStack Spacing="4">
@@ -83,5 +84,5 @@
 
 @code
 {
-    
+
 }

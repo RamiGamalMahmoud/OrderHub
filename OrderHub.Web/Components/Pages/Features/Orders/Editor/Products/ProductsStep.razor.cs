@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components;
+using OrderHub.Application.Features.Orders.GetItemEditor;
+using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using OrderHub.Application.Features.Orders;
 using OrderHub.Application.Interfaces;
@@ -41,15 +42,15 @@ public partial class ProductsStep : IDisposable
         _openingDialog = true;
         try
         {
-        DialogOptions options = new()
-        {
-            Position = DialogPosition.TopCenter,
-            CloseOnEscapeKey = true,
-            CloseButton = true,
-            DefaultFocus = DefaultFocus.Element
-        };
+            DialogOptions options = new()
+            {
+                Position = DialogPosition.TopCenter,
+                CloseOnEscapeKey = true,
+                CloseButton = true,
+                DefaultFocus = DefaultFocus.Element
+            };
 
-        DialogParameters<AddProductDialog> parameters = new()
+            DialogParameters<AddProductDialog> parameters = new()
         {
             {
                 x => x.ProductAdded,
@@ -57,14 +58,14 @@ public partial class ProductsStep : IDisposable
             }
         };
 
-        var dialog = await DialogService.ShowAsync<AddProductDialog>(
-            "إضافة منتج",
-            parameters,
-            options);
-        _addDialog = dialog;
-        if (_disposed)
-            dialog.Close(DialogResult.Cancel());
-        await dialog.Result;
+            var dialog = await DialogService.ShowAsync<AddProductDialog>(
+                "إضافة منتج",
+                parameters,
+                options);
+            _addDialog = dialog;
+            if (_disposed)
+                dialog.Close(DialogResult.Cancel());
+            await dialog.Result;
         }
         finally
         {
@@ -79,11 +80,11 @@ public partial class ProductsStep : IDisposable
             return Result.Failure("جلسة التحرير لم تعد متاحة.");
         var sessionId = SessionId;
         var items = Items;
-        GetOrderItemEditor.OrderItemEditorDto product;
+        OrderItemEditorData product;
         try
         {
             product = await RequestExecutor.ExecuteAsync(
-                new GetOrderItemEditor.Query(result.Product.Id));
+                new GetOrderItemEditorQuery(result.Product.Id));
         }
         catch (Exception exception)
         {

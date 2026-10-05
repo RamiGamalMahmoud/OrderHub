@@ -1,3 +1,4 @@
+using OrderHub.Application.Features.Orders.GetForEdit;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -11,7 +12,7 @@ using OrderHub.Application.Context;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Features.Orders.Create;
-using OrderHub.Application.Features.Orders.Queries;
+
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Stores;
 using OrderHub.Domain.Common;
@@ -19,7 +20,7 @@ using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using OrderHub.Domain.ValueObjects;
 using OrderHub.Infrastructure;
-using OrderHub.Infrastructure.Features.Orders.Queries;
+using OrderHub.Infrastructure.Features.Orders;
 using OrderHub.Infrastructure.Services;
 using OrderHub.Infrastructure.Stores;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor;
@@ -42,9 +43,9 @@ public class OrderCreateFlowTests
         var result = await fixture.Create(input);
         Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.True(result.Value > 0);
-        var dto = await new GetOrderEditQueryHandler(fixture).Handle(new(result.Value), default);
+        var dto = await new OrderReader(fixture).GetForEditAsync(result.Value, default);
         var executor = new Mock<IRequestExecutor>();
-        executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderEdit.Query>(), It.IsAny<CancellationToken>())).ReturnsAsync(dto);
+        executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderForEditQuery>(), It.IsAny<CancellationToken>())).ReturnsAsync(dto);
         var editor = new OrderEditor();
         Service(editor, "RequestExecutor", executor.Object);
         var restored = await (Task<OrderEditorState>)Method("LoadOrderAsync").Invoke(editor, new object[] { result.Value });
@@ -85,8 +86,12 @@ public class OrderCreateFlowTests
     {
         using var fixture = new Fixture();
         var input = Build(Editor(await fixture.State(method, false)));
-        input = input with { DeliveryManId = 31, ShippingCarrierId = 32,
-            DeliverySteps = [new(2, DeliveryMethod.ShippingCompany, 52), new(1, DeliveryMethod.DeliveryMan, 51)] };
+        input = input with
+        {
+            DeliveryManId = 31,
+            ShippingCarrierId = 32,
+            DeliverySteps = [new(2, DeliveryMethod.ShippingCompany, 52), new(1, DeliveryMethod.DeliveryMan, 51)]
+        };
         var result = await fixture.Create(input);
         Assert.True(result.IsSuccess, result.ErrorMessage);
         using var db = fixture.CreateDbContext();
@@ -138,10 +143,17 @@ public class OrderCreateFlowTests
         var original = state.Items.Single();
         state.Items[0] = new OrderItemEditorState
         {
-            ProductId = original.ProductId, ProductName = original.ProductName, CategoryName = original.CategoryName,
-            UnitPrice = original.UnitPrice, Quantity = original.Quantity, VatRate = original.VatRate,
-            SupplierId = original.SupplierId, PersistedSupplierId = original.SupplierId, SupplierName = "Historical snapshot",
-            Suppliers = original.Suppliers, Properties = original.Properties
+            ProductId = original.ProductId,
+            ProductName = original.ProductName,
+            CategoryName = original.CategoryName,
+            UnitPrice = original.UnitPrice,
+            Quantity = original.Quantity,
+            VatRate = original.VatRate,
+            SupplierId = original.SupplierId,
+            PersistedSupplierId = original.SupplierId,
+            SupplierName = "Historical snapshot",
+            Suppliers = original.Suppliers,
+            Properties = original.Properties
         };
         var editor = Editor(state);
         Assert.Null(editor.DraftId);
@@ -243,10 +255,17 @@ public class OrderCreateFlowTests
             await db.SaveChangesAsync();
             return new OrderEditorState
             {
-                ClientId = 5, OrderSource = OrderSource.Online, PaymentMethodId = 41,
-                Delivery = new() { Method = method, DeliverymanId = 31, ShippingCarrierId = 32,
+                ClientId = 5,
+                OrderSource = OrderSource.Online,
+                PaymentMethodId = 41,
+                Delivery = new()
+                {
+                    Method = method,
+                    DeliverymanId = 31,
+                    ShippingCarrierId = 32,
                     Steps = [new() { StepOrder = 8, Method = DeliveryMethod.ShippingCompany, HandlerId = 52 },
-                        new() { StepOrder = 8, Method = DeliveryMethod.DeliveryMan, HandlerId = 51 }] },
+                        new() { StepOrder = 8, Method = DeliveryMethod.DeliveryMan, HandlerId = 51 }]
+                },
                 Items = [new() { ProductId = product.Id, ProductName = "Saved product", CategoryName = "Category",
                     UnitPrice = 12.34m, Quantity = 3, VatRate = 14.75m, SupplierId = withSupplier ? supplier.Id : null,
                     Suppliers = [new(supplier.Id, supplier.Name.Value)],

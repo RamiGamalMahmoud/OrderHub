@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Enums;
-using static OrderHub.Application.DTOs.PaymentMothodsDtos;
-using Order = OrderHub.Application.Features.Orders.Queries.GetOrderPaged.Order;
+using OrderHub.Application.Features.Setup.PaymentMethods.Contracts;
+using Order = OrderHub.Application.Features.Orders.GetPage.OrderListItem;
 
 namespace OrderHub.Web.Components.Pages.Features.Orders.Index;
 
@@ -38,9 +38,9 @@ public partial class Orders
         TableState state,
         CancellationToken cancellationToken)
     {
-        _paymentMethods = await RequestExecutor.ExecuteAsync(new Application.Queries.PaymentMothodQueries.GetPaymentMethodListQuery());
+        _paymentMethods = await RequestExecutor.ExecuteAsync(new Application.Features.Setup.PaymentMethods.GetPaymentMethodListQuery());
         var query =
-            new Application.Features.Orders.Queries.GetOrderPaged.Query(
+            new Application.Features.Orders.GetPage.GetOrdersPageQuery(
                 PageNumber: state.Page + 1,
                 PageSize: state.PageSize,
                 SearchTerm: _searchTerm);
@@ -80,5 +80,5 @@ public partial class Orders
     }
 
     private int? _selectedPaymentMethodId = null;
-    private IEnumerable<PaymentMethodListDto?> _paymentMethods = [];
+    private IEnumerable<PaymentMethodListItem?> _paymentMethods = [];
 }

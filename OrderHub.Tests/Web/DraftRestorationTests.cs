@@ -1,3 +1,4 @@
+using OrderHub.Application.Features.Orders.GetItemEditor;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -31,7 +32,10 @@ public class DraftRestorationTests
     {
         var state = new OrderEditorState
         {
-            ClientId = 5, ClientName = "Saved client", OrderSource = OrderSource.Online, PaymentMethodId = 41,
+            ClientId = 5,
+            ClientName = "Saved client",
+            OrderSource = OrderSource.Online,
+            PaymentMethodId = 41,
             Delivery = new() { Method = DeliveryMethod.DeliveryMan, DeliverymanId = 31, ShippingCarrierId = 32 },
             Items = [new()
             {
@@ -73,11 +77,15 @@ public class DraftRestorationTests
     {
         var property = new OrderItemPropertyEditorState
         {
-            PropertyId = 21, Name = "Current field", Type = type, IsRequired = required,
-            Value = value, Options = [new(1, "Red")]
+            PropertyId = 21,
+            Name = "Current field",
+            Type = type,
+            IsRequired = required,
+            Value = value,
+            Options = [new(1, "Red")]
         };
         var state = State(property);
-        var metadata = Product(new GetOrderItemEditor.OrderItemProperty(21, "Current field", required, type, [new(1, "Red")]));
+        var metadata = Product(new OrderItemEditorProperty(21, "Current field", required, type, [new(1, "Red")]));
         var restored = (await RoundTrip(state, metadata)).Items.Single().Properties.Single();
         Assert.Equal(property.ValidateValue(value), restored.ValidateValue(restored.Value));
         Assert.Equal(property.Name, restored.Name);
@@ -92,7 +100,7 @@ public class DraftRestorationTests
     {
         var executor = new Mock<IRequestExecutor>();
         executor.Setup(x => x.ExecuteAsync(It.IsAny<GetPropertyQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PropertyDetailsDto(22, "Historical boolean", PropertyType.Boolean, null, []));
+            .ReturnsAsync(new PropertyDetails(22, "Historical boolean", PropertyType.Boolean, null, []));
         var state = State(new() { PropertyId = 21, Name = "List", Value = "Red" },
             new() { PropertyId = 22, Name = "Old", Value = "false" });
         var restored = await RoundTrip(state, Product(), executor);
@@ -146,7 +154,7 @@ public class DraftRestorationTests
     {
         var executor = new Mock<IRequestExecutor>();
         if (queryFails)
-            executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderItemEditor.Query>(), It.IsAny<CancellationToken>()))
+            executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderItemEditorQuery>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("Catalog unavailable"));
         var restored = await RoundTrip(State(new OrderItemPropertyEditorState { PropertyId = 77, Name = "Previous", Value = "Saved" }), null, executor, queryFails);
         var item = Assert.Single(restored.Items);
@@ -196,17 +204,17 @@ public class DraftRestorationTests
             UnitPrice = 12.34m, Quantity = 3, VatRate = 14.75m, Properties = properties.ToList() }]
     };
 
-    private static GetOrderItemEditor.OrderItemEditorDto Product(params GetOrderItemEditor.OrderItemProperty[] definitions) => new(
+    private static OrderItemEditorData Product(params OrderItemEditorProperty[] definitions) => new(
         7, 999m, "Current product", "Current category", [new(9, "Current supplier")],
         definitions.Length > 0 ? definitions : [new(21, "List", true, PropertyType.List, [new(1, "Red")]),
             new(23, "New required field", true, PropertyType.Text, [])]);
 
-    private static async Task<OrderEditorState> RoundTrip(OrderEditorState state, GetOrderItemEditor.OrderItemEditorDto metadata,
+    private static async Task<OrderEditorState> RoundTrip(OrderEditorState state, OrderItemEditorData metadata,
         Mock<IRequestExecutor> executor = null, bool queryFails = false)
     {
         executor ??= new Mock<IRequestExecutor>();
         if (!queryFails)
-            executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderItemEditor.Query>(), It.IsAny<CancellationToken>())).ReturnsAsync(metadata);
+            executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderItemEditorQuery>(), It.IsAny<CancellationToken>())).ReturnsAsync(metadata);
         Draft saved = null;
         executor.Setup(x => x.ExecuteAsync(It.IsAny<SaveDraftCommand>(), It.IsAny<CancellationToken>()))
             .Callback<MediatR.IRequest<Result>, CancellationToken>((request, _) =>

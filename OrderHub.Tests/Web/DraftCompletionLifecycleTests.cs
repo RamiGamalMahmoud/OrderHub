@@ -1,3 +1,4 @@
+using OrderHub.Application.Features.Orders.GetItemEditor;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -80,8 +81,11 @@ public class DraftCompletionLifecycleTests
         var id = (Guid)Field(editor, "_sessionId");
         await fixture.Documents(id);
         var input = (OrderInput.Order)Method("BuildOrderInput").Invoke(editor, null);
-        input = input with { OrderItems = [input.OrderItems.Single() with
-            { ProductName = databaseFailure ? null : "Product", UnitPrice = databaseFailure ? 10 : 0 }] };
+        input = input with
+        {
+            OrderItems = [input.OrderItems.Single() with
+            { ProductName = databaseFailure ? null : "Product", UnitPrice = databaseFailure ? 10 : 0 }]
+        };
         Assert.False((await fixture.Create(new(id, input))).IsSuccess);
         Assert.NotNull(await fixture.Store.GetAsync(id, 11));
         using var check = fixture.CreateDbContext();
@@ -249,13 +253,15 @@ public class DraftCompletionLifecycleTests
                 .Returns((SaveDraftCommand command, CancellationToken _) => Save(command));
             Executor.Setup(e => e.ExecuteAsync(It.IsAny<GetDraftQuery>(), It.IsAny<CancellationToken>()))
                 .Returns((GetDraftQuery query, CancellationToken _) => Store.GetAsync(query.DraftId, 11));
-            Executor.Setup(e => e.ExecuteAsync(It.IsAny<GetOrderItemEditor.Query>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new GetOrderItemEditor.OrderItemEditorDto(_productId, 10, "Product", "Category", [], []));
+            Executor.Setup(e => e.ExecuteAsync(It.IsAny<GetOrderItemEditorQuery>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new OrderItemEditorData(_productId, 10, "Product", "Category", [], []));
         }
         public override AppDbContext CreateDbContext() => new(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(_connection).UseSnakeCaseNamingConvention().Options);
         public OrderEditorState State() => new()
         {
-            ClientId = 5, OrderSource = OrderSource.Online, Delivery = new() { Method = DeliveryMethod.Pickup },
+            ClientId = 5,
+            OrderSource = OrderSource.Online,
+            Delivery = new() { Method = DeliveryMethod.Pickup },
             Items = [new() { ProductId = _productId, ProductName = "Product", CategoryName = "Category", UnitPrice = 10, Quantity = 1 }]
         };
         public OrderEditor Editor()
