@@ -50,12 +50,6 @@ internal sealed class UserReadService :
                 user.DisplayName,
                 user.IsActive,
                 user.IsAdmin,
-                user.Permissions.Select(premission => new UserListItemPermission(
-                     premission.Id,
-                     premission.Feature,
-                     premission.CanRead,
-                     premission.CanWrite))
-                .ToList(),
                 user.CreatedAt))
             .FirstOrDefaultAsync(cancellationToken);
     }

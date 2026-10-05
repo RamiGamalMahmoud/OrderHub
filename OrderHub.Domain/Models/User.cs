@@ -1,8 +1,4 @@
-﻿using OrderHub.Domain.Enums;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
+﻿using System;
 
 namespace OrderHub.Domain.Models;
 
@@ -14,9 +10,23 @@ public class User : ModelBase
     public bool IsActive { get; private set; }
     public bool IsAdmin { get; private set; }
 
-    private readonly Collection<UserPermission> _permissions = [];
+    public int? RoleId { get; private set; }
 
-    public IReadOnlyCollection<UserPermission> Permissions => _permissions;
+    public Role Role { get; private set; }
+
+    public void AssignRole(Role role)
+    {
+        ArgumentNullException.ThrowIfNull(role);
+
+        Role = role;
+    }
+
+    public void RemoveRole()
+    {
+        Role = null;
+        RoleId = null;
+    }
+
 
     private User()
     {
@@ -81,46 +91,6 @@ public class User : ModelBase
 
     public void SetActive(bool isActive) => IsActive = isActive;
 
-    public void SetPermission(
-        PermissionFeature feature,
-        bool canRead,
-        bool canWrite)
-    {
-        UserPermission permission = _permissions
-            .FirstOrDefault(x => x.Feature == feature);
-
-        if (permission is null)
-        {
-            _permissions.Add(
-                UserPermission.Create(
-                    this,
-                    feature,
-                    canRead,
-                    canWrite));
-
-            return;
-        }
-
-        permission.SetPermissions(canRead, canWrite);
-    }
-
-    public UserPermission GetPermission(PermissionFeature feature)
-    {
-        return _permissions
-            .FirstOrDefault(x => x.Feature == feature);
-    }
-
-    public void RemovePermission(PermissionFeature feature)
-    {
-        UserPermission permission = _permissions
-            .FirstOrDefault(x => x.Feature == feature);
-
-        if (permission is null)
-            return;
-
-        _permissions.Remove(permission);
-    }
-
     private static void ValidateUserName(string userName)
     {
         if (string.IsNullOrWhiteSpace(userName))
@@ -145,5 +115,4 @@ public class User : ModelBase
                 nameof(passwordHash));
     }
 
-    public void ClearPermissions() => _permissions.Clear();
 }

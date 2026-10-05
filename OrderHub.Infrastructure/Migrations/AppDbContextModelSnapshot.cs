@@ -1152,6 +1152,65 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("property_options", (string)null);
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.Role", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_roles");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_roles_name");
+
+                    b.ToTable("roles", (string)null);
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.RolePermission", b =>
+                {
+                    b.Property<int>("RoleId")
+                        .HasColumnType("integer")
+                        .HasColumnName("role_id");
+
+                    b.Property<string>("Feature")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("feature");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("level");
+
+                    b.HasKey("RoleId", "Feature")
+                        .HasName("pk_role_permissions");
+
+                    b.ToTable("role_permissions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_role_permissions_level", "level <> 'None'");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.ShippingCarrier", b =>
                 {
                     b.Property<int>("Id")
@@ -1263,6 +1322,10 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("password_hash");
 
+                    b.Property<int?>("RoleId")
+                        .HasColumnType("integer")
+                        .HasColumnName("role_id");
+
                     b.Property<string>("UserName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -1272,50 +1335,10 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_users");
 
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_users_role_id");
+
                     b.ToTable("users", (string)null);
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.UserPermission", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("CanRead")
-                        .HasColumnType("boolean")
-                        .HasColumnName("can_read");
-
-                    b.Property<bool>("CanWrite")
-                        .HasColumnType("boolean")
-                        .HasColumnName("can_write");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<int>("Feature")
-                        .HasColumnType("integer")
-                        .HasColumnName("feature");
-
-                    b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("modified_at");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_user_permissions");
-
-                    b.HasIndex("UserId", "Feature")
-                        .IsUnique()
-                        .HasDatabaseName("ix_user_permissions_user_id_feature");
-
-                    b.ToTable("user_permissions", (string)null);
                 });
 
             modelBuilder.Entity("OrderHub.Infrastructure.Models.DocumentSequence", b =>
@@ -1905,6 +1928,18 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Property");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.RolePermission", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Role", "Role")
+                        .WithMany("Permissions")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_role_permissions_roles_role_id");
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.ShippingCarrier", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.Address", "Address")
@@ -2038,16 +2073,15 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Phone");
                 });
 
-            modelBuilder.Entity("OrderHub.Domain.Models.UserPermission", b =>
+            modelBuilder.Entity("OrderHub.Domain.Models.User", b =>
                 {
-                    b.HasOne("OrderHub.Domain.Models.User", "User")
-                        .WithMany("Permissions")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_user_permissions_users_user_id");
+                    b.HasOne("OrderHub.Domain.Models.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_users_role_role_id");
 
-                    b.Navigation("User");
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("OrderHub.Infrastructure.Models.DraftRecord", b =>
@@ -2126,7 +2160,7 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Options");
                 });
 
-            modelBuilder.Entity("OrderHub.Domain.Models.User", b =>
+            modelBuilder.Entity("OrderHub.Domain.Models.Role", b =>
                 {
                     b.Navigation("Permissions");
                 });

@@ -19,7 +19,6 @@ internal sealed class UserRepository : IUserRepository
         CancellationToken cancellationToken = default)
     {
         return _dbContext.Users
-            .Include(x => x.Permissions)
             .FirstOrDefaultAsync(
                 x => x.Id == id,
                 cancellationToken);
@@ -30,7 +29,6 @@ internal sealed class UserRepository : IUserRepository
         CancellationToken cancellationToken = default)
     {
         return _dbContext.Users
-            .Include(x => x.Permissions)
             .FirstOrDefaultAsync(
                 x => EF.Functions.ILike(x.UserName, username),
                 cancellationToken);

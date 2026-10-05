@@ -1,53 +1,55 @@
 ﻿using System.ComponentModel;
 
 namespace OrderHub.Domain.Enums;
+
 public enum PermissionFeature
 {
+    // Orders
     [Description("الطلبات")]
-    Orders = 1,
+    Orders,
 
+    // Documents
     [Description("المستندات")]
-    Documents = 2,
+    Documents,
 
+    // Catalog
     [Description("المنتجات")]
-    Products = 3,
+    Products,
 
     [Description("الأقسام")]
-    Categories = 4,
+    Categories,
 
-    [Description("الخصائص")]
-    Properties = 5,
+    [Description("خصائص المنتجات")]
+    Properties,
 
+    // Business Partners
     [Description("العملاء")]
-    Clients = 6,
+    Clients,
 
     [Description("الموردون")]
-    Suppliers = 7,
+    Suppliers,
 
+    // Logistics
     [Description("المناديب")]
-    Deliverymen = 8,
+    Deliverymen,
 
     [Description("شركات الشحن")]
-    ShippingCarriers = 9,
+    ShippingCarriers,
 
+    // Reference Data
     [Description("المدن")]
-    Cities = 10,
+    Cities,
 
     [Description("طرق الدفع")]
-    PaymentMethods = 11,
+    PaymentMethods,
 
-    [Description("مجموعات الواتساب")]
-    WhatsAppGroups = 12,
-
-    [Description("سجل الرسائل")]
-    Messages = 13,
-
+    // Administration
     [Description("سجلات النظام")]
-    Logs = 14,
+    Logs,
 
     [Description("إدارة المستخدمين")]
-    Users = 15,
+    Users,
 
     [Description("إعدادات النظام")]
-    Settings = 16
+    Settings
 }

@@ -45,8 +45,6 @@ internal class UpdateUserCommandHandler
         if (!statusResult.IsSuccess)
             return statusResult;
 
-        SyncPermissions(existingUser, request);
-
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
@@ -78,36 +76,5 @@ internal class UpdateUserCommandHandler
         user.SetAdmin(request.Request.IsAdmin);
 
         return Result.Success();
-    }
-
-    private static void SyncPermissions(
-        User user,
-        UpdateUserCommand request)
-    {
-        var enabledPermissions = request.Request.Permissions
-            .Where(x => x.CanRead || x.CanWrite)
-            .ToList();
-
-        var enabledFeatures = enabledPermissions
-            .Select(x => x.Feature)
-            .ToHashSet();
-
-        var featuresToRemove = user.Permissions
-            .Where(x => !enabledFeatures.Contains(x.Feature))
-            .Select(x => x.Feature)
-            .ToList();
-
-        foreach (var feature in featuresToRemove)
-        {
-            user.RemovePermission(feature);
-        }
-
-        foreach (var permission in enabledPermissions)
-        {
-            user.SetPermission(
-                permission.Feature,
-                permission.CanRead,
-                permission.CanWrite);
-        }
     }
 }

@@ -47,7 +47,6 @@ internal sealed class CreateUserCommandHandler
             request.Request.DisplayName);
 
         ApplyStatus(user, request);
-        ApplyPermissions(user, request);
 
         _userRepository.Add(user);
 
@@ -64,19 +63,4 @@ internal sealed class CreateUserCommandHandler
         user.SetAdmin(request.Request.IsAdmin);
     }
 
-    private static void ApplyPermissions(
-        User user,
-        CreateUserCommand request)
-    {
-        foreach (var permission in request.Request.Permissions)
-        {
-            if (!permission.CanRead && !permission.CanWrite)
-                continue;
-
-            user.SetPermission(
-                permission.Feature,
-                permission.CanRead,
-                permission.CanWrite);
-        }
-    }
 }

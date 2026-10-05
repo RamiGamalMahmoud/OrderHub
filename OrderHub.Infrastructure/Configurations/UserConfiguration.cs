@@ -30,9 +30,9 @@ internal sealed class UserConfiguration : ModelConfigurationBase<User>
         builder.Property(x => x.IsAdmin)
             .IsRequired();
 
-        builder.HasMany(x => x.Permissions)
-            .WithOne()
-            .HasForeignKey(x => x.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.Role)
+            .WithMany()
+            .HasForeignKey(x => x.RoleId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

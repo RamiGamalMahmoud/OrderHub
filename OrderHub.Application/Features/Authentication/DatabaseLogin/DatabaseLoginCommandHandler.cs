@@ -36,12 +36,7 @@ internal class DatabaseLoginCommandHandler : IRequestHandler<DatabaseLoginComman
             user.Id,
             user.UserName,
             user.DisplayName,
-            user.IsAdmin,
-            user.Permissions.Select(permission => new UserPermissionSession(
-                permission.Feature,
-                permission.CanRead,
-                permission.CanWrite))
-            .ToList());
+            user.IsAdmin);
 
         return Result<UserSession>.Success(userSession);
     }
