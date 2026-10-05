@@ -20,7 +20,7 @@ public partial class OrderEditor
 
     private OrderEditorState _state = new();
 
-    private IReadOnlyList<string> ValidationErrors => GetValidationErrors(_state);
+    private IReadOnlyList<string> ValidationErrors => IsEdit ? GetUpdateValidationErrors(_state) : GetValidationErrors(_state);
 
     private bool CanSave => ValidationErrors.Count == 0;
 
@@ -263,6 +263,8 @@ public partial class OrderEditor
                 Quantity = item.Quantity,
                 VatRate = item.VatRate,
                 SupplierId = item.SupplierId,
+                PersistedSupplierId = item.SupplierId,
+                SupplierName = item.SupplierName,
                 // Preserve unavailable selections; the drawer already warns when the ID is absent.
                 Suppliers = item.Suppliers.Select(supplier => new OrderItemSupplierEditorState(
                     supplier.Id, supplier.Name)).ToList(),
@@ -303,6 +305,9 @@ public partial class OrderEditor
 
     private OrderInput.Order BuildOrderInput()
     {
+        if (IsEdit)
+            return BuildUpdateInput();
+
         return new OrderInput.Order(
             _state.ClientId!.Value,
             _state.OrderSource!.Value,
@@ -325,6 +330,63 @@ public partial class OrderEditor
                 step.Method,
                 step.HandlerId!.Value)),
             _state.PaymentMethodId);
+    }
+
+    private OrderInput.Order BuildUpdateInput()
+    {
+        var method = _state.Delivery.Method!.Value;
+        var steps = _state.Delivery.Steps;
+        var preserveStepOrder = steps.All(step => step.StepOrder > 0) &&
+            steps.Zip(steps.Skip(1), (previous, next) => previous.StepOrder < next.StepOrder).All(inOrder => inOrder);
+        return new OrderInput.Order(_state.ClientId!.Value, _state.OrderSource!.Value, method,
+            method == DeliveryMethod.DeliveryMan ? _state.Delivery.DeliverymanId : null,
+            method == DeliveryMethod.ShippingCompany ? _state.Delivery.ShippingCarrierId : null,
+            _state.Items.Select(item => new OrderInput.Item(item.ProductId, item.ProductName, item.Quantity,
+                item.UnitPrice, item.VatRate, ResolveUpdateSupplierName(item), item.SupplierId,
+                item.Properties.Select(property => new OrderInput.Property(property.PropertyId, property.Value)).ToList())).ToList(),
+            method == DeliveryMethod.DeliveryChain
+                ? steps.Select((step, index) => new OrderInput.DeliveryStep(
+                    preserveStepOrder ? step.StepOrder : index + 1, step.Method, step.HandlerId!.Value)).ToList()
+                : new List<OrderInput.DeliveryStep>(),
+            _state.PaymentMethodId);
+    }
+
+    private static string? ResolveUpdateSupplierName(OrderItemEditorState item)
+    {
+        if (!item.SupplierId.HasValue)
+            return null;
+        if (item.SupplierId == item.PersistedSupplierId)
+            return item.SupplierName;
+        return item.Suppliers.FirstOrDefault(supplier => supplier.Id == item.SupplierId)?.Name;
+    }
+
+    private static IReadOnlyList<string> GetUpdateValidationErrors(OrderEditorState state)
+    {
+        // Inactive steps are convenience state, not part of the final Update input.
+        var activeState = new OrderEditorState
+        {
+            ClientId = state.ClientId, OrderSource = state.OrderSource, PaymentMethodId = state.PaymentMethodId,
+            Items = state.Items,
+            Delivery = new DeliveryEditorState
+            {
+                Method = state.Delivery.Method, DeliverymanId = state.Delivery.DeliverymanId,
+                ShippingCarrierId = state.Delivery.ShippingCarrierId,
+                Steps = state.Delivery.Method == DeliveryMethod.DeliveryChain ? state.Delivery.Steps : []
+            }
+        };
+        var errors = GetValidationErrors(activeState).ToList();
+        if (state.Delivery.Method.HasValue && !Enum.IsDefined(state.Delivery.Method.Value) ||
+            state.OrderSource.HasValue && !Enum.IsDefined(state.OrderSource.Value))
+            errors.Add("مصدر الطلب أو طريقة التوصيل غير صالح.");
+        foreach (var item in state.Items)
+        {
+            if (item.SupplierId.HasValue && item.SupplierId != item.PersistedSupplierId &&
+                item.Suppliers.Count(supplier => supplier.Id == item.SupplierId) != 1)
+                errors.Add($"{item.ProductName}: المورد المحدد غير متاح.");
+        }
+        if (activeState.Delivery.Steps.Any(step => step.Method is not (DeliveryMethod.DeliveryMan or DeliveryMethod.ShippingCompany)))
+            errors.Add("طريقة تنفيذ خطوة التوصيل غير صالحة.");
+        return errors;
     }
 
     private static IReadOnlyList<string> GetValidationErrors(OrderEditorState state)
@@ -419,7 +481,9 @@ public partial class OrderEditor
         if (IsEdit)
         {
             // Update
-            await RequestExecutor!.ExecuteAsync(new Application.Features.Orders.Update.UpdateOrderCommand(OrderId!.Value, input));
+            var updateResult = await RequestExecutor!.ExecuteAsync(new Application.Features.Orders.Update.UpdateOrderCommand(OrderId!.Value, input));
+            Snackbar!.Add(updateResult.IsSuccess ? "تم حفظ التعديلات بنجاح." : updateResult.ErrorMessage,
+                updateResult.IsSuccess ? Severity.Success : Severity.Error);
             return;
         }
 

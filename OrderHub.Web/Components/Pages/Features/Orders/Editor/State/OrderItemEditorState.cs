@@ -16,6 +16,10 @@ public sealed class OrderItemEditorState
 
     public int? SupplierId { get; set; }
 
+    public int? PersistedSupplierId { get; init; }
+
+    public string? SupplierName { get; init; }
+
     public string? MetadataRestorationError { get; init; }
 
     public IReadOnlyList<OrderItemSupplierEditorState> Suppliers { get; init; } = [];
@@ -31,6 +35,8 @@ public sealed class OrderItemEditorState
         Quantity = Quantity,
         VatRate = VatRate,
         SupplierId = SupplierId,
+        PersistedSupplierId = PersistedSupplierId,
+        SupplierName = SupplierName,
         MetadataRestorationError = MetadataRestorationError,
         Suppliers = Suppliers.ToArray(),
         Properties = Properties.Select(property => new OrderItemPropertyEditorState

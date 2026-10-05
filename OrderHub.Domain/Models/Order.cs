@@ -138,6 +138,17 @@ public class Order : ModelBase
         _deliverySteps.Clear();
     }
 
+    public void ReplaceDetails(IReadOnlyCollection<OrderItem> items, IReadOnlyCollection<OrderDeliveryStep> steps)
+    {
+        // Materialize before changing either collection, including when the caller passes our own details.
+        var replacementItems = items.ToList();
+        var replacementSteps = steps.ToList();
+        _orderItems.Clear();
+        _orderItems.AddRange(replacementItems);
+        _deliverySteps.Clear();
+        _deliverySteps.AddRange(replacementSteps);
+    }
+
     public void ChangeOrderStatus(OrderStatus orderStatus)
     {
         OrderStatus = orderStatus;

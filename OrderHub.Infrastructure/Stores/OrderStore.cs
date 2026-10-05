@@ -112,14 +112,25 @@ internal class OrderStore : IOrderStore
             .Include(o => o.DeliverySteps)
             .SingleOrDefaultAsync(o => o.Id == orderId, cancellationToken);
 
-        if (order is null)
+        if (storedOrder is null)
         {
             return Result.Failure("الطلب غير موجود.");
         }
 
-        _orderWriteService.Update(appDbContext, storedOrder, order);
-        await appDbContext.SaveChangesAsync(cancellationToken);
-        return Result.Success();
+        if (order is null)
+            return Result.Failure("بيانات الطلب غير موجودة.");
+        try
+        {
+            var result = _orderWriteService.Update(appDbContext, storedOrder, order);
+            if (!result.IsSuccess)
+                return result;
+            await appDbContext.SaveChangesAsync(cancellationToken);
+            return Result.Success();
+        }
+        catch (DbUpdateException)
+        {
+            return Result.Failure("تعذر حفظ الطلب. تحقق من البيانات المحددة ثم حاول مرة أخرى.");
+        }
     }
 
     public async Task<Result> Delete(int orderId)
