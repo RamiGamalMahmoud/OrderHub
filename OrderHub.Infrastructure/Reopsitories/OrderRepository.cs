@@ -1,12 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using OrderHub.Application.Interfaces.Stores;
+using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Models;
 using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace OrderHub.Infrastructure.Stores;
+namespace OrderHub.Infrastructure.Reopsitories;
 
 internal class OrderRepository : IOrderRepository
 {

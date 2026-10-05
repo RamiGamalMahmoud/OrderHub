@@ -1,10 +1,10 @@
 ﻿using MediatR;
 using OrderHub.Application.Interfaces;
-using OrderHub.Application.Interfaces.Stores;
 using System;
 using OrderHub.Domain.Common;
 using System.Threading;
 using System.Threading.Tasks;
+using OrderHub.Application.Interfaces.Repositories;
 
 namespace OrderHub.Application.Features.Orders.Delete;
 

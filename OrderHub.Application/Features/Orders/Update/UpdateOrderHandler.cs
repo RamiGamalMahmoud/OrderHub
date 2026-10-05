@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Interfaces;
-using OrderHub.Application.Interfaces.Stores;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using OrderHub.Domain.Enums;
@@ -10,6 +9,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using OrderHub.Application.Interfaces.Repositories;
 
 namespace OrderHub.Application.Features.Orders.Update;
 

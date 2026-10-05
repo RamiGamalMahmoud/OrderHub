@@ -1,6 +1,6 @@
 ﻿using MediatR;
 using OrderHub.Application.Interfaces;
-using OrderHub.Application.Interfaces.Stores;
+using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using System.Threading;
