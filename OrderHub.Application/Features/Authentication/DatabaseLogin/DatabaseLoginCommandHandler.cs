@@ -26,7 +26,7 @@ internal class DatabaseLoginCommandHandler : IRequestHandler<DatabaseLoginComman
     {
         User user = await _userRepository.GetByUsernameAsync(request.UserName);
 
-        if (user is null)
+        if (user is null || !user.IsActive)
             return Result<UserSession>.Failure("بيانات تسجيل الدخول غير صحيحة.");
 
         if (!_hashShervice.Verify(request.Password, user.PasswordHash))
