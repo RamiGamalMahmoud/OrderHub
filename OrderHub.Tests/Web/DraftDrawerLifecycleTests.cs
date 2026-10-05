@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
+using OrderHub.Application.Features.OrderDrafts.List;
+using OrderHub.Application.Interfaces;
+using System.Threading;
 using OrderHub.Web.Components.Pages.Features.Orders;
 
 namespace OrderHub.Tests.Web;
@@ -14,26 +17,26 @@ public class DraftDrawerLifecycleTests
     [Fact]
     public async Task Closed_drawer_does_not_load_and_each_reopen_refreshes()
     {
-        var service = new Mock<IDraftService>();
-        service.Setup(x => x.GetAllAsync()).ReturnsAsync(Array.Empty<OrderDraftSummary>());
+        var service = new Mock<IRequestExecutor>();
+        service.Setup(x => x.ExecuteAsync(It.IsAny<GetDraftListQuery>(), It.IsAny<CancellationToken>())).ReturnsAsync(Array.Empty<OrderDraftSummary>());
         using var drawer = Create(service);
         await Parameters(drawer);
-        service.Verify(x => x.GetAllAsync(), Times.Never);
+        service.Verify(x => x.ExecuteAsync(It.IsAny<GetDraftListQuery>(), It.IsAny<CancellationToken>()), Times.Never);
         drawer.IsOpen = true;
         await Parameters(drawer);
         await Parameters(drawer);
-        service.Verify(x => x.GetAllAsync(), Times.Once);
+        service.Verify(x => x.ExecuteAsync(It.IsAny<GetDraftListQuery>(), It.IsAny<CancellationToken>()), Times.Once);
         drawer.IsOpen = false;
         await Parameters(drawer);
         drawer.IsOpen = true;
         await Parameters(drawer);
-        service.Verify(x => x.GetAllAsync(), Times.Exactly(2));
+        service.Verify(x => x.ExecuteAsync(It.IsAny<GetDraftListQuery>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
     [Fact]
     public async Task Close_notifies_parent_instead_of_overwriting_parameter()
     {
-        using var drawer = Create(new Mock<IDraftService>());
+        using var drawer = Create(new Mock<IRequestExecutor>());
         drawer.IsOpen = true;
         bool? requested = null;
         drawer.IsOpenChanged = EventCallback.Factory.Create<bool>(new object(), value => requested = value);
@@ -45,8 +48,8 @@ public class DraftDrawerLifecycleTests
     [Fact]
     public async Task Read_failure_is_contained_and_retry_succeeds()
     {
-        var service = new Mock<IDraftService>();
-        service.SetupSequence(x => x.GetAllAsync())
+        var service = new Mock<IRequestExecutor>();
+        service.SetupSequence(x => x.ExecuteAsync(It.IsAny<GetDraftListQuery>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new TimeoutException())
             .ReturnsAsync(Array.Empty<OrderDraftSummary>());
         using var drawer = Create(service);
@@ -62,24 +65,24 @@ public class DraftDrawerLifecycleTests
     public async Task Pending_refresh_is_serialized_and_disposal_rejects_late_results()
     {
         var pending = new TaskCompletionSource<System.Collections.Generic.IReadOnlyList<OrderDraftSummary>>();
-        var service = new Mock<IDraftService>();
-        service.Setup(x => x.GetAllAsync()).Returns(pending.Task);
+        var service = new Mock<IRequestExecutor>();
+        service.Setup(x => x.ExecuteAsync(It.IsAny<GetDraftListQuery>(), It.IsAny<CancellationToken>())).Returns(pending.Task);
         using var drawer = Create(service);
         drawer.IsOpen = true;
         var load = Parameters(drawer);
         await drawer.RefreshAsync();
-        service.Verify(x => x.GetAllAsync(), Times.Once);
+        service.Verify(x => x.ExecuteAsync(It.IsAny<GetDraftListQuery>(), It.IsAny<CancellationToken>()), Times.Once);
         drawer.Dispose();
         pending.SetResult(new[] { new OrderDraftSummary(Guid.NewGuid(), "Late", 1, DateTime.UtcNow) });
         await load;
         Assert.Empty((System.Collections.Generic.IReadOnlyList<OrderDraftSummary>)Field(drawer, "_drafts"));
-        service.Verify(x => x.GetAllAsync(), Times.Once);
+        service.Verify(x => x.ExecuteAsync(It.IsAny<GetDraftListQuery>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    private static OrderDrafts Create(Mock<IDraftService> service)
+    private static OrderDrafts Create(Mock<IRequestExecutor> service)
     {
         var drawer = new OrderDrafts();
-        typeof(OrderDrafts).GetProperty("DraftService", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(drawer, service.Object);
+        typeof(OrderDrafts).GetProperty("RequestExecutor", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(drawer, service.Object);
         typeof(OrderDrafts).GetProperty("Logger", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(drawer, NullLogger<OrderDrafts>.Instance);
         return drawer;
     }

@@ -1,6 +1,8 @@
 ﻿@using OrderHub.Application.Features.OrderDrafts.Contracts
 @using OrderHub.Application.Interfaces
-@inject IDraftService DraftService
+@using OrderHub.Application.Features.OrderDrafts.List
+@using OrderHub.Application.Features.OrderDrafts.Delete
+@inject IRequestExecutor RequestExecutor
 @inject IDialogService DialogService
 @inject ILogger<OrderDrafts> Logger
 @implements IDisposable
@@ -160,7 +162,7 @@
                 var version = ++_loadVersion;
                 try
                 {
-                    var drafts = await DraftService.GetAllAsync();
+                    var drafts = await RequestExecutor.ExecuteAsync(new GetDraftListQuery());
                     if (!_disposed && IsOpen && version == _loadVersion)
                         _drafts = drafts;
                 }
@@ -190,7 +192,9 @@
                 "حذف مسودة", "هل تريد حذف هذه المسودة؟", yesText: "نعم", cancelText: "لا");
             if (result is true && !_disposed)
             {
-                await DraftService.DeleteAsync(new DraftContext(draftId));
+                var deleteResult = await RequestExecutor.ExecuteAsync(new DeleteDraftCommand(draftId));
+                if (!deleteResult.IsSuccess)
+                    throw new InvalidOperationException(deleteResult.ErrorMessage);
                 _refreshPending = true;
             }
         }

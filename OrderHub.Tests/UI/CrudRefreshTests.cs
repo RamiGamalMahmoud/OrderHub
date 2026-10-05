@@ -3,6 +3,9 @@ using MediatR;
 using Moq;
 using OrderHub.Application.DTOs;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
+using OrderHub.Application.Features.OrderDrafts.List;
+using OrderHub.Application.Interfaces;
+using System.Threading;
 using OrderHub.Application.Queries;
 using OrderHub.UI.Features.Orders.Index;
 using OrderHub.UI.Messaging;
@@ -47,8 +50,8 @@ public class CrudRefreshTests
     [Fact]
     public async Task DraftDeletionReloadsTheDrawerFromTheService()
     {
-        var drafts = new Mock<IDraftService>();
-        drafts.Setup(x => x.GetAllAsync()).ReturnsAsync(Array.Empty<OrderDraftSummary>());
+        var drafts = new Mock<IRequestExecutor>();
+        drafts.Setup(x => x.ExecuteAsync(It.IsAny<GetDraftListQuery>(), It.IsAny<CancellationToken>())).ReturnsAsync(Array.Empty<OrderDraftSummary>());
         var viewModel = new OrderDraftsDrawerViewModel(drafts.Object);
         try
         {
@@ -57,7 +60,7 @@ public class CrudRefreshTests
 
             WeakReferenceMessenger.Default.Send(new OrdersMessages.OrderDraftDeletedMessage(Guid.NewGuid()));
 
-            drafts.Verify(x => x.GetAllAsync(), Times.Once);
+            drafts.Verify(x => x.ExecuteAsync(It.IsAny<GetDraftListQuery>(), It.IsAny<CancellationToken>()), Times.Once);
             Assert.Empty(viewModel.Drafts);
             Assert.False(viewModel.IsLoading);
         }

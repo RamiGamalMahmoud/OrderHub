@@ -31,6 +31,8 @@
                 </MudText>
             </div>
 
+            <MudSpacer />
+
             @if (CanShowDrafts)
             {
                 <MudButton Variant="Variant.Outlined"
@@ -40,6 +42,13 @@
                     المسودات
                 </MudButton>
             }
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Disabled="@(!CanSave)"
+                       OnClick="SaveAsync">
+                @(IsEdit ? "حفظ التعديلات" : "إنشاء الطلب")
+            </MudButton>
 
         </MudStack>
 
@@ -78,13 +87,6 @@
             }
 
         </MudPaper>
-
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   Disabled="@(!CanSave)"
-                   OnClick="SaveAsync">
-            @(IsEdit ? "حفظ التعديلات" : "إنشاء الطلب")
-        </MudButton>
 
         @if (ValidationErrors.Count > 0)
         {

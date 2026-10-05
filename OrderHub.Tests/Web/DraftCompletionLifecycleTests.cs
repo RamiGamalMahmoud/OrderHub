@@ -8,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 using MudBlazor;
 using OrderHub.Application.Context;
+using OrderHub.Application.Features.OrderDrafts.Save;
+using OrderHub.Application.Features.OrderDrafts.Get;
+using OrderHub.Application.Features.OrderDrafts.List;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Application.Features.Orders;
 using OrderHub.Application.Features.Orders.Contracts;
@@ -135,14 +138,17 @@ public class DraftCompletionLifecycleTests
         State(editor, fixture.State());
         var started = new TaskCompletionSource();
         var release = new TaskCompletionSource();
-        var store = new Mock<IDraftStore>();
-        store.Setup(s => s.SaveAsync(It.IsAny<Draft>())).Returns(async (Draft draft) =>
+        var executor = new Mock<IRequestExecutor>();
+        executor.Setup(s => s.ExecuteAsync(It.IsAny<SaveDraftCommand>(), It.IsAny<CancellationToken>())).Returns(async (SaveDraftCommand command, CancellationToken _) =>
         {
             started.SetResult();
             await release.Task;
-            await fixture.Store.SaveAsync(draft);
+            await fixture.Store.SaveAsync(new Draft(command.DraftId, 11, DateTime.UtcNow, command.Data));
+            return Result.Success();
         });
-        Service(editor, "DraftStore", store.Object);
+        executor.Setup(e => e.ExecuteAsync(It.IsAny<CreateOrderCommand>(), It.IsAny<CancellationToken>()))
+            .Returns((CreateOrderCommand command, CancellationToken _) => fixture.Create(command));
+        Service(editor, "RequestExecutor", executor.Object);
         var autosave = Invoke(editor, "SaveDraft");
         await started.Task;
         var create = Invoke(editor, "SaveAsync");
@@ -154,7 +160,7 @@ public class DraftCompletionLifecycleTests
         Assert.Equal(id, fixture.LastCreate.OrderDraftId);
         Assert.Null(await fixture.Store.GetAsync(id, 11));
         await Invoke(editor, "SaveDraft");
-        store.Verify(s => s.SaveAsync(It.IsAny<Draft>()), Times.Once());
+        executor.Verify(s => s.ExecuteAsync(It.IsAny<SaveDraftCommand>(), It.IsAny<CancellationToken>()), Times.Once());
     }
 
     [Fact]
@@ -168,6 +174,8 @@ public class DraftCompletionLifecycleTests
         var id = (Guid)Field(editor, "_sessionId");
         var failing = new Mock<IRequestExecutor>();
         failing.Setup(e => e.ExecuteAsync(It.IsAny<CreateOrderCommand>(), It.IsAny<CancellationToken>())).ReturnsAsync(Result<int>.Failure("Rejected"));
+        failing.Setup(e => e.ExecuteAsync(It.IsAny<SaveDraftCommand>(), It.IsAny<CancellationToken>()))
+            .Returns((SaveDraftCommand command, CancellationToken _) => fixture.Save(command));
         Service(editor, "RequestExecutor", failing.Object);
         var state = GetState(editor);
         await Invoke(editor, "SaveAsync");
@@ -221,7 +229,7 @@ public class DraftCompletionLifecycleTests
         private readonly SqliteConnection _connection = new("Filename=:memory:;Foreign Keys=False");
         private readonly Mock<ICurrentUser> _user = new();
         private readonly int _productId;
-        public DatabaseDraftStore Store { get; }
+        public DraftAccess Store { get; }
         public Mock<IRequestExecutor> Executor { get; } = new();
         public CreateOrderCommand LastCreate { get; private set; }
         public Fixture() : base("")
@@ -233,10 +241,14 @@ public class DraftCompletionLifecycleTests
             db.Products.Add(product);
             db.SaveChanges();
             _productId = product.Id;
-            Store = new DatabaseDraftStore(this);
+            Store = new DraftAccess(this);
             _user.Setup(u => u.GetUserIdAsync(It.IsAny<CancellationToken>())).ReturnsAsync(11);
             Executor.Setup(e => e.ExecuteAsync(It.IsAny<CreateOrderCommand>(), It.IsAny<CancellationToken>()))
                 .Returns((CreateOrderCommand command, CancellationToken _) => Create(command));
+            Executor.Setup(e => e.ExecuteAsync(It.IsAny<SaveDraftCommand>(), It.IsAny<CancellationToken>()))
+                .Returns((SaveDraftCommand command, CancellationToken _) => Save(command));
+            Executor.Setup(e => e.ExecuteAsync(It.IsAny<GetDraftQuery>(), It.IsAny<CancellationToken>()))
+                .Returns((GetDraftQuery query, CancellationToken _) => Store.GetAsync(query.DraftId, 11));
             Executor.Setup(e => e.ExecuteAsync(It.IsAny<GetOrderItemEditor.Query>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new GetOrderItemEditor.OrderItemEditorDto(_productId, 10, "Product", "Category", [], []));
         }
@@ -249,11 +261,8 @@ public class DraftCompletionLifecycleTests
         public OrderEditor Editor()
         {
             var editor = new OrderEditor();
-            Service(editor, "CurrentUser", _user.Object);
-            Service(editor, "DraftStore", Store);
             Service(editor, "RequestExecutor", Executor.Object);
             Service(editor, "Snackbar", new Mock<ISnackbar>().Object);
-            typeof(OrderEditor).GetField("_userId", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(editor, 11);
             return editor;
         }
         public async Task<Result<int>> Create(CreateOrderCommand command, IProformaInvoiceRepository proforma = null)
@@ -263,6 +272,23 @@ public class DraftCompletionLifecycleTests
             var handler = new CreateOrderCommandHandler(new OrderRepository(db), new UnitOfWork(db),
                 new QuotationRepository(db), proforma ?? new ProformaInvoiceRepository(db), _user.Object, new DraftRepository(db));
             return await handler.Handle(command, default);
+        }
+        public async Task<Result> Save(SaveDraftCommand command)
+        {
+            using var db = CreateDbContext();
+            return await new SaveDraftCommandHandler(_user.Object, new DraftRepository(db), new UnitOfWork(db)).Handle(command, default);
+        }
+        public sealed class DraftAccess(Fixture fixture)
+        {
+            public async Task SaveAsync(Draft draft)
+            {
+                var result = await fixture.Save(new SaveDraftCommand(draft.Id, draft.Data));
+                if (!result.IsSuccess) throw new InvalidOperationException(result.ErrorMessage);
+            }
+            public Task<Draft> GetAsync(Guid id, int userId) => new GetDraftQueryHandler(
+                fixture._user.Object, new DraftReadService(fixture)).Handle(new(id), default);
+            public Task<System.Collections.Generic.IReadOnlyList<OrderDraftSummary>> GetUserDraftsAsync(int userId) =>
+                new GetDraftListQueryHandler(fixture._user.Object, new DraftReadService(fixture)).Handle(new(), default);
         }
         public async Task Documents(Guid draftId)
         {

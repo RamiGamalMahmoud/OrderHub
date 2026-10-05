@@ -6,6 +6,8 @@ using OrderHub.Application.Common.Extensions;
 using OrderHub.Application.Features.Documents.ProformaInvoices;
 using OrderHub.Application.Features.Documents.Quotations;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
+using OrderHub.Application.Features.OrderDrafts.Save;
+using OrderHub.Application.Features.OrderDrafts.Get;
 using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Features.Orders.Create;
 using OrderHub.Application.Features.Orders.Queries;
@@ -27,8 +29,7 @@ namespace OrderHub.UI.Features.Orders.Create;
 
 internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
 {
-    private readonly IDraftService _draftService;
-    private DraftContext _draftContext;
+    private Guid _draftSessionId;
     private CancellationTokenSource _draftSaveCancellation;
     private readonly IRequestExecutor _requestExecutor;
 
@@ -36,14 +37,12 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
         IMediator mediator,
         IProductStore productStore,
         ILookupService lookupService,
-        IDraftService draftService,
         IRequestExecutor requestExecutor)
         : base(
             mediator,
             productStore,
             lookupService)
     {
-        _draftService = draftService;
         HasChanges = true;
         _requestExecutor = requestExecutor;
 
@@ -71,9 +70,9 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
 
     public Task Initialize(object parameter)
     {
-        _draftContext = parameter is Guid draftId
-            ? new DraftContext(draftId)
-            : new DraftContext(Guid.NewGuid());
+        _draftSessionId = parameter is Guid draftId
+            ? draftId
+            : Guid.NewGuid();
         return Task.CompletedTask;
     }
 
@@ -84,7 +83,7 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
     private async Task CreateQuotation()
     {
         CreateQuotationCommand.QuotationData quotation = new CreateQuotationCommand.QuotationData(
-            _draftContext.Id,
+            _draftSessionId,
             PartyPanel.SelectedClient.Name,
             PartyPanel.SelectedClient.PhoneNumber,
             PartyPanel.SelectedClient.Address,
@@ -112,7 +111,7 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
     private async Task CreateProformaIncoid()
     {
         CreateProformaInvoiceCommand.ProformaInvoiceData data = new CreateProformaInvoiceCommand.ProformaInvoiceData(
-            _draftContext.Id,
+            _draftSessionId,
             PartyPanel.SelectedClient.Name,
             PartyPanel.SelectedClient.PhoneNumber,
             PartyPanel.SelectedClient.Address,
@@ -146,7 +145,7 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
     {
         await base.AfterLoadAsync();
 
-        Draft draft = await _draftService.GetAsync(_draftContext);
+        Draft draft = await _requestExecutor.ExecuteAsync(new GetDraftQuery(_draftSessionId));
 
         if (draft is null)
             return;
@@ -181,8 +180,8 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
         var order = BuildOrder();
 
         Result<int> result =
-            await _mediator.Send(
-                new CreateOrderCommand.Command(_draftContext.Id, new OrderInput.Order(
+            await _requestExecutor.ExecuteAsync(
+                new CreateOrderCommand(_draftSessionId, new OrderInput.Order(
                     order.ClientId,
                     SelectedOrderSource.OrderSource,
                     order.DeliveryMethod,
@@ -213,10 +212,9 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
             return;
         }
 
-        await _draftService.DeleteAsync(_draftContext);
 
         WeakReferenceMessenger.Default.Send(
-            new OrdersMessages.OrderDraftDeletedMessage(_draftContext.Id));
+            new OrdersMessages.OrderDraftDeletedMessage(_draftSessionId));
 
         HandleOrderSuccess(result.Value);
 
@@ -402,13 +400,13 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
     {
         OrderDraftData data = BuildDraftData();
 
-        await _draftService.SaveAsync(
-            _draftContext,
-            data);
+        var result = await _requestExecutor.ExecuteAsync(new SaveDraftCommand(_draftSessionId, data));
+        if (!result.IsSuccess)
+            throw new InvalidOperationException(result.ErrorMessage);
 
         WeakReferenceMessenger.Default.Send(
             new OrdersMessages.OrderDraftSavedMessage(
-                _draftContext.Id));
+                _draftSessionId));
     }
 
     private OrderDraftData BuildDraftData()
@@ -416,6 +414,7 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
         return new OrderDraftData(
             PartyPanel.SelectedClient?.Id,
             PartyPanel.SelectedClient?.Name,
+            SelectedOrderSource?.OrderSource,
             PartyPanel.SelectedPaymentMethod?.Id,
             DeliveryMethodsViewModel.SelecteddDeliveryMethod?.Value,
             DeliveryMethodsViewModel.SelectedDeliveryman?.Id,

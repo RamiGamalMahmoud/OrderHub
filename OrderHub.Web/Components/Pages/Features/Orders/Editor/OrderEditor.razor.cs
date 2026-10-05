@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using MudBlazor;
-using OrderHub.Application.Context;
+using OrderHub.Application.Features.OrderDrafts.Save;
+using OrderHub.Application.Features.OrderDrafts.Get;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Features.Orders;
@@ -83,10 +84,7 @@ public partial class OrderEditor : IDisposable
                 step.Method,
                 step.HandlerId))
             .ToList());
-        var draft = new Draft(_sessionId,
-            _userId.Value,
-            DateTime.UtcNow,
-            orderDraftData);
+        var draft = new SaveDraftCommand(_sessionId, orderDraftData);
         var write = PersistDraftAsync(lifecycle, draft);
         lifecycle.PendingWrites.Add(write);
         try
@@ -99,10 +97,12 @@ public partial class OrderEditor : IDisposable
         }
     }
 
-    private async Task PersistDraftAsync(DraftLifecycle lifecycle, Draft draft)
+    private async Task PersistDraftAsync(DraftLifecycle lifecycle, SaveDraftCommand draft)
     {
-        await DraftStore!.SaveAsync(draft);
-        lifecycle.PersistedDraftId = draft.Id;
+        var result = await RequestExecutor!.ExecuteAsync(draft);
+        if (!result.IsSuccess)
+            throw new InvalidOperationException(result.ErrorMessage);
+        lifecycle.PersistedDraftId = draft.DraftId;
     }
 
     [Parameter]
@@ -112,28 +112,16 @@ public partial class OrderEditor : IDisposable
     private IRequestExecutor? RequestExecutor { get; set; }
 
     [Inject]
-    private IDraftStore? DraftStore { get; set; }
-
-    [Inject]
     private ISnackbar? Snackbar { get; set; }
-
-    [Inject]
-    private ICurrentUser? CurrentUser { get; set; }
 
     [Parameter]
     public Guid? DraftId { get; set; }
 
     private string _pageTitle = string.Empty;
-    private int? _userId;
 
     private bool IsEdit => OrderId.HasValue;
 
     private bool CanShowDrafts => !IsEdit;
-
-    protected override async Task OnInitializedAsync()
-    {
-        _userId = await CurrentUser!.GetUserIdAsync();
-    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -179,8 +167,7 @@ public partial class OrderEditor : IDisposable
 
     private async Task<OrderEditorState> LoadDraftAsync(Guid value)
     {
-        int? userId = await CurrentUser!.GetUserIdAsync();
-        var draft = await DraftStore!.GetAsync(value, userId.Value);
+        var draft = await RequestExecutor!.ExecuteAsync(new GetDraftQuery(value));
 
         OrderDraftData order = draft.Data;
 

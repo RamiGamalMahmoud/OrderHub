@@ -5,9 +5,11 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Moq;
+using OrderHub.Domain.Common;
+using OrderHub.Application.Features.OrderDrafts.Save;
+using OrderHub.Application.Features.OrderDrafts.Get;
 using Microsoft.AspNetCore.Components;
 using OrderHub.Application.Common.Lookups;
-using OrderHub.Application.Context;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Application.Features.Orders;
 using OrderHub.Application.Features.Setup.Properties.Get;
@@ -205,19 +207,18 @@ public class DraftRestorationTests
         executor ??= new Mock<IRequestExecutor>();
         if (!queryFails)
             executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderItemEditor.Query>(), It.IsAny<CancellationToken>())).ReturnsAsync(metadata);
-        var user = new Mock<ICurrentUser>();
-        user.Setup(x => x.GetUserIdAsync(It.IsAny<CancellationToken>())).ReturnsAsync(11);
         Draft saved = null;
-        var store = new Mock<IDraftStore>();
-        store.Setup(x => x.SaveAsync(It.IsAny<Draft>())).Callback<Draft>(draft =>
-            saved = JsonSerializer.Deserialize<Draft>(JsonSerializer.Serialize(draft))).Returns(Task.CompletedTask);
-        store.Setup(x => x.GetAsync(It.IsAny<Guid>(), 11)).ReturnsAsync(() => saved);
+        executor.Setup(x => x.ExecuteAsync(It.IsAny<SaveDraftCommand>(), It.IsAny<CancellationToken>()))
+            .Callback<MediatR.IRequest<Result>, CancellationToken>((request, _) =>
+            {
+                var command = (SaveDraftCommand)request;
+                saved = JsonSerializer.Deserialize<Draft>(JsonSerializer.Serialize(new Draft(command.DraftId, 11, DateTime.UtcNow, command.Data)));
+            })
+            .ReturnsAsync(Result.Success());
+        executor.Setup(x => x.ExecuteAsync(It.IsAny<GetDraftQuery>(), It.IsAny<CancellationToken>())).ReturnsAsync(() => saved);
         var editor = new OrderEditor();
-        SetService(editor, "CurrentUser", user.Object);
-        SetService(editor, "DraftStore", store.Object);
         SetService(editor, "RequestExecutor", executor.Object);
         typeof(OrderEditor).GetField("_state", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(editor, state);
-        typeof(OrderEditor).GetField("_userId", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(editor, 11);
         await (Task)Method("SaveDraft").Invoke(editor, null);
         return await (Task<OrderEditorState>)Method("LoadDraftAsync").Invoke(editor, new object[] { saved.Id });
     }

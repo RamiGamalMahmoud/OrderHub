@@ -1,9 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MediatR;
-using OrderHub.Application.Features.OrderDrafts.Contracts;
-using OrderHub.Application.Features.Orders.Queries;
 using OrderHub.Application.Interfaces;
+using OrderHub.Application.Features.Orders.Queries;
 using OrderHub.UI.Common;
 using OrderHub.UI.Features.Orders.Index.OrderDetailsPanel;
 using OrderHub.UI.Services;
@@ -26,13 +25,12 @@ internal partial class ViewModel : ObservableObject
 
     public ViewModel(
         IMediator mediator,
-        IDraftService draftService,
         IRequestExecutor requestExecutor)
     {
         _requestExecutor = requestExecutor;
 
         OrderDraftsDrawerViewModel =
-            new OrderDraftsDrawerViewModel(draftService);
+            new OrderDraftsDrawerViewModel(requestExecutor);
 
         OrderDetailsPanelViewModel =
             new OrderDetailsPanelViewModel(mediator);
