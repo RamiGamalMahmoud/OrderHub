@@ -19,20 +19,43 @@ internal sealed class RoleRepository : IRoleRepository
         int id,
         CancellationToken cancellationToken = default)
     {
-        return _dbContext.Set<Role>()
+        return _dbContext.Roles
             .Include(x => x.Permissions)
             .FirstOrDefaultAsync(
                 x => x.Id == id,
                 cancellationToken);
     }
 
+    public Task<bool> NameExistsAsync(
+        string name,
+        int? excludeRoleId = null,
+        CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Roles
+            .AnyAsync(
+                role =>
+                    role.Name == name &&
+                    (!excludeRoleId.HasValue || role.Id != excludeRoleId.Value),
+                cancellationToken);
+    }
+
+    public Task<bool> IsAssignedToUsersAsync(
+        int roleId,
+        CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Users
+            .AnyAsync(
+                user => user.RoleId == roleId,
+                cancellationToken);
+    }
+
     public void Add(Role role)
     {
-        _dbContext.Set<Role>().Add(role);
+        _dbContext.Roles.Add(role);
     }
 
     public void Remove(Role role)
     {
-        _dbContext.Set<Role>().Remove(role);
+        _dbContext.Roles.Remove(role);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using OrderHub.Application.Features.Administration.Users.GetUser;
 using OrderHub.Application.Features.Administration.Users.GetUsers;
 using System.Collections.Generic;
@@ -57,5 +58,15 @@ internal sealed class UserReadService :
                 user.Role != null ? user.Role.Name : null,
                 user.CreatedAt))
             .FirstOrDefaultAsync(cancellationToken);
+    }
+}
+
+internal static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddUserReadService(this IServiceCollection services)
+    {
+        services.AddTransient<IUserListingService, UserReadService>();
+        services.AddTransient<IUserDetailsService, UserReadService>();
+        return services;
     }
 }

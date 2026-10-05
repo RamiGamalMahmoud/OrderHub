@@ -21,4 +21,8 @@
 	  <ProjectReference Include="..\OrderHub.Domain\OrderHub.Domain.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Features\Administration\Roles\" />
+	</ItemGroup>
+
 </Project>
