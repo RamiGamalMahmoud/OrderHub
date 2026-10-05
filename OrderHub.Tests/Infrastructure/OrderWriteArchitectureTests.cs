@@ -15,7 +15,7 @@ using OrderHub.Application.Features.Orders.Create;
 using OrderHub.Application.Features.Orders.Delete;
 using OrderHub.Application.Features.Orders.Update;
 using OrderHub.Application.Interfaces;
-using OrderHub.Application.Interfaces.Stores;
+using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
@@ -24,7 +24,7 @@ using OrderHub.Domain.ValueObjects;
 using OrderHub.Infrastructure;
 using OrderHub.Infrastructure.DependencyInjection;
 using OrderHub.Infrastructure.Services;
-using OrderHub.Infrastructure.Stores;
+using OrderHub.Infrastructure.Reopsitories;
 
 namespace OrderHub.Tests.Infrastructure;
 

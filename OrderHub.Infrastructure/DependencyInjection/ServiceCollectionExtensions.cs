@@ -4,7 +4,6 @@ using OrderHub.Application.Features.Administration.Users.GetUsers;
 using OrderHub.Infrastructure.Features.Administration.Users;
 using OrderHub.Infrastructure.Features.OrderDrafts;
 using OrderHub.Infrastructure.Reopsitories;
-using System.Reflection;
 using OrderHub.Infrastructure.Features.Orders;
 using OrderHub.Infrastructure.Features.Products;
 using OrderHub.Infrastructure.Features.Setup;
@@ -15,8 +14,6 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
     {
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
-
         services.AddPersistence(connectionString);
         services.AddOrderReads();
         services.AddRepositories();

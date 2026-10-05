@@ -14,7 +14,7 @@ using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Features.Orders.Create;
 
 using OrderHub.Application.Interfaces;
-using OrderHub.Application.Interfaces.Stores;
+using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
@@ -22,7 +22,7 @@ using OrderHub.Domain.ValueObjects;
 using OrderHub.Infrastructure;
 using OrderHub.Infrastructure.Features.Orders;
 using OrderHub.Infrastructure.Services;
-using OrderHub.Infrastructure.Stores;
+using OrderHub.Infrastructure.Reopsitories;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor.State;
 

@@ -13,8 +13,6 @@ internal static class ServiceCollectionExtensions
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IQuotationRepository, QuotationRepository>();
         services.AddScoped<IProformaInvoiceRepository, ProformaInvoiceRepository>();
-        services.AddScoped<IDeliverymanRepository, DeliverymanRepository>();
-        services.AddScoped<ISupplierRepository, SupplierRepository>();
         return services;
     }
 }

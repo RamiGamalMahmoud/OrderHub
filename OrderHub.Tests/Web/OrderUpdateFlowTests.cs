@@ -19,7 +19,7 @@ using OrderHub.Domain.ValueObjects;
 using OrderHub.Infrastructure;
 using OrderHub.Infrastructure.Features.Orders;
 using OrderHub.Infrastructure.Services;
-using OrderHub.Infrastructure.Stores;
+using OrderHub.Infrastructure.Reopsitories;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor.State;
 
