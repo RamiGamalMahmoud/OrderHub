@@ -121,6 +121,9 @@
 
         Delivery.Method = value;
 
+        if (value is not DeliveryMethod.DeliveryChain)
+            Delivery.Steps.Clear();
+
         await Changed.InvokeAsync();
     }
 

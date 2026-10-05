@@ -147,7 +147,7 @@ public class Order : ModelBase
     {
         DeliveryMethod = deliveryMethod;
     }
-
+    public void ChangeOrderSource(OrderSource orderSource) => OrderSource = orderSource;
     public void ReturnToPending() => OrderStatus = OrderStatus.Pending;
     public void Ship() => OrderStatus = OrderStatus.Shipped;
     public void StartProcessing() => OrderStatus = OrderStatus.Processing;

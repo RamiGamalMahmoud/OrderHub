@@ -79,6 +79,36 @@
 
         </MudPaper>
 
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Disabled="@(!CanSave)"
+                   OnClick="SaveAsync">
+            @(IsEdit ? "حفظ التعديلات" : "إنشاء الطلب")
+        </MudButton>
+
+        @if (ValidationErrors.Count > 0)
+        {
+            <MudAlert Severity="Severity.Error"
+                      Variant="Variant.Outlined">
+
+                <MudStack Spacing="1">
+
+                    <MudText Typo="Typo.subtitle2">
+                        يرجى استكمال البيانات التالية:
+                    </MudText>
+
+                    @foreach (var error in ValidationErrors)
+                    {
+                        <MudText Typo="Typo.body2">
+                            • @error
+                        </MudText>
+                    }
+
+                </MudStack>
+
+            </MudAlert>
+        }
+
     </MudStack>
 
 </MudContainer>

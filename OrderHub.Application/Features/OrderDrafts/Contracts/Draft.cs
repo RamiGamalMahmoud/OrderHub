@@ -13,6 +13,7 @@ public record Draft(
 public sealed record OrderDraftData(
     int? ClientId,
     string ClientName,
+    OrderSource? OrderSource,
     int? PaymentMethodId,
     DeliveryMethod? DeliveryMethod,
     int? DeliverymanId,
@@ -38,4 +39,4 @@ public sealed record OrderDraftProperty(
 public sealed record OrderDraftDeliveryStep(
     int StepOrder,
     DeliveryMethod DeliveryMethod,
-    int HandlerId);
+    int? HandlerId);

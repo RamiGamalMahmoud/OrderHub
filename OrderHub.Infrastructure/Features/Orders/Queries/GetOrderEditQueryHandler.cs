@@ -38,6 +38,8 @@ internal class GetOrderEditQueryHandler(
 
             .Include(o => o.OrderItems)
                 .ThenInclude(item => item.Properties)
+                    .ThenInclude(itemProperty => itemProperty.Property)
+                        .ThenInclude(property => property.Options)
 
             .Include(o => o.DeliverySteps)
 
@@ -48,10 +50,15 @@ internal class GetOrderEditQueryHandler(
         if (order is null)
             return null;
 
+        return MapOrder(order);
+    }
+
+    internal static GetOrderEdit.Order MapOrder(Order order)
+    {
         return new GetOrderEdit.Order(
             order.Id,
             order.ClientId,
-            order.DeliveryMethod.Value,
+            order.DeliveryMethod,
             order.DeliverymanId,
             order.ShippingCarrierId,
             order.PaymentMethodId,
@@ -89,16 +96,31 @@ internal class GetOrderEditQueryHandler(
                                     option.Value)),
 
                             orderItemProperty?.Value);
-                    })
-                )),
+                    }).Concat(orderItem.Properties
+                        .Where(saved => !orderItem.Product.Properties.Any(current => current.PropertyId == saved.PropertyId))
+                        .Select(saved => new GetOrderEdit.Property(
+                            saved.PropertyId,
+                            saved.Property.Name,
+                            // There is no current product requirement for this removed association.
+                            // Its historical IsRequired flag is not persisted on the order.
+                            false,
+                            saved.Property.PropertyType,
+                            saved.Property.Options.Select(option => new GetOrderEdit.Option(option.Id, option.Value)),
+                            saved.Value))).ToList(),
+                    orderItem.VatRate
+                )).ToList(),
 
-            order.DeliverySteps.Select(deliveryStep =>
+            order.DeliverySteps.OrderBy(step => step.StepOrder).Select(deliveryStep =>
                 new GetOrderEdit.DeliveryStep(
                     deliveryStep.StepOrder,
                     deliveryStep.DeliveryMethod,
-                    deliveryStep.DeliveryMethod == DeliveryMethod.DeliveryMan
-                        ? deliveryStep.DeliverymanId ?? 0
-                        : deliveryStep.ShippingCarrierId ?? 0))
+                    deliveryStep.DeliveryMethod switch
+                    {
+                        DeliveryMethod.DeliveryMan => deliveryStep.DeliverymanId,
+                        DeliveryMethod.ShippingCompany => deliveryStep.ShippingCarrierId,
+                        _ => null
+                    })).ToList(),
+            order.OrderSource
         );
     }
 }

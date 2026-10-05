@@ -10,7 +10,7 @@ public sealed class OrderEditorState
 
     public OrderSource? OrderSource { get; set; }
 
-    public DeliveryEditorState Delivery { get; } = new();
+    public DeliveryEditorState Delivery { get; set; } = new();
 
-    public List<OrderItemEditorState> Items { get; } = [];
+    public List<OrderItemEditorState> Items { get; set; } = [];
 }

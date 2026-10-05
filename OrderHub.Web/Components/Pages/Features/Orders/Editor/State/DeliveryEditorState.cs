@@ -10,5 +10,5 @@ public sealed class DeliveryEditorState
 
     public int? ShippingCarrierId { get; set; }
 
-    public List<DeliveryStepEditorState> Steps { get; } = [];
+    public List<DeliveryStepEditorState> Steps { get; set; } = [];
 }

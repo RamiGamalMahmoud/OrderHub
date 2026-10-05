@@ -27,6 +27,7 @@ internal class OrderWriteService
             order,
             orderDetials.OrderItems,
             orderDetials.DeliverySteps);
+        order.ChangeOrderSource(orderDetials.OrderSource);
     }
 
     private static void ApplyHeader(

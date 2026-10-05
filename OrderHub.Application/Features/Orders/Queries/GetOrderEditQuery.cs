@@ -11,12 +11,13 @@ public static class GetOrderEdit
     public record Order(
         int Id,
         int ClientId,
-        DeliveryMethod DeliveryMethod,
+        DeliveryMethod? DeliveryMethod,
         int? DeliveryManId,
         int? ShippingCarrierId,
         int? PaymentMothodId,
         IEnumerable<OrderItem> OrderItems,
-        IEnumerable<DeliveryStep> DeliverySteps);
+        IEnumerable<DeliveryStep> DeliverySteps,
+        OrderSource? OrderSource = null);
 
     public record OrderItem(
         int ProductId,
@@ -27,12 +28,13 @@ public static class GetOrderEdit
         int? SupplierId,
         string SupplierName,
         IEnumerable<Supplier> Suppliers,
-        IEnumerable<Property> Properties);
+        IEnumerable<Property> Properties,
+        decimal VatRate = 0);
 
     public record DeliveryStep(
         int StepOrder,
         DeliveryMethod DeliveryMethod,
-        int HandlerId);
+        int? HandlerId);
 
     public record Supplier(int Id, string Name);
 
