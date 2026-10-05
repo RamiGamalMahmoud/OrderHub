@@ -225,7 +225,7 @@ public class OrderCreateFlowTests
                 new Mock<IQuotationRepository>(MockBehavior.Strict).Object,
                 new Mock<IProformaInvoiceRepository>(MockBehavior.Strict).Object,
                 new Mock<ICurrentUser>(MockBehavior.Strict).Object,
-                new Mock<IDraftStore>(MockBehavior.Strict).Object);
+                new Mock<IDraftRepository>(MockBehavior.Strict).Object);
             return await handler.Handle(new(null, input), default);
         }
         public async Task<OrderEditorState> State(DeliveryMethod method, bool withSupplier)

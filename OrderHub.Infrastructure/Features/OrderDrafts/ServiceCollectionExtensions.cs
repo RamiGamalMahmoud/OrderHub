@@ -9,6 +9,7 @@ internal static class ServiceCollectionExtensions
     {
         services.AddTransient<IDraftService, DraftService>();
         services.AddSingleton<IDraftStore, DatabaseDraftStore>();
+        services.AddScoped<IDraftRepository, DraftRepository>();
         return services;
     }
 }

@@ -4,7 +4,6 @@ using OrderHub.Application.Interfaces.Documents;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Infrastructure.Execution;
 using OrderHub.Infrastructure.Features.Documents;
-using OrderHub.Infrastructure.Orders;
 using OrderHub.Infrastructure.Services;
 using OrderHub.Infrastructure.Services.FilesAccess;
 
@@ -18,7 +17,6 @@ internal static class ServicesRegistration
         services.AddSingleton<IRequestExecutor, RequestExecutor>();
         services.AddSingleton<IPdfDocumentFactory, PdfDocumentFactory>();
         services.AddSingleton<ILocalFileAccessService, LocalFileAccessService>();
-        services.AddTransient<OrderWriteService>();
         services.AddSingleton<IApplicationDirectoriesService, ApplicationDirectoriesService>();
         services.AddSingleton<IAppLogger, FileAppLogger>();
         services.AddSingleton<IHashShervice, HashShervice>();

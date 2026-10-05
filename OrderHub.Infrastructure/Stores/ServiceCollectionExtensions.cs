@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Features.Orders;
 using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Interfaces.Repositories;
@@ -11,7 +10,6 @@ internal static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddStores(this IServiceCollection services)
     {
-        services.AddSingleton<IOrderStore, OrderStore>();
         services.AddSingleton<IPropertyStore, PropertyStore>();
         services.AddSingleton<IProductStore, ProductStore>();
         services.AddTransient<GetOrderItemEditor.IOrderItemEditorReader, OrderItemEditorReader>();

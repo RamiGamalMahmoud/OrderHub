@@ -18,16 +18,16 @@ namespace OrderHub.UI.Features.Orders.Edit;
 
 internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
 {
-    private readonly IOrderStore _orderStore;
+    private readonly IRequestExecutor _requestExecutor;
     private int _id;
 
     public ViewModel(
         IMediator mediator,
         IProductStore productStore,
-        IOrderStore orderStore,
+        IRequestExecutor requestExecutor,
         ILookupService lookupService) : base(mediator, productStore, lookupService)
     {
-        _orderStore = orderStore;
+        _requestExecutor = requestExecutor;
     }
 
     public override string ActionName => "حفظ التعديلات";
@@ -139,7 +139,7 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
 
     protected override async Task Save()
     {
-        Result result = await _orderStore.UpdateOrder(_id, BuildOrder());
+        Result result = await _requestExecutor.ExecuteAsync(new Application.Features.Orders.Update.UpdateOrderCommand(_id, BuildOrder()));
         if(result.IsSuccess)
         {
             WeakReferenceMessenger.Default.Send(new OrdersMessages.OrderUpdatedMessage(_id));

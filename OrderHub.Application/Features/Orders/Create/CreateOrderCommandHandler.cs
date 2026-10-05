@@ -22,7 +22,7 @@ internal class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, R
     private readonly IProformaInvoiceRepository _proformaInvoiceRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUser _currentUser;
-    private readonly IDraftStore _draftStore;
+    private readonly IDraftRepository _draftRepository;
 
     public CreateOrderCommandHandler(
         IOrderRepository orderRepository,
@@ -30,14 +30,14 @@ internal class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, R
         IQuotationRepository quotationRepository,
         IProformaInvoiceRepository proformaInvoiceRepository,
         ICurrentUser currentUser,
-        IDraftStore draftStore)
+        IDraftRepository draftRepository)
     {
         _orderRepository = orderRepository;
         _unitOfWork = unitOfWork;
         _quotationRepository = quotationRepository;
         _proformaInvoiceRepository = proformaInvoiceRepository;
         _currentUser = currentUser;
-        _draftStore = draftStore;
+        _draftRepository = draftRepository;
     }
 
     public async Task<Result<int>> Handle(
@@ -127,7 +127,6 @@ CancellationToken cancellationToken)
             if (request.OrderDraftId is Guid draftReference)
             {
                 int? userId = await _currentUser.GetUserIdAsync(cancellationToken);
-                await _draftStore.DeleteAsync(draftReference, userId.Value);
                 var quotations = await _quotationRepository.GetByDraftReference(
                     draftReference,
                     cancellationToken);
@@ -145,6 +144,7 @@ CancellationToken cancellationToken)
                 {
                     proformaInvoice.LinkToOrder(order);
                 }
+                await _draftRepository.StageDeleteAsync(draftReference, userId.Value, cancellationToken);
             }
 
             // 5. Save changes

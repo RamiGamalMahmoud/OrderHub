@@ -33,6 +33,23 @@ internal class OrderRepository : IOrderRepository
         _dbContext.Orders.Add(order);
     }
 
+    public Task<Order> GetForUpdateAsync(int orderId, CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Orders
+            .Include(order => order.OrderItems)
+                .ThenInclude(item => item.Properties)
+            .Include(order => order.DeliverySteps)
+            .SingleOrDefaultAsync(order => order.Id == orderId, cancellationToken);
+    }
+
+    public Task<Order> GetForDeleteAsync(int orderId, CancellationToken cancellationToken = default)
+    {
+        // Required order children cascade in the database; deletion has no graph-based checks.
+        return _dbContext.Orders.SingleOrDefaultAsync(order => order.Id == orderId, cancellationToken);
+    }
+
+    public void Remove(Order order) => _dbContext.Orders.Remove(order);
+
     public async Task<int> GetNextOrderNumberAsync(CancellationToken cancellationToken = default)
     {
         string pattern = $"%-{DateTime.Now:yyyy-MM-dd}-%";

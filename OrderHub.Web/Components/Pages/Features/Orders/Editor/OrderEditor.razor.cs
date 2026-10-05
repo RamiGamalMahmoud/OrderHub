@@ -12,7 +12,7 @@ using OrderHub.Web.Components.Pages.Features.Orders.Editor.State;
 
 namespace OrderHub.Web.Components.Pages.Features.Orders.Editor;
 
-public partial class OrderEditor
+public partial class OrderEditor : IDisposable
 {
     private bool _isDraftsOpen;
 
@@ -22,14 +22,27 @@ public partial class OrderEditor
 
     private IReadOnlyList<string> ValidationErrors => GetFinalValidationErrors(_state, IsEdit);
 
-    private bool CanSave => ValidationErrors.Count == 0;
+    private bool CanSave => !_draftLifecycle.IsClosed && ValidationErrors.Count == 0 &&
+        (IsEdit || (!_draftLifecycle.IsCompleting && !_draftLifecycle.IsCompleted));
 
     private long _changeVersion;
     private (int? OrderId, Guid? DraftId)? _routeIdentity;
     private Guid _sessionId;
+    private DraftLifecycle _draftLifecycle = new();
+
+    private sealed class DraftLifecycle
+    {
+        public Guid? PersistedDraftId { get; set; }
+        public bool IsCompleting { get; set; }
+        public bool IsCompleted { get; set; }
+        public bool IsClosed { get; set; }
+        public HashSet<Task> PendingWrites { get; } = [];
+    }
 
     private async Task OnEditorChanged()
     {
+        if (_draftLifecycle.IsClosed || _draftLifecycle.IsCompleted || _draftLifecycle.IsCompleting)
+            return;
         _changeVersion++;
 
         if (OrderId.HasValue)
@@ -40,6 +53,9 @@ public partial class OrderEditor
 
     private async Task SaveDraft()
     {
+        var lifecycle = _draftLifecycle;
+        if (IsEdit || lifecycle.IsClosed || lifecycle.IsCompleted || lifecycle.IsCompleting)
+            return;
         OrderDraftData orderDraftData = new OrderDraftData(
             _state.ClientId,
             _state.ClientName ?? "",
@@ -67,10 +83,26 @@ public partial class OrderEditor
                 step.Method,
                 step.HandlerId))
             .ToList());
-        await DraftStore.SaveAsync(new Draft(_sessionId,
+        var draft = new Draft(_sessionId,
             _userId.Value,
             DateTime.UtcNow,
-            orderDraftData));
+            orderDraftData);
+        var write = PersistDraftAsync(lifecycle, draft);
+        lifecycle.PendingWrites.Add(write);
+        try
+        {
+            await write;
+        }
+        finally
+        {
+            lifecycle.PendingWrites.Remove(write);
+        }
+    }
+
+    private async Task PersistDraftAsync(DraftLifecycle lifecycle, Draft draft)
+    {
+        await DraftStore!.SaveAsync(draft);
+        lifecycle.PersistedDraftId = draft.Id;
     }
 
     [Parameter]
@@ -110,6 +142,8 @@ public partial class OrderEditor
             return;
 
         _routeIdentity = identity;
+        _draftLifecycle.IsClosed = true;
+        _draftLifecycle = new DraftLifecycle();
         _state = new OrderEditorState();
         _changeVersion = 0;
         _activeStep = OrderEditorStep.Products;
@@ -127,11 +161,14 @@ public partial class OrderEditor
 
         if (DraftId.HasValue)
         {
-            _sessionId = DraftId.Value;
+            var draftId = DraftId.Value;
+            var lifecycle = _draftLifecycle;
+            _sessionId = draftId;
             _pageTitle = "استكمال طلب";
 
             // لاحقًا:
-            _state = await LoadDraftAsync(DraftId.Value);
+            _state = await LoadDraftAsync(draftId);
+            lifecycle.PersistedDraftId = draftId;
 
             return;
         }
@@ -461,17 +498,35 @@ public partial class OrderEditor
             return;
         }
 
-        // Create
-        var result = await RequestExecutor!.ExecuteAsync(new Application.Features.Orders.Create.CreateOrderCommand(DraftId, input));
-        if (result.IsSuccess)
+        var lifecycle = _draftLifecycle;
+        lifecycle.IsCompleting = true;
+        try
         {
-            Snackbar!.Add("تم إنشاء الطلب بنجاح.", Severity.Success);
+            // Drain writes already running before consuming their draft. No ordering between
+            // ordinary autosaves is imposed; new writes are blocked only during completion.
+            await Task.WhenAll(lifecycle.PendingWrites.ToArray());
+            if (lifecycle.IsClosed)
+                return;
+            var result = await RequestExecutor!.ExecuteAsync(new Application.Features.Orders.Create.CreateOrderCommand(
+                lifecycle.PersistedDraftId, input));
+            if (result.IsSuccess)
+                lifecycle.IsCompleted = true;
+            if (!lifecycle.IsClosed)
+                Snackbar!.Add(result.IsSuccess ? "تم إنشاء الطلب بنجاح." : result.ErrorMessage,
+                    result.IsSuccess ? Severity.Success : Severity.Error);
         }
-        else
+        catch (Exception exception)
         {
-            Snackbar!.Add(result.ErrorMessage, Severity.Error);
+            if (!lifecycle.IsClosed)
+                Snackbar!.Add(exception.Message, Severity.Error);
+        }
+        finally
+        {
+            lifecycle.IsCompleting = false;
         }
     }
+
+    public void Dispose() => _draftLifecycle.IsClosed = true;
 }
 
 public enum OrderEditorStep

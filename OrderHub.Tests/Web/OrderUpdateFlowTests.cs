@@ -17,7 +17,7 @@ using OrderHub.Domain.Models;
 using OrderHub.Domain.ValueObjects;
 using OrderHub.Infrastructure;
 using OrderHub.Infrastructure.Features.Orders.Queries;
-using OrderHub.Infrastructure.Orders;
+using OrderHub.Infrastructure.Services;
 using OrderHub.Infrastructure.Stores;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor.State;
@@ -38,7 +38,7 @@ public class OrderUpdateFlowTests
         var before = await fixture.Read(id);
         var editor = await Editor(before);
         var input = Build(editor);
-        var result = await new UpdateOrderHandler(fixture.Store).Handle(new(id, input), default);
+        var result = await fixture.UpdateOrder(id, input);
         Assert.True(result.IsSuccess, result.ErrorMessage);
         var after = await fixture.Read(id);
         Assert.Equal(before.ClientId, after.ClientId);
@@ -74,7 +74,7 @@ public class OrderUpdateFlowTests
         var editor = await Editor(await fixture.Read(id));
         Assert.Null(State(editor).OrderSource);
         State(editor).OrderSource = OrderSource.Salla;
-        Assert.True((await fixture.Store.UpdateOrder(id, Build(editor))).IsSuccess);
+        Assert.True((await fixture.UpdateOrder(id, Build(editor))).IsSuccess);
         Assert.Equal(OrderSource.Salla, (await fixture.Read(id)).OrderSource);
     }
 
@@ -104,7 +104,7 @@ public class OrderUpdateFlowTests
         // Also exercise store-level normalization against a caller supplying stale data.
         input = input with { DeliveryManId = 31, ShippingCarrierId = 32,
             DeliverySteps = input.DeliverySteps.Any() ? input.DeliverySteps : [new(1, DeliveryMethod.DeliveryMan, 51)] };
-        Assert.True((await fixture.Store.UpdateOrder(id, input)).IsSuccess);
+        Assert.True((await fixture.UpdateOrder(id, input)).IsSuccess);
         var after = await fixture.Read(id);
         Assert.Equal(method == DeliveryMethod.DeliveryMan ? (int?)31 : null, after.DeliveryManId);
         Assert.Equal(method == DeliveryMethod.ShippingCompany ? (int?)32 : null, after.ShippingCarrierId);
@@ -132,7 +132,8 @@ public class OrderUpdateFlowTests
         {
             var order = await db.Orders.Include(o => o.OrderItems).ThenInclude(i => i.Properties).Include(o => o.DeliverySteps).SingleAsync();
             var original = order.OrderItems.Single();
-            var result = new OrderWriteService().Update(db, order, input);
+            var result = await new UpdateOrderHandler(new OrderRepository(db), new UnitOfWork(db))
+                .Handle(new(id, input), default);
             Assert.False(result.IsSuccess);
             Assert.Equal(price == 0 ? "Unit price must be greater than zero." : "Quantity must be greater than zero.", result.ErrorMessage);
             Assert.Same(original, order.OrderItems.Single());
@@ -141,7 +142,7 @@ public class OrderUpdateFlowTests
             Assert.DoesNotContain(db.ChangeTracker.Entries(), e => e.State is EntityState.Deleted or EntityState.Added or EntityState.Modified);
             await db.SaveChangesAsync(); // Even a subsequent save cannot persist partial reconstruction.
         }
-        var failure = await fixture.Store.UpdateOrder(id, input);
+        var failure = await fixture.UpdateOrder(id, input);
         Assert.False(failure.IsSuccess);
         Assert.Equal(2, (await fixture.Read(id)).DeliverySteps.Count());
         Assert.Single((await fixture.Read(id)).OrderItems);
@@ -156,7 +157,7 @@ public class OrderUpdateFlowTests
         // The real mapped product_name column is required. Domain reconstruction permits null.
         input = input with { OrderSource = OrderSource.Salla,
             OrderItems = [input.OrderItems.Single() with { ProductName = null }] };
-        Assert.False((await fixture.Store.UpdateOrder(id, input)).IsSuccess);
+        Assert.False((await fixture.UpdateOrder(id, input)).IsSuccess);
         var after = await fixture.Read(id);
         Assert.Equal(OrderSource.Online, after.OrderSource);
         Assert.Equal("Saved product", after.OrderItems.Single().ProductName);
@@ -180,7 +181,7 @@ public class OrderUpdateFlowTests
         Assert.DoesNotContain(item.Suppliers, s => s.Id == item.SupplierId);
         var input = Build(editor);
         Assert.Equal("Historical supplier snapshot", input.OrderItems.Single().SupplierName);
-        Assert.True((await fixture.Store.UpdateOrder(id, input)).IsSuccess);
+        Assert.True((await fixture.UpdateOrder(id, input)).IsSuccess);
         item.SupplierId = item.Suppliers.Single().Id;
         Assert.Equal("Replacement supplier", Build(editor).OrderItems.Single().SupplierName);
         item.SupplierId = 98765;
@@ -231,7 +232,7 @@ public class OrderUpdateFlowTests
     {
         using var fixture = new Fixture();
         var id = await fixture.Seed(DeliveryMethod.Pickup, false);
-        Assert.False((await fixture.Store.UpdateOrder(id + 100, Build(await Editor(await fixture.Read(id))))).IsSuccess);
+        Assert.False((await fixture.UpdateOrder(id + 100, Build(await Editor(await fixture.Read(id))))).IsSuccess);
     }
 
     [Fact]
@@ -245,7 +246,7 @@ public class OrderUpdateFlowTests
         steps[1].StepOrder = 20;
         var input = Build(editor);
         Assert.Equal(new[] { 10, 20 }, input.DeliverySteps.Select(s => s.StepOrder));
-        Assert.True((await fixture.Store.UpdateOrder(id, input)).IsSuccess);
+        Assert.True((await fixture.UpdateOrder(id, input)).IsSuccess);
         Assert.Equal(new[] { 10, 20 }, (await fixture.Read(id)).DeliverySteps.Select(s => s.StepOrder));
         steps.Reverse();
         input = Build(editor);
@@ -279,17 +280,20 @@ public class OrderUpdateFlowTests
     private sealed class Fixture : AppDbContextFactory, IDisposable
     {
         private readonly SqliteConnection _connection = new("Filename=:memory:;Foreign Keys=False");
-        public OrderStore Store { get; }
         public Fixture() : base("")
         {
             _connection.Open();
             using var db = CreateDbContext();
             db.Database.EnsureCreated();
-            Store = new OrderStore(this, new OrderWriteService());
         }
         public override AppDbContext CreateDbContext() => new(new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite(_connection).UseSnakeCaseNamingConvention().Options);
         public Task<GetOrderEdit.Order> Read(int id) => new GetOrderEditQueryHandler(this).Handle(new(id), default);
+        public async Task<Result> UpdateOrder(int id, OrderInput.Order input)
+        {
+            using var db = CreateDbContext();
+            return await new UpdateOrderHandler(new OrderRepository(db), new UnitOfWork(db)).Handle(new(id, input), default);
+        }
         public async Task<int> Seed(DeliveryMethod method, bool supplier)
         {
             using var db = CreateDbContext();
