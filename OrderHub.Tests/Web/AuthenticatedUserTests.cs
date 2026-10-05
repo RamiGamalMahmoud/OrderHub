@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using OrderHub.Application;
 using OrderHub.Application.Context;
 using OrderHub.Application.Interfaces;
 using OrderHub.Web.Services;
@@ -110,10 +111,13 @@ public class AuthenticatedUserTests
     }
 
     [Fact]
-    public void Web_registration_explicitly_replaces_the_infrastructure_executor()
+    public void Production_registration_has_one_scoped_web_executor()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<IRequestExecutor, OrderHub.Infrastructure.Execution.RequestExecutor>();
+        services.AddApplication();
+        OrderHub.Infrastructure.DependencyInjection.ServiceCollectionExtensions.AddInfrastructure(
+            services, "Host=localhost;Database=registration_test;Username=test;Password=test");
+        Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IRequestExecutor));
         services.AddEditorServices();
         var executor = Assert.Single(services, descriptor => descriptor.ServiceType == typeof(IRequestExecutor));
         Assert.Equal(ServiceLifetime.Scoped, executor.Lifetime);
@@ -124,6 +128,16 @@ public class AuthenticatedUserTests
                 || descriptor.ServiceType == typeof(AuthenticatedUser))
                 Assert.Equal(ServiceLifetime.Scoped, descriptor.Lifetime);
         });
+        services.AddLogging();
+        services.AddScoped(_ => Provider(Principal(11, true)));
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        using var first = provider.CreateScope();
+        using var second = provider.CreateScope();
+        var resolved = first.ServiceProvider.GetRequiredService<IRequestExecutor>();
+        Assert.IsType<AuthenticatedRequestExecutor>(resolved);
+        Assert.Same(resolved, first.ServiceProvider.GetRequiredService<IRequestExecutor>());
+        Assert.NotSame(resolved, second.ServiceProvider.GetRequiredService<IRequestExecutor>());
+        Assert.Throws<InvalidOperationException>(() => provider.GetRequiredService<IRequestExecutor>());
     }
 
     private static ServiceCollection Services()

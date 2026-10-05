@@ -34,8 +34,8 @@ public class OrderDetailsTests
         Assert.Equal(7, state.ClientId);
     }
 
-    private static Task Invoke(DetailsStep component, string name, params object[] arguments) =>
-        (Task)typeof(DetailsStep).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic).Invoke(component, arguments);
+    private static Task Invoke(object component, string name, params object[] arguments) =>
+        (Task)component.GetType().GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic).Invoke(component, arguments);
 
     [Fact]
     public async Task Details_survive_section_recreation_and_only_changed_values_notify()
@@ -49,8 +49,10 @@ public class OrderDetailsTests
             await Invoke(details, "SetClientAsync", (int?)7);
             await Invoke(details, "SetPaymentAsync", (int?)8);
             await Invoke(details, "SetSourceAsync", (OrderSource?)OrderSource.Online);
-            await Invoke(details, "SetDeliveryAsync", (DeliveryMethod?)DeliveryMethod.DeliveryChain);
-            await Invoke(details, "AddStepAsync");
+            var delivery = new DeliverySection { Delivery = state.Delivery, Changed = callback };
+            var chain = new DeliveryChainEditor { Steps = state.Delivery.Steps, Changed = callback };
+            await Invoke(delivery, "OnDeliveryMethodChangedAsync", (DeliveryMethod?)DeliveryMethod.DeliveryChain);
+            await Invoke(chain, "AddStepAsync");
             Assert.Null(state.Delivery.Steps[0].HandlerId);
             Assert.Equal(5, notifications);
         }
@@ -76,16 +78,20 @@ public class OrderDetailsTests
         {
             State = state, DetailsChanged = EventCallback.Factory.Create(new object(), () => notifications++)
         };
-        await Invoke(details, "MoveStepAsync", first, -1);
+        var callback = details.DetailsChanged;
+        var chain = new DeliveryChainEditor { Steps = state.Delivery.Steps, Changed = callback };
+        var step = new DeliveryChainStep { Step = first, Changed = callback };
+        await Invoke(chain, "MoveStepAsync", first, -1);
         Assert.Equal(0, notifications);
-        await Invoke(details, "MoveStepAsync", first, 1);
+        await Invoke(chain, "MoveStepAsync", first, 1);
         Assert.Same(second, state.Delivery.Steps[0]);
         Assert.Equal(1, first.HandlerId);
-        await Invoke(details, "SetStepMethodAsync", first, DeliveryMethod.ShippingCompany);
+        await Invoke(step, "OnMethodChangedAsync", DeliveryMethod.ShippingCompany);
         Assert.Null(first.HandlerId);
-        await Invoke(details, "SetStepHandlerAsync", first, (int?)3);
-        await Invoke(details, "RemoveStepAsync", first);
-        await Invoke(details, "SetStepHandlerAsync", first, (int?)4);
+        await Invoke(step, "OnHandlerChangedAsync", (int?)3);
+        await Invoke(chain, "RemoveStepAsync", first);
+        await Invoke(chain, "MoveStepAsync", first, 1);
+        await Invoke(chain, "RemoveStepAsync", first);
         Assert.Equal(3, first.HandlerId);
         Assert.Equal(4, notifications);
         details.Dispose();

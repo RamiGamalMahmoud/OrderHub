@@ -2,7 +2,6 @@ using Microsoft.Extensions.DependencyInjection;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Documents;
 using OrderHub.Application.Interfaces.Services;
-using OrderHub.Infrastructure.Execution;
 using OrderHub.Infrastructure.Features.Documents;
 using OrderHub.Infrastructure.Services;
 using OrderHub.Infrastructure.Services.FilesAccess;
@@ -14,7 +13,6 @@ internal static class ServicesRegistration
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
         services.AddSingleton<IDatabaseService, DatabaseService>();
-        services.AddSingleton<IRequestExecutor, RequestExecutor>();
         services.AddSingleton<IPdfDocumentFactory, PdfDocumentFactory>();
         services.AddSingleton<ILocalFileAccessService, LocalFileAccessService>();
         services.AddSingleton<IApplicationDirectoriesService, ApplicationDirectoriesService>();

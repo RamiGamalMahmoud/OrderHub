@@ -17,7 +17,7 @@ public class ProductStoreTests
     public async Task Should_Add_Properties()
     {
         // Arrange
-        AppDbContextFactory factory = TestDb.CreateFactory();
+        using var factory = TestDb.CreateFactory();
 
         PropertyStore propertyStore = new PropertyStore(factory);
         ProductStore store = new ProductStore(factory);
@@ -68,7 +68,7 @@ public class ProductStoreTests
     public async Task Should_Update_Properties()
     {
         // Arrange
-        AppDbContextFactory factory = TestDb.CreateFactory();
+        using var factory = TestDb.CreateFactory();
 
         PropertyStore propertyStore = new PropertyStore(factory);
         ProductStore store = new ProductStore(factory);

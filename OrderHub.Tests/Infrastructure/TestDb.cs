@@ -1,23 +1,50 @@
 ﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Infrastructure;
+using System;
 
 namespace OrderHub.Tests.Infrastructure;
 
 internal static class TestDb
 {
-    public static AppDbContextFactory CreateFactory()
+    public static TestDbFactory CreateFactory() => new();
+}
+
+// One connection owns one isolated in-memory database for the lifetime of a test.
+internal sealed class TestDbFactory : AppDbContextFactory, IDisposable
+{
+    private readonly SqliteConnection _connection = new("Filename=:memory:");
+    private bool _disposed;
+
+    public TestDbFactory() : base("")
     {
-        var connection = new SqliteConnection("Filename=:memory:");
-        connection.Open();
+        try
+        {
+            _connection.Open();
+            using var context = CreateDbContext();
+            context.Database.EnsureCreated();
+        }
+        catch
+        {
+            _connection.Dispose();
+            throw;
+        }
+    }
 
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(connection)
-            .Options;
+    public override AppDbContext CreateDbContext()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(_connection)
+            .UseSnakeCaseNamingConvention()
+            .Options);
+    }
 
-        using var db = new AppDbContext(options);
-        db.Database.EnsureCreated();
-
-        return new AppDbContextFactory(options);
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+        _connection.Dispose();
+        _disposed = true;
     }
 }

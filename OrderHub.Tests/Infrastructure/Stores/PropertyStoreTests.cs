@@ -15,7 +15,8 @@ namespace OrderHub.Tests.Infrastructure.Stores
         [Fact]
         public async Task CreateAsync_Should_Save_Property()
         {
-            PropertyStore store = new PropertyStore(TestDb.CreateFactory());
+            using var factory = TestDb.CreateFactory();
+            PropertyStore store = new PropertyStore(factory);
             
             Property property = Property.Create(
                 "Property 1", 
@@ -34,7 +35,8 @@ namespace OrderHub.Tests.Infrastructure.Stores
         [Fact]
         public async Task UpdateAsync_Should_Update_Property()
         {
-            PropertyStore store = new PropertyStore(TestDb.CreateFactory());
+            using var factory = TestDb.CreateFactory();
+            PropertyStore store = new PropertyStore(factory);
 
             Property property = Property.Create(
                 "Property 1",

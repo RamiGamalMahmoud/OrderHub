@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 using Moq;
 using Microsoft.Extensions.Logging.Abstractions;
 using OrderHub.Application.Features.Orders;
+using OrderHub.Application.Features.Orders.Queries;
+using OrderHub.Application.Features.OrderDrafts.Get;
+using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Common;
@@ -33,7 +36,17 @@ public class OrderEditorSessionTests
     [Fact]
     public async Task Different_drafts_orders_and_return_to_create_start_distinct_sessions()
     {
+        var executor = new Mock<IRequestExecutor>();
+        executor.Setup(x => x.ExecuteAsync(It.IsAny<GetDraftQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((GetDraftQuery query, CancellationToken _) => new Draft(
+                query.DraftId, 11, DateTime.UtcNow,
+                new OrderDraftData(null, "", null, null, null, null, null, [], [])));
+        executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderEdit.Query>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((GetOrderEdit.Query query, CancellationToken _) =>
+                new GetOrderEdit.Order(query.OrderId, 7, null, null, null, null, [], []));
         var editor = new OrderEditor();
+        typeof(OrderEditor).GetProperty("RequestExecutor", BindingFlags.NonPublic | BindingFlags.Instance)
+            .SetValue(editor, executor.Object);
         await Parameters(editor);
         var previous = Field(editor, "_state");
         editor.DraftId = Guid.NewGuid();
