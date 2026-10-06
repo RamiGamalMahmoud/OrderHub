@@ -1,0 +1,616 @@
+﻿@page "/admin/users"
+@using Microsoft.AspNetCore.Authorization
+@using OrderHub.Application.Features.Administration.Users.GetUsers
+@using OrderHub.Application.Features.Administration.Users.ActivateUser
+@using OrderHub.Application.Features.Administration.Users.DeactivateUser
+@using OrderHub.Application.Interfaces
+@using OrderHub.Domain.Common
+@using MudBlazor
+
+@attribute [Authorize(Roles = "Admin")]
+
+@inject IRequestExecutor RequestExecutor
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>إدارة المستخدمين</PageTitle>
+
+<MudStack Spacing="3">
+
+    @* ============================================================
+       Header
+       ============================================================ *@
+
+    <MudStack Row
+              AlignItems="AlignItems.Center"
+              Justify="Justify.SpaceBetween">
+
+        <div>
+            <MudText Typo="Typo.h5">
+                إدارة المستخدمين
+            </MudText>
+
+            <MudText Typo="Typo.body2"
+                     Color="Color.Secondary">
+                إدارة حسابات المستخدمين والأدوار وحالة الحساب
+            </MudText>
+        </div>
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.PersonAdd"
+                   OnClick="CreateUser">
+            مستخدم جديد
+        </MudButton>
+
+    </MudStack>
+
+
+    @* ============================================================
+       Filters
+       ============================================================ *@
+
+    <MudPaper Outlined="true"
+              Class="pa-4">
+
+        <MudGrid Spacing="2">
+
+            <MudItem xs="12"
+                     md="5">
+
+                <MudTextField T="string"
+                              @bind-Value="_searchTerm"
+                              Placeholder="ابحث باسم المستخدم أو الاسم..."
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Immediate="true"
+                              Clearable="true"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search" />
+
+            </MudItem>
+
+            <MudItem xs="12"
+                     sm="6"
+                     md="3">
+
+                <MudSelect T="UserStatusFilter"
+                           @bind-Value="_statusFilter"
+                           Label="حالة الحساب"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense">
+
+                    <MudSelectItem Value="@UserStatusFilter.All">
+                        الكل
+                    </MudSelectItem>
+
+                    <MudSelectItem Value="@UserStatusFilter.Active">
+                        نشط
+                    </MudSelectItem>
+
+                    <MudSelectItem Value="@UserStatusFilter.Inactive">
+                        غير نشط
+                    </MudSelectItem>
+
+                </MudSelect>
+
+            </MudItem>
+
+            <MudItem xs="12"
+                     sm="6"
+                     md="4">
+
+                <MudSelect T="int?"
+                           @bind-Value="_roleId"
+                           Label="الدور"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Clearable="true">
+
+                    @foreach (var role in AvailableRoles)
+                    {
+                        <MudSelectItem T="int?"
+                                       Value="@role.Id">
+                            @role.Name
+                        </MudSelectItem>
+                    }
+
+                </MudSelect>
+
+            </MudItem>
+
+        </MudGrid>
+
+    </MudPaper>
+
+
+    @* ============================================================
+       Table
+       ============================================================ *@
+
+    <MudPaper Outlined="true">
+
+        <MudTable T="UserListItem"
+                  Items="FilteredUsers"
+                  Hover="true"
+                  Dense="false"
+                  Striped="true"
+                  Loading="_loading">
+
+            <ToolBarContent>
+
+                <MudText Typo="Typo.subtitle1">
+                    المستخدمون
+                </MudText>
+
+                <MudSpacer />
+
+                @if (!_loading)
+                {
+                    <MudText Typo="Typo.body2"
+                             Color="Color.Secondary">
+                        @FilteredUsers.Count مستخدم
+                    </MudText>
+                }
+
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                               Color="Color.Default"
+                               Disabled="_loading"
+                               OnClick="LoadAsync" />
+
+            </ToolBarContent>
+
+            <HeaderContent>
+
+                <MudTh>
+                    المستخدم
+                </MudTh>
+
+                <MudTh>
+                    الاسم
+                </MudTh>
+
+                <MudTh>
+                    الدور
+                </MudTh>
+
+                <MudTh>
+                    النوع
+                </MudTh>
+
+                <MudTh>
+                    الحالة
+                </MudTh>
+
+                <MudTh>
+                    تاريخ الإنشاء
+                </MudTh>
+
+                <MudTh Style="width:120px">
+                </MudTh>
+
+            </HeaderContent>
+
+            <RowTemplate>
+
+                <MudTd DataLabel="المستخدم">
+
+                    <MudStack Row
+                              AlignItems="AlignItems.Center"
+                              Spacing="2">
+
+                        <MudAvatar Size="Size.Small">
+                            <MudIcon Icon="@Icons.Material.Filled.Person"
+                                     Size="Size.Small" />
+                        </MudAvatar>
+
+                        <MudText Typo="Typo.body2">
+                            @context.UserName
+                        </MudText>
+
+                    </MudStack>
+
+                </MudTd>
+
+                <MudTd DataLabel="الاسم">
+                    @context.DisplayName
+                </MudTd>
+
+                <MudTd DataLabel="الدور">
+
+                    @if (context.RoleId.HasValue)
+                    {
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Variant="Variant.Outlined">
+                            @context.RoleName
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2"
+                                 Color="Color.Secondary">
+                            بدون دور
+                        </MudText>
+                    }
+
+                </MudTd>
+
+                <MudTd DataLabel="النوع">
+
+                    @if (context.IsAdmin)
+                    {
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Color="Color.Error"
+                                 Variant="Variant.Outlined"
+                                 Icon="@Icons.Material.Filled.AdminPanelSettings">
+                            مدير النظام
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2">
+                            مستخدم
+                        </MudText>
+                    }
+
+                </MudTd>
+
+                <MudTd DataLabel="الحالة">
+
+                    @if (context.IsActive)
+                    {
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Color="Color.Success"
+                                 Variant="Variant.Outlined">
+                            نشط
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Color="Color.Default"
+                                 Variant="Variant.Outlined">
+                            غير نشط
+                        </MudChip>
+                    }
+
+                </MudTd>
+
+                <MudTd DataLabel="تاريخ الإنشاء">
+                    @context.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd")
+                </MudTd>
+
+                <MudTd>
+
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert"
+                             Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight"
+                             TransformOrigin="Origin.TopRight">
+
+                        <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                     OnClick="@(() => EditUser(context.Id))">
+                            تعديل
+                        </MudMenuItem>
+
+                        @if (context.IsActive)
+                        {
+                            <MudMenuItem Icon="@Icons.Material.Filled.PersonOff"
+                                         OnClick="@(() => ConfirmDeactivateAsync(context))">
+                                تعطيل الحساب
+                            </MudMenuItem>
+                        }
+                        else
+                        {
+                            <MudMenuItem Icon="@Icons.Material.Filled.Person"
+                                         OnClick="@(() => ActivateAsync(context))">
+                                تفعيل الحساب
+                            </MudMenuItem>
+                        }
+
+                    </MudMenu>
+
+                </MudTd>
+
+            </RowTemplate>
+
+            <NoRecordsContent>
+
+                <MudStack AlignItems="AlignItems.Center"
+                          Class="pa-8"
+                          Spacing="2">
+
+                    <MudIcon Icon="@Icons.Material.Filled.PeopleOutline"
+                             Size="Size.Large"
+                             Color="Color.Secondary" />
+
+                    <MudText Typo="Typo.subtitle1">
+                        لا يوجد مستخدمون
+                    </MudText>
+
+                    <MudText Typo="Typo.body2"
+                             Color="Color.Secondary">
+
+                        @if (HasFilters)
+                        {
+                            <span>
+                                لا توجد نتائج مطابقة لمعايير البحث.
+                            </span>
+                        }
+                        else
+                        {
+                            <span>
+                                لم تتم إضافة مستخدمين بعد.
+                            </span>
+                        }
+
+                    </MudText>
+
+                </MudStack>
+
+            </NoRecordsContent>
+
+            <LoadingContent>
+
+                <MudStack AlignItems="AlignItems.Center"
+                          Class="pa-8"
+                          Spacing="2">
+
+                    <MudProgressCircular Indeterminate="true"
+                                         Color="Color.Primary" />
+
+                    <MudText Typo="Typo.body2"
+                             Color="Color.Secondary">
+                        جاري تحميل المستخدمين...
+                    </MudText>
+
+                </MudStack>
+
+            </LoadingContent>
+
+        </MudTable>
+
+    </MudPaper>
+
+</MudStack>
+
+
+@code {
+
+    private IReadOnlyList<UserListItem> _users = [];
+
+    private string? _searchTerm;
+
+    private UserStatusFilter _statusFilter = UserStatusFilter.All;
+
+    private int? _roleId;
+
+    private bool _loading;
+
+
+    // ============================================================
+    // Lifecycle
+    // ============================================================
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+
+    // ============================================================
+    // Data
+    // ============================================================
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _loading = true;
+
+            _users = await RequestExecutor.ExecuteAsync(
+                new GetUsersQuery());
+        }
+        catch (Exception)
+        {
+            Snackbar.Add(
+                "تعذر تحميل المستخدمين.",
+                Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+
+    // ============================================================
+    // Filtering
+    // ============================================================
+
+    private IReadOnlyList<UserListItem> FilteredUsers
+    {
+        get
+        {
+            IEnumerable<UserListItem> query = _users;
+
+            if (!string.IsNullOrWhiteSpace(_searchTerm))
+            {
+                string searchTerm = _searchTerm.Trim();
+
+                query = query.Where(user =>
+                    user.UserName.Contains(
+                        searchTerm,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    user.DisplayName.Contains(
+                        searchTerm,
+                        StringComparison.OrdinalIgnoreCase));
+            }
+
+            query = _statusFilter switch
+            {
+                UserStatusFilter.Active =>
+                    query.Where(user => user.IsActive),
+
+                UserStatusFilter.Inactive =>
+                    query.Where(user => !user.IsActive),
+
+                _ => query
+            };
+
+            if (_roleId.HasValue)
+            {
+                query = query.Where(
+                    user => user.RoleId == _roleId.Value);
+            }
+
+            return query.ToList();
+        }
+    }
+
+
+    private IReadOnlyList<RoleFilterItem> AvailableRoles =>
+        _users
+            .Where(user =>
+                user.RoleId.HasValue &&
+                !string.IsNullOrWhiteSpace(user.RoleName))
+            .GroupBy(user => user.RoleId!.Value)
+            .Select(group => new RoleFilterItem(
+                group.Key,
+                group.First().RoleName!))
+            .OrderBy(role => role.Name)
+            .ToList();
+
+
+    private bool HasFilters =>
+        !string.IsNullOrWhiteSpace(_searchTerm) ||
+        _statusFilter != UserStatusFilter.All ||
+        _roleId.HasValue;
+
+
+    // ============================================================
+    // Navigation
+    // ============================================================
+
+    private void CreateUser()
+    {
+        NavigationManager.NavigateTo(
+            "/admin/users/create");
+    }
+
+
+    private void EditUser(int userId)
+    {
+        NavigationManager.NavigateTo(
+            $"/admin/users/{userId}/edit");
+    }
+
+
+    // ============================================================
+    // Activate
+    // ============================================================
+
+    private async Task ActivateAsync(
+        UserListItem user)
+    {
+        try
+        {
+            Result result = await RequestExecutor.ExecuteAsync(
+                new ActivateUserCommand(user.Id));
+
+            if (!result.IsSuccess)
+            {
+                Snackbar.Add(
+                    result.ErrorMessage,
+                    Severity.Error);
+
+                return;
+            }
+
+            Snackbar.Add(
+                $"تم تفعيل حساب {user.DisplayName}.",
+                Severity.Success);
+
+            await LoadAsync();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add(
+                "تعذر تفعيل المستخدم.",
+                Severity.Error);
+        }
+    }
+
+
+    // ============================================================
+    // Deactivate
+    // ============================================================
+
+    private async Task ConfirmDeactivateAsync(
+        UserListItem user)
+    {
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
+            "تعطيل المستخدم",
+            $"هل تريد تعطيل حساب \"{user.DisplayName}\"؟",
+            yesText: "تعطيل",
+            cancelText: "إلغاء");
+
+        if (confirmed != true)
+            return;
+
+        await DeactivateAsync(user);
+    }
+
+
+    private async Task DeactivateAsync(
+        UserListItem user)
+    {
+        try
+        {
+            Result result = await RequestExecutor.ExecuteAsync(
+                new DeactivateUserCommand(user.Id));
+
+            if (!result.IsSuccess)
+            {
+                Snackbar.Add(
+                    result.ErrorMessage,
+                    Severity.Error);
+
+                return;
+            }
+
+            Snackbar.Add(
+                $"تم تعطيل حساب {user.DisplayName}.",
+                Severity.Success);
+
+            await LoadAsync();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add(
+                "تعذر تعطيل المستخدم.",
+                Severity.Error);
+        }
+    }
+
+
+    // ============================================================
+    // Local UI Types
+    // ============================================================
+
+    private enum UserStatusFilter
+    {
+        All,
+        Active,
+        Inactive
+    }
+
+
+    private sealed record RoleFilterItem(
+        int Id,
+        string Name);
+}

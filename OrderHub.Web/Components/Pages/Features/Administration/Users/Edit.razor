@@ -1,0 +1,540 @@
+﻿@page "/admin/users/{UserId:int}/edit"
+
+@using Microsoft.AspNetCore.Authorization
+@using MudBlazor
+@using OrderHub.Application.Features.Administration.Roles.GetRoles
+@using OrderHub.Application.Features.Administration.Users.GetUser
+@using OrderHub.Application.Features.Administration.Users.Update
+@using OrderHub.Application.Interfaces
+@using OrderHub.Domain.Common
+
+@attribute [Authorize(Roles = "Admin")]
+
+@inject IRequestExecutor RequestExecutor
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>تعديل المستخدم</PageTitle>
+
+<MudStack Spacing="3">
+
+    @* Header *@
+
+    <MudStack Row
+              AlignItems="AlignItems.Center"
+              Spacing="2">
+
+        <MudIconButton Icon="@Icons.Material.Filled.ArrowForward"
+                       Disabled="_saving"
+                       OnClick="GoBack" />
+
+        <div>
+            <MudText Typo="Typo.h5">
+                تعديل المستخدم
+            </MudText>
+
+            <MudText Typo="Typo.body2"
+                     Color="Color.Secondary">
+                تعديل بيانات المستخدم والدور وحالة الحساب
+            </MudText>
+        </div>
+
+    </MudStack>
+
+    @if (_loading)
+    {
+        <MudPaper Outlined="true"
+                  Class="pa-8">
+
+            <MudStack AlignItems="AlignItems.Center"
+                      Spacing="2">
+
+                <MudProgressCircular Indeterminate="true" />
+
+                <MudText Typo="Typo.body2"
+                         Color="Color.Secondary">
+                    جاري تحميل بيانات المستخدم...
+                </MudText>
+
+            </MudStack>
+
+        </MudPaper>
+    }
+    else if (!_found)
+    {
+        <MudAlert Severity="Severity.Error"
+                  Variant="Variant.Outlined">
+            المستخدم غير موجود.
+        </MudAlert>
+
+        <MudButton Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Filled.ArrowForward"
+                   OnClick="GoBack">
+            العودة إلى المستخدمين
+        </MudButton>
+    }
+    else
+    {
+        <MudForm @ref="_form"
+                 Model="_model"
+                 ValidationDelay="0">
+
+            <MudStack Spacing="3">
+
+                @* ==================================================
+                   User information
+                   ================================================== *@
+
+                <MudPaper Outlined="true"
+                          Class="pa-4">
+
+                    <MudStack Spacing="3">
+
+                        <div>
+                            <MudText Typo="Typo.h6">
+                                بيانات المستخدم
+                            </MudText>
+
+                            <MudText Typo="Typo.body2"
+                                     Color="Color.Secondary">
+                                البيانات الأساسية الخاصة بالحساب
+                            </MudText>
+                        </div>
+
+                        <MudDivider />
+
+                        <MudGrid Spacing="3">
+
+                            <MudItem xs="12"
+                                     md="6">
+
+                                <MudTextField T="string"
+                                              @bind-Value="_model.UserName"
+                                              Label="اسم المستخدم"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Required="true"
+                                              RequiredError="اسم المستخدم مطلوب."
+                                              MaxLength="100"
+                                              Counter="100"
+                                              Immediate="true"
+                                              Disabled="_saving"
+                                              Adornment="Adornment.Start"
+                                              AdornmentIcon="@Icons.Material.Filled.AccountCircle" />
+
+                            </MudItem>
+
+                            <MudItem xs="12"
+                                     md="6">
+
+                                <MudTextField T="string"
+                                              @bind-Value="_model.DisplayName"
+                                              Label="الاسم"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Required="true"
+                                              RequiredError="الاسم مطلوب."
+                                              MaxLength="150"
+                                              Counter="150"
+                                              Immediate="true"
+                                              Disabled="_saving"
+                                              Adornment="Adornment.Start"
+                                              AdornmentIcon="@Icons.Material.Filled.Badge" />
+
+                            </MudItem>
+
+                        </MudGrid>
+
+                    </MudStack>
+
+                </MudPaper>
+
+                @* ==================================================
+                   Access
+                   ================================================== *@
+
+                <MudPaper Outlined="true"
+                          Class="pa-4">
+
+                    <MudStack Spacing="3">
+
+                        <div>
+                            <MudText Typo="Typo.h6">
+                                الصلاحيات والوصول
+                            </MudText>
+
+                            <MudText Typo="Typo.body2"
+                                     Color="Color.Secondary">
+                                تحديد دور المستخدم وحالة الحساب
+                            </MudText>
+                        </div>
+
+                        <MudDivider />
+
+                        <MudGrid Spacing="3">
+
+                            <MudItem xs="12"
+                                     md="6">
+
+                                <MudSelect T="int?"
+                                           @bind-Value="_model.RoleId"
+                                           Label="الدور"
+                                           Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
+                                           Clearable="true"
+                                           Disabled="_saving">
+
+                                    @foreach (RoleListItem role in _roles)
+                                    {
+                                        <MudSelectItem T="int?"
+                                                       Value="@role.Id">
+                                            @role.Name
+                                        </MudSelectItem>
+                                    }
+
+                                </MudSelect>
+
+                                <MudText Typo="Typo.caption"
+                                         Color="Color.Secondary"
+                                         Class="mt-1">
+                                    المستخدم بدون دور لا يحصل على صلاحيات الدور.
+                                </MudText>
+
+                            </MudItem>
+
+                            <MudItem xs="12"
+                                     md="6">
+
+                                <MudStack Spacing="1">
+
+                                    <MudSwitch T="bool"
+                                               @bind-Value="_model.IsAdmin"
+                                               Label="مدير النظام"
+                                               Color="Color.Error"
+                                               Disabled="_saving" />
+
+                                    <MudText Typo="Typo.caption"
+                                             Color="Color.Secondary">
+                                        مدير النظام يمتلك وصولًا كاملًا بغض النظر عن الدور.
+                                    </MudText>
+
+                                </MudStack>
+
+                            </MudItem>
+
+                            <MudItem xs="12">
+
+                                <MudSwitch T="bool"
+                                           @bind-Value="_model.IsActive"
+                                           Label="الحساب نشط"
+                                           Color="Color.Success"
+                                           Disabled="_saving" />
+
+                                <MudText Typo="Typo.caption"
+                                         Color="Color.Secondary">
+                                    تعطيل الحساب يمنع عمليات تسجيل الدخول الجديدة.
+                                </MudText>
+
+                            </MudItem>
+
+                        </MudGrid>
+
+                        @if (_model.IsAdmin)
+                        {
+                            <MudAlert Severity="Severity.Info"
+                                      Variant="Variant.Outlined"
+                                      Dense="true">
+
+                                المستخدم مدير للنظام ويمتلك وصولًا كاملًا
+                                بغض النظر عن الدور المحدد.
+
+                                @if (_model.RoleId.HasValue)
+                                {
+                                    <span>
+                                        سيظل الدور محفوظًا ويصبح مؤثرًا إذا أزيلت
+                                        صلاحية مدير النظام لاحقًا.
+                                    </span>
+                                }
+
+                            </MudAlert>
+                        }
+                        else if (!_model.RoleId.HasValue)
+                        {
+                            <MudAlert Severity="Severity.Warning"
+                                      Variant="Variant.Outlined"
+                                      Dense="true">
+                                هذا المستخدم لا يملك دورًا، وبالتالي لن يحصل على
+                                صلاحيات الميزات المحمية بنظام الصلاحيات.
+                            </MudAlert>
+                        }
+
+                    </MudStack>
+
+                </MudPaper>
+
+                @* ==================================================
+                   Account information
+                   ================================================== *@
+
+                <MudPaper Outlined="true"
+                          Class="pa-4">
+
+                    <MudStack Spacing="2">
+
+                        <MudText Typo="Typo.h6">
+                            معلومات الحساب
+                        </MudText>
+
+                        <MudDivider />
+
+                        <MudGrid>
+
+                            <MudItem xs="12"
+                                     sm="6">
+
+                                <MudText Typo="Typo.caption"
+                                         Color="Color.Secondary">
+                                    تاريخ إنشاء الحساب
+                                </MudText>
+
+                                <MudText Typo="Typo.body2">
+                                    @_createdAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")
+                                </MudText>
+
+                            </MudItem>
+
+                            <MudItem xs="12"
+                                     sm="6">
+
+                                <MudText Typo="Typo.caption"
+                                         Color="Color.Secondary">
+                                    رقم المستخدم
+                                </MudText>
+
+                                <MudText Typo="Typo.body2">
+                                    #@UserId
+                                </MudText>
+
+                            </MudItem>
+
+                        </MudGrid>
+
+                    </MudStack>
+
+                </MudPaper>
+
+                @* ==================================================
+                   Actions
+                   ================================================== *@
+
+                <MudStack Row
+                          Justify="Justify.FlexEnd"
+                          AlignItems="AlignItems.Center"
+                          Spacing="2">
+
+                    <MudButton Variant="Variant.Text"
+                               Disabled="_saving"
+                               OnClick="GoBack">
+                        إلغاء
+                    </MudButton>
+
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               Disabled="_saving"
+                               OnClick="SaveAsync">
+
+                        @if (_saving)
+                        {
+                            <MudProgressCircular Indeterminate="true"
+                                                 Size="Size.Small"
+                                                 Class="me-2" />
+
+                            <span>جاري الحفظ...</span>
+                        }
+                        else
+                        {
+                            <span>حفظ التعديلات</span>
+                        }
+
+                    </MudButton>
+
+                </MudStack>
+
+            </MudStack>
+
+        </MudForm>
+    }
+
+</MudStack>
+
+@code {
+
+    [Parameter]
+    public int UserId { get; set; }
+
+    private MudForm? _form;
+
+    private readonly UserFormModel _model = new();
+
+    private IReadOnlyList<RoleListItem> _roles = [];
+
+    private DateTime _createdAt;
+
+    private bool _loading = true;
+
+    private bool _saving;
+
+    private bool _found;
+
+
+    // ============================================================
+    // Lifecycle
+    // ============================================================
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+    }
+
+
+    // ============================================================
+    // Loading
+    // ============================================================
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _loading = true;
+            _found = false;
+
+            Task<GetUserResponse?> userTask =
+                RequestExecutor.ExecuteAsync(
+                    new GetUserQuery(UserId));
+
+            Task<IReadOnlyList<RoleListItem>> rolesTask =
+                RequestExecutor.ExecuteAsync(
+                    new GetRolesQuery());
+
+            await Task.WhenAll(
+                userTask,
+                rolesTask);
+
+            GetUserResponse? user = await userTask;
+
+            _roles = await rolesTask;
+
+            if (user is null)
+                return;
+
+            _model.UserName = user.UserName;
+            _model.DisplayName = user.DisplayName;
+            _model.IsActive = user.IsActive;
+            _model.IsAdmin = user.IsAdmin;
+            _model.RoleId = user.RoleId;
+
+            _createdAt = user.CreatedAt;
+
+            _found = true;
+        }
+        catch (Exception)
+        {
+            Snackbar.Add(
+                "تعذر تحميل بيانات المستخدم.",
+                Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+
+    // ============================================================
+    // Save
+    // ============================================================
+
+    private async Task SaveAsync()
+    {
+        if (_saving || _form is null)
+            return;
+
+        await _form.ValidateAsync();
+
+        if (!_form.IsValid)
+            return;
+
+        try
+        {
+            _saving = true;
+
+            var request = new UpdateUserRequest(
+                _model.UserName.Trim(),
+                _model.DisplayName.Trim(),
+                _model.IsActive,
+                _model.IsAdmin,
+                _model.RoleId);
+
+            Result result = await RequestExecutor.ExecuteAsync(
+                new UpdateUserCommand(
+                    UserId,
+                    request));
+
+            if (!result.IsSuccess)
+            {
+                Snackbar.Add(
+                    result.ErrorMessage,
+                    Severity.Error);
+
+                return;
+            }
+
+            Snackbar.Add(
+                "تم حفظ تعديلات المستخدم بنجاح.",
+                Severity.Success);
+
+            NavigationManager.NavigateTo(
+                "/admin/users");
+        }
+        catch (Exception)
+        {
+            Snackbar.Add(
+                "حدث خطأ أثناء حفظ بيانات المستخدم.",
+                Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+
+    // ============================================================
+    // Navigation
+    // ============================================================
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo(
+            "/admin/users");
+    }
+
+
+    // ============================================================
+    // Form model
+    // ============================================================
+
+    private sealed class UserFormModel
+    {
+        public string UserName { get; set; } = string.Empty;
+
+        public string DisplayName { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; }
+
+        public bool IsAdmin { get; set; }
+
+        public int? RoleId { get; set; }
+    }
+}
