@@ -10,6 +10,8 @@ public interface ICategoryRepository
     Task<bool> IsUsedByProductsAsync(int id, CancellationToken cancellationToken);
     Task<bool> IsUsedByCategoriesAsync(int id, CancellationToken cancellationToken);
     Task<Category> FindAsync(int id, CancellationToken cancellationToken);
+    Task<bool> WouldCreateCycleAsync(int categoryId, int parentId, CancellationToken cancellationToken);
+    Task LockHierarchyAsync(CancellationToken cancellationToken);
     void Add(Category entity);
     void Remove(Category entity);
 }

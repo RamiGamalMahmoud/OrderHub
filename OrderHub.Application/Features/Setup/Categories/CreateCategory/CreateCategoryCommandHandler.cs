@@ -16,17 +16,26 @@ internal sealed class CreateCategoryCommandHandler(ICategoryRepository repositor
     {
 
 
-        bool isCategoryExists = await repository.ExistsAsync(request.CategoryCreateInput.Name, request.CategoryCreateInput.ParentId, cancellationToken);
+        string name = request.CategoryCreateInput.Name?.Trim();
+        if (string.IsNullOrWhiteSpace(name) || name.Length < 2 || name.Length > 100)
+            return Result.Failure("اسم القسم يجب أن يتكون من 2 إلى 100 حرف.");
+
+        Category parent = null;
+        if (request.CategoryCreateInput.ParentId is int parentId)
+        {
+            parent = await repository.FindAsync(parentId, cancellationToken);
+            if (parent is null)
+                return Result.Failure("القسم الرئيسي غير موجود.");
+        }
+
+        bool isCategoryExists = await repository.ExistsAsync(name, request.CategoryCreateInput.ParentId, cancellationToken);
 
         if (isCategoryExists)
         {
             return Result.Failure("هذا القسم موجود بالفعل.");
         }
 
-        Category category = new(request.CategoryCreateInput.Name)
-        {
-            ParentCategoryId = request.CategoryCreateInput.ParentId
-        };
+        Category category = new(name, parent);
 
         repository.Add(category);
 
@@ -38,7 +47,7 @@ internal sealed class CreateCategoryCommandHandler(ICategoryRepository repositor
         }
         catch (PersistenceException)
         {
-            return Result.Failure(request.CategoryCreateInput.Name);
+            return Result.Failure("تعذر حفظ القسم. يرجى المحاولة مرة أخرى.");
         }
     }
 }

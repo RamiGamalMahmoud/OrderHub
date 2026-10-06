@@ -1,0 +1,127 @@
+@page "/categories"
+@page "/categories/{ParentId:int}"
+@attribute [PermissionAuthorize(PermissionFeature.Categories, PermissionLevel.Read)]
+@inject IRequestExecutor RequestExecutor
+@inject OrderHub.Web.Services.PermissionAccess PermissionAccess
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject ILogger<Index> Logger
+
+<PageTitle>الأقسام</PageTitle>
+<MudStack Spacing="3">
+    <MudStack Row Wrap="Wrap.Wrap" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <div>
+            <MudText Typo="Typo.h5">الأقسام</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">إدارة أقسام المنتجات</MudText>
+        </div>
+        @if (_canWrite && !_loading && _response?.ParentExists == true)
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                       Href="@CreateUrl" Disabled="_deleting">
+                @(ParentId.HasValue ? "إضافة قسم فرعي" : "إضافة قسم")
+            </MudButton>
+        }
+    </MudStack>
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        <MudText Typo="Typo.body2">جاري تحميل الأقسام...</MudText>
+    }
+    else if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+        <MudButton OnClick="LoadAsync" Variant="Variant.Outlined">إعادة المحاولة</MudButton>
+    }
+    else if (_response?.ParentExists == false)
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true">القسم غير موجود.</MudAlert>
+        <MudButton Href="/categories" StartIcon="@Icons.Material.Filled.ArrowForward">الرجوع للأقسام</MudButton>
+    }
+    else if (_response is not null)
+    {
+        <MudBreadcrumbs Items="_breadcrumbs" Class="pa-0" />
+        @if (_response.Categories.Count == 0)
+        {
+            <MudPaper Outlined="true" Class="pa-4">
+                <MudText Typo="Typo.body1">@(ParentId.HasValue ? "لا توجد أقسام فرعية في هذا القسم." : "لم تتم إضافة أقسام بعد.")</MudText>
+                @if (_canWrite)
+                {
+                    <MudButton Href="@CreateUrl" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" Class="mt-2">إضافة قسم</MudButton>
+                }
+            </MudPaper>
+        }
+        else
+        {
+            <MudGrid Spacing="3">
+                @foreach (var category in _response.Categories)
+                {
+                    <MudItem @key="category.Id" xs="12" sm="6" md="4" lg="3">
+                        <CategoryCard Category="category" CanWrite="_canWrite" Busy="_deleting" OnDelete="ConfirmDeleteAsync" />
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+    }
+</MudStack>
+
+@code {
+    [Parameter] public int? ParentId { get; set; }
+    private GetCategoriesResponse? _response;
+    private List<BreadcrumbItem> _breadcrumbs = [];
+    private bool _loading = true, _canWrite, _deleting;
+    private string? _error;
+    private int _loadVersion;
+    private string CreateUrl => ParentId.HasValue ? $"/categories/create?parentId={ParentId}" : "/categories/create";
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        int version = ++_loadVersion;
+        int? parentId = ParentId;
+        _loading = true;
+        _canWrite = false;
+        _error = null;
+        try
+        {
+            var response = await RequestExecutor.ExecuteAsync(new GetCategoriesQuery(parentId));
+            bool canWrite = await PermissionAccess.IsAllowedAsync(PermissionFeature.Categories, PermissionLevel.Write);
+            if (version != _loadVersion) return;
+            _response = response;
+            _canWrite = canWrite;
+            _breadcrumbs = [new("الأقسام", "/categories", disabled: parentId is null)];
+            _breadcrumbs.AddRange(response.Path.Select((segment, index) =>
+                new BreadcrumbItem(segment.Name, $"/categories/{segment.Id}", disabled: index == response.Path.Count - 1)));
+        }
+        catch (AuthorizationDeniedException) { Navigation.NavigateTo("/access-denied"); }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load categories for {ParentId}", parentId);
+            if (version == _loadVersion) _error = "تعذر تحميل الأقسام. يرجى المحاولة مرة أخرى.";
+        }
+        finally { if (version == _loadVersion) _loading = false; }
+    }
+
+    private async Task ConfirmDeleteAsync(CategoryIndexItem category)
+    {
+        if (_deleting) return;
+        _deleting = true;
+        try
+        {
+            if (await DialogService.ShowMessageBoxAsync("حذف القسم", $"هل تريد حذف القسم \"{category.Name}\"؟",
+                yesText: "حذف", cancelText: "إلغاء") != true) return;
+            var result = await RequestExecutor.ExecuteAsync(new DeleteCategoryCommand(category.Id));
+            Snackbar.Add(result.IsSuccess ? "تم حذف القسم بنجاح." : result.ErrorMessage,
+                result.IsSuccess ? Severity.Success : Severity.Error);
+            if (result.IsSuccess) await LoadAsync();
+        }
+        catch (AuthorizationDeniedException) { Navigation.NavigateTo("/access-denied"); }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to delete category {CategoryId}", category.Id);
+            Snackbar.Add("تعذر حذف القسم. يرجى المحاولة مرة أخرى.", Severity.Error);
+        }
+        finally { _deleting = false; }
+    }
+}

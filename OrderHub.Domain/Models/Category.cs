@@ -25,32 +25,33 @@ public class Category : ModelBase
 
     public bool IsRootCategory => ParentCategoryId == null;
     public bool IsLeafCategory => _subCategories.Count == 0;
-    public int? ParentCategoryId { get; set; }
+    public int? ParentCategoryId { get; private set; }
 
     public void UpdateName(string name)
     {
-        Name = new EntityName(name);
+        Name = new EntityName(name?.Trim());
     }
 
     public void MoveTo(Category parentCategory)
     {
-        if (parentCategory != null && parentCategory == this)
+        if (parentCategory != null && SameCategory(parentCategory, this))
             throw new InvalidOperationException("Category cannot be its own parent");
 
         if (parentCategory != null && IsAncestorOf(parentCategory))
             throw new InvalidOperationException("Cannot create circular reference in category hierarchy");
 
         // Remove from old parent
-        if (ParentCategory != null && ParentCategory != parentCategory)
+        if (ParentCategory != null && !SameCategory(ParentCategory, parentCategory))
         {
-            ParentCategory._subCategories.Remove(this);
+            ParentCategory._subCategories.RemoveAll(category => SameCategory(category, this));
         }
 
         // Set new parent
         ParentCategory = parentCategory;
+        ParentCategoryId = parentCategory?.Id;
 
         // Add to new parent
-        if (parentCategory != null && !parentCategory._subCategories.Contains(this))
+        if (parentCategory != null && !parentCategory._subCategories.Any(category => SameCategory(category, this)))
         {
             parentCategory._subCategories.Add(this);
         }
@@ -60,10 +61,10 @@ public class Category : ModelBase
     {
         ArgumentNullException.ThrowIfNull(subCategory);
 
-        if (subCategory == this)
+        if (SameCategory(subCategory, this))
             throw new InvalidOperationException("Category cannot be its own subcategory");
 
-        if (_subCategories.Any(c => c == subCategory))
+        if (_subCategories.Any(c => SameCategory(c, subCategory)))
             throw new InvalidOperationException("Subcategory already exists");
 
         if (subCategory.IsAncestorOf(this))
@@ -76,18 +77,17 @@ public class Category : ModelBase
     {
         ArgumentNullException.ThrowIfNull(subCategory);
 
-        Category existing = _subCategories.FirstOrDefault(c => c == subCategory);
+        Category existing = _subCategories.FirstOrDefault(c => SameCategory(c, subCategory));
         if (existing == null)
             throw new InvalidOperationException("Subcategory does not exist");
 
-        existing.ParentCategory = null;
-        _subCategories.Remove(existing);
+        existing.MoveTo(null);
     }
 
     public bool HasSubCategory(Category category)
     {
         ArgumentNullException.ThrowIfNull(category);
-        return _subCategories.Any(c => c == category);
+        return _subCategories.Any(c => SameCategory(c, category));
     }
 
     public bool IsAncestorOf(Category category)
@@ -97,7 +97,7 @@ public class Category : ModelBase
         Category current = category.ParentCategory;
         while (current != null)
         {
-            if (current == this)
+            if (SameCategory(current, this))
                 return true;
             current = current.ParentCategory;
         }
@@ -148,18 +148,18 @@ public class Category : ModelBase
     public IEnumerable<Category> GetDescendants()
     {
         List<Category> descendants = [];
-        GetDescendantsRecursive(this, descendants);
+        var pending = new Stack<Category>(_subCategories.AsEnumerable().Reverse());
+        while (pending.TryPop(out Category category))
+        {
+            descendants.Add(category);
+            foreach (var child in category._subCategories.AsEnumerable().Reverse())
+                pending.Push(child);
+        }
         return descendants;
     }
 
-    private void GetDescendantsRecursive(Category category, List<Category> descendants)
-    {
-        foreach (Category subCategory in category._subCategories)
-        {
-            descendants.Add(subCategory);
-            GetDescendantsRecursive(subCategory, descendants);
-        }
-    }
+    private static bool SameCategory(Category left, Category right) =>
+        ReferenceEquals(left, right) || (left is not null && right is not null && left.Id != 0 && left.Id == right.Id);
 
     public string FullPath
     {

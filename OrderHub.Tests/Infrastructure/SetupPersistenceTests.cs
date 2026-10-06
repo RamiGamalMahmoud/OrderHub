@@ -116,11 +116,11 @@ public class SetupPersistenceTests
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
         Assert.True((await mediator.Send(new CreateCategoryCommand(new("Parent", null)))).IsSuccess);
-        var parent = Assert.Single(await mediator.Send(new GetCategoryListQuery(null)));
+        var parent = Assert.Single((await mediator.Send(new GetCategoriesQuery())).Categories);
         Assert.Equal("هذا القسم موجود بالفعل.", (await mediator.Send(new CreateCategoryCommand(new("Parent", null)))).ErrorMessage);
         Assert.True((await mediator.Send(new CreateCategoryCommand(new("Child", parent.Id)))).IsSuccess);
-        var tree = Assert.Single(await mediator.Send(new GetCategoryTreeQuery()));
-        Assert.Equal("Child", Assert.Single(tree.SubCategories).Name);
+        var children = await mediator.Send(new GetCategoriesQuery(parent.Id));
+        Assert.Equal("Child", Assert.Single(children.Categories).Name);
         Assert.Equal("لا يمكن حذف القسم لأنه يحتوي على أقسام فرعية.", (await mediator.Send(new DeleteCategoryCommand(parent.Id))).ErrorMessage);
         Assert.True((await mediator.Send(new UpdateCategoryCommand(new(parent.Id, "Renamed parent", null)))).IsSuccess);
         Assert.Equal("Renamed parent", (await mediator.Send(new GetCategoryForEditQuery(parent.Id))).Name);

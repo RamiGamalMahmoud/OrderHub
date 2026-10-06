@@ -121,8 +121,8 @@ public class PersistenceArchitectureTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
         Assert.Empty(await mediator.Send(new GetCitiesInfoQuery()));
         Assert.Empty(await mediator.Send(new GetCategoriesInfoQuery()));
-        Assert.Empty(await mediator.Send(new GetRootCategoriesQuery()));
-        Assert.Empty(await mediator.Send(new GetSubCategoriesQuery(1)));
+        Assert.Empty((await mediator.Send(new GetCategoriesQuery())).Categories);
+        Assert.False((await mediator.Send(new GetCategoriesQuery(1))).ParentExists);
         Assert.Empty(await mediator.Send(new GetClientsInfoQuery()));
         Assert.Empty(await mediator.Send(new GetSuppliersInfoQuery()));
         Assert.Empty(await mediator.Send(new GetAllDeliverymenInfoQuery()));

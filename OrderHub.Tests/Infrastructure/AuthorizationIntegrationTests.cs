@@ -80,7 +80,7 @@ public class AuthorizationIntegrationTests
             Assert.True(Enum.IsDefined(permission.Feature), request.FullName);
             Assert.True(permission.RequiredLevel is PermissionLevel.Read or PermissionLevel.Write, request.FullName);
         }
-        Assert.Equal(93, requests.Length - exempt.Length);
+        Assert.Equal(89, requests.Length - exempt.Length);
         Assert.All(exempt, request => Assert.Null(request.GetCustomAttribute<RequirePermissionAttribute>()));
     }
 }
