@@ -54,7 +54,7 @@ internal sealed partial class OrderReader
                 DeliverySteps = order.DeliverySteps.OrderBy(step => step.StepOrder)
                     .Select(step => new OrderEditorDeliveryStep(step.StepOrder, step.DeliveryMethod,
                         step.DeliveryMethod == DeliveryMethod.DeliveryMan ? step.DeliverymanId
-                            : step.DeliveryMethod == DeliveryMethod.ShippingCompany ? step.ShippingCarrierId : null))
+                            : step.DeliveryMethod == DeliveryMethod.ShippingCompany ? step.ShippingCarrierId : null, step.Id))
                     .ToList()
             }).SingleOrDefaultAsync(cancellationToken);
 

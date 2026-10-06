@@ -68,8 +68,8 @@ public class OrderDetailsTests
     [Fact]
     public async Task Chain_moves_preserve_handlers_and_changing_method_clears_incompatible_handler()
     {
-        var first = new DeliveryStepEditorState { Method = DeliveryMethod.DeliveryMan, HandlerId = 1 };
-        var second = new DeliveryStepEditorState { Method = DeliveryMethod.ShippingCompany, HandlerId = 2 };
+        var first = new DeliveryStepEditorState { Id = 11, StepOrder = 10, Method = DeliveryMethod.DeliveryMan, HandlerId = 1 };
+        var second = new DeliveryStepEditorState { Id = 12, StepOrder = 20, Method = DeliveryMethod.ShippingCompany, HandlerId = 2 };
         var state = new OrderEditorState();
         state.Delivery.Steps.AddRange([first, second]);
         var notifications = 0;
@@ -85,11 +85,16 @@ public class OrderDetailsTests
         Assert.Equal(0, notifications);
         await Invoke(chain, "MoveStepAsync", first, 1);
         Assert.Same(second, state.Delivery.Steps[0]);
+        Assert.Equal(12, state.Delivery.Steps[0].Id);
+        Assert.Equal(11, state.Delivery.Steps[1].Id);
+        Assert.Equal(1, second.StepOrder);
+        Assert.Equal(2, first.StepOrder);
         Assert.Equal(1, first.HandlerId);
         await Invoke(step, "OnMethodChangedAsync", DeliveryMethod.ShippingCompany);
         Assert.Null(first.HandlerId);
         await Invoke(step, "OnHandlerChangedAsync", (int?)3);
         await Invoke(chain, "RemoveStepAsync", first);
+        Assert.Equal(1, second.StepOrder);
         await Invoke(chain, "MoveStepAsync", first, 1);
         await Invoke(chain, "RemoveStepAsync", first);
         Assert.Equal(3, first.HandlerId);

@@ -262,6 +262,143 @@ public class OrderUpdateFlowTests
         Assert.Equal(new[] { 52, 51 }, input.DeliverySteps.Select(s => s.HandlerId));
     }
 
+    [Fact]
+    public async Task Swapping_ranks_and_changing_handler_preserves_step_identity_and_creation_time()
+    {
+        using var fixture = new Fixture();
+        var id = await fixture.Seed(DeliveryMethod.DeliveryChain, false);
+        var before = await fixture.Read(id);
+        using var check = fixture.CreateDbContext();
+        var created = await check.OrderDeliverySteps.AsNoTracking().ToDictionaryAsync(step => step.Id, step => step.CreatedAt);
+        var editor = await Editor(before);
+        State(editor).Delivery.Steps.Reverse();
+        State(editor).Delivery.Steps[0].Method = DeliveryMethod.DeliveryMan;
+        State(editor).Delivery.Steps[0].HandlerId = 61;
+        Assert.True((await fixture.UpdateOrder(id, Build(editor))).IsSuccess);
+        var after = await fixture.Read(id);
+        Assert.Equal(before.DeliverySteps.Reverse().Select(step => step.Id), after.DeliverySteps.Select(step => step.Id));
+        Assert.Equal(new[] { 1, 2 }, after.DeliverySteps.Select(step => step.StepOrder));
+        Assert.Equal(61, after.DeliverySteps.First().HandlerId);
+        var rows = await check.OrderDeliverySteps.AsNoTracking().ToListAsync();
+        Assert.All(rows, step => Assert.Equal(created[step.Id], step.CreatedAt));
+        Assert.All(rows, step => Assert.Null(step.ShippingCarrierId));
+    }
+
+    [Fact]
+    public async Task Add_and_remove_at_an_occupied_rank_changes_only_the_selected_steps()
+    {
+        using var fixture = new Fixture();
+        var id = await fixture.Seed(DeliveryMethod.DeliveryChain, false);
+        var before = await fixture.Read(id);
+        var input = Build(await Editor(before));
+        input = input with { DeliverySteps = [input.DeliverySteps.First() with { StepOrder = 2 }, new(1, DeliveryMethod.DeliveryMan, 63)] };
+        Assert.True((await fixture.UpdateOrder(id, input)).IsSuccess);
+        var after = await fixture.Read(id);
+        Assert.Equal(before.DeliverySteps.First().Id, after.DeliverySteps.Last().Id);
+        Assert.DoesNotContain(after.DeliverySteps, step => step.Id == before.DeliverySteps.Last().Id);
+        Assert.DoesNotContain(before.DeliverySteps, step => step.Id == after.DeliverySteps.First().Id);
+        Assert.True((await fixture.UpdateOrder(id, Build(await Editor(after)))).IsSuccess);
+        Assert.Equal(after.DeliverySteps, (await fixture.Read(id)).DeliverySteps);
+    }
+
+    [Theory]
+    [InlineData("foreign")]
+    [InlineData("duplicate")]
+    [InlineData("zero")]
+    [InlineData("handler")]
+    public async Task Invalid_step_identity_or_handler_leaves_the_tracked_order_unchanged(string invalid)
+    {
+        using var fixture = new Fixture();
+        var id = await fixture.Seed(DeliveryMethod.DeliveryChain, false);
+        int foreignStepId;
+        using (var otherDb = fixture.CreateDbContext())
+        {
+            var other = new Order(5, "OTHER-ORDER");
+            var foreignStep = new OrderDeliveryStep { StepOrder = 1, DeliveryMethod = DeliveryMethod.DeliveryMan, DeliverymanId = 51 };
+            other.AddDeliveryStep(foreignStep);
+            otherDb.Orders.Add(other);
+            await otherDb.SaveChangesAsync();
+            foreignStepId = foreignStep.Id;
+        }
+        var before = await fixture.Read(id);
+        var steps = Build(await Editor(before)).DeliverySteps.ToList();
+        steps[1] = invalid switch
+        {
+            "foreign" => steps[1] with { Id = foreignStepId },
+            "duplicate" => steps[1] with { Id = steps[0].Id },
+            "zero" => steps[1] with { Id = 0 },
+            _ => steps[1] with { HandlerId = 0 }
+        };
+        var input = Build(await Editor(before)) with { DeliverySteps = steps, OrderSource = OrderSource.Salla };
+        using var db = fixture.CreateDbContext();
+        var repository = new OrderRepository(db);
+        var order = await repository.GetForUpdateAsync(id);
+        var originalSteps = order.DeliverySteps.ToList();
+        Assert.False((await new UpdateOrderHandler(repository, new UnitOfWork(db)).Handle(new(id, input), default)).IsSuccess);
+        Assert.Equal(originalSteps, order.DeliverySteps);
+        Assert.All(db.ChangeTracker.Entries(), entry => Assert.Equal(EntityState.Unchanged, entry.State));
+        await db.SaveChangesAsync();
+        Assert.Equal(before.DeliverySteps, (await fixture.Read(id)).DeliverySteps);
+        Assert.Equal(before.OrderSource, (await fixture.Read(id)).OrderSource);
+    }
+
+    [Fact]
+    public async Task Failure_after_temporary_reordering_rolls_back_all_ranks_and_header()
+    {
+        using var fixture = new Fixture();
+        var id = await fixture.Seed(DeliveryMethod.DeliveryChain, false);
+        var before = await fixture.Read(id);
+        var editor = await Editor(before);
+        State(editor).Delivery.Steps.Reverse();
+        var input = Build(editor);
+        input = input with { OrderSource = OrderSource.Salla, OrderItems = [input.OrderItems.Single() with { ProductName = null }] };
+        Assert.False((await fixture.UpdateOrder(id, input)).IsSuccess);
+        var after = await fixture.Read(id);
+        Assert.Equal(before.DeliverySteps, after.DeliverySteps);
+        Assert.Equal(before.OrderSource, after.OrderSource);
+    }
+
+    [Fact]
+    public async Task Saving_twice_from_the_same_editor_reuses_new_step_identity()
+    {
+        using var fixture = new Fixture();
+        var id = await fixture.Seed(DeliveryMethod.DeliveryChain, false);
+        var editor = await Editor(await fixture.Read(id));
+        State(editor).Delivery.Steps.Add(new() { StepOrder = 3, Method = DeliveryMethod.DeliveryMan, HandlerId = 63 });
+        var executor = new Mock<IRequestExecutor>();
+        executor.Setup(x => x.ExecuteAsync(It.IsAny<UpdateOrderCommand>(), It.IsAny<CancellationToken>()))
+            .Returns((UpdateOrderCommand command, CancellationToken _) => fixture.UpdateOrder(command.OrderId, command.Order));
+        executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderForEditQuery>(), It.IsAny<CancellationToken>()))
+            .Returns(() => fixture.Read(id));
+        SetService(editor, "RequestExecutor", executor.Object);
+        SetService(editor, "Snackbar", new Mock<ISnackbar>().Object);
+        await (Task)Method("SaveAsync").Invoke(editor, null);
+        var first = await fixture.Read(id);
+        Assert.All(State(editor).Delivery.Steps, step => Assert.True(step.Id > 0));
+        await (Task)Method("SaveAsync").Invoke(editor, null);
+        Assert.Equal(first.DeliverySteps, (await fixture.Read(id)).DeliverySteps);
+    }
+
+    [Fact]
+    public async Task Repeated_save_click_during_update_sends_only_one_request_and_failure_allows_retry()
+    {
+        using var fixture = new Fixture();
+        var id = await fixture.Seed(DeliveryMethod.DeliveryChain, false);
+        var editor = await Editor(await fixture.Read(id));
+        var pending = new TaskCompletionSource<Result>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var executor = new Mock<IRequestExecutor>();
+        executor.Setup(x => x.ExecuteAsync(It.IsAny<UpdateOrderCommand>(), It.IsAny<CancellationToken>())).Returns(pending.Task);
+        SetService(editor, "RequestExecutor", executor.Object);
+        SetService(editor, "Snackbar", new Mock<ISnackbar>().Object);
+        var saving = (Task)Method("SaveAsync").Invoke(editor, null);
+        await (Task)Method("SaveAsync").Invoke(editor, null);
+        executor.Verify(x => x.ExecuteAsync(It.IsAny<UpdateOrderCommand>(), It.IsAny<CancellationToken>()), Times.Once);
+        pending.SetResult(Result.Failure("Rejected"));
+        await saving;
+        await (Task)Method("SaveAsync").Invoke(editor, null);
+        executor.Verify(x => x.ExecuteAsync(It.IsAny<UpdateOrderCommand>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
     private static async Task<OrderEditor> Editor(OrderEditorData dto)
     {
         var editor = new OrderEditor { OrderId = dto.Id };

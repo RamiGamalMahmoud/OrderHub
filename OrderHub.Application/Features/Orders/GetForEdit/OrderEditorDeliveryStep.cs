@@ -7,4 +7,5 @@ namespace OrderHub.Application.Features.Orders.GetForEdit;
 public record OrderEditorDeliveryStep(
         int StepOrder,
         DeliveryMethod DeliveryMethod,
-        int? HandlerId);
+        int? HandlerId,
+        int? Id = null);

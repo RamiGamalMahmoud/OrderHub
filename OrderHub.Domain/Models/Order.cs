@@ -138,15 +138,36 @@ public class Order : ModelBase
         _deliverySteps.Clear();
     }
 
-    public void ReplaceDetails(IReadOnlyCollection<OrderItem> items, IReadOnlyCollection<OrderDeliveryStep> steps)
+    public void ReplaceOrderItems(IReadOnlyCollection<OrderItem> items)
     {
-        // Materialize before changing either collection, including when the caller passes our own details.
+        // Materialize before clearing, including when the caller passes our own items.
         var replacementItems = items.ToList();
-        var replacementSteps = steps.ToList();
         _orderItems.Clear();
         _orderItems.AddRange(replacementItems);
+    }
+
+    public void SynchronizeDeliverySteps(IReadOnlyCollection<(int? Id, OrderDeliveryStep Values)> steps)
+    {
+        // Validate all identities before changing the aggregate.
+        var existing = _deliverySteps.ToDictionary(step => step.Id);
+        var ids = steps.Where(step => step.Id.HasValue).Select(step => step.Id.Value).ToList();
+        if (ids.Distinct().Count() != ids.Count || ids.Any(id => id <= 0 || !existing.ContainsKey(id)))
+            throw new System.ArgumentException("Invalid delivery step identities.", nameof(steps));
+
+        var synchronized = new List<OrderDeliveryStep>();
+        foreach (var (id, values) in steps)
+        {
+            var step = id.HasValue ? existing[id.Value] : values;
+            step.StepOrder = values.StepOrder;
+            step.DeliveryMethod = values.DeliveryMethod;
+            step.DeliverymanId = values.DeliverymanId;
+            step.ShippingCarrierId = values.ShippingCarrierId;
+            synchronized.Add(step);
+        }
+        // Keep the matched instances. New unsaved entities share Id=0, so identity
+        // must not be compared using ModelBase.Equals when retaining the final graph.
         _deliverySteps.Clear();
-        _deliverySteps.AddRange(replacementSteps);
+        _deliverySteps.AddRange(synchronized);
     }
 
     public void ChangeOrderStatus(OrderStatus orderStatus)

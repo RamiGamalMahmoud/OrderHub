@@ -18,6 +18,7 @@ namespace OrderHub.Web.Components.Pages.Features.Orders.Editor;
 public partial class OrderEditor : IDisposable
 {
     private bool _isDraftsOpen;
+    private bool _isSavingUpdate;
 
     private OrderEditorStep _activeStep = OrderEditorStep.Products;
 
@@ -25,7 +26,7 @@ public partial class OrderEditor : IDisposable
 
     private IReadOnlyList<string> ValidationErrors => GetFinalValidationErrors(_state, IsEdit);
 
-    private bool CanSave => !_draftLifecycle.IsClosed && ValidationErrors.Count == 0 &&
+    private bool CanSave => !_isSavingUpdate && !_draftLifecycle.IsClosed && ValidationErrors.Count == 0 &&
         (IsEdit || (!_draftLifecycle.IsCompleting && !_draftLifecycle.IsCompleted));
 
     private long _changeVersion;
@@ -283,6 +284,7 @@ public partial class OrderEditor : IDisposable
                 Steps = order.DeliverySteps.OrderBy(step => step.StepOrder)
                     .Select(step => new DeliveryStepEditorState
                     {
+                        Id = step.Id,
                         StepOrder = step.StepOrder,
                         Method = step.DeliveryMethod,
                         HandlerId = step.HandlerId
@@ -351,7 +353,7 @@ public partial class OrderEditor : IDisposable
                 item.Properties.Select(property => new OrderInput.Property(property.PropertyId, property.Value)).ToList())).ToList(),
             method == DeliveryMethod.DeliveryChain
                 ? steps.Select((step, index) => new OrderInput.DeliveryStep(
-                    preserveStepOrder ? step.StepOrder : index + 1, step.Method, step.HandlerId!.Value)).ToList()
+                    preserveStepOrder ? step.StepOrder : index + 1, step.Method, step.HandlerId!.Value, IsEdit ? step.Id : null)).ToList()
                 : new List<OrderInput.DeliveryStep>(),
             _state.PaymentMethodId);
     }
@@ -491,10 +493,35 @@ public partial class OrderEditor : IDisposable
 
         if (IsEdit)
         {
-            // Update
-            var updateResult = await RequestExecutor!.ExecuteAsync(new Application.Features.Orders.Update.UpdateOrderCommand(OrderId!.Value, input));
-            Snackbar!.Add(updateResult.IsSuccess ? "تم حفظ التعديلات بنجاح." : updateResult.ErrorMessage,
-                updateResult.IsSuccess ? Severity.Success : Severity.Error);
+            _isSavingUpdate = true;
+            var submittedStates = _state.Delivery.Steps.ToArray();
+            var submittedSteps = input.DeliverySteps.ToList();
+            var orderId = OrderId!.Value;
+            try
+            {
+                var updateResult = await RequestExecutor!.ExecuteAsync(new Application.Features.Orders.Update.UpdateOrderCommand(orderId, input));
+                if (updateResult.IsSuccess && input.DeliveryMethod == DeliveryMethod.DeliveryChain)
+                {
+                    var saved = await RequestExecutor.ExecuteAsync(new Application.Features.Orders.GetForEdit.GetOrderForEditQuery(orderId));
+                    if (saved is not null)
+                    {
+                        for (var index = 0; index < submittedStates.Length; index++)
+                            submittedStates[index].Id = saved.DeliverySteps.Single(savedStep =>
+                                savedStep.StepOrder == submittedSteps[index].StepOrder).Id;
+                    }
+                }
+                else if (updateResult.IsSuccess)
+                {
+                    foreach (var step in submittedStates)
+                        step.Id = null;
+                }
+                Snackbar!.Add(updateResult.IsSuccess ? "تم حفظ التعديلات بنجاح." : updateResult.ErrorMessage,
+                    updateResult.IsSuccess ? Severity.Success : Severity.Error);
+            }
+            finally
+            {
+                _isSavingUpdate = false;
+            }
             return;
         }
 

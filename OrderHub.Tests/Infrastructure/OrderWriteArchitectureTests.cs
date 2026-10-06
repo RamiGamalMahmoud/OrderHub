@@ -190,7 +190,7 @@ public class OrderWriteArchitectureTests
         order.DeliveryMethod.Value, order.DeliverymanId, order.ShippingCarrierId,
         order.OrderItems.Select(i => new OrderInput.Item(i.ProductId, i.ProductName, i.Quantity, i.UnitPrice.Value,
             i.VatRate, i.SupplierName, i.SupplierId, i.Properties.Select(p => new OrderInput.Property(p.PropertyId, p.Value)).ToList())).ToList(),
-        order.DeliverySteps.Select(s => new OrderInput.DeliveryStep(s.StepOrder, s.DeliveryMethod, s.DeliverymanId.Value)).ToList(), order.PaymentMethodId);
+        order.DeliverySteps.Select(s => new OrderInput.DeliveryStep(s.StepOrder, s.DeliveryMethod, s.DeliverymanId.Value, s.Id)).ToList(), order.PaymentMethodId);
 
     private sealed class Fixture : IDisposable
     {

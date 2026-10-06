@@ -42,8 +42,6 @@
             var step = Steps[index];
             var stepIndex = index;
 
-            step.StepOrder = stepIndex + 1;
-
             <DeliveryChainStep @key="step"
                                Step="step"
                                Deliverymen="Deliverymen"
@@ -86,7 +84,7 @@
         {
             Method = DeliveryMethod.DeliveryMan
         });
-
+        RenumberSteps();
         await Changed.InvokeAsync();
     }
 
@@ -97,7 +95,7 @@
 
         if (!Steps.Remove(step))
             return;
-
+        RenumberSteps();
         await Changed.InvokeAsync();
     }
 
@@ -120,7 +118,13 @@
 
         Steps.RemoveAt(index);
         Steps.Insert(targetIndex, step);
-
+        RenumberSteps();
         await Changed.InvokeAsync();
+    }
+
+    private void RenumberSteps()
+    {
+        for (var index = 0; index < Steps.Count; index++)
+            Steps[index].StepOrder = index + 1;
     }
 }

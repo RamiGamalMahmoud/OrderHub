@@ -32,23 +32,48 @@ internal class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, Result>
         if (request.Order is null)
             return Result.Failure("بيانات الطلب غير موجودة.");
 
-        var prepared = BuildReplacement(order, request.Order);
+        var input = request.Order with { DeliverySteps = request.Order.DeliverySteps?.ToList() };
+        var prepared = BuildReplacement(order, input);
         if (!prepared.IsSuccess)
             return Result.Failure(prepared.ErrorMessage);
-        var input = request.Order;
-        order.ReplaceDetails(prepared.Value.OrderItems, prepared.Value.DeliverySteps);
-        order.UpdateHeader(input.ClientId, input.OrderSource, input.DeliveryMethod,
-            input.DeliveryMethod == DeliveryMethod.DeliveryMan ? input.DeliveryManId : null,
-            input.DeliveryMethod == DeliveryMethod.ShippingCompany ? input.ShippingCarrierId : null,
-            input.PaymentMethodId);
+        var steps = input.DeliveryMethod == DeliveryMethod.DeliveryChain
+            ? (input.DeliverySteps ?? Enumerable.Empty<OrderInput.DeliveryStep>()).OrderBy(step => step.StepOrder).ToList()
+            : new List<OrderInput.DeliveryStep>();
+        var needsReordering = order.DeliverySteps.Count > 0 &&
+            (order.DeliverySteps.Count != steps.Count || steps.Any(step => !step.Id.HasValue ||
+                order.DeliverySteps.Single(existing => existing.Id == step.Id.Value).StepOrder != step.StepOrder));
+        var transactionActive = false;
         try
         {
+            if (needsReordering)
+            {
+                await _unitOfWork.BeginTransactionAsync(cancellationToken);
+                transactionActive = true;
+                await _orderRepository.PrepareDeliveryStepReorderingAsync(order, cancellationToken);
+            }
+            order.SynchronizeDeliverySteps(steps.Zip(prepared.Value.DeliverySteps,
+                (step, values) => (step.Id, values)).ToList());
+            order.ReplaceOrderItems(prepared.Value.OrderItems);
+            order.UpdateHeader(input.ClientId, input.OrderSource, input.DeliveryMethod,
+                input.DeliveryMethod == DeliveryMethod.DeliveryMan ? input.DeliveryManId : null,
+                input.DeliveryMethod == DeliveryMethod.ShippingCompany ? input.ShippingCarrierId : null,
+                input.PaymentMethodId);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            if (transactionActive)
+            {
+                await _unitOfWork.CommitTransactionAsync(cancellationToken);
+                transactionActive = false;
+            }
             return Result.Success();
         }
         catch (PersistenceException)
         {
             return Result.Failure("تعذر حفظ الطلب. تحقق من البيانات المحددة ثم حاول مرة أخرى.");
+        }
+        finally
+        {
+            if (transactionActive)
+                await _unitOfWork.RollbackTransactionAsync(CancellationToken.None);
         }
     }
 
@@ -65,8 +90,11 @@ internal class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, Result>
             ? (input.DeliverySteps ?? Enumerable.Empty<OrderInput.DeliveryStep>()).ToList()
             : new List<OrderInput.DeliveryStep>();
         if (steps.Any(step => step.DeliveryMethod is not (DeliveryMethod.DeliveryMan or DeliveryMethod.ShippingCompany) ||
-                step.StepOrder <= 0) || steps.Select(step => step.StepOrder).Distinct().Count() != steps.Count)
+                step.StepOrder <= 0 || step.HandlerId <= 0) || steps.Select(step => step.StepOrder).Distinct().Count() != steps.Count)
             return Result<Order>.Failure("خطوات التوصيل أو ترتيبها غير صالح.");
+        var ids = steps.Where(step => step.Id.HasValue).Select(step => step.Id.Value).ToList();
+        if (ids.Distinct().Count() != ids.Count || ids.Any(id => id <= 0 || !order.DeliverySteps.Any(step => step.Id == id)))
+            return Result<Order>.Failure("معرفات خطوات التوصيل غير صالحة لهذا الطلب.");
         foreach (var item in input.OrderItems ?? Enumerable.Empty<OrderInput.Item>())
         {
             var result = replacement.AddOrderItem(item.ProductId, item.ProductName, item.UnitPrice, item.Quantity,

@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Interfaces.Repositories;
+using OrderHub.Application.Interfaces;
+using System.Data.Common;
 using OrderHub.Domain.Models;
 using System;
 using System.Linq;
@@ -46,6 +48,30 @@ internal class OrderRepository : IOrderRepository
     {
         // Required order children cascade in the database; deletion has no graph-based checks.
         return _dbContext.Orders.SingleOrDefaultAsync(order => order.Id == orderId, cancellationToken);
+    }
+
+    public async Task PrepareDeliveryStepReorderingAsync(Order order, CancellationToken cancellationToken = default)
+    {
+        // Vacate positive ranks inside the caller's transaction. The final save restores
+        // retained rows, deletes removed rows and inserts new rows without unique-index collisions.
+        if (_dbContext.Database.CurrentTransaction is null)
+            throw new InvalidOperationException("Delivery step reordering requires a transaction.");
+        try
+        {
+            await _dbContext.OrderDeliverySteps.Where(step => step.OrderId == order.Id)
+                .ExecuteUpdateAsync(update => update.SetProperty(step => step.StepOrder, step => -step.Id), cancellationToken);
+        }
+        catch (DbException exception)
+        {
+            throw new PersistenceException(exception.Message, exception);
+        }
+        foreach (var step in order.DeliverySteps)
+        {
+            var rank = _dbContext.Entry(step).Property(value => value.StepOrder);
+            // Match EF's snapshot to the staged row so swaps do not form a dependency cycle.
+            rank.OriginalValue = -step.Id;
+            rank.IsModified = true;
+        }
     }
 
     public void Remove(Order order) => _dbContext.Orders.Remove(order);

@@ -18,7 +18,8 @@ public static class OrderInput
     public record DeliveryStep(
         int StepOrder,
         DeliveryMethod DeliveryMethod,
-        int HandlerId);
+        int HandlerId,
+        int? Id = null);
 
     public record Item(
         int ProductId,
