@@ -20,7 +20,7 @@ public class PropertyOption : ModelBase
         };
     }
 
-    public void Rename(string value)
+    internal void Rename(string value)
     {
         Value = value;
     }

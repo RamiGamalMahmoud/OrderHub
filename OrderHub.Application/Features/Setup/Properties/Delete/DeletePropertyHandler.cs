@@ -1,35 +1,40 @@
 using MediatR;
-using OrderHub.Application.Interfaces;
 using OrderHub.Application.Features.Setup.Properties.Contracts;
+using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Common;
-using OrderHub.Domain.Models;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace OrderHub.Application.Features.Setup.Properties.Delete;
 
-internal sealed class DeletePropertyHandler(IPropertyRepository repository, IUnitOfWork unitOfWork) : IRequestHandler<DeletePropertyCommand, Result>
+internal sealed class DeletePropertyHandler(
+    IPropertyRepository repository,
+    IUnitOfWork unitOfWork) : IRequestHandler<DeletePropertyCommand, Result>
 {
     public async Task<Result> Handle(DeletePropertyCommand request, CancellationToken cancellationToken)
     {
-        var id = request.Id;
+        var property = await repository.FindAsync(request.Id, cancellationToken);
 
-
-        Property property = await repository.FindAsync(id, cancellationToken);
-
-        if (property is not null)
+        if (property is null)
         {
-            repository.Remove(property);
-            try
-            {
-                await unitOfWork.SaveChangesAsync(cancellationToken);
-                return Result.Success();
-            }
-            catch (System.Exception)
-            {
-                return Result.Failure();
-            }
+            return Result.Failure("الخاصية غير موجودة.");
         }
-        return Result.Failure();
+
+        if (await repository.IsInUseAsync(property.Id, cancellationToken))
+        {
+            return Result.Failure("لا يمكن حذف خاصية مستخدمة في منتجات أو طلبات.");
+        }
+
+        repository.Remove(property);
+
+        try
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            return Result.Success();
+        }
+        catch (PersistenceException)
+        {
+            return Result.Failure("تعذر حذف الخاصية. يرجى المحاولة مرة أخرى.");
+        }
     }
 }

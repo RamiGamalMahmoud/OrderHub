@@ -1,11 +1,8 @@
-using OrderHub.Domain.Enums;
-using OrderHub.Application.Authorization;
 using MediatR;
-
-using System.Threading;
-using System.Threading.Tasks;
+using OrderHub.Application.Authorization;
+using OrderHub.Domain.Enums;
 
 namespace OrderHub.Application.Features.Setup.Properties.Update;
 
 [RequirePermission(PermissionFeature.Properties, PermissionLevel.Write)]
-public sealed record UpdatePropertyCommand(PropertyUpdateInput Dto) : IRequest;
+public sealed record UpdatePropertyCommand(PropertyUpdateInput Input) : IRequest;

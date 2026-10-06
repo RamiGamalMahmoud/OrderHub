@@ -1,0 +1,36 @@
+<MudStack Row
+          AlignItems="AlignItems.Center"
+          Spacing="1">
+    <MudTextField T="string"
+                  @bind-Value="Option.Value"
+                  Label="قيمة الخيار"
+                  Variant="Variant.Outlined"
+                  Margin="Margin.Dense"
+                  Required="true"
+                  RequiredError="قيمة الخيار مطلوبة."
+                  MaxLength="100"
+                  Validation="@(new Func<string, string?>(PropertyEditorState.ValidateText))"
+                  Immediate="true"
+                  Disabled="Disabled" />
+
+    <MudIconButton Icon="@Icons.Material.Filled.Close"
+                   Size="Size.Small"
+                   Color="Color.Error"
+                   Disabled="Disabled"
+                   aria-label="إزالة الخيار"
+                   OnClick="RemoveAsync" />
+</MudStack>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public PropertyOptionEditorState Option { get; set; } = null!;
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public EventCallback<PropertyOptionEditorState> OnRemove { get; set; }
+
+    private Task RemoveAsync() => OnRemove.InvokeAsync(Option);
+}

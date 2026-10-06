@@ -36,7 +36,7 @@ internal class OrderItemPropertyConfiguration
             .WithMany()
             .HasForeignKey(x => x.PropertyId)
             .IsRequired()
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(x => new
         {

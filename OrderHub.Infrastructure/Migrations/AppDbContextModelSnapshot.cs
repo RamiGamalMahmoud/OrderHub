@@ -1795,7 +1795,7 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasOne("OrderHub.Domain.Models.Property", "Property")
                         .WithMany()
                         .HasForeignKey("PropertyId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_order_item_properties_properties_property_id");
 
@@ -2079,7 +2079,7 @@ namespace OrderHub.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_users_role_role_id");
+                        .HasConstraintName("fk_users_roles_role_id");
 
                     b.Navigation("Role");
                 });
