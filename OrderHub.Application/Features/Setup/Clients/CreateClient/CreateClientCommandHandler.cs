@@ -3,28 +3,34 @@ using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using System.Threading;
 using System.Threading.Tasks;
-using OrderHub.Application.Features.Setup.Clients;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Features.Setup.Clients.Contracts;
 using OrderHub.Application.Features.Setup.Cities.Contracts;
 
 namespace OrderHub.Application.Features.Setup.Clients;
 
-internal sealed class CreateClientCommandHandler(IClientRepository repository, IUnitOfWork unitOfWork, ICityRepository cities) : IRequestHandler<CreateClientCommand, Result>
+internal sealed class CreateClientCommandHandler(
+    IClientRepository repository,
+    IUnitOfWork unitOfWork,
+    ICityRepository cities) : IRequestHandler<CreateClientCommand, Result>
 {
     public async Task<Result> Handle(CreateClientCommand request, CancellationToken cancellationToken)
     {
+        var validation = ClientInputValidation.Validate(request.Client);
+        if (!validation.IsSuccess)
+        {
+            return validation;
+        }
 
-        City city = await cities.FindAsync(request.Client.CityId, cancellationToken);
-        Client client = new Client(
-            request.Client.Name,
-            request.Client.Street,
-            city,
-            request.Client.PhoneNumber,
-            request.Client.CountryCode);
+        var input = request.Client;
+        var city = await cities.FindAsync(input.CityId, cancellationToken);
+        if (city is null)
+        {
+            return Result.Failure("المدينة غير موجودة.");
+        }
 
-        client.Location = request.Client.Location;
-
+        var client = new Client(input.Name, input.Street, city, input.PhoneNumber, input.CountryCode);
+        client.UpdateLocation(input.Location);
         repository.Add(client);
 
         try
@@ -34,7 +40,7 @@ internal sealed class CreateClientCommandHandler(IClientRepository repository, I
         }
         catch (PersistenceException)
         {
-            return Result.Failure();
+            return Result.Failure("تعذر حفظ العميل. يرجى المحاولة مرة أخرى.");
         }
     }
 }

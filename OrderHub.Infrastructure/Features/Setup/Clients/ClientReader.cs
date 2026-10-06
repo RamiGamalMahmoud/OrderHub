@@ -19,6 +19,7 @@ internal sealed class ClientReader(AppDbContextFactory contextFactory) : IClient
 
         var query = appDbContext.Clients.AsNoTracking()
             .OrderBy(c => c.Name.Value)
+            .ThenBy(c => c.Id)
             .Select(c => new ClientListItem(
                 c.Id,
                 c.Name.Value,
@@ -35,6 +36,8 @@ internal sealed class ClientReader(AppDbContextFactory contextFactory) : IClient
 
         return await appDbContext
             .Clients.AsNoTracking()
+            .OrderBy(c => c.Name.Value)
+            .ThenBy(c => c.Id)
             .Select(c => new ClientListItem(
                 c.Id,
                 c.Name.Value,
@@ -61,8 +64,7 @@ internal sealed class ClientReader(AppDbContextFactory contextFactory) : IClient
                 client.Location))
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
 
-        // Preserve the existing missing-client exception rather than changing caller semantics.
-        return result ?? throw new System.NullReferenceException();
+        return result;
     }
 
     public async Task<IEnumerable<ClientListItem>> GetClientsByNameAsync(string searchTerm, int take, CancellationToken cancellationToken)
@@ -83,6 +85,7 @@ internal sealed class ClientReader(AppDbContextFactory contextFactory) : IClient
 
         return await query
             .OrderBy(client => client.Name.Value)
+            .ThenBy(client => client.Id)
             .Take(take)
             .Select(client => new ClientListItem(
                 client.Id,
@@ -112,6 +115,8 @@ internal sealed class ClientReader(AppDbContextFactory contextFactory) : IClient
         using AppDbContext appDbContext = contextFactory.CreateDbContext();
         return await appDbContext
             .Clients.AsNoTracking()
+            .OrderBy(c => c.Name.Value)
+            .ThenBy(c => c.Id)
             .Select(c => new ClientInfo(c.Id, c.Name.Value))
             .ToListAsync(cancellationToken: cancellationToken);
     }

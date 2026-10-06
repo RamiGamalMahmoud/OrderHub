@@ -1,32 +1,45 @@
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using OrderHub.Application.Features.Setup.Clients;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Features.Setup.Clients.Contracts;
 using OrderHub.Application.Features.Setup.Cities.Contracts;
 
 namespace OrderHub.Application.Features.Setup.Clients;
 
-internal sealed class UpdateClientCommandHandler(IClientRepository repository, IUnitOfWork unitOfWork, ICityRepository cities) : IRequestHandler<UpdateClientCommand, Result>
+internal sealed class UpdateClientCommandHandler(
+    IClientRepository repository,
+    IUnitOfWork unitOfWork,
+    ICityRepository cities) : IRequestHandler<UpdateClientCommand, Result>
 {
     public async Task<Result> Handle(UpdateClientCommand request, CancellationToken cancellationToken)
     {
+        var validation = ClientInputValidation.Validate(request.Client);
+        if (!validation.IsSuccess)
+        {
+            return validation;
+        }
 
-        var dto = request.Client;
+        var input = request.Client;
+        var city = await cities.FindAsync(input.CityId, cancellationToken);
+        if (city is null)
+        {
+            return Result.Failure("المدينة غير موجودة.");
+        }
 
-        City newCity = await cities.FindAsync(dto.CityId, cancellationToken);
+        var client = await repository.GetForUpdateAsync(request.Id, cancellationToken);
+        if (client is null)
+        {
+            return Result.Failure("العميل غير موجود.");
+        }
 
-        Client client = await repository.GetForUpdateAsync(request.Id, cancellationToken);
-
-        client.Location = dto.Location;
-
-        client.UpdateName(dto.Name);
-        client.UpdatePhone(dto.CountryCode, dto.PhoneNumber);
-        client.UpdateAddress(newCity, dto.Street);
+        await repository.PrepareContactUpdateAsync(client, input, city, cancellationToken);
+        client.UpdateName(input.Name);
+        client.UpdatePhone(input.CountryCode, input.PhoneNumber);
+        client.UpdateAddress(city, input.Street);
+        client.UpdateLocation(input.Location);
 
         try
         {
@@ -35,7 +48,7 @@ internal sealed class UpdateClientCommandHandler(IClientRepository repository, I
         }
         catch (PersistenceException)
         {
-            return Result.Failure();
+            return Result.Failure("تعذر حفظ العميل. يرجى المحاولة مرة أخرى.");
         }
     }
 }
