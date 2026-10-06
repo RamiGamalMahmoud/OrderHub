@@ -7,4 +7,4 @@ using OrderHub.Application.Features.Setup.ShippingCarriers.Contracts;
 namespace OrderHub.Application.Features.Setup.ShippingCarriers;
 
 [RequirePermission(PermissionFeature.ShippingCarriers, PermissionLevel.Write)]
-public record UpdateShippingCarrierCommand(ShippingCarrierUpdateInput Dto) : IRequest<Result>;
+public record UpdateShippingCarrierCommand(ShippingCarrierUpdateInput Input) : IRequest<Result>;

@@ -1,28 +1,39 @@
 using MediatR;
+using OrderHub.Application.Features.Setup.Deliverymen.Contracts;
+using OrderHub.Application.Features.Setup.Cities.Contracts;
+using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using System.Threading;
 using System.Threading.Tasks;
-using OrderHub.Application.Features.Setup.Deliverymen;
-using OrderHub.Application.Interfaces;
-using OrderHub.Application.Features.Setup.Deliverymen.Contracts;
-using OrderHub.Application.Features.Setup.Cities.Contracts;
 
 namespace OrderHub.Application.Features.Setup.Deliverymen;
 
-internal sealed class CreateDeliverymanCommandHandler(IDeliverymanRepository repository, IUnitOfWork unitOfWork, ICityRepository cities) : IRequestHandler<CreateDeliverymanCommand, Result>
+internal sealed class CreateDeliverymanCommandHandler(
+    IDeliverymanRepository repository,
+    IUnitOfWork unitOfWork,
+    ICityRepository cities) : IRequestHandler<CreateDeliverymanCommand, Result>
 {
     public async Task<Result> Handle(CreateDeliverymanCommand request, CancellationToken cancellationToken)
     {
+        var input = request.Deliveryman;
+        Result validation = DeliverymanInputValidation.Validate(input.Name, input.PhoneNumber);
 
-        City city = await cities.FindAsync(request.Deliveryman.CityId, cancellationToken);
+        if (!validation.IsSuccess)
+        {
+            return validation;
+        }
 
-        Deliveryman deliveryman = new Deliveryman(
-            request.Deliveryman.Name,
-            city,
-            request.Deliveryman.PhoneNumber);
+        var city = await cities.FindAsync(input.CityId, cancellationToken);
 
+        if (city is null)
+        {
+            return Result.Failure("المدينة غير موجودة.");
+        }
+
+        var deliveryman = new Deliveryman(input.Name, city, input.PhoneNumber);
         repository.Add(deliveryman);
+
         try
         {
             await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -30,8 +41,7 @@ internal sealed class CreateDeliverymanCommandHandler(IDeliverymanRepository rep
         }
         catch (PersistenceException)
         {
-            return Result.Failure();
+            return Result.Failure("تعذر حفظ المندوب. يرجى المحاولة مرة أخرى.");
         }
-
     }
 }

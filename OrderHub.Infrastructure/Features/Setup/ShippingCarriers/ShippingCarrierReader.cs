@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Features.Setup.ShippingCarriers.Contracts;
-using OrderHub.Application.Features.Setup.ShippingCarriers;
+using OrderHub.Domain.Models;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace OrderHub.Infrastructure.Features.Setup.ShippingCarriers;
 
@@ -12,86 +12,73 @@ internal sealed class ShippingCarrierReader(AppDbContextFactory contextFactory) 
 {
     public async Task<ShippingCarrierEdit> GetShippingCarrierForEditAsync(int id, CancellationToken cancellationToken)
     {
-        using AppDbContext appDbContext = contextFactory.CreateDbContext();
+        await using var context = contextFactory.CreateDbContext();
 
-        return await appDbContext
-            .ShippingCarriers.AsNoTracking()
-            .Where(s => s.Id == id)
-            .Select(s => new ShippingCarrierEdit(
-                s.Id,
-                s.Name.Value,
-                s.ShippingCost.Value,
-                s.Phone.Number.CountryCode,
-                s.Phone.Number.NationalNumber,
-                s.Address.City.Id,
-                s.Address.Street))
-            .SingleOrDefaultAsync(cancellationToken: cancellationToken);
-    }
-
-    public async Task<IEnumerable<ShippingCarrierListItem>> GetShippingCarriersByNameAsync(string searchTerm, int take, CancellationToken cancellationToken)
-    {
-        using AppDbContext appDbContext = contextFactory.CreateDbContext();
-
-        IQueryable<Domain.Models.ShippingCarrier> query = appDbContext.ShippingCarriers.AsNoTracking();
-
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            string term = searchTerm.Trim();
-            query = query.Where(carrier =>
-                carrier.Name.Value.Contains(term) ||
-                (carrier.Phone.Number.CountryCode + " - " + carrier.Phone.Number.NationalNumber).Contains(term) ||
-                carrier.Address.Street.Contains(term) ||
-                carrier.Address.City.Name.Value.Contains(term));
-        }
-
-        return await query
-            .OrderBy(carrier => carrier.Name.Value)
-            .Take(take)
-            .Select(carrier => new ShippingCarrierListItem(
-                carrier.Id,
-                carrier.Name.Value,
-                carrier.ShippingCost.Value,
-                carrier.Phone.Number.FullNumber,
-                $"{carrier.Address.City.Name.Value} - {carrier.Address.Street}"))
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task<ShippingCarrierListItem> GetShippingCarrierByIdAsync(int id, CancellationToken cancellationToken)
-    {
-        using AppDbContext appDbContext = contextFactory.CreateDbContext();
-
-        return await appDbContext.ShippingCarriers.AsNoTracking()
+        return await context.ShippingCarriers.AsNoTracking()
             .Where(carrier => carrier.Id == id)
-            .Select(carrier => new ShippingCarrierListItem(
+            .Select(carrier => new ShippingCarrierEdit(
                 carrier.Id,
                 carrier.Name.Value,
                 carrier.ShippingCost.Value,
-                carrier.Phone.Number.FullNumber,
-                $"{carrier.Address.City.Name.Value} - {carrier.Address.Street}"))
+                carrier.Phone != null ? carrier.Phone.Number.CountryCode : "",
+                carrier.Phone != null ? carrier.Phone.Number.NationalNumber : "",
+                carrier.Address != null ? carrier.Address.City.Id : 0,
+                carrier.Address != null ? carrier.Address.Street : ""))
             .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<IEnumerable<ShippingCarrierListItem>> GetShippingCarriersAsync(CancellationToken cancellationToken)
     {
-        using AppDbContext appDbContext = contextFactory.CreateDbContext();
+        await using var context = contextFactory.CreateDbContext();
 
-        return await appDbContext
-            .ShippingCarriers.AsNoTracking()
-            .Select(s => new ShippingCarrierListItem(
-                s.Id,
-                s.Name.Value,
-                s.ShippingCost.Value,
-                $"{s.Phone.Number.FullNumber}",
-                $"{s.Address.City.Name} - {s.Address.Street}"))
-            .AsNoTracking()
-            .ToListAsync(cancellationToken: cancellationToken);
+        return await Project(context.ShippingCarriers.AsNoTracking()
+                .OrderBy(carrier => carrier.Name.Value)
+                .ThenBy(carrier => carrier.Id))
+            .ToListAsync(cancellationToken);
     }
+
+    public async Task<IEnumerable<ShippingCarrierListItem>> GetShippingCarriersByNameAsync(
+        string searchTerm,
+        int take,
+        CancellationToken cancellationToken)
+    {
+        await using var context = contextFactory.CreateDbContext();
+        var query = context.ShippingCarriers.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            string term = searchTerm.Trim();
+            query = query.Where(carrier => carrier.Name.Value.Contains(term) ||
+                (carrier.Phone != null && (carrier.Phone.Number.CountryCode + " - " + carrier.Phone.Number.NationalNumber).Contains(term)) ||
+                (carrier.Address != null && (carrier.Address.Street.Contains(term) || carrier.Address.City.Name.Value.Contains(term))));
+        }
+
+        return await Project(query.OrderBy(carrier => carrier.Name.Value).ThenBy(carrier => carrier.Id).Take(take))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<ShippingCarrierListItem> GetShippingCarrierByIdAsync(int id, CancellationToken cancellationToken)
+    {
+        await using var context = contextFactory.CreateDbContext();
+
+        return await Project(context.ShippingCarriers.AsNoTracking().Where(carrier => carrier.Id == id))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    private static IQueryable<ShippingCarrierListItem> Project(IQueryable<ShippingCarrier> query) =>
+        query.Select(carrier => new ShippingCarrierListItem(
+            carrier.Id,
+            carrier.Name.Value,
+            carrier.ShippingCost.Value,
+            carrier.Phone != null ? carrier.Phone.Number.CountryCode + " - " + carrier.Phone.Number.NationalNumber : "",
+            carrier.Address != null ? carrier.Address.City.Name.Value + " - " + carrier.Address.Street : ""));
 
     public async Task<IEnumerable<ShippingCarrierInfo>> GetAllShippingCarriersInfoAsync(CancellationToken cancellationToken)
     {
-        using AppDbContext appDbContext = contextFactory.CreateDbContext();
-        return await appDbContext.ShippingCarriers.AsNoTracking()
-            .Select(s => new ShippingCarrierInfo(s.Id, s.Name.Value))
+        await using var context = contextFactory.CreateDbContext();
+
+        return await context.ShippingCarriers.AsNoTracking()
+            .Select(carrier => new ShippingCarrierInfo(carrier.Id, carrier.Name.Value))
             .ToListAsync(cancellationToken);
     }
 }

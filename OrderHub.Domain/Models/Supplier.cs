@@ -5,9 +5,16 @@ namespace OrderHub.Domain.Models;
 
 public class Supplier : ModelBase
 {
-    private Supplier() { }
+    private Supplier()
+    {
+    }
 
-    public Supplier(string name, TimeOnly openAt, TimeOnly closeAt, Address address, Phone phone)
+    public Supplier(
+        string name,
+        TimeOnly openAt,
+        TimeOnly closeAt,
+        Address address,
+        Phone phone)
     {
         UpdateName(name);
         UpdateAddress(address);
@@ -25,6 +32,7 @@ public class Supplier : ModelBase
     public Phone Phone { get; private set; }
 
     public Address Address { get; private set; }
+
     public BusinessHours BusinessHours { get; private set; }
 
     public void UpdatePhone(Phone phone)
@@ -37,7 +45,7 @@ public class Supplier : ModelBase
 
     public void UpdateName(string name)
     {
-        Name = new EntityName(name);
+        Name = new EntityName(name?.Trim());
     }
 
     public void UpdateAddress(Address address)

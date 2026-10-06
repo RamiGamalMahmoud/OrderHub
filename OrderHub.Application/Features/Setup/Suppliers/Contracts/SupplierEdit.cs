@@ -6,8 +6,8 @@ namespace OrderHub.Application.Features.Setup.Suppliers.Contracts;
 public record SupplierEdit(
         int Id,
         string Name,
-        TimeOnly OpenAt,
-        TimeOnly CloseAt,
+        TimeOnly? OpenAt,
+        TimeOnly? CloseAt,
         string Street,
         int CityId,
         string PhoneNumber,

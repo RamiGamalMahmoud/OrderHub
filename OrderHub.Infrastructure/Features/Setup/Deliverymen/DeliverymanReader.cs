@@ -13,13 +13,15 @@ internal sealed class DeliverymanReader(AppDbContextFactory contextFactory) : ID
     public async Task<IEnumerable<DeliverymanListItem>> GetAllDeliverymenListAsync(CancellationToken cancellationToken)
     {
         using AppDbContext appDbContext = contextFactory.CreateDbContext();
+
         return await appDbContext.Deliverymen.AsNoTracking()
+            .OrderBy(deliveryman => deliveryman.Name.Value)
+            .ThenBy(deliveryman => deliveryman.Id)
             .Select(d => new DeliverymanListItem(
                 d.Id,
                 d.Name.Value,
                 d.City.Name.Value,
                 d.PhoneNumber))
-            .AsNoTracking()
             .ToListAsync(cancellationToken: cancellationToken);
     }
 
@@ -28,6 +30,8 @@ internal sealed class DeliverymanReader(AppDbContextFactory contextFactory) : ID
         using AppDbContext appDbContext = contextFactory.CreateDbContext();
 
         return await appDbContext.Deliverymen.AsNoTracking()
+            .OrderBy(deliveryman => deliveryman.Name.Value)
+            .ThenBy(deliveryman => deliveryman.Id)
             .Where(d => d.Id == id)
             .Select(d => new DeliverymanInput(
                 d.Name.Value,
@@ -67,6 +71,8 @@ internal sealed class DeliverymanReader(AppDbContextFactory contextFactory) : ID
         using AppDbContext appDbContext = contextFactory.CreateDbContext();
 
         return await appDbContext.Deliverymen.AsNoTracking()
+            .OrderBy(deliveryman => deliveryman.Name.Value)
+            .ThenBy(deliveryman => deliveryman.Id)
             .Where(deliveryman => deliveryman.Id == id)
             .Select(deliveryman => new DeliverymanListItem(
                 deliveryman.Id,

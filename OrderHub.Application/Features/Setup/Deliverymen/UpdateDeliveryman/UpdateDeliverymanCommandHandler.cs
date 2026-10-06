@@ -1,31 +1,45 @@
 using MediatR;
+using OrderHub.Application.Features.Setup.Deliverymen.Contracts;
+using OrderHub.Application.Features.Setup.Cities.Contracts;
+using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using System.Threading;
 using System.Threading.Tasks;
-using OrderHub.Application.Features.Setup.Deliverymen;
-using OrderHub.Application.Interfaces;
-using OrderHub.Application.Features.Setup.Deliverymen.Contracts;
-using OrderHub.Application.Features.Setup.Cities.Contracts;
 
 namespace OrderHub.Application.Features.Setup.Deliverymen;
 
-internal sealed class UpdateDeliverymanCommandHandler(IDeliverymanRepository repository, IUnitOfWork unitOfWork, ICityRepository cities) : IRequestHandler<UpdateDeliverymanCommand, Result>
+internal sealed class UpdateDeliverymanCommandHandler(
+    IDeliverymanRepository repository,
+    IUnitOfWork unitOfWork,
+    ICityRepository cities) : IRequestHandler<UpdateDeliverymanCommand, Result>
 {
     public async Task<Result> Handle(UpdateDeliverymanCommand request, CancellationToken cancellationToken)
     {
-
-        Deliveryman deliveryman = await repository.FindAsync(request.Id, cancellationToken);
-
-        City city = await cities.FindAsync(request.Deliveryman.CityId, cancellationToken);
+        var input = request.Deliveryman;
+        var deliveryman = await repository.FindAsync(request.Id, cancellationToken);
 
         if (deliveryman is null)
         {
-            return Result.Failure();
+            return Result.Failure("المندوب غير موجود.");
         }
 
-        deliveryman.Rename(request.Deliveryman.Name);
-        deliveryman.PhoneNumber = request.Deliveryman.PhoneNumber;
+        Result validation = DeliverymanInputValidation.Validate(input.Name, input.PhoneNumber);
+
+        if (!validation.IsSuccess)
+        {
+            return validation;
+        }
+
+        var city = await cities.FindAsync(input.CityId, cancellationToken);
+
+        if (city is null)
+        {
+            return Result.Failure("المدينة غير موجودة.");
+        }
+
+        deliveryman.Rename(input.Name);
+        deliveryman.ChangePhoneNumber(input.PhoneNumber);
         deliveryman.ChangeCity(city);
 
         try
@@ -35,7 +49,7 @@ internal sealed class UpdateDeliverymanCommandHandler(IDeliverymanRepository rep
         }
         catch (PersistenceException)
         {
-            return Result.Failure();
+            return Result.Failure("تعذر حفظ المندوب. يرجى المحاولة مرة أخرى.");
         }
     }
 }

@@ -1,0 +1,360 @@
+@page "/suppliers"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.Suppliers,
+    PermissionLevel.Read)]
+
+@inject IRequestExecutor RequestExecutor
+@inject OrderHub.Web.Services.PermissionAccess PermissionAccess
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject ILogger<Index> Logger
+
+<PageTitle>الموردون</PageTitle>
+
+<MudStack Spacing="3">
+    <MudStack Row
+              Wrap="Wrap.Wrap"
+              AlignItems="AlignItems.Center"
+              Justify="Justify.SpaceBetween">
+        <div>
+            <MudText Typo="Typo.h5">
+                الموردون
+            </MudText>
+
+            <MudText Typo="Typo.body2"
+                     Color="Color.Secondary">
+                إدارة الموردون المتاحة في النظام
+            </MudText>
+        </div>
+
+        @if (CanCreate)
+        {
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="IsBusy"
+                       OnClick="OpenCreateDialogAsync">
+                إضافة مورد
+            </MudButton>
+        }
+    </MudStack>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true"
+                           Color="Color.Primary" />
+
+        <MudText Typo="Typo.body2">
+            جاري تحميل الموردون...
+        </MudText>
+    }
+    else if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error"
+                  Dense="true">
+            @_error
+        </MudAlert>
+
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="LoadAsync">
+            إعادة المحاولة
+        </MudButton>
+    }
+    else if (_suppliers.Count == 0)
+    {
+        <MudPaper Outlined="true"
+                  Class="pa-4">
+            <MudText Typo="Typo.body1">
+                لم تتم إضافة موردين بعد.
+            </MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudTable T="SupplierListItem"
+                  Items="FilteredSuppliers"
+                  Dense="true"
+                  Hover="true"
+                  Outlined="true"
+                  Elevation="0"
+                  Breakpoint="Breakpoint.Sm">
+            <ToolBarContent>
+                <MudTextField T="string"
+                              @bind-Value="_searchTerm"
+                              Placeholder="ابحث عن مورد..."
+                              aria-label="البحث عن مورد"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Immediate="true"
+                              Clearable="true"
+                              Style="max-width:320px" />
+            </ToolBarContent>
+
+            <HeaderContent>
+                <MudTh>
+                    اسم المورد
+                </MudTh>
+
+                <MudTh>
+                    الهاتف
+                </MudTh>
+
+                <MudTh>
+                    العنوان
+                </MudTh>
+
+                @if (_canWrite)
+                {
+                    <MudTh>
+                        الإجراءات
+                    </MudTh>
+                }
+            </HeaderContent>
+
+            <RowTemplate Context="supplier">
+                <MudTd DataLabel="اسم المورد"
+                       Style="overflow-wrap:anywhere">
+                    @supplier.Name
+                </MudTd>
+
+                <MudTd DataLabel="الهاتف"
+                       Style="overflow-wrap:anywhere">
+                    @ContactText(supplier.PhoneNumber)
+                </MudTd>
+
+                <MudTd DataLabel="العنوان"
+                       Style="overflow-wrap:anywhere">
+                    @ContactText(supplier.Address)
+                </MudTd>
+
+                @if (_canWrite)
+                {
+                    <MudTd DataLabel="الإجراءات">
+                        <MudStack Row
+                                  Spacing="0">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           Disabled="IsBusy"
+                                           aria-label="تعديل المورد"
+                                           OnClick="@(() => OpenEditDialogAsync(supplier))" />
+
+                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           Disabled="IsBusy"
+                                           aria-label="حذف المورد"
+                                           OnClick="@(() => ConfirmDeleteAsync(supplier))" />
+                        </MudStack>
+                    </MudTd>
+                }
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2">
+                    لا توجد موردين تطابق البحث.
+                </MudText>
+            </NoRecordsContent>
+
+            <PagerContent>
+                @if (_suppliers.Count > 10)
+                {
+                    <MudTablePager PageSizeOptions="@(new[] { 10, 25, 50 })"
+                                   RowsPerPageString="موردين لكل صفحة"
+                                   InfoFormat="{first_item}-{last_item} من {all_items}" />
+                }
+            </PagerContent>
+        </MudTable>
+    }
+</MudStack>
+
+@code {
+    private IReadOnlyList<SupplierListItem> _suppliers = [];
+    private string? _searchTerm;
+    private string? _error;
+    private bool _loading = true;
+    private bool _canWrite;
+    private bool _dialogOpen;
+    private bool _deleting;
+
+    private bool CanCreate =>
+        _canWrite && !_loading && _error is null;
+
+    private bool IsBusy =>
+        _loading || _dialogOpen || _deleting;
+
+    private IEnumerable<SupplierListItem> FilteredSuppliers
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_searchTerm))
+            {
+                return _suppliers;
+            }
+
+            string searchTerm = _searchTerm.Trim();
+
+            return _suppliers.Where(supplier =>
+                supplier.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (supplier.PhoneNumber?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true) ||
+                (supplier.Address?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true));
+        }
+    }
+
+    private static string ContactText(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "—" : value;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _canWrite = false;
+        _error = null;
+
+        try
+        {
+            var suppliers = await RequestExecutor.ExecuteAsync(new GetAllSuppliersQuery());
+            bool canWrite = await PermissionAccess.IsAllowedAsync(
+                PermissionFeature.Suppliers,
+                PermissionLevel.Write);
+
+            _suppliers = suppliers.ToList();
+            _canWrite = canWrite;
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load suppliers");
+            _error = "تعذر تحميل الموردين. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Task OpenCreateDialogAsync() => OpenEditorAsync(null);
+
+    private Task OpenEditDialogAsync(SupplierListItem supplier) => OpenEditorAsync(supplier.Id);
+
+    private async Task OpenEditorAsync(int? supplierId)
+    {
+        if (IsBusy || !_canWrite)
+        {
+            return;
+        }
+
+        _dialogOpen = true;
+
+        try
+        {
+            DialogParameters<SupplierEditorDialog> parameters = new()
+            {
+                { dialog => dialog.SupplierId, supplierId }
+            };
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = false,
+                CloseOnEscapeKey = false,
+                BackdropClick = false
+            };
+
+            string title = supplierId.HasValue ? "تعديل المورد" : "إضافة مورد";
+
+            var dialog = await DialogService.ShowAsync<SupplierEditorDialog>(
+                title,
+                parameters,
+                options);
+
+            DialogResult? result = await dialog.Result;
+
+            if (result is { Canceled: false, Data: true })
+            {
+                await LoadAsync();
+            }
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to open supplier editor for {SupplierId}",
+                supplierId);
+
+            Snackbar.Add(
+                "تعذر فتح بيانات المورد. يرجى المحاولة مرة أخرى.",
+                Severity.Error);
+        }
+        finally
+        {
+            _dialogOpen = false;
+        }
+    }
+
+    private async Task ConfirmDeleteAsync(SupplierListItem supplier)
+    {
+        if (IsBusy || !_canWrite)
+        {
+            return;
+        }
+
+        _deleting = true;
+
+        try
+        {
+            bool? confirmed = await DialogService.ShowMessageBoxAsync(
+                "حذف المورد",
+                $"هل تريد حذف المورد \"{supplier.Name}\"؟",
+                yesText: "حذف",
+                cancelText: "إلغاء");
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Result result = await RequestExecutor.ExecuteAsync(new DeleteSupplierCommand(supplier.Id));
+
+            if (!result.IsSuccess)
+            {
+                Snackbar.Add(result.ErrorMessage, Severity.Error);
+                return;
+            }
+
+            Snackbar.Add("تم حذف المورد بنجاح.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to delete supplier {SupplierId}",
+                supplier.Id);
+
+            Snackbar.Add(
+                "تعذر حذف المورد. يرجى المحاولة مرة أخرى.",
+                Severity.Error);
+        }
+        finally
+        {
+            _deleting = false;
+        }
+    }
+}

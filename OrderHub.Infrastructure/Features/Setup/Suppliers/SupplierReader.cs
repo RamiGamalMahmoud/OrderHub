@@ -1,11 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Features.Setup.Suppliers.Contracts;
-using OrderHub.Application.Features.Setup.Suppliers;
-using OrderHub.Domain.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace OrderHub.Infrastructure.Features.Setup.Suppliers;
 
@@ -13,46 +12,45 @@ internal sealed class SupplierReader(AppDbContextFactory contextFactory) : ISupp
 {
     public async Task<IEnumerable<SupplierListItem>> GetAllSuppliersAsync(CancellationToken cancellationToken)
     {
-        using (AppDbContext appDbContext = contextFactory.CreateDbContext())
-        {
-            return await appDbContext
-                .Suppliers.AsNoTracking()
-                .Select(s => new SupplierListItem(
-                    s.Id,
-                    s.Name.Value,
-                    s.BusinessHours.OpenAt, s.BusinessHours.CloseAt,
-                    $"{s.Address.City.Name} - {s.Address.Street}", s.Phone.ToString()))
-                .ToListAsync(cancellationToken: cancellationToken);
-        }
+        await using var context = contextFactory.CreateDbContext();
+
+        return await context.Suppliers.AsNoTracking()
+            .OrderBy(supplier => supplier.Name.Value)
+            .ThenBy(supplier => supplier.Id)
+            .Select(supplier => new SupplierListItem(
+                supplier.Id,
+                supplier.Name.Value,
+                supplier.BusinessHours != null ? supplier.BusinessHours.OpenAt : default,
+                supplier.BusinessHours != null ? supplier.BusinessHours.CloseAt : default,
+                supplier.Address != null ? supplier.Address.City.Name.Value + " - " + supplier.Address.Street : "",
+                supplier.Phone != null ? supplier.Phone.Number.CountryCode + " - " + supplier.Phone.Number.NationalNumber : ""))
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<SupplierEdit> GetSupplierForEditAsync(int id, CancellationToken cancellationToken)
     {
-        using AppDbContext appDbContext = contextFactory.CreateDbContext();
-        var result = await appDbContext
-            .Suppliers.AsNoTracking()
-            .Where(s => s.Id == id)
+        await using var context = contextFactory.CreateDbContext();
+
+        return await context.Suppliers.AsNoTracking()
+            .Where(supplier => supplier.Id == id)
             .Select(supplier => new SupplierEdit(
                 supplier.Id,
                 supplier.Name.Value,
-                supplier.BusinessHours.OpenAt,
-                supplier.BusinessHours.CloseAt,
-                supplier.Address.Street,
-                supplier.Address.City.Id,
-                supplier.Phone.Number.NationalNumber,
-                supplier.Phone.Number.CountryCode))
-            .FirstOrDefaultAsync(cancellationToken: cancellationToken);
-
-        // Preserve the existing missing-supplier exception rather than inventing a business failure.
-        return result ?? throw new System.NullReferenceException();
+                supplier.BusinessHours != null ? supplier.BusinessHours.OpenAt : (TimeOnly?)null,
+                supplier.BusinessHours != null ? supplier.BusinessHours.CloseAt : (TimeOnly?)null,
+                supplier.Address != null ? supplier.Address.Street : "",
+                supplier.Address != null ? supplier.Address.City.Id : 0,
+                supplier.Phone != null ? supplier.Phone.Number.NationalNumber : "",
+                supplier.Phone != null ? supplier.Phone.Number.CountryCode : ""))
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<IEnumerable<SupplierInfo>> GetSuppliersInfoAsync(CancellationToken cancellationToken)
     {
-        using AppDbContext appDbContext = contextFactory.CreateDbContext();
-        return await appDbContext
-            .Suppliers.AsNoTracking()
-            .Select(s => new SupplierInfo(s.Id, s.Name.Value))
-            .ToListAsync(cancellationToken: cancellationToken);
+        await using var context = contextFactory.CreateDbContext();
+
+        return await context.Suppliers.AsNoTracking()
+            .Select(supplier => new SupplierInfo(supplier.Id, supplier.Name.Value))
+            .ToListAsync(cancellationToken);
     }
 }

@@ -1,0 +1,345 @@
+@inject IRequestExecutor RequestExecutor
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject ILogger<SupplierEditorDialog> Logger
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            @DialogTitle
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true"
+                               Color="Color.Primary" />
+
+            <MudText Typo="Typo.body2"
+                     Class="mt-2">
+                جاري تحميل بيانات المورد...
+            </MudText>
+        }
+        else if (_loadError is not null)
+        {
+            <MudAlert Severity="Severity.Error"
+                      Dense="true">
+                @_loadError
+            </MudAlert>
+
+            <MudButton Variant="Variant.Text"
+                       OnClick="LoadAsync"
+                       Class="mt-2">
+                إعادة المحاولة
+            </MudButton>
+        }
+        else
+        {
+            <MudForm @ref="_form">
+                <MudStack Spacing="3"
+                          Class="pa-1">
+                    @if (_saveError is not null)
+                    {
+                        <MudAlert Severity="Severity.Error"
+                                  Dense="true">
+                            @_saveError
+                        </MudAlert>
+                    }
+
+                    <MudTextField T="string"
+                                  @bind-Value="_state.Name"
+                                  Label="اسم المورد"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  RequiredError="اسم المورد مطلوب."
+                                  MaxLength="100"
+                                  Validation="@(new Func<string, string?>(SupplierEditorState.ValidateName))"
+                                  Immediate="true"
+                                  Disabled="_saving" />
+                    @if (_cities.Count == 0)
+                    {
+                        <MudAlert Severity="Severity.Info"
+                                  Dense="true">
+                            لا توجد مدن متاحة. يرجى إضافة مدينة أولًا ثم إعادة المحاولة.
+                        </MudAlert>
+
+                        <MudButton OnClick="LoadAsync"
+                                   Disabled="_saving">
+                            إعادة المحاولة
+                        </MudButton>
+                    }
+
+                    <MudSelect T="int?"
+                               @bind-Value="_state.CityId"
+                               Label="المدينة"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Required="true"
+                               RequiredError="اختر المدينة."
+                               Disabled="_saving">
+                        @foreach (var city in _cities)
+                        {
+                            <MudSelectItem T="int?"
+                                           Value="@((int?)city.Id)">
+                                @city.Name
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudTextField T="string"
+                                  @bind-Value="_state.Street"
+                                  Label="العنوان"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  RequiredError="العنوان مطلوب."
+                                  MaxLength="150"
+                                  Disabled="_saving" />
+
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12"
+                                 sm="4">
+                            <MudTextField T="string"
+                                          @bind-Value="_state.CountryCode"
+                                          Label="مفتاح الدولة"
+                                          Placeholder="+20 أو +966"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Required="true"
+                                          RequiredError="مفتاح الدولة مطلوب."
+                                          MaxLength="4"
+                                          Validation="@(new Func<string, string?>(_state.ValidateCountryCode))"
+                                          Immediate="true"
+                                          Disabled="_saving" />
+                        </MudItem>
+
+                        <MudItem xs="12"
+                                 sm="8">
+                            <MudTextField T="string"
+                                          @bind-Value="_state.PhoneNumber"
+                                          Label="رقم الهاتف"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Required="true"
+                                          RequiredError="رقم الهاتف مطلوب."
+                                          MaxLength="14"
+                                          Validation="@(new Func<string, string?>(_state.ValidatePhone))"
+                                          Immediate="true"
+                                          Disabled="_saving" />
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudDivider />
+
+                    <MudText Typo="Typo.subtitle2">
+                        مواعيد العمل
+                    </MudText>
+
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12"
+                                 sm="6">
+                            <MudTimePicker @bind-Time="_state.OpenAt"
+                                           Label="وقت الافتتاح"
+                                           Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
+                                           Required="true"
+                                           RequiredError="وقت الافتتاح مطلوب."
+                                           Editable="true"
+                                           Disabled="_saving" />
+                        </MudItem>
+
+                        <MudItem xs="12"
+                                 sm="6">
+                            <MudTimePicker @bind-Time="_state.CloseAt"
+                                           Label="وقت الإغلاق"
+                                           Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
+                                           Required="true"
+                                           RequiredError="وقت الإغلاق مطلوب."
+                                           Editable="true"
+                                           Disabled="_saving" />
+                        </MudItem>
+                    </MudGrid>
+                </MudStack>
+            </MudForm>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Disabled="_saving"
+                   OnClick="Cancel">
+            إلغاء
+        </MudButton>
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Disabled="SaveDisabled"
+                   OnClick="SaveAsync">
+            @SaveButtonText
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter]
+    public int? SupplierId { get; set; }
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private SupplierEditorState _state = new();
+    private MudForm? _form;
+    private IReadOnlyList<CityInfo> _cities = [];
+    private string? _loadError;
+    private string? _saveError;
+    private bool _loading = true;
+    private bool _saving;
+
+    private string DialogTitle =>
+        SupplierId.HasValue
+            ? "تعديل المورد"
+            : "إضافة مورد";
+
+    private string SaveButtonText
+    {
+        get
+        {
+            if (_saving)
+            {
+                return "جاري الحفظ...";
+            }
+
+            return SupplierId.HasValue ? "حفظ التعديلات" : "إضافة";
+        }
+    }
+
+    private bool SaveDisabled =>
+        _loading || _saving || _loadError is not null || _cities.Count == 0;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        _saveError = null;
+        _state = new SupplierEditorState();
+
+        try
+        {
+            if (SupplierId is int supplierId)
+            {
+                var supplier = await RequestExecutor.ExecuteAsync(new GetSupplierForEditQuery(supplierId));
+
+                if (supplier is null)
+                {
+                    _loadError = "تعذر العثور على المورد المطلوب.";
+                    return;
+                }
+
+                _state = SupplierEditorState.FromRead(supplier);
+            }
+
+            var cities = await RequestExecutor.ExecuteAsync(new GetSupplierEditorCitiesQuery());
+            _cities = cities.OrderBy(city => city.Name).ThenBy(city => city.Id).ToList();
+        }
+        catch (AuthorizationDeniedException)
+        {
+            MudDialog.Cancel();
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to load supplier {SupplierId}",
+                SupplierId);
+
+            _loadError = "تعذر تحميل بيانات المورد. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        if (_saving)
+        {
+            return;
+        }
+
+        MudDialog.Cancel();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (SaveDisabled || _form is null)
+        {
+            return;
+        }
+
+        _saving = true;
+        _saveError = null;
+
+        try
+        {
+            await _form.ValidateAsync();
+
+            if (!_form.IsValid)
+            {
+                return;
+            }
+
+            _saveError = _state.ValidateAdditional();
+
+            if (_saveError is not null)
+            {
+                return;
+            }
+
+            Result result;
+
+            if (SupplierId is int supplierId)
+            {
+                result = await RequestExecutor.ExecuteAsync(
+                    _state.UpdateCommand(supplierId));
+            }
+            else
+            {
+                result = await RequestExecutor.ExecuteAsync(
+                    _state.CreateCommand());
+            }
+
+            if (!result.IsSuccess)
+            {
+                _saveError = result.ErrorMessage;
+                return;
+            }
+
+            Snackbar.Add("تم حفظ المورد بنجاح.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (AuthorizationDeniedException)
+        {
+            MudDialog.Cancel();
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to save supplier {SupplierId}",
+                SupplierId);
+
+            _saveError = "تعذر حفظ المورد. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

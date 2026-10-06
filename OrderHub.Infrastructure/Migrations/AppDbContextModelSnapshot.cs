@@ -2106,7 +2106,7 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasOne("OrderHub.Domain.Models.Supplier", null)
                         .WithMany()
                         .HasForeignKey("suppliers_id")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_product_supplier_suppliers_suppliers_id");
                 });

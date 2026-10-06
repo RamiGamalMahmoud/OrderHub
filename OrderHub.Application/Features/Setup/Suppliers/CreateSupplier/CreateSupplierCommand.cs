@@ -7,4 +7,4 @@ using OrderHub.Application.Features.Setup.Suppliers.Contracts;
 namespace OrderHub.Application.Features.Setup.Suppliers;
 
 [RequirePermission(PermissionFeature.Suppliers, PermissionLevel.Write)]
-public record CreateSupplierCommand(SupplierCreateInput Dto) : IRequest<Result>;
+public record CreateSupplierCommand(SupplierCreateInput Input) : IRequest<Result>;

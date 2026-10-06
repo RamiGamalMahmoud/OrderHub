@@ -1,0 +1,369 @@
+@page "/shipping-carriers"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.ShippingCarriers,
+    PermissionLevel.Read)]
+
+@inject IRequestExecutor RequestExecutor
+@inject OrderHub.Web.Services.PermissionAccess PermissionAccess
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject ILogger<Index> Logger
+
+<PageTitle>شركات الشحن</PageTitle>
+
+<MudStack Spacing="3">
+    <MudStack Row
+              Wrap="Wrap.Wrap"
+              AlignItems="AlignItems.Center"
+              Justify="Justify.SpaceBetween">
+        <div>
+            <MudText Typo="Typo.h5">
+                شركات الشحن
+            </MudText>
+
+            <MudText Typo="Typo.body2"
+                     Color="Color.Secondary">
+                إدارة شركات الشحن المتاحة في النظام
+            </MudText>
+        </div>
+
+        @if (CanCreate)
+        {
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="IsBusy"
+                       OnClick="OpenCreateDialogAsync">
+                إضافة شركة شحن
+            </MudButton>
+        }
+    </MudStack>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true"
+                           Color="Color.Primary" />
+
+        <MudText Typo="Typo.body2">
+            جاري تحميل شركات الشحن...
+        </MudText>
+    }
+    else if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error"
+                  Dense="true">
+            @_error
+        </MudAlert>
+
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="LoadAsync">
+            إعادة المحاولة
+        </MudButton>
+    }
+    else if (_carriers.Count == 0)
+    {
+        <MudPaper Outlined="true"
+                  Class="pa-4">
+            <MudText Typo="Typo.body1">
+                لم تتم إضافة شركات شحن بعد.
+            </MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudTable T="ShippingCarrierListItem"
+                  Items="FilteredShippingCarriers"
+                  Dense="true"
+                  Hover="true"
+                  Outlined="true"
+                  Elevation="0"
+                  Breakpoint="Breakpoint.Sm">
+            <ToolBarContent>
+                <MudTextField T="string"
+                              @bind-Value="_searchTerm"
+                              Placeholder="ابحث عن شركة شحن..."
+                              aria-label="البحث عن شركة شحن"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Immediate="true"
+                              Clearable="true"
+                              Style="max-width:320px" />
+            </ToolBarContent>
+
+            <HeaderContent>
+                <MudTh>
+                    اسم شركة الشحن
+                </MudTh>
+
+                <MudTh>
+                    الهاتف
+                </MudTh>
+
+                <MudTh>
+                    العنوان
+                </MudTh>
+
+                <MudTh>
+                    تكلفة الشحن
+                </MudTh>
+
+                @if (_canWrite)
+                {
+                    <MudTh>
+                        الإجراءات
+                    </MudTh>
+                }
+            </HeaderContent>
+
+            <RowTemplate Context="carrier">
+                <MudTd DataLabel="اسم شركة الشحن"
+                       Style="overflow-wrap:anywhere">
+                    @carrier.Name
+                </MudTd>
+
+                <MudTd DataLabel="الهاتف"
+                       Style="overflow-wrap:anywhere">
+                    @ContactText(carrier.PhoneNumber)
+                </MudTd>
+
+                <MudTd DataLabel="العنوان"
+                       Style="overflow-wrap:anywhere">
+                    @ContactText(carrier.Address)
+                </MudTd>
+
+                <MudTd DataLabel="تكلفة الشحن"
+                       Style="overflow-wrap:anywhere">
+                    @carrier.ShippingCost.ToString("N2")
+                </MudTd>
+
+                @if (_canWrite)
+                {
+                    <MudTd DataLabel="الإجراءات">
+                        <MudStack Row
+                                  Spacing="0">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           Disabled="IsBusy"
+                                           aria-label="تعديل شركة الشحن"
+                                           OnClick="@(() => OpenEditDialogAsync(carrier))" />
+
+                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           Disabled="IsBusy"
+                                           aria-label="حذف شركة الشحن"
+                                           OnClick="@(() => ConfirmDeleteAsync(carrier))" />
+                        </MudStack>
+                    </MudTd>
+                }
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2">
+                    لا توجد شركات شحن تطابق البحث.
+                </MudText>
+            </NoRecordsContent>
+
+            <PagerContent>
+                @if (_carriers.Count > 10)
+                {
+                    <MudTablePager PageSizeOptions="@(new[] { 10, 25, 50 })"
+                                   RowsPerPageString="شركات شحن لكل صفحة"
+                                   InfoFormat="{first_item}-{last_item} من {all_items}" />
+                }
+            </PagerContent>
+        </MudTable>
+    }
+</MudStack>
+
+@code {
+    private IReadOnlyList<ShippingCarrierListItem> _carriers = [];
+    private string? _searchTerm;
+    private string? _error;
+    private bool _loading = true;
+    private bool _canWrite;
+    private bool _dialogOpen;
+    private bool _deleting;
+
+    private bool CanCreate =>
+        _canWrite && !_loading && _error is null;
+
+    private bool IsBusy =>
+        _loading || _dialogOpen || _deleting;
+
+    private IEnumerable<ShippingCarrierListItem> FilteredShippingCarriers
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_searchTerm))
+            {
+                return _carriers;
+            }
+
+            string searchTerm = _searchTerm.Trim();
+
+            return _carriers.Where(carrier =>
+                carrier.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (carrier.PhoneNumber?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true) ||
+                (carrier.Address?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true));
+        }
+    }
+
+    private static string ContactText(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "—" : value;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _canWrite = false;
+        _error = null;
+
+        try
+        {
+            var carriers = await RequestExecutor.ExecuteAsync(new GetShippingCarriersQuery());
+            bool canWrite = await PermissionAccess.IsAllowedAsync(
+                PermissionFeature.ShippingCarriers,
+                PermissionLevel.Write);
+
+            _carriers = carriers.ToList();
+            _canWrite = canWrite;
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load carriers");
+            _error = "تعذر تحميل شركات الشحن. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Task OpenCreateDialogAsync() => OpenEditorAsync(null);
+
+    private Task OpenEditDialogAsync(ShippingCarrierListItem carrier) => OpenEditorAsync(carrier.Id);
+
+    private async Task OpenEditorAsync(int? carrierId)
+    {
+        if (IsBusy || !_canWrite)
+        {
+            return;
+        }
+
+        _dialogOpen = true;
+
+        try
+        {
+            DialogParameters<ShippingCarrierEditorDialog> parameters = new()
+            {
+                { dialog => dialog.ShippingCarrierId, carrierId }
+            };
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = false,
+                CloseOnEscapeKey = false,
+                BackdropClick = false
+            };
+
+            string title = carrierId.HasValue ? "تعديل شركة الشحن" : "إضافة شركة شحن";
+
+            var dialog = await DialogService.ShowAsync<ShippingCarrierEditorDialog>(
+                title,
+                parameters,
+                options);
+
+            DialogResult? result = await dialog.Result;
+
+            if (result is { Canceled: false, Data: true })
+            {
+                await LoadAsync();
+            }
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to open carrier editor for {ShippingCarrierId}",
+                carrierId);
+
+            Snackbar.Add(
+                "تعذر فتح بيانات شركة الشحن. يرجى المحاولة مرة أخرى.",
+                Severity.Error);
+        }
+        finally
+        {
+            _dialogOpen = false;
+        }
+    }
+
+    private async Task ConfirmDeleteAsync(ShippingCarrierListItem carrier)
+    {
+        if (IsBusy || !_canWrite)
+        {
+            return;
+        }
+
+        _deleting = true;
+
+        try
+        {
+            bool? confirmed = await DialogService.ShowMessageBoxAsync(
+                "حذف شركة الشحن",
+                $"هل تريد حذف شركة الشحن \"{carrier.Name}\"؟",
+                yesText: "حذف",
+                cancelText: "إلغاء");
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Result result = await RequestExecutor.ExecuteAsync(new DeleteShippingCarrierCommand(carrier.Id));
+
+            if (!result.IsSuccess)
+            {
+                Snackbar.Add(result.ErrorMessage, Severity.Error);
+                return;
+            }
+
+            Snackbar.Add("تم حذف شركة الشحن بنجاح.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to delete carrier {ShippingCarrierId}",
+                carrier.Id);
+
+            Snackbar.Add(
+                "تعذر حذف شركة الشحن. يرجى المحاولة مرة أخرى.",
+                Severity.Error);
+        }
+        finally
+        {
+            _deleting = false;
+        }
+    }
+}

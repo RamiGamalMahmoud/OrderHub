@@ -61,7 +61,7 @@ internal class ProductConfiguration : ModelConfigurationBase<Product>
                     .WithMany()
                     .HasForeignKey("suppliers_id")
                     .IsRequired()
-                    .OnDelete(DeleteBehavior.Cascade),
+                    .OnDelete(DeleteBehavior.Restrict),
                 left => left
                     .HasOne<Product>()
                     .WithMany()

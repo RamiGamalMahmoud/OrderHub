@@ -1,42 +1,46 @@
 using MediatR;
+using OrderHub.Application.Features.Setup.ShippingCarriers.Contracts;
+using OrderHub.Application.Features.Setup.Cities.Contracts;
+using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using System.Threading;
 using System.Threading.Tasks;
-using OrderHub.Application.Features.Setup.ShippingCarriers;
-using OrderHub.Application.Interfaces;
-using OrderHub.Application.Features.Setup.ShippingCarriers.Contracts;
-using OrderHub.Application.Features.Setup.Cities.Contracts;
 
 namespace OrderHub.Application.Features.Setup.ShippingCarriers;
 
-internal sealed class CreateShippingCarrierCommandHandler(IShippingCarrierRepository repository, IUnitOfWork unitOfWork, ICityRepository cities) : IRequestHandler<CreateShippingCarrierCommand, Result>
+internal sealed class CreateShippingCarrierCommandHandler(
+    IShippingCarrierRepository repository,
+    IUnitOfWork unitOfWork,
+    ICityRepository cities) : IRequestHandler<CreateShippingCarrierCommand, Result>
 {
     public async Task<Result> Handle(CreateShippingCarrierCommand request, CancellationToken cancellationToken)
     {
+        var input = request.Input;
+        Result validation = ShippingCarrierInputValidation.Validate(
+            input.Name,
+            input.ShippingCost,
+            input.Street,
+            input.PhoneNumber,
+            input.CountryCode);
 
+        if (!validation.IsSuccess)
+        {
+            return validation;
+        }
 
-        City city = await cities.FindAsync(request.Dto.CityId, cancellationToken);
+        var city = await cities.FindAsync(input.CityId, cancellationToken);
 
         if (city is null)
-            return Result.Failure("City not found.");
+        {
+            return Result.Failure("المدينة غير موجودة.");
+        }
 
-        Result<Phone> phoneResult = Phone.Create(request.Dto.PhoneNumber, request.Dto.CountryCode);
-        if (!phoneResult.IsSuccess)
-            return Result.Failure(phoneResult.ErrorMessage);
+        var phone = Phone.Create(input.PhoneNumber.Trim(), input.CountryCode.Trim()).Value;
+        var address = Address.Create(input.Street.Trim(), city).Value;
 
-        Result<Address> addressResult = Address.Create(request.Dto.Street, city);
-        if (!addressResult.IsSuccess)
-            return Result.Failure(addressResult.ErrorMessage);
-
-        ShippingCarrier shippingCarrier = new ShippingCarrier(
-            request.Dto.Name,
-            request.Dto.ShippingCost,
-            phoneResult.Value,
-            addressResult.Value
-            );
-
-        repository.Add(shippingCarrier);
+        var carrier = new ShippingCarrier(input.Name, input.ShippingCost, phone, address);
+        repository.Add(carrier);
 
         try
         {
@@ -45,7 +49,7 @@ internal sealed class CreateShippingCarrierCommandHandler(IShippingCarrierReposi
         }
         catch (PersistenceException)
         {
-            return Result.Failure();
+            return Result.Failure("تعذر حفظ شركة الشحن. يرجى المحاولة مرة أخرى.");
         }
     }
 }
