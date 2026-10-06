@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Features.Setup.Cities.Contracts;
-using OrderHub.Application.Features.Setup.Cities;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,21 +11,24 @@ internal sealed class CityReader(AppDbContextFactory contextFactory) : ICityRead
 {
     public async Task<IEnumerable<CityListItem>> GetAllCitiesAsync(CancellationToken cancellationToken)
     {
-        using (AppDbContext appDbContext = contextFactory.CreateDbContext())
-        {
-            return await appDbContext
-                .Cities.AsNoTracking()
-                .Select(c => new CityListItem(c.Id, c.Name.Value))
-                .ToListAsync(cancellationToken: cancellationToken);
-        }
+        await using AppDbContext context = contextFactory.CreateDbContext();
+
+        return await context.Cities
+            .AsNoTracking()
+            .OrderBy(city => city.Name.Value)
+            .ThenBy(city => city.Id)
+            .Select(city => new CityListItem(city.Id, city.Name.Value))
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<CityUpdateInput> GetCityForEditAsync(int id, CancellationToken cancellationToken)
+    public async Task<CityUpdateInput> GetCityForEditAsync(
+        int id,
+        CancellationToken cancellationToken)
     {
-        using AppDbContext appDbContext = contextFactory.CreateDbContext();
+        await using AppDbContext context = contextFactory.CreateDbContext();
 
-        return await appDbContext
-            .Cities.AsNoTracking()
+        return await context.Cities
+            .AsNoTracking()
             .Where(city => city.Id == id)
             .Select(city => new CityUpdateInput(city.Id, city.Name.Value))
             .SingleOrDefaultAsync(cancellationToken);
@@ -34,11 +36,11 @@ internal sealed class CityReader(AppDbContextFactory contextFactory) : ICityRead
 
     public async Task<IEnumerable<CityInfo>> GetCitiesInfoAsync(CancellationToken cancellationToken)
     {
-        using AppDbContext appDbContext = contextFactory.CreateDbContext();
+        await using AppDbContext context = contextFactory.CreateDbContext();
 
-        return await appDbContext
-            .Cities.AsNoTracking()
-            .Select(c => new CityInfo(c.Id, c.Name.Value))
-            .ToListAsync(cancellationToken: cancellationToken);
+        return await context.Cities
+            .AsNoTracking()
+            .Select(city => new CityInfo(city.Id, city.Name.Value))
+            .ToListAsync(cancellationToken);
     }
 }

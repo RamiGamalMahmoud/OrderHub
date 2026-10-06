@@ -1,0 +1,337 @@
+@page "/cities"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.Cities,
+    PermissionLevel.Read)]
+
+@inject IRequestExecutor RequestExecutor
+@inject OrderHub.Web.Services.PermissionAccess PermissionAccess
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject ILogger<Index> Logger
+
+<PageTitle>المدن</PageTitle>
+
+<MudStack Spacing="3">
+    <MudStack Row
+              Wrap="Wrap.Wrap"
+              AlignItems="AlignItems.Center"
+              Justify="Justify.SpaceBetween">
+        <div>
+            <MudText Typo="Typo.h5">
+                المدن
+            </MudText>
+
+            <MudText Typo="Typo.body2"
+                     Color="Color.Secondary">
+                إدارة المدن المتاحة في النظام
+            </MudText>
+        </div>
+
+        @if (CanCreate)
+        {
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="IsBusy"
+                       OnClick="OpenCreateDialogAsync">
+                إضافة مدينة
+            </MudButton>
+        }
+    </MudStack>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true"
+                           Color="Color.Primary" />
+
+        <MudText Typo="Typo.body2">
+            جاري تحميل المدن...
+        </MudText>
+    }
+    else if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error"
+                  Dense="true">
+            @_error
+        </MudAlert>
+
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="LoadAsync">
+            إعادة المحاولة
+        </MudButton>
+    }
+    else if (_cities.Count == 0)
+    {
+        <MudPaper Outlined="true"
+                  Class="pa-4">
+            <MudText Typo="Typo.body1">
+                لم تتم إضافة مدن بعد.
+            </MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudTable T="CityListItem"
+                  Items="FilteredCities"
+                  Dense="true"
+                  Hover="true"
+                  Outlined="true"
+                  Elevation="0"
+                  Breakpoint="Breakpoint.Sm">
+            <ToolBarContent>
+                <MudTextField T="string"
+                              @bind-Value="_searchTerm"
+                              Placeholder="ابحث عن مدينة..."
+                              aria-label="البحث عن مدينة"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Immediate="true"
+                              Clearable="true"
+                              Style="max-width:320px" />
+            </ToolBarContent>
+
+            <HeaderContent>
+                <MudTh>
+                    اسم المدينة
+                </MudTh>
+
+                @if (_canWrite)
+                {
+                    <MudTh>
+                        الإجراءات
+                    </MudTh>
+                }
+            </HeaderContent>
+
+            <RowTemplate Context="city">
+                <MudTd DataLabel="اسم المدينة"
+                       Style="overflow-wrap:anywhere">
+                    @city.Name
+                </MudTd>
+
+                @if (_canWrite)
+                {
+                    <MudTd DataLabel="الإجراءات">
+                        <MudStack Row
+                                  Spacing="0">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           Disabled="IsBusy"
+                                           aria-label="تعديل المدينة"
+                                           OnClick="@(() => OpenEditDialogAsync(city))" />
+
+                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           Disabled="IsBusy"
+                                           aria-label="حذف المدينة"
+                                           OnClick="@(() => ConfirmDeleteAsync(city))" />
+                        </MudStack>
+                    </MudTd>
+                }
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2">
+                    لا توجد مدن تطابق البحث.
+                </MudText>
+            </NoRecordsContent>
+
+            <PagerContent>
+                @if (_cities.Count > 10)
+                {
+                    <MudTablePager PageSizeOptions="@(new[] { 10, 25, 50 })"
+                                   RowsPerPageString="مدن لكل صفحة"
+                                   InfoFormat="{first_item}-{last_item} من {all_items}" />
+                }
+            </PagerContent>
+        </MudTable>
+    }
+</MudStack>
+
+@code {
+    private IReadOnlyList<CityListItem> _cities = [];
+    private string? _searchTerm;
+    private string? _error;
+    private bool _loading = true;
+    private bool _canWrite;
+    private bool _dialogOpen;
+    private bool _deleting;
+
+    private bool CanCreate =>
+        _canWrite && !_loading && _error is null;
+
+    private bool IsBusy =>
+        _loading || _dialogOpen || _deleting;
+
+    private IEnumerable<CityListItem> FilteredCities
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_searchTerm))
+            {
+                return _cities;
+            }
+
+            string searchTerm = _searchTerm.Trim();
+
+            return _cities.Where(city =>
+                city.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _canWrite = false;
+        _error = null;
+
+        try
+        {
+            var cities = await RequestExecutor.ExecuteAsync(new GetAllCitiesQuery());
+            bool canWrite = await PermissionAccess.IsAllowedAsync(
+                PermissionFeature.Cities,
+                PermissionLevel.Write);
+
+            _cities = cities.ToList();
+            _canWrite = canWrite;
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load cities");
+            _error = "تعذر تحميل المدن. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Task OpenCreateDialogAsync() => OpenEditorAsync(null);
+
+    private Task OpenEditDialogAsync(CityListItem city) => OpenEditorAsync(city.Id);
+
+    private async Task OpenEditorAsync(int? cityId)
+    {
+        if (IsBusy || !_canWrite)
+        {
+            return;
+        }
+
+        _dialogOpen = true;
+
+        try
+        {
+            DialogParameters<CityEditorDialog> parameters = new()
+            {
+                { dialog => dialog.CityId, cityId }
+            };
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.ExtraSmall,
+                FullWidth = true,
+                CloseButton = false,
+                CloseOnEscapeKey = false,
+                BackdropClick = false
+            };
+
+            string title = cityId.HasValue ? "تعديل المدينة" : "إضافة مدينة";
+
+            var dialog = await DialogService.ShowAsync<CityEditorDialog>(
+                title,
+                parameters,
+                options);
+
+            DialogResult? result = await dialog.Result;
+
+            if (result is { Canceled: false, Data: true })
+            {
+                await LoadAsync();
+            }
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to open city editor for {CityId}",
+                cityId);
+
+            Snackbar.Add(
+                "تعذر فتح بيانات المدينة. يرجى المحاولة مرة أخرى.",
+                Severity.Error);
+        }
+        finally
+        {
+            _dialogOpen = false;
+        }
+    }
+
+    private async Task ConfirmDeleteAsync(CityListItem city)
+    {
+        if (IsBusy || !_canWrite)
+        {
+            return;
+        }
+
+        _deleting = true;
+
+        try
+        {
+            bool? confirmed = await DialogService.ShowMessageBoxAsync(
+                "حذف المدينة",
+                $"هل تريد حذف المدينة \"{city.Name}\"؟",
+                yesText: "حذف",
+                cancelText: "إلغاء");
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Result result = await RequestExecutor.ExecuteAsync(new DeleteCityCommand(city.Id));
+
+            if (!result.IsSuccess)
+            {
+                Snackbar.Add(result.ErrorMessage, Severity.Error);
+                return;
+            }
+
+            Snackbar.Add("تم حذف المدينة بنجاح.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to delete city {CityId}",
+                city.Id);
+
+            Snackbar.Add(
+                "تعذر حذف المدينة. يرجى المحاولة مرة أخرى.",
+                Severity.Error);
+        }
+        finally
+        {
+            _deleting = false;
+        }
+    }
+}
