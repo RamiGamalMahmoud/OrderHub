@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace OrderHub.Infrastructure.Features.Products;
 
-internal sealed class ProductReader(AppDbContextFactory contextFactory) : IProductReader
+internal sealed partial class ProductReader(AppDbContextFactory contextFactory) : IProductReader
 {
     public async Task<IEnumerable<ProductListItem>> GetListProductsAsync(CancellationToken cancellationToken = default)
     {
@@ -48,8 +48,8 @@ internal sealed class ProductReader(AppDbContextFactory contextFactory) : IProdu
                 p.Code,
                 p.Price.Value,
                 p.Category.Id,
-                p.Suppliers.Select(s => s.Id),
-                p.Properties.Select(p => new ProductPropertySelection(p.PropertyId, p.IsRequired))))
+                p.Suppliers.OrderBy(s => s.Id).Select(s => s.Id),
+                p.Properties.OrderBy(item => item.PropertyId).Select(item => new ProductPropertySelection(item.PropertyId, item.IsRequired))))
             .FirstOrDefaultAsync(cancellationToken);
     }
 

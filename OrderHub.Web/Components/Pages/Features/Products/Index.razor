@@ -1,0 +1,341 @@
+@page "/products"
+@implements IDisposable
+@attribute [PermissionAuthorize(PermissionFeature.Products, PermissionLevel.Read)]
+
+@inject IRequestExecutor RequestExecutor
+@inject OrderHub.Web.Services.PermissionAccess PermissionAccess
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject ILogger<Index> Logger
+
+<PageTitle>المنتجات</PageTitle>
+
+<MudStack Spacing="3">
+    <MudStack Row
+              Wrap="Wrap.Wrap"
+              Justify="Justify.SpaceBetween"
+              AlignItems="AlignItems.Center">
+        <div>
+            <MudText Typo="Typo.h5">المنتجات</MudText>
+            <MudText Typo="Typo.body2"
+                     Color="Color.Secondary">إدارة المنتجات والأقسام والموردين والخصائص</MudText>
+        </div>
+        @if (_canWrite)
+        {
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="Create"
+                       Disabled="IsBusy">
+                إضافة منتج
+            </MudButton>
+        }
+    </MudStack>
+    <MudTextField T="string"
+                  Value="_search"
+                  ValueChanged="SearchChangedAsync"
+                  Placeholder="ابحث بالاسم أو الكود أو القسم أو المورد"
+                  aria-label="البحث عن منتج"
+                  Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search"
+                  Variant="Variant.Outlined"
+                  Margin="Margin.Dense"
+                  Clearable="true"
+                  Immediate="true"
+                  Disabled="_deleting" />
+    @if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error">@_error</MudAlert>
+        <MudButton OnClick="LoadAsync" Disabled="_deleting">إعادة المحاولة</MudButton>
+    }
+    <MudTable T="ProductIndexItem"
+              @ref="_table"
+              ServerData="LoadServerDataAsync"
+              @bind-RowsPerPage="_rowsPerPage"
+              Dense="true"
+              Hover="true"
+              Outlined="true"
+              Elevation="0"
+              Breakpoint="Breakpoint.Sm">
+        <HeaderContent>
+            <MudTh>المنتج</MudTh>
+            <MudTh>الكود</MudTh>
+            <MudTh>القسم</MudTh>
+            <MudTh>السعر</MudTh>
+            <MudTh>الموردون</MudTh>
+            <MudTh>الخصائص</MudTh>
+            @if (_canWrite)
+            {
+                <MudTh>الإجراءات</MudTh>
+            }
+        </HeaderContent>
+        <RowTemplate Context="product">
+            <MudTd DataLabel="المنتج"
+                   Style="overflow-wrap:anywhere">@product.Name</MudTd>
+            <MudTd DataLabel="الكود">@product.Code</MudTd>
+            <MudTd DataLabel="القسم"
+                   Style="overflow-wrap:anywhere">@product.CategoryName</MudTd>
+            <MudTd DataLabel="السعر">@product.Price.ToString("0.00")</MudTd>
+            <MudTd DataLabel="الموردون">@product.SuppliersCount</MudTd>
+            <MudTd DataLabel="الخصائص">@product.PropertiesCount</MudTd>
+            @if (_canWrite)
+            {
+                <MudTd DataLabel="الإجراءات">
+                    <MudStack Row
+                              Spacing="0">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       aria-label="تعديل المنتج"
+                                       Size="Size.Small"
+                                       OnClick="@(() => Edit(product.Id))"
+                                       Disabled="IsBusy" />
+                        <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                       Color="Color.Error"
+                                       aria-label="حذف المنتج"
+                                       Size="Size.Small"
+                                       OnClick="@(() => DeleteAsync(product))"
+                                       Disabled="IsBusy" />
+                    </MudStack>
+                </MudTd>
+            }
+        </RowTemplate>
+        <LoadingContent>
+            <MudText>جاري تحميل المنتجات...</MudText>
+        </LoadingContent>
+        <NoRecordsContent>
+            <MudText>@EmptyText</MudText>
+        </NoRecordsContent>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="@(new[] { 10, 20, 50 })"
+                           RowsPerPageString="عدد العناصر"
+                           InfoFormat="@RangeFormat" />
+        </PagerContent>
+    </MudTable>
+</MudStack>
+
+@code {
+    private MudTable<ProductIndexItem>? _table;
+    private readonly CancellationTokenSource _lifetime = new();
+    private CancellationTokenSource? _searchDelay;
+    private CancellationTokenSource? _loadCancellation;
+    private TableData<ProductIndexItem> _latestData = new() { Items = [], TotalItems = 0 };
+    private string? _search;
+    private string? _activeSearch;
+    private string? _error;
+    private int _rowsPerPage = 20;
+    private long _requestVersion;
+    private bool _loading = true;
+    private bool _canWrite;
+    private bool _deleting;
+    private bool _disposed;
+
+    private bool IsBusy => _loading || _deleting;
+    private string EmptyText
+    {
+        get
+        {
+            if (_loading)
+            {
+                return "جاري تحميل المنتجات...";
+            }
+            if (_error is not null)
+            {
+                return "تعذر عرض المنتجات.";
+            }
+            return string.IsNullOrWhiteSpace(_activeSearch)
+                ? "لم تتم إضافة منتجات بعد."
+                : "لا توجد منتجات تطابق البحث.";
+        }
+    }
+    private string RangeFormat => _latestData.TotalItems == 0 ? "عرض 0–0 من 0" : "عرض {first_item}–{last_item} من {all_items}";
+
+    private Task LoadAsync() => _disposed || _table is null ? Task.CompletedTask : _table.ReloadServerData();
+
+    private async Task<TableData<ProductIndexItem>> LoadServerDataAsync(TableState state, CancellationToken tableCancellation)
+    {
+        if (_disposed)
+        {
+            return _latestData;
+        }
+
+        long version = ++_requestVersion;
+        _loadCancellation?.Cancel();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(tableCancellation, _lifetime.Token);
+        _loadCancellation = cancellation;
+        _loading = true;
+        _error = null;
+        try
+        {
+            bool canWrite = await PermissionAccess.IsAllowedAsync(PermissionFeature.Products, PermissionLevel.Write);
+            cancellation.Token.ThrowIfCancellationRequested();
+            var result = await RequestExecutor.ExecuteAsync(
+                new GetProductIndexQuery(_activeSearch, state.Page + 1, state.PageSize), cancellation.Token);
+            cancellation.Token.ThrowIfCancellationRequested();
+            if (version != _requestVersion || _disposed)
+            {
+                return _latestData;
+            }
+
+            _canWrite = canWrite;
+            int lastPage = Math.Max(0, result.TotalPages - 1);
+            if (state.Page > lastPage && _table is not null)
+            {
+                // Let the native pager reload a valid page after deletions/count changes.
+                _table.NavigateTo(lastPage);
+                return _latestData;
+            }
+
+            _latestData = new TableData<ProductIndexItem>
+            {
+                Items = result.Items,
+                TotalItems = result.TotalCount
+            };
+            return _latestData;
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            return _latestData;
+        }
+        catch (AuthorizationDeniedException)
+        {
+            if (version == _requestVersion && !_disposed)
+            {
+                Navigation.NavigateTo("/access-denied");
+            }
+            return _latestData;
+        }
+        catch (Exception exception)
+        {
+            if (version == _requestVersion && !_disposed)
+            {
+                Logger.LogError(exception, "Failed to load products");
+                _error = "تعذر تحميل المنتجات. يرجى المحاولة مرة أخرى.";
+                _latestData = new TableData<ProductIndexItem> { Items = [], TotalItems = 0 };
+            }
+            return _latestData;
+        }
+        finally
+        {
+            if (version == _requestVersion && !_disposed)
+            {
+                _loading = false;
+                await InvokeAsync(StateHasChanged);
+            }
+            if (ReferenceEquals(_loadCancellation, cancellation))
+            {
+                _loadCancellation = null;
+            }
+        }
+    }
+
+    private async Task SearchChangedAsync(string? text)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+        _search = text;
+        ++_requestVersion;
+        _loadCancellation?.Cancel();
+        _searchDelay?.Cancel();
+        using var delay = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        _searchDelay = delay;
+        try
+        {
+            await Task.Delay(400, delay.Token);
+            delay.Token.ThrowIfCancellationRequested();
+            _activeSearch = text;
+            if (_table is not null && !_disposed)
+            {
+                if (_table.CurrentPage != 0)
+                {
+                    _table.NavigateTo(0);
+                }
+                else
+                {
+                    await _table.ReloadServerData();
+                }
+            }
+        }
+        catch (OperationCanceledException) when (delay.IsCancellationRequested)
+        {
+            // Superseded input or disposal: do not execute delayed work.
+        }
+        finally
+        {
+            if (ReferenceEquals(_searchDelay, delay))
+            {
+                _searchDelay = null;
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+        _disposed = true;
+        ++_requestVersion;
+        _lifetime.Cancel();
+        _lifetime.Dispose();
+    }
+
+    private void Create()
+    {
+        if (IsBusy || !_canWrite)
+        {
+            return;
+        }
+        Navigation.NavigateTo("/products/create");
+    }
+
+    private void Edit(int id)
+    {
+        if (IsBusy || !_canWrite)
+        {
+            return;
+        }
+        Navigation.NavigateTo($"/products/{id}/edit");
+    }
+
+    private async Task DeleteAsync(ProductIndexItem product)
+    {
+        if (IsBusy || !_canWrite)
+        {
+            return;
+        }
+        _deleting = true;
+        try
+        {
+            bool? confirmed = await DialogService.ShowMessageBoxAsync("حذف المنتج",
+                $"هل تريد حذف المنتج \"{product.Name}\"؟", yesText: "حذف", cancelText: "إلغاء");
+            if (confirmed != true)
+            {
+                return;
+            }
+            var result = await RequestExecutor.ExecuteAsync(new DeleteProductCommand(product.Id));
+            if (!result.IsSuccess)
+            {
+                Snackbar.Add(result.ErrorMessage, Severity.Error);
+                return;
+            }
+            Snackbar.Add("تم حذف المنتج بنجاح.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to delete product {Id}", product.Id);
+            Snackbar.Add("تعذر حذف المنتج. يرجى المحاولة مرة أخرى.", Severity.Error);
+        }
+        finally
+        {
+            _deleting = false;
+        }
+    }
+}

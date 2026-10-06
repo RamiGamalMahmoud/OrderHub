@@ -11,7 +11,8 @@ public interface IProductRepository
     Task<IReadOnlyList<Supplier>> GetSuppliersAsync(IEnumerable<int> ids, CancellationToken cancellationToken);
     Task<Product> GetForUpdateAsync(int id, CancellationToken cancellationToken);
     Task<Product> FindAsync(int id, CancellationToken cancellationToken);
-    Task<bool> IsUsedByOrdersAsync(int id, CancellationToken cancellationToken);
+    Task<bool> HasBusinessReferencesAsync(int id, CancellationToken cancellationToken);
+    Task<IReadOnlyList<int>> GetExistingPropertyIdsAsync(IEnumerable<int> ids, CancellationToken cancellationToken);
     void Add(Product product);
     void Remove(Product product);
 }

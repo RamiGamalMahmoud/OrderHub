@@ -23,8 +23,48 @@ internal sealed class ProductRepository(AppDbContext context) : IProductReposito
     public async Task<Product> FindAsync(int id, CancellationToken cancellationToken) =>
         await context.Products.FindAsync([id], cancellationToken);
 
-    public Task<bool> IsUsedByOrdersAsync(int id, CancellationToken cancellationToken) =>
-        context.OrderItems.AnyAsync(item => item.ProductId == id, cancellationToken);
+    public async Task<IReadOnlyList<int>> GetExistingPropertyIdsAsync(IEnumerable<int> ids, CancellationToken cancellationToken) =>
+        await context.Properties.AsNoTracking().Where(property => ids.Contains(property.Id))
+            .Select(property => property.Id).ToListAsync(cancellationToken);
+
+    public async Task<bool> HasBusinessReferencesAsync(int id, CancellationToken cancellationToken)
+    {
+        if (await context.OrderItems.AnyAsync(item => item.ProductId == id, cancellationToken) ||
+            await context.InvoicesItem.AnyAsync(item => item.ProductId == id, cancellationToken) ||
+            await context.QuotationItems.AnyAsync(item => item.ProductId == id, cancellationToken) ||
+            await context.ProformaInvoiceItems.AnyAsync(item => item.ProductId == id, cancellationToken))
+        {
+            return true;
+        }
+
+        if (context.Database.IsNpgsql())
+        {
+            string productId = id.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            return await context.DraftRecords.FromSqlInterpolated($$"""
+                SELECT * FROM order_drafts
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM jsonb_array_elements(
+                        CASE WHEN jsonb_typeof(data #> '{Data,Items}') = 'array'
+                            THEN data #> '{Data,Items}' ELSE '[]'::jsonb END
+                    ) item
+                    WHERE item->>'ProductId' = {{productId}}
+                )
+                """)
+                .AsNoTracking()
+                .AnyAsync(cancellationToken);
+        }
+
+        return await context.DraftRecords.FromSqlInterpolated($"""
+            SELECT * FROM order_drafts
+            WHERE json_valid(data) AND EXISTS (
+                SELECT 1 FROM json_each(data, '$.Data.Items') item
+                WHERE json_extract(item.value, '$.ProductId') = {id}
+            )
+            """)
+            .AsNoTracking()
+            .AnyAsync(cancellationToken);
+    }
 
     public void Add(Product product) => context.Products.Add(product);
     public void Remove(Product product) => context.Products.Remove(product);

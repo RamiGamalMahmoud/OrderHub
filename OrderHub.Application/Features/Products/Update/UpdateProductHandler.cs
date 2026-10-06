@@ -1,96 +1,101 @@
+using MediatR;
 using OrderHub.Application.Features.Products.Contracts;
-using OrderHub.Application.Features.Products.Create;
-using OrderHub.Application.Features.Products.Get;
-using OrderHub.Application.Features.Products.List;
-using OrderHub.Application.Features.Products.Update;
+using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using OrderHub.Domain.ValueObjects;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
-using OrderHub.Application.Interfaces;
 
 namespace OrderHub.Application.Features.Products.Update;
 
-internal sealed class UpdateProductHandler(IProductRepository repository, IUnitOfWork unitOfWork) : IRequestHandler<UpdateProductCommand, Result<int>>
+internal sealed class UpdateProductHandler(IProductRepository repository, IUnitOfWork unitOfWork)
+    : IRequestHandler<UpdateProductCommand, Result<int>>
 {
     public async Task<Result<int>> Handle(UpdateProductCommand request, CancellationToken cancellationToken)
     {
-        var productDto = request.ProductUpdateInput;
-        var productId = request.id;
+        var input = request.ProductUpdateInput;
+        if (input is null)
+        {
+            return Result<int>.Failure("بيانات المنتج مطلوبة.");
+        }
+        var supplierIds = input.SelectedSuppliersIds?.ToArray() ?? [];
+        var assignments = input.ProductProperties?.ToArray() ?? [];
+        if (assignments.Any(item => item is null))
+        {
+            return Result<int>.Failure("بيانات الخصائص غير صالحة.");
+        }
+        var propertyIds = assignments.Select(item => item.PropertyId).ToArray();
+        var validation = ProductInputValidation.Validate(input.Name, input.Code, input.Price, input.CategoryId, supplierIds, propertyIds);
+        if (!validation.IsSuccess)
+        {
+            return Result<int>.Failure(validation.ErrorMessage);
+        }
+        var product = await repository.GetForUpdateAsync(request.id, cancellationToken);
+        if (product is null)
+        {
+            return Result<int>.Failure("المنتج غير موجود.");
+        }
 
-
-
-        Product product = await repository.GetForUpdateAsync(productId, cancellationToken);
-
-        SynchronizeProperties(productDto, product);
-
-        await SynchronizeSuppliers(productDto, repository, product, cancellationToken);
+        var category = await repository.FindCategoryAsync(input.CategoryId, cancellationToken);
+        if (category is null)
+        {
+            return Result<int>.Failure("القسم المحدد لم يعد موجودًا. اختر قسمًا آخر.");
+        }
+        var suppliers = await repository.GetSuppliersAsync(supplierIds, cancellationToken);
+        if (suppliers.Count != supplierIds.Length)
+        {
+            return Result<int>.Failure("أحد الموردين المحددين لم يعد موجودًا.");
+        }
+        var existingProperties = await repository.GetExistingPropertyIdsAsync(propertyIds, cancellationToken);
+        if (existingProperties.Count != propertyIds.Length)
+        {
+            return Result<int>.Failure("إحدى الخصائص المحددة لم تعد موجودة.");
+        }
+        product.UpdateDetails(input.Name, input.Code, category, new Money(input.Price));
+        ReconcileSuppliers(product, suppliers, supplierIds);
+        ReconcileProperties(product, assignments);
 
         try
         {
-            product.Rename(productDto.Name);
-            product.ChangeProductCode(productDto.Code);
-            product.UpdatePrice(new Domain.ValueObjects.Money(productDto.Price));
-            Category category = await repository.FindCategoryAsync(productDto.CategoryId, cancellationToken);
-            if (category is null)
-            {
-                return Result<int>.Failure($"Category with Id {productDto.CategoryId} not found.");
-            }
-            product.UpdateCategory(category);
-
             await unitOfWork.SaveChangesAsync(cancellationToken);
-
             return Result<int>.Success(product.Id);
         }
-        catch (Exception)
+        catch (PersistenceException)
         {
-            return Result<int>.Failure("An error occurred while updating the product.");
+            return Result<int>.Failure("تعذر حفظ المنتج. يرجى المحاولة مرة أخرى.");
         }
     }
 
-    private static void SynchronizeProperties(ProductUpdateInput productDto, Product product)
+    private static void ReconcileSuppliers(Product product,
+        System.Collections.Generic.IReadOnlyList<Supplier> suppliers, int[] supplierIds)
     {
-        var existedProperties = product.Properties.ToDictionary(p => p.PropertyId);
-        var requestedProperties = productDto.ProductProperties.ToDictionary(p => p.PropertyId);
-
-        // Remove
-        foreach (var property in existedProperties.Values)
+        var selected = supplierIds.ToHashSet();
+        foreach (var supplier in product.Suppliers.Where(item => !selected.Contains(item.Id)).ToArray())
         {
-            if (!requestedProperties.ContainsKey(property.PropertyId))
-            {
-                product.RemoveProperty(property.PropertyId);
-            }
+            product.RemoveSupplier(supplier);
         }
 
-        // Add & Update
-        foreach (var item in requestedProperties.Values)
-        {
-            if (!existedProperties.TryGetValue(item.PropertyId, out var currentProperty))
-            {
-                product.AddProperty(item.PropertyId, item.IsRequired);
-                continue;
-            }
-
-            if (currentProperty.IsRequired != item.IsRequired)
-            {
-                product.ChangePropertyRquirement(item.PropertyId, item.IsRequired);
-            }
-        }
-    }
-
-    private static async Task SynchronizeSuppliers(ProductUpdateInput productDto, IProductRepository repository, Product product, CancellationToken cancellationToken)
-    {
-        product.ClearSuppliers();
-        IEnumerable<Supplier> selectedSuppliers = await repository.GetSuppliersAsync(productDto.SelectedSuppliersIds, cancellationToken);
-
-        foreach (Supplier supplier in selectedSuppliers)
+        foreach (var supplier in suppliers.Where(item => !product.HasSupplier(item.Id)))
         {
             product.AddSupplier(supplier);
         }
     }
+
+    private static void ReconcileProperties(Product product, ProductPropertyUpdate[] assignments)
+    {
+        var selected = assignments.Select(item => item.PropertyId).ToHashSet();
+        foreach (var assignment in product.Properties.Where(item => !selected.Contains(item.PropertyId)).ToArray())
+        {
+            product.RemoveProperty(assignment.PropertyId);
+        }
+
+        foreach (var assignment in assignments)
+        {
+            product.AddProperty(assignment.PropertyId, assignment.IsRequired);
+            product.ChangePropertyRquirement(assignment.PropertyId, assignment.IsRequired);
+        }
+    }
+
 }

@@ -1,4 +1,4 @@
-﻿using OrderHub.Domain.ValueObjects;
+using OrderHub.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,10 +13,7 @@ public class Product : ModelBase
 
     public Product(string name, string code, Category category, Money price)
     {
-        Rename(name);
-        ChangeProductCode(code);
-        UpdateCategory(category);
-        UpdatePrice(price);
+        UpdateDetails(name, code, category, price);
     }
 
     public EntityName Name { get; private set; }
@@ -31,6 +28,7 @@ public class Product : ModelBase
     public IReadOnlyCollection<ProductProperty> Properties => _properties;
     public void AddProperty(int propertyId, bool isRequired)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(propertyId);
         if (_properties.Any(x => x.PropertyId == propertyId))
             return;
 
@@ -63,7 +61,7 @@ public class Product : ModelBase
 
     public void Rename(string name)
     {
-        Name = new EntityName(name);
+        Name = new EntityName(name?.Trim());
     }
 
     public void ChangeProductCode(string code)
@@ -81,6 +79,19 @@ public class Product : ModelBase
     public void UpdatePrice(Money price)
     {
         ArgumentNullException.ThrowIfNull(price);
+        Price = price;
+    }
+
+    public void UpdateDetails(string name, string code, Category category, Money price)
+    {
+        var newName = new EntityName(name?.Trim());
+        ArgumentException.ThrowIfNullOrWhiteSpace(code);
+        ArgumentNullException.ThrowIfNull(category);
+        ArgumentNullException.ThrowIfNull(price);
+
+        Name = newName;
+        Code = code.Trim().ToUpperInvariant();
+        Category = category;
         Price = price;
     }
 
