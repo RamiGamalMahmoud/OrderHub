@@ -143,6 +143,7 @@ public class SetupPersistenceTests
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddApplication();
+        services.AddScoped(_ => OrderHub.Tests.Application.AuthorizationTests.Identity(true, 1, true));
         OrderHub.Infrastructure.DependencyInjection.ServiceCollectionExtensions.AddInfrastructure(services, "unused");
         services.RemoveAll<AppDbContextFactory>();
         services.AddSingleton<AppDbContextFactory>(factory);

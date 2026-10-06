@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using OrderHub.Web.Infrastructure.Authorization;
+using OrderHub.Domain.Enums;
+using Microsoft.AspNetCore.Mvc;
 using OrderHub.Application.Interfaces.Services;
 
 namespace OrderHub.Web.Controllers.Files;
@@ -15,6 +17,7 @@ public sealed class ProformaInvoicesController : ControllerBase
         _localAccessService = localAccessService;
     }
 
+    [PermissionAuthorize(PermissionFeature.Documents, PermissionLevel.Write)]
     [HttpPost("{fileName}")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Upload(
@@ -39,6 +42,7 @@ public sealed class ProformaInvoicesController : ControllerBase
         return Ok();
     }
 
+    [PermissionAuthorize(PermissionFeature.Documents, PermissionLevel.Read)]
     [HttpGet("{fileName}")]
     public async Task<IActionResult> Get(string fileName)
     {
@@ -57,6 +61,7 @@ public sealed class ProformaInvoicesController : ControllerBase
             "application/pdf");
     }
 
+    [PermissionAuthorize(PermissionFeature.Documents, PermissionLevel.Write)]
     [HttpDelete("{fileName}")]
     public async Task<IActionResult> Delete(string fileName)
     {

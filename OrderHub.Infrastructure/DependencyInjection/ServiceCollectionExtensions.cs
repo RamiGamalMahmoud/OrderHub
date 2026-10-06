@@ -8,6 +8,7 @@ using OrderHub.Infrastructure.Features.Orders;
 using OrderHub.Infrastructure.Features.Products;
 using OrderHub.Infrastructure.Features.Setup;
 using OrderHub.Infrastructure.Reopsitories;
+using OrderHub.Application.Authorization;
 
 namespace OrderHub.Infrastructure.DependencyInjection;
 
@@ -26,6 +27,7 @@ public static class ServiceCollectionExtensions
 
         services.AddUserReadService();
         services.AddRoleReadService();
+        services.AddScoped<IUserPermissionReader, UserPermissionReader>();
 
 
         return services;

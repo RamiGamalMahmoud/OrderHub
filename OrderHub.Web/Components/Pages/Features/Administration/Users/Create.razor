@@ -1,4 +1,5 @@
-﻿@page "/admin/users/create"
+@attribute [PermissionAuthorize(PermissionFeature.Users, PermissionLevel.Write)]
+@page "/admin/users/create"
 
 @using Microsoft.AspNetCore.Authorization
 @using MudBlazor

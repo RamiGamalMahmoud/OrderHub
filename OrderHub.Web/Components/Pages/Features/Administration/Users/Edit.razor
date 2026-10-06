@@ -1,4 +1,5 @@
-﻿@page "/admin/users/{UserId:int}/edit"
+@attribute [PermissionAuthorize(PermissionFeature.Users, PermissionLevel.Write)]
+@page "/admin/users/{UserId:int}/edit"
 
 @using Microsoft.AspNetCore.Authorization
 @using MudBlazor

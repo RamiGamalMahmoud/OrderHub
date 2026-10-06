@@ -14,6 +14,9 @@ public partial class Orders
     [Inject]
     private IRequestExecutor RequestExecutor { get; set; } = null!;
 
+    [Inject]
+    private OrderHub.Web.Services.PermissionAccess PermissionAccess { get; set; } = null!;
+
     private MudTable<Order>? _table;
 
     private IReadOnlyList<OrderDraftSummary> _draftSummaries = [];
@@ -38,7 +41,9 @@ public partial class Orders
         TableState state,
         CancellationToken cancellationToken)
     {
-        _paymentMethods = await RequestExecutor.ExecuteAsync(new Application.Features.Setup.PaymentMethods.GetPaymentMethodListQuery());
+        _paymentMethods = await PermissionAccess.IsAllowedAsync(PermissionFeature.PaymentMethods, PermissionLevel.Read, cancellationToken)
+            ? await RequestExecutor.ExecuteAsync(new Application.Features.Setup.PaymentMethods.GetPaymentMethodListQuery(), cancellationToken)
+            : [];
         var query =
             new Application.Features.Orders.GetPage.GetOrdersPageQuery(
                 PageNumber: state.Page + 1,

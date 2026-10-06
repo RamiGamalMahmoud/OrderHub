@@ -1,9 +1,12 @@
-﻿using MediatR;
+using OrderHub.Domain.Enums;
+using OrderHub.Application.Authorization;
+using MediatR;
 using System;
 using System.Collections.Generic;
 
 namespace OrderHub.Application.Features.Administration.Users.GetUsers;
 
+[RequirePermission(PermissionFeature.Users, PermissionLevel.Read)]
 public sealed record GetUsersQuery : IRequest<IReadOnlyList<UserListItem>>;
 
 public sealed record UserListItem(

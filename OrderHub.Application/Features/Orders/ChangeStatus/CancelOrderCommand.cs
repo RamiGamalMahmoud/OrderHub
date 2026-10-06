@@ -1,4 +1,5 @@
-﻿using MediatR;
+using OrderHub.Application.Authorization;
+using MediatR;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Common;
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace OrderHub.Application.Features.Orders.ChangeStatus;
 
+[RequirePermission(PermissionFeature.Orders, PermissionLevel.Write)]
 public record CancelOrderCommand(int OrderId) : IChangeOrderStatusCommand;
 
 internal class CancelOrderCommandHandler : IRequestHandler<CancelOrderCommand, Result<OrderStatus>>

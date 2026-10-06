@@ -1,4 +1,5 @@
-﻿@page "/admin/users"
+@attribute [PermissionAuthorize(PermissionFeature.Users, PermissionLevel.Read)]
+@page "/admin/users"
 @using Microsoft.AspNetCore.Authorization
 @using OrderHub.Application.Features.Administration.Users.GetUsers
 @using OrderHub.Application.Features.Administration.Users.ActivateUser

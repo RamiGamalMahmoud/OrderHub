@@ -1,3 +1,5 @@
+using OrderHub.Domain.Enums;
+using OrderHub.Application.Authorization;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +11,7 @@ using OrderHub.Domain.Common;
 
 namespace OrderHub.Application.Features.OrderDrafts.Delete;
 
+[RequirePermission(PermissionFeature.Orders, PermissionLevel.Write)]
 public sealed record DeleteDraftCommand(Guid DraftId) : IRequest<Result>;
 
 internal sealed class DeleteDraftCommandHandler(ICurrentUser currentUser, IDraftRepository repository, IUnitOfWork unitOfWork)

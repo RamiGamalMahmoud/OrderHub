@@ -6,13 +6,18 @@
 <Router AppAssembly="typeof(Program).Assembly">
 
     <Found Context="routeData">
+        <PermissionErrorBoundary @key="routeData">
         <AuthorizeRouteView  RouteData="routeData" DefaultLayout="typeof(MainLayout)">
 
             <NotAuthorized>
-                <RedirectToLogin  />
+                <AuthorizeView Context="identity">
+                    <Authorized><MudAlert Severity="Severity.Warning">غير مصرح لك بتنفيذ هذه العملية.</MudAlert></Authorized>
+                    <NotAuthorized><RedirectToLogin /></NotAuthorized>
+                </AuthorizeView>
             </NotAuthorized>
 
         </AuthorizeRouteView>
+        </PermissionErrorBoundary>
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
 

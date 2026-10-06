@@ -1,4 +1,6 @@
-﻿using MediatR;
+using OrderHub.Domain.Enums;
+using OrderHub.Application.Authorization;
+using MediatR;
 using OrderHub.Application.DTOs.Documents;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Documents;
@@ -16,6 +18,7 @@ namespace OrderHub.Application.Features.Documents.Quotations;
 
 public static class CreateQuotationCommand
 {
+    [RequirePermission(PermissionFeature.Documents, PermissionLevel.Write)]
     public record Command(QuotationData Data) : IRequest<string>;
 
     public record QuotationData(

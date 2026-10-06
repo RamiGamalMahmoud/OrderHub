@@ -1,4 +1,6 @@
-﻿using MediatR;
+using OrderHub.Domain.Enums;
+using OrderHub.Application.Authorization;
+using MediatR;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Common;
@@ -8,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace OrderHub.Application.Features.Orders.ChangePaymentMethod;
 
+[RequirePermission(PermissionFeature.Orders, PermissionLevel.Write)]
 public record ChangePaymentMethodCommand(int OrderId, int PaymentMethodId) : IChangeOrderPaymentMethodCommand;
 
 internal class ChangePaymentMethodCommandHandler : IRequestHandler<ChangePaymentMethodCommand, Result>

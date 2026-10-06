@@ -1,3 +1,5 @@
+using OrderHub.Domain.Enums;
+using OrderHub.Application.Authorization;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,6 +9,7 @@ using OrderHub.Application.Features.OrderDrafts.Contracts;
 
 namespace OrderHub.Application.Features.OrderDrafts.Get;
 
+[RequirePermission(PermissionFeature.Orders, PermissionLevel.Read)]
 public sealed record GetDraftQuery(Guid DraftId) : IRequest<Draft>;
 
 internal sealed class GetDraftQueryHandler(ICurrentUser currentUser, IDraftReadService reads) : IRequestHandler<GetDraftQuery, Draft>

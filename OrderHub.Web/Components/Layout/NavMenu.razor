@@ -1,65 +1,182 @@
-﻿<MudNavMenu Class="orderhub-nav custom-modern-nav" Bordered="false">
+@using Microsoft.AspNetCore.Components.Authorization
+<MudNavMenu Class="orderhub-nav custom-modern-nav"
+            Bordered="false">
 
-    <!-- قسم: عام -->
+    <!-- عام -->
     <div class="nav-section-container">
-        <MudText Typo="Typo.caption" Class="nav-section-title">عام</MudText>
+        <MudText Typo="Typo.caption"
+                 Class="nav-section-title">
+            عام
+        </MudText>
 
-        <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.SpaceDashboard" >
+        <MudNavLink Href="/"
+                    Match="NavLinkMatch.All"
+                    Icon="@Icons.Material.Filled.SpaceDashboard">
             الرئيسية
         </MudNavLink>
 
-        <MudNavLink Href="/orders" Icon="@Icons.Material.Filled.ShoppingBag" >
-            الطلبات
-        </MudNavLink>
+        <PermissionView Feature="PermissionFeature.Orders">
+            <MudNavLink Href="/orders"
+                        Icon="@Icons.Material.Filled.ShoppingBag">
+                الطلبات
+            </MudNavLink>
+        </PermissionView>
     </div>
 
     <MudDivider Class="nav-divider" />
 
-    <!-- قسم: إدارة الأعمال -->
+    <!-- إدارة الأعمال -->
     <div class="nav-section-container">
-        <MudText Typo="Typo.caption" Class="nav-section-title">إدارة الأعمال</MudText>
+        <MudText Typo="Typo.caption"
+                 Class="nav-section-title">
+            إدارة الأعمال
+        </MudText>
 
-        <MudNavGroup Title="المنتجات" Icon="@Icons.Material.Filled.Inventory2" ExpandIcon="@Icons.Material.Filled.ExpandMore">
-            <MudNavLink Href="/products" Icon="@Icons.Material.Outlined.Layers">المنتجات</MudNavLink>
-            <MudNavLink Href="/categories" Icon="@Icons.Material.Outlined.Category">الأقسام</MudNavLink>
-            <MudNavLink Href="/product-properties" Icon="@Icons.Material.Outlined.Tune">خصائص المنتجات</MudNavLink>
+        <!-- المنتجات -->
+        <MudNavGroup Title="المنتجات"
+                     Icon="@Icons.Material.Filled.Inventory2"
+                     ExpandIcon="@Icons.Material.Filled.ExpandMore">
+
+            <PermissionView Feature="PermissionFeature.Products">
+                <MudNavLink Href="/products"
+                            Icon="@Icons.Material.Outlined.Layers">
+                    المنتجات
+                </MudNavLink>
+            </PermissionView>
+
+            <PermissionView Feature="PermissionFeature.Categories">
+                <MudNavLink Href="/categories"
+                            Icon="@Icons.Material.Outlined.Category">
+                    الأقسام
+                </MudNavLink>
+            </PermissionView>
+
+            <PermissionView Feature="PermissionFeature.Properties">
+                <MudNavLink Href="/product-properties"
+                            Icon="@Icons.Material.Outlined.Tune">
+                    خصائص المنتجات
+                </MudNavLink>
+            </PermissionView>
+
         </MudNavGroup>
 
-        <MudNavGroup Title="جهات التعامل" Icon="@Icons.Material.Filled.Groups" ExpandIcon="@Icons.Material.Filled.ExpandMore">
-            <MudNavLink Href="/clients" Icon="@Icons.Material.Outlined.Person">العملاء</MudNavLink>
-            <MudNavLink Href="/suppliers" Icon="@Icons.Material.Outlined.Storefront">الموردون</MudNavLink>
-            <MudNavLink Href="/deliverymen" Icon="@Icons.Material.Outlined.Moped">المناديب</MudNavLink>
-            <MudNavLink Href="/shipping-carriers" Icon="@Icons.Material.Outlined.LocalShipping">شركات الشحن</MudNavLink>
+        <!-- جهات التعامل -->
+        <MudNavGroup Title="جهات التعامل"
+                     Icon="@Icons.Material.Filled.Groups"
+                     ExpandIcon="@Icons.Material.Filled.ExpandMore">
+
+            <PermissionView Feature="PermissionFeature.Clients">
+                <MudNavLink Href="/clients"
+                            Icon="@Icons.Material.Outlined.Person">
+                    العملاء
+                </MudNavLink>
+            </PermissionView>
+
+            <PermissionView Feature="PermissionFeature.Suppliers">
+                <MudNavLink Href="/suppliers"
+                            Icon="@Icons.Material.Outlined.Storefront">
+                    الموردون
+                </MudNavLink>
+            </PermissionView>
+
+            <PermissionView Feature="PermissionFeature.Deliverymen">
+                <MudNavLink Href="/deliverymen"
+                            Icon="@Icons.Material.Outlined.Moped">
+                    المناديب
+                </MudNavLink>
+            </PermissionView>
+
+            <PermissionView Feature="PermissionFeature.ShippingCarriers">
+                <MudNavLink Href="/shipping-carriers"
+                            Icon="@Icons.Material.Outlined.LocalShipping">
+                    شركات الشحن
+                </MudNavLink>
+            </PermissionView>
+
         </MudNavGroup>
 
-        <MudNavGroup Title="المستندات والوثائق" Icon="@Icons.Material.Filled.Description" ExpandIcon="@Icons.Material.Filled.ExpandMore">
-            <MudNavLink Href="/invoices" Icon="@Icons.Material.Outlined.ReceiptLong">الفواتير</MudNavLink>
-            <MudNavLink Href="/quotations" Icon="@Icons.Material.Outlined.RequestPage">عروض الأسعار</MudNavLink>
-            <MudNavLink Href="/proforma-invoices" Icon="@Icons.Material.Outlined.FactCheck">الفواتير الأولية</MudNavLink>
+        <!-- المستندات -->
+        <MudNavGroup Title="المستندات والوثائق"
+                     Icon="@Icons.Material.Filled.Description"
+                     ExpandIcon="@Icons.Material.Filled.ExpandMore">
+
+            <PermissionView Feature="PermissionFeature.Documents">
+                <MudNavLink Href="/invoices"
+                            Icon="@Icons.Material.Outlined.ReceiptLong">
+                    الفواتير
+                </MudNavLink>
+            </PermissionView>
+
+            <PermissionView Feature="PermissionFeature.Documents">
+                <MudNavLink Href="/quotations"
+                            Icon="@Icons.Material.Outlined.RequestPage">
+                    عروض الأسعار
+                </MudNavLink>
+            </PermissionView>
+
+            <PermissionView Feature="PermissionFeature.Documents">
+                <MudNavLink Href="/proforma-invoices"
+                            Icon="@Icons.Material.Outlined.FactCheck">
+                    الفواتير الأولية
+                </MudNavLink>
+            </PermissionView>
+
         </MudNavGroup>
     </div>
 
     <MudDivider Class="nav-divider" />
 
-    <!-- قسم: التواصل -->
+    <!-- التواصل -->
     <div class="nav-section-container">
-        <MudText Typo="Typo.caption" Class="nav-section-title">التواصل</MudText>
+        <MudText Typo="Typo.caption"
+                 Class="nav-section-title">
+            التواصل
+        </MudText>
 
-        <MudNavLink Href="/messages" Icon="@Icons.Material.Filled.Forum" >
+        <MudNavLink Href="/messages"
+                    Icon="@Icons.Material.Filled.Forum">
             الرسائل
         </MudNavLink>
     </div>
 
     <MudDivider Class="nav-divider" />
 
-    <!-- قسم: النظام -->
+    <!-- النظام -->
     <div class="nav-section-container">
-        <MudText Typo="Typo.caption" Class="nav-section-title">النظام</MudText>
+        <MudText Typo="Typo.caption"
+                 Class="nav-section-title">
+            النظام
+        </MudText>
 
-        <MudNavGroup Title="الإدارة" Icon="@Icons.Material.Filled.AdminPanelSettings" ExpandIcon="@Icons.Material.Filled.ExpandMore">
-            <MudNavLink Href="/cities" Icon="@Icons.Material.Outlined.LocationOn">المدن</MudNavLink>
-            <MudNavLink Href="/admin/users" Icon="@Icons.Material.Outlined.PeopleOutline">المستخدمون</MudNavLink>
-            <MudNavLink Href="/admin/roles" Icon="@Icons.Material.Outlined.GppGood">الصلاحيات</MudNavLink>
+        <MudNavGroup Title="الإدارة"
+                     Icon="@Icons.Material.Filled.AdminPanelSettings"
+                     ExpandIcon="@Icons.Material.Filled.ExpandMore">
+
+            <PermissionView Feature="PermissionFeature.Cities">
+                <MudNavLink Href="/cities"
+                            Icon="@Icons.Material.Outlined.LocationOn">
+                    المدن
+                </MudNavLink>
+            </PermissionView>
+
+            <PermissionView Feature="PermissionFeature.Users">
+                <AuthorizeView Roles="Admin">
+                    <MudNavLink Href="/admin/users"
+                                Icon="@Icons.Material.Outlined.PeopleOutline">
+                        المستخدمون
+                    </MudNavLink>
+                </AuthorizeView>
+            </PermissionView>
+
+            <PermissionView Feature="PermissionFeature.Users">
+                <AuthorizeView Roles="Admin">
+                    <MudNavLink Href="/admin/roles"
+                                Icon="@Icons.Material.Outlined.GppGood">
+                        الصلاحيات
+                    </MudNavLink>
+                </AuthorizeView>
+            </PermissionView>
+
         </MudNavGroup>
     </div>
 

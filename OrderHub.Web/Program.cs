@@ -7,6 +7,7 @@ using OrderHub.Infrastructure.Options;
 using OrderHub.Web.Components;
 using OrderHub.Web.Services;
 using OrderHub.Web.Infrastructure.DeviceAccess;
+using OrderHub.Web.Infrastructure.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,7 +63,7 @@ builder.Services
         options.SlidingExpiration = true;
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddPermissionAuthorization();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddEditorServices();
 
@@ -91,6 +92,8 @@ app.UseMiddleware<DeviceAccessMiddleware>();
 app.UseStatusCodePagesWithRedirects("/not-found");
 
 app.UseRouting();
+
+app.UseMiddleware<AuthorizationDeniedMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();

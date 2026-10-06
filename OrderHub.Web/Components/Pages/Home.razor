@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 
@@ -42,7 +42,7 @@
     <MudGrid Spacing="2">
 
         <MudItem xs="12" sm="6" lg="3">
-            <MudButton FullWidth="true"
+            <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write"><MudButton FullWidth="true"
                 Class="rounded-lg"
                        Size="Size.Large"
                        Variant="Variant.Filled"
@@ -50,29 +50,29 @@
                        StartIcon="@Icons.Material.Filled.AddShoppingCart"
                        Href="/orders/create">
                 إضافة طلب
-            </MudButton>
+            </MudButton></PermissionView>
         </MudItem>
 
         <MudItem xs="12" sm="6" lg="3">
-            <MudButton FullWidth="true"
+            <PermissionView Feature="PermissionFeature.Products" Level="PermissionLevel.Write"><MudButton FullWidth="true"
                        Size="Size.Large"
                        Variant="Variant.Filled"
                        Color="Color.Secondary"
                        StartIcon="@Icons.Material.Filled.AddBox"
                        Href="/products/create">
                 إضافة منتج
-            </MudButton>
+            </MudButton></PermissionView>
         </MudItem>
 
         <MudItem xs="12" sm="6" lg="3">
-            <MudButton FullWidth="true"
+            <PermissionView Feature="PermissionFeature.Clients" Level="PermissionLevel.Write"><MudButton FullWidth="true"
                        Size="Size.Large"
                        Variant="Variant.Filled"
                        Color="Color.Success"
                        StartIcon="@Icons.Material.Filled.PersonAdd"
                        Href="/clients/create">
                 إضافة عميل
-            </MudButton>
+            </MudButton></PermissionView>
         </MudItem>
 
         <MudItem xs="12" sm="6" lg="3">
@@ -334,12 +334,12 @@
                         يوجد 7 طلبات تحتاج إلى المراجعة أو استكمال إجراءاتها.
                     </MudText>
 
-                    <MudButton Variant="Variant.Outlined"
+                    <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Read"><MudButton Variant="Variant.Outlined"
                                Color="Color.Warning"
                                EndIcon="@Icons.Material.Filled.ArrowBack"
                                Href="/orders/pending">
                         عرض الطلبات المعلقة
-                    </MudButton>
+                    </MudButton></PermissionView>
 
                 </MudStack>
 

@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Moq;
 using OrderHub.Application.Features.Administration.Users.Update;
 using OrderHub.Application.Interfaces;
@@ -17,6 +17,7 @@ public sealed class UpdateUserCommandHandlerTests
 {
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
+    private readonly Mock<IRoleRepository> _roleRepositoryMock = new();
 
     private readonly UpdateUserCommandHandler _handler;
 
@@ -27,6 +28,7 @@ public sealed class UpdateUserCommandHandlerTests
 
         _handler = new UpdateUserCommandHandler(
             _userRepositoryMock.Object,
+            _roleRepositoryMock.Object,
             _unitOfWorkMock.Object);
     }
 
@@ -196,216 +198,48 @@ public sealed class UpdateUserCommandHandlerTests
         Assert.False(user.IsAdmin);
     }
 
-    [Fact]
-    public async Task Handle_Should_AddNewPermission()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Handle_AssignsRole_ForNormalUserAndAdmin(bool admin)
     {
-        // Arrange
-        const int userId = 1;
-
         var user = CreateUser();
-
-        _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(
-                userId,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        var permissions = new List<UpdateUserRequestPermission>
-        {
-            new(
-                PermissionFeature.Orders,
-                true,
-                false)
-        };
-
-        var command = CreateCommand(
-            userId,
-            permissions: permissions);
-
-        // Act
-        var result = await _handler.Handle(
-            command,
-            CancellationToken.None);
-
-        // Assert
+        var role = new Role("Editors");
+        _userRepositoryMock.Setup(x => x.GetByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        _roleRepositoryMock.Setup(x => x.GetByIdAsync(7, It.IsAny<CancellationToken>())).ReturnsAsync(role);
+        var result = await _handler.Handle(CreateCommand(1, isAdmin: admin, roleId: 7), default);
         Assert.True(result.IsSuccess);
-
-        Assert.Contains(
-            user.Permissions,
-            x =>
-                x.Feature == PermissionFeature.Orders &&
-                x.CanRead &&
-                !x.CanWrite);
+        Assert.Same(role, user.Role);
+        Assert.Equal(admin, user.IsAdmin);
     }
 
     [Fact]
-    public async Task Handle_Should_UpdateExistingPermission()
+    public async Task Handle_RemovesRole_WhenNoRoleSelected()
     {
-        // Arrange
         var user = CreateUser();
-
-        user.SetPermission(
-            PermissionFeature.Orders,
-            true,
-            false);
-
-        _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(
-                user.Id,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        var permissions = new List<UpdateUserRequestPermission>
-        {
-            new(
-                PermissionFeature.Orders,
-                true,
-                true)
-        };
-
-        var command = CreateCommand(
-            user.Id,
-            permissions: permissions);
-
-        // Act
-        var result = await _handler.Handle(
-            command,
-            CancellationToken.None);
-
-        // Assert
-        Assert.True(result.IsSuccess);
-
-        var permission = Assert.Single(
-            user.Permissions,
-            x => x.Feature == PermissionFeature.Orders);
-
-        Assert.True(permission.CanRead);
-        Assert.True(permission.CanWrite);
+        user.AssignRole(new Role("Editors"));
+        _userRepositoryMock.Setup(x => x.GetByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        Assert.True((await _handler.Handle(CreateCommand(1), default)).IsSuccess);
+        Assert.Null(user.Role);
+        Assert.Null(user.RoleId);
     }
 
     [Fact]
-    public async Task Handle_Should_RemovePermission_WhenReadAndWriteAreFalse()
+    public async Task Handle_RejectsMissingRole_WithoutMutationOrSave()
     {
-        // Arrange
         var user = CreateUser();
-
-        user.SetPermission(
-            PermissionFeature.Products,
-            true,
-            true);
-
-        _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(
-                user.Id,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        var permissions = new List<UpdateUserRequestPermission>
-        {
-            new(
-                PermissionFeature.Products,
-                false,
-                false)
-        };
-
-        var command = CreateCommand(
-            user.Id,
-            permissions: permissions);
-
-        // Act
-        var result = await _handler.Handle(
-            command,
-            CancellationToken.None);
-
-        // Assert
-        Assert.True(result.IsSuccess);
-
-        Assert.DoesNotContain(
-            user.Permissions,
-            x => x.Feature == PermissionFeature.Products);
+        _userRepositoryMock.Setup(x => x.GetByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        Assert.False((await _handler.Handle(CreateCommand(1, roleId: 7), default)).IsSuccess);
+        Assert.Equal("old.username", user.UserName);
+        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
-
-    [Fact]
-    public async Task Handle_Should_SyncMultiplePermissions()
-    {
-        // Arrange
-        var user = CreateUser();
-
-        user.SetPermission(
-            PermissionFeature.Orders,
-            true,
-            false);
-
-        user.SetPermission(
-            PermissionFeature.Products,
-            true,
-            true);
-
-        _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(
-                user.Id,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        var permissions = new List<UpdateUserRequestPermission>
-        {
-            // Update
-            new(
-                PermissionFeature.Orders,
-                true,
-                true),
-
-            // Remove
-            new(
-                PermissionFeature.Products,
-                false,
-                false),
-
-            // Add
-            new(
-                PermissionFeature.Settings,
-                true,
-                false)
-        };
-
-        var command = CreateCommand(
-            user.Id,
-            permissions: permissions);
-
-        // Act
-        var result = await _handler.Handle(
-            command,
-            CancellationToken.None);
-
-        // Assert
-        Assert.True(result.IsSuccess);
-
-        Assert.Contains(
-            user.Permissions,
-            x =>
-                x.Feature == PermissionFeature.Orders &&
-                x.CanRead &&
-                x.CanWrite);
-
-        Assert.DoesNotContain(
-            user.Permissions,
-            x => x.Feature == PermissionFeature.Products);
-
-        Assert.Contains(
-            user.Permissions,
-            x =>
-                x.Feature == PermissionFeature.Settings &&
-                x.CanRead &&
-                !x.CanWrite);
-    }
-
     private static UpdateUserCommand CreateCommand(
         int userId,
         string userName = "rami",
         string displayName = "Rami Gamal",
         bool isActive = true,
         bool isAdmin = false,
-        IReadOnlyList<UpdateUserRequestPermission> permissions = null)
+        int? roleId = null)
     {
         return new UpdateUserCommand(
             userId,
@@ -414,7 +248,7 @@ public sealed class UpdateUserCommandHandlerTests
                 displayName,
                 isActive,
                 isAdmin,
-                permissions ?? []));
+                roleId));
     }
 
     private static User CreateUser(
@@ -432,5 +266,3 @@ public sealed class UpdateUserCommandHandlerTests
         return user;
     }
 }
-
-

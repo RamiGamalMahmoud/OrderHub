@@ -45,6 +45,8 @@ public class RoleFailureAndRegistrationTests
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddApplication();
+        services.AddScoped(_ => OrderHub.Tests.Application.AuthorizationTests.Identity(true, 1, true));
+        services.AddScoped(_ => new Mock<OrderHub.Application.Authorization.IUserPermissionReader>(MockBehavior.Strict).Object);
         services.AddSingleton(new Mock<IRoleRepository>().Object);
         services.AddSingleton(new Mock<IUnitOfWork>().Object);
         services.AddSingleton(new Mock<IRoleDetailsService>().Object);

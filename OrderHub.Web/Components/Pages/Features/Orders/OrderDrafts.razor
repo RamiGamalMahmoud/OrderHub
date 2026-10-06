@@ -1,4 +1,4 @@
-﻿@using OrderHub.Application.Features.OrderDrafts.Contracts
+@using OrderHub.Application.Features.OrderDrafts.Contracts
 @using OrderHub.Application.Interfaces
 @using OrderHub.Application.Features.OrderDrafts.List
 @using OrderHub.Application.Features.OrderDrafts.Delete
@@ -87,7 +87,7 @@
 
                     </MudStack>
 
-                    <MudStack Row Justify="Justify.FlexEnd" Spacing="1">
+                    <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write"><MudStack Row Justify="Justify.FlexEnd" Spacing="1">
 
                         <MudButton Color="Color.Primary" Size="Size.Small" Disabled="_busy" Href=@($"/orders/continue/{draftSummary.Id}")>
                             متابعة
@@ -100,7 +100,7 @@
                             حذف
                         </MudButton>
 
-                    </MudStack>
+                    </MudStack></PermissionView>
 
                 </MudStack>
 

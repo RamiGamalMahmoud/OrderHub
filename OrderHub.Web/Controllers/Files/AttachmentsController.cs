@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using OrderHub.Web.Infrastructure.Authorization;
+using OrderHub.Domain.Enums;
+using Microsoft.AspNetCore.Mvc;
 using OrderHub.Application.Interfaces.Services;
 
 namespace OrderHub.Web.Controllers.Files;
@@ -14,6 +16,7 @@ public class AttachmentsController : ControllerBase
         _localAccessService = localAccessService;
     }
 
+    [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Read)]
     [HttpGet("{fileName}")]
     public async Task<IActionResult> Get(string fileName)
     {
@@ -33,6 +36,7 @@ public class AttachmentsController : ControllerBase
             GetContentType(fileName));
     }
 
+    [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Write)]
     [HttpPost("{fileName}")]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<StoredFile>> Upload(
@@ -69,6 +73,7 @@ public class AttachmentsController : ControllerBase
         return Ok(storedFile);
     }
 
+    [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Write)]
     [HttpDelete("{fileName}")]
     public async Task<IActionResult> Delete(string fileName)
     {

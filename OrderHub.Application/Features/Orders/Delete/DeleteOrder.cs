@@ -1,4 +1,6 @@
-﻿using MediatR;
+using OrderHub.Domain.Enums;
+using OrderHub.Application.Authorization;
+using MediatR;
 using OrderHub.Application.Interfaces;
 using System;
 using OrderHub.Domain.Common;
@@ -10,6 +12,7 @@ namespace OrderHub.Application.Features.Orders.Delete;
 
 public static class DeleteOrder
 {
+    [RequirePermission(PermissionFeature.Orders, PermissionLevel.Write)]
     public record Command(int OrderId) : IRequest<Result>;
     internal class Handler(IOrderRepository orderRepository, IUnitOfWork unitOfWork) : IRequestHandler<Command, Result>
     {

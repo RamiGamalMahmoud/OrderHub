@@ -1,3 +1,4 @@
+@attribute [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Read)]
 @using OrderHub.Application.Features.Orders.GetPage
 @using OrderHub.Application.Features.Setup.PaymentMethods.Contracts
 @using Microsoft.AspNetCore.Authorization
@@ -6,7 +7,7 @@
 @using OrderHub.Application.Common.Lookups
 
 @page "/orders"
-@attribute [Authorize]
+
 
 <PageTitle>الطلبات</PageTitle>
 
@@ -213,11 +214,11 @@
                                        Href=@($"/orders/{context.Id}")
                                        OnClick="@(() => SelectOrder(context))" />
 
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                        <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write"><MudIconButton Icon="@Icons.Material.Filled.Edit"
                                        Color="Color.Secondary"
                                        Size="Size.Small"
                                        Href=@($"/orders/{context.Id}/edit")
-                                       OnClick="@(() => SelectOrder(context))" />
+                                       OnClick="@(() => SelectOrder(context))" /></PermissionView>
 
                     </MudStack>
 

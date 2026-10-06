@@ -1,3 +1,5 @@
+using OrderHub.Domain.Enums;
+using OrderHub.Application.Authorization;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +11,7 @@ using OrderHub.Domain.Common;
 
 namespace OrderHub.Application.Features.OrderDrafts.Save;
 
+[RequirePermission(PermissionFeature.Orders, PermissionLevel.Write)]
 public sealed record SaveDraftCommand(Guid DraftId, OrderDraftData Data) : IRequest<Result>;
 
 internal sealed class SaveDraftCommandHandler(ICurrentUser currentUser, IDraftRepository repository, IUnitOfWork unitOfWork)

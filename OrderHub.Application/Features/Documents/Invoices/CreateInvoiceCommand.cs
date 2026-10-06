@@ -1,4 +1,5 @@
-﻿using MediatR;
+using OrderHub.Application.Authorization;
+using MediatR;
 using OrderHub.Application.DTOs.Documents;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Documents;
@@ -17,6 +18,7 @@ namespace OrderHub.Application.Features.Documents.Invoices;
 
 public static class CreateInvoiceCommand
 {
+    [RequirePermission(PermissionFeature.Documents, PermissionLevel.Write)]
     public record Command(int OrderId) : IRequest<string>;
 
     internal sealed class Handler : IRequestHandler<Command, string>

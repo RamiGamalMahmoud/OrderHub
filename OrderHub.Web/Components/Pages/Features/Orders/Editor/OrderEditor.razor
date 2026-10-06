@@ -1,3 +1,4 @@
+@attribute [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Write)]
 @page "/orders/create"
 @page "/orders/continue/{DraftId:guid}"
 @page "/orders/{OrderId:int}/edit"
@@ -5,7 +6,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using OrderHub.Web.Components.Pages.Features.Orders.Editor.OrderDetails
 @using OrderHub.Web.Components.Pages.Features.Orders.Editor.Products
-@attribute [Authorize]
+
 
 <PageTitle>@_pageTitle</PageTitle>
 
