@@ -12,7 +12,8 @@ using OrderHub.Application.Context;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Features.Orders.Create;
-using OrderHub.Application.Features.Orders.Delete;
+using OrderHub.Application.Features.Orders.Archive;
+using OrderHub.Application.Features.Orders.Lifecycle;
 using OrderHub.Application.Features.Orders.Update;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Repositories;
@@ -115,7 +116,7 @@ public class OrderWriteArchitectureTests
     }
 
     [Fact]
-    public async Task Delete_loads_only_root_commits_once_and_database_cascades_children()
+    public async Task Archive_loads_only_required_graph_and_preserves_children()
     {
         using var fixture = new Fixture();
         var id = await fixture.Seed();
@@ -123,35 +124,38 @@ public class OrderWriteArchitectureTests
         using (var db = fixture.Db())
         {
             var repo = new OrderRepository(db);
-            var root = await repo.GetForDeleteAsync(id);
-            Assert.Single(db.ChangeTracker.Entries());
+            var root = await repo.GetForLifecycleAsync(id);
             Assert.Empty(root.OrderItems);
             var unit = CountingUnit(db);
-            Assert.True((await new DeleteOrder.Handler(repo, unit.Object).Handle(new(id), default)).IsSuccess);
+            Assert.True((await new OrderLifecycleHandlers(repo, unit.Object,
+                OrderHub.Tests.Application.AuthorizationTests.Identity(true, 1, true), TimeProvider.System)
+                .Handle(new ArchiveOrderCommand(id, root.Version, "Duplicate"), default)).IsSuccess);
             unit.Verify(u => u.SaveChangesAsync(default), Times.Once());
         }
         using var check = fixture.Db();
-        Assert.Empty(await check.Orders.ToListAsync());
-        Assert.Empty(await check.OrderItems.ToListAsync());
-        Assert.Empty(await check.OrderItemProperties.ToListAsync());
-        Assert.Empty(await check.OrderDeliverySteps.ToListAsync());
+        Assert.True((await check.Orders.SingleAsync()).IsArchived);
+        Assert.Single(await check.OrderItems.ToListAsync());
+        Assert.Single(await check.OrderItemProperties.ToListAsync());
+        Assert.Single(await check.OrderDeliverySteps.ToListAsync());
         Assert.Single(await check.Products.ToListAsync());
     }
 
     [Fact]
-    public async Task Delete_missing_order_retains_legacy_failure_without_commit()
+    public async Task Archive_missing_order_returns_not_found_without_commit()
     {
         var repo = new Mock<IOrderRepository>(MockBehavior.Strict);
-        repo.Setup(r => r.GetForDeleteAsync(999, default)).ReturnsAsync((Order)null);
+        repo.Setup(r => r.GetForLifecycleAsync(999, default)).ReturnsAsync((Order)null);
         var unit = new Mock<IUnitOfWork>(MockBehavior.Strict);
-        var result = await new DeleteOrder.Handler(repo.Object, unit.Object).Handle(new(999), default);
+        var result = await new OrderLifecycleHandlers(repo.Object, unit.Object,
+            OrderHub.Tests.Application.AuthorizationTests.Identity(true, 1, true), TimeProvider.System)
+            .Handle(new ArchiveOrderCommand(999, 1, "Duplicate"), default);
         Assert.False(result.IsSuccess);
-        Assert.Equal(new ArgumentNullException("entity").Message, result.ErrorMessage);
+        Assert.Equal("NotFound", result.ErrorCode);
         unit.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never());
     }
 
     [Fact]
-    public async Task Existing_commercial_document_reference_still_restricts_deletion()
+    public async Task Existing_commercial_document_remains_linked_after_archive()
     {
         using var fixture = new Fixture();
         var id = await fixture.Seed();
@@ -167,14 +171,17 @@ public class OrderWriteArchitectureTests
         fixture.EnableForeignKeys();
         using (var db = fixture.Db())
         {
-            var result = await new DeleteOrder.Handler(new OrderRepository(db), new UnitOfWork(db)).Handle(new(id), default);
-            Assert.False(result.IsSuccess);
+            var result = await new OrderLifecycleHandlers(new OrderRepository(db), new UnitOfWork(db),
+                OrderHub.Tests.Application.AuthorizationTests.Identity(true, 1, true), TimeProvider.System)
+                .Handle(new ArchiveOrderCommand(id, 1, "Duplicate"), default);
+            Assert.True(result.IsSuccess, result.ErrorMessage);
         }
         using var check = fixture.Db();
         Assert.Single(await check.Orders.ToListAsync());
         Assert.Single(await check.OrderItems.ToListAsync());
         Assert.Single(await check.OrderItemProperties.ToListAsync());
         Assert.Single(await check.OrderDeliverySteps.ToListAsync());
+        Assert.Equal(id, (await check.Quotations.SingleAsync()).OrderId);
     }
 
     private static Mock<IUnitOfWork> CountingUnit(AppDbContext db)
@@ -216,6 +223,7 @@ public class OrderWriteArchitectureTests
             var product = new Product("Product", "P1", new Category("Category"), new Money(10));
             db.Properties.Add(property);
             db.Products.Add(product);
+            db.Users.Add(User.Create("operator", "test-hash", "Operator"));
             await db.SaveChangesAsync();
             var order = new Order(5, "ORD-SEED");
             order.UpdateHeader(5, OrderSource.Online, DeliveryMethod.DeliveryChain, null, null, 41);

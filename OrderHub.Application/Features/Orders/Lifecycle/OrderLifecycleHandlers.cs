@@ -7,6 +7,7 @@ using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
+using OrderHub.Application.Features.Orders.Archive;
 
 namespace OrderHub.Application.Features.Orders.Lifecycle;
 
@@ -14,8 +15,13 @@ internal sealed class OrderLifecycleHandlers(IOrderRepository repository, IUnitO
     ICurrentUser user, TimeProvider clock) :
     IRequestHandler<ChangeOrderStatusCommand, Result<OrderOperationReceipt>>,
     IRequestHandler<ChangeDeliveryStepStatusCommand, Result<OrderOperationReceipt>>,
-    IRequestHandler<DeliverOrderDirectlyCommand, Result<OrderOperationReceipt>>
+    IRequestHandler<DeliverOrderDirectlyCommand, Result<OrderOperationReceipt>>,
+    IRequestHandler<ArchiveOrderCommand, Result<OrderOperationReceipt>>
 {
+    public Task<Result<OrderOperationReceipt>> Handle(ArchiveOrderCommand request, CancellationToken cancellationToken) =>
+        Execute(request.OrderId, request.ExpectedVersion,
+            (order, operation) => order.Archive(operation, request.Reason), cancellationToken);
+
     public Task<Result<OrderOperationReceipt>> Handle(ChangeOrderStatusCommand request, CancellationToken cancellationToken) =>
         Execute(request.OrderId, request.ExpectedVersion,
             (order, operation) => order.TransitionTo(request.Target, operation, request.Reason), cancellationToken);

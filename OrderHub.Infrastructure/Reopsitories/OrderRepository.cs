@@ -44,12 +44,6 @@ internal class OrderRepository : IOrderRepository
             .SingleOrDefaultAsync(order => order.Id == orderId, cancellationToken);
     }
 
-    public Task<Order> GetForDeleteAsync(int orderId, CancellationToken cancellationToken = default)
-    {
-        // Required order children cascade in the database; deletion has no graph-based checks.
-        return _dbContext.Orders.SingleOrDefaultAsync(order => order.Id == orderId, cancellationToken);
-    }
-
     public Task<Order> GetForLifecycleAsync(int orderId, CancellationToken cancellationToken = default) =>
         _dbContext.Orders.Include(order => order.DeliverySteps).SingleOrDefaultAsync(order => order.Id == orderId, cancellationToken);
 
@@ -76,8 +70,6 @@ internal class OrderRepository : IOrderRepository
             rank.IsModified = true;
         }
     }
-
-    public void Remove(Order order) => _dbContext.Orders.Remove(order);
 
     public async Task<int> GetNextOrderNumberAsync(CancellationToken cancellationToken = default)
     {
