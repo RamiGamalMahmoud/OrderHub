@@ -5,6 +5,8 @@
 namespace OrderHub.Infrastructure.Migrations
 {
     /// <inheritdoc />
+    [Microsoft.EntityFrameworkCore.Infrastructure.DbContext(typeof(AppDbContext))]
+    [Migration("20261006094846_RestrictSupplierProductLinks")]
     public partial class RestrictSupplierProductLinks : Migration
     {
         /// <inheritdoc />

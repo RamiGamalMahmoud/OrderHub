@@ -13,7 +13,7 @@ public class OrderBuilder
     private string _orderNumber = Guid.NewGuid().ToString().Substring(0, 8);
     private List<OrderItem> _items = new List<OrderItem>();
     private DeliveryMethod? _deliveryMethod = null;
-    private OrderStatus _orderStatus = OrderStatus.Pending;
+    private OrderStatus _orderStatus = OrderStatus.Processing;
     private ShippingCarrier _shippingCarrier = null;
     private Deliveryman _deliveryman = null;
     private PaymentMethod _paymentMethod = null;

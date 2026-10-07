@@ -4,9 +4,6 @@ namespace OrderHub.Domain.Enums;
 
 public enum OrderStatus
 {
-    [Description("قيد الانتظار")]
-    Pending = 0,
-
     [Description("قيد التجهيز")]
     Processing = 1,
 
