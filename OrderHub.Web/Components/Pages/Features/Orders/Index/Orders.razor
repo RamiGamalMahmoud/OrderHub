@@ -53,9 +53,9 @@
             <MudStack Row
                       Spacing="2"
                       Justify="Justify.FlexEnd">
-                <MudButton Href="@(_archivedOnly ? "/orders" : "/orders/archived")" Variant="Variant.Text">@(_archivedOnly ? "الطلبات الحالية" : "سجل المؤرشف")</MudButton>
+                <MudButton Href="@(_archivedOnly ? "/orders" : "/orders/archived")" Class="order-action order-tone-neutral">@(_archivedOnly ? "الطلبات الحالية" : "سجل المؤرشف")</MudButton>
 
-                <MudButton Variant="Variant.Outlined"
+                <MudButton Class="order-action order-tone-processing"
                            OnClick="@ShowDrafts"
                            StartIcon="@Icons.Material.Filled.List">
                     الطلبات المعلقة
@@ -199,11 +199,8 @@
 
                 <MudTd DataLabel="الحالة">
 
-                    <MudChip T="string"
-                             Size="Size.Small">
-                        @context.EnumItem.DisplayName
-                    </MudChip>
-                    @if (context.IsArchived) { <MudChip T="string" Size="Size.Small">مؤرشف</MudChip> }
+                    <span class="order-status @OrderWorkflowPresentation.StatusTone(context.OrderStatus)">@context.EnumItem.DisplayName</span>
+                    @if (context.IsArchived) { <span class="order-status order-tone-neutral">مؤرشف</span> }
 
                 </MudTd>
 
@@ -218,7 +215,7 @@
                     <MudStack Row>
 
                         <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                       Color="Color.Secondary"
+                                       Class="order-action order-tone-delivery"
                                        Size="Size.Small"
                                        Href=@($"/orders/{context.Id}")
                                        OnClick="@(() => SelectOrder(context))" />
@@ -226,7 +223,7 @@
                         @if (!context.IsArchived && context.OrderStatus == OrderStatus.Processing)
                         {
                         <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write"><MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                       Color="Color.Secondary"
+                                       Class="order-action order-tone-processing"
                                        Size="Size.Small"
                                        Href=@($"/orders/{context.Id}/edit")
                                        OnClick="@(() => SelectOrder(context))" /></PermissionView>

@@ -10,8 +10,8 @@
         </MudStack>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel" Disabled="_submitting">رجوع دون تغيير</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="ConfirmAsync" Disabled="_submitting">@(_submitting ? "جاري الحفظ…" : ConfirmLabel)</MudButton>
+        <MudButton OnClick="Cancel" Disabled="_submitting" Class="order-action order-tone-neutral">رجوع دون تغيير</MudButton>
+        <MudButton Class="@($"order-action {ConfirmTone}")" OnClick="ConfirmAsync" Disabled="_submitting">@(_submitting ? "جاري الحفظ…" : ConfirmLabel)</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -19,6 +19,7 @@
     [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
     [Parameter] public string Explanation { get; set; } = "سيتم تسجيل العملية في تاريخ الطلب.";
     [Parameter] public string ConfirmLabel { get; set; } = "تأكيد";
+    [Parameter] public string ConfirmTone { get; set; } = "order-tone-neutral";
     [Parameter] public Func<string, Task<OrderHub.Domain.Common.Result<OrderHub.Application.Features.Orders.Lifecycle.OrderOperationReceipt>>>? Submit { get; set; }
     private string? _reason;
     private string? _error;

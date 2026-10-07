@@ -1,5 +1,5 @@
-using MudBlazor;
 using OrderHub.Domain.Enums;
+using OrderHub.Application.Common.Extensions;
 
 namespace OrderHub.Web.Components.Pages.Features.Orders.Workflow;
 
@@ -30,13 +30,30 @@ public static class OrderWorkflowPresentation
         _ => "متابعة"
     };
 
-    public static Color StatusColor(OrderStatus status) => status switch
+    public static string StatusTone(OrderStatus status) => status switch
     {
-        OrderStatus.Delivered => Color.Success,
-        OrderStatus.DeliveryFailed => Color.Warning,
-        OrderStatus.Cancelled => Color.Error,
-        _ => Color.Primary
+        OrderStatus.Processing => "order-tone-processing",
+        OrderStatus.ReadyForPickup => "order-tone-ready",
+        OrderStatus.OutForDelivery => "order-tone-delivery",
+        OrderStatus.Shipped => "order-tone-shipped",
+        OrderStatus.Delivered => "order-tone-completed",
+        OrderStatus.DeliveryFailed => "order-tone-failed",
+        OrderStatus.Cancelled => "order-tone-cancelled",
+        _ => "order-tone-neutral"
     };
+
+    public static string StatusTone(DeliveryStatus status) => status switch
+    {
+        DeliveryStatus.InProgress => "order-tone-delivery",
+        DeliveryStatus.Completed => "order-tone-completed",
+        DeliveryStatus.Failed => "order-tone-failed",
+        DeliveryStatus.Cancelled => "order-tone-cancelled",
+        _ => "order-tone-neutral"
+    };
+
+    public static string HistoryTone(string label, bool step) => step
+        ? System.Enum.GetValues<DeliveryStatus>().Where(status => status.GetDescription() == label).Select(status => StatusTone(status)).FirstOrDefault() ?? "order-tone-neutral"
+        : System.Enum.GetValues<OrderStatus>().Where(status => status.GetDescription() == label).Select(status => StatusTone(status)).FirstOrDefault() ?? "order-tone-neutral";
 
     public static string Instruction(OrderStatus status, DeliveryMethod? method) => status switch
     {
@@ -51,11 +68,11 @@ public static class OrderWorkflowPresentation
         _ => "بيانات الطلب تحتاج مراجعة."
     };
 
-    public static string[] Stages(DeliveryMethod? method) => method switch
+    public static OrderStatus[] Stages(DeliveryMethod? method) => method switch
     {
-        DeliveryMethod.Pickup => ["قيد التجهيز", "جاهز للتسليم", "تم التسليم"],
-        DeliveryMethod.ShippingCompany => ["قيد التجهيز", "تم الشحن", "تم التسليم"],
-        DeliveryMethod.DeliveryMan or DeliveryMethod.DeliveryChain => ["قيد التجهيز", "خرج للتوصيل", "تم التسليم"],
-        _ => ["قيد التجهيز"]
+        DeliveryMethod.Pickup => [OrderStatus.Processing, OrderStatus.ReadyForPickup, OrderStatus.Delivered],
+        DeliveryMethod.ShippingCompany => [OrderStatus.Processing, OrderStatus.Shipped, OrderStatus.Delivered],
+        DeliveryMethod.DeliveryMan or DeliveryMethod.DeliveryChain => [OrderStatus.Processing, OrderStatus.OutForDelivery, OrderStatus.Delivered],
+        _ => [OrderStatus.Processing]
     };
 }

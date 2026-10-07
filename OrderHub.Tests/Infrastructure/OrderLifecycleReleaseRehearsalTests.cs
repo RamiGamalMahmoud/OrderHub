@@ -43,8 +43,11 @@ public class OrderLifecycleReleaseRehearsalTests
             var token = (string)(await new NpgsqlCommand("SELECT pg_export_snapshot()", source).ExecuteScalarAsync())!;
             var columns = await Columns(source);
             var before = await Fingerprints(source, columns);
-            var statusCounts = await Scalar(source, "SELECT count(*) FROM orders WHERE order_status NOT IN ('Delivered', 'Cancelled')");
-            var historyCount = await Scalar(source, "SELECT count(*) + count(*) FILTER (WHERE order_status IN ('Delivered', 'Cancelled')) FROM orders");
+            var hasHistory = columns.ContainsKey("order_status_history");
+            var uninitialized = hasHistory ? "NOT EXISTS (SELECT 1 FROM order_status_history h WHERE h.order_id=o.id)" : "TRUE";
+            var statusCounts = await Scalar(source, $"SELECT count(*) FROM orders o WHERE order_status='Processing' OR ({uninitialized} AND order_status NOT IN ('Delivered','Cancelled'))");
+            var historyCount = await Scalar(source, $"SELECT count(*) + count(*) FILTER (WHERE order_status IN ('Delivered','Cancelled')) FROM orders o WHERE {uninitialized}");
+            if (hasHistory) historyCount += await Scalar(source, "SELECT count(*) FROM order_status_history");
             var backup = Path.Combine(directory, "source.dump");
             await RunTool(Path.Combine(tools, "pg_dump.exe"), sourceConnection,
                 "--format=custom", "--no-owner", "--no-privileges", "--snapshot=" + token, "--file=" + backup);
@@ -64,7 +67,7 @@ public class OrderLifecycleReleaseRehearsalTests
             Assert.Equal(statusCounts, await Scalar(restored, "SELECT count(*) FROM orders WHERE order_status='Processing'"));
             Assert.Equal(historyCount, await Scalar(restored, "SELECT count(*) FROM order_status_history"));
             Assert.Equal(0, await Scalar(restored, "SELECT count(*) FROM orders WHERE order_status='Pending'"));
-            Assert.Equal(0, await Scalar(restored, "SELECT count(*) FROM order_status_history WHERE source <> 'LegacyMigration' OR changed_by_user_id IS NOT NULL"));
+            Assert.Equal(0, await Scalar(restored, "SELECT count(*) FROM order_status_history WHERE source = 'LegacyMigration' AND changed_by_user_id IS NOT NULL"));
             Assert.Equal(0, await Scalar(restored, "SELECT count(*) FROM order_status_history h JOIN orders o ON o.id=h.order_id WHERE h.new_status='Processing' AND h.changed_at_utc <> o.created_at"));
             await db.Database.MigrateAsync();
             if (!string.IsNullOrWhiteSpace(releaseSql)) await Execute(restored, await File.ReadAllTextAsync(releaseSql));
@@ -109,6 +112,28 @@ public class OrderLifecycleReleaseRehearsalTests
         order.InitializeHistory(new(actor.Id, actor.DisplayName, order.CreatedAt));
         db.Orders.Add(order);
         await db.SaveChangesAsync();
+        if (manualReview)
+        {
+            var carrierId = await db.ShippingCarriers.Select(carrier => carrier.Id).FirstAsync();
+            foreach (var status in Enum.GetValues<OrderStatus>())
+            {
+                var sample = new Order(client.Id, "REVIEW-" + (int)status);
+                var method = status == OrderStatus.Shipped ? DeliveryMethod.ShippingCompany
+                    : status == OrderStatus.ReadyForPickup ? DeliveryMethod.Pickup : DeliveryMethod.DeliveryMan;
+                sample.UpdateHeader(client.Id, OrderSource.Online, method,
+                    method == DeliveryMethod.DeliveryMan ? courier.Id : null,
+                    method == DeliveryMethod.ShippingCompany ? carrierId : null, null);
+                sample.AddOrderItem(product.Id, "منتج تجريبي", 10, 1, 0, null, null, []);
+                Assert.True(sample.InitializeHistory(new(actor.Id, actor.DisplayName, sample.CreatedAt)).IsSuccess);
+                if (status is OrderStatus.Delivered or OrderStatus.DeliveryFailed)
+                    Assert.True(sample.TransitionTo(OrderStatus.OutForDelivery, new(actor.Id, actor.DisplayName, DateTime.UtcNow)).IsSuccess);
+                if (status != OrderStatus.Processing)
+                    Assert.True(sample.TransitionTo(status, new(actor.Id, actor.DisplayName, DateTime.UtcNow),
+                        status is OrderStatus.Cancelled or OrderStatus.DeliveryFailed ? "سبب تجريبي لمراجعة ألوان الحالات" : null).IsSuccess);
+                db.Orders.Add(sample);
+            }
+            await db.SaveChangesAsync();
+        }
         var info = new ProcessStartInfo("dotnet") { WorkingDirectory = project, UseShellExecute = false, CreateNoWindow = true, RedirectStandardError = true, RedirectStandardOutput = true };
         info.ArgumentList.Add(Path.Combine(project, "bin/Debug/net9.0/OrderHub.Web.dll"));
         info.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";

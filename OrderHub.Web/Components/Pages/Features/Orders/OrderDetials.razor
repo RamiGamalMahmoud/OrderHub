@@ -43,12 +43,9 @@
 
                     <MudSpacer />
 
-                    <MudChip T="string"
-                        Class="px-4"
-                             Size="Size.Small"
-                             Color="@(_workflow is null ? Color.Default : OrderWorkflowPresentation.StatusColor(_workflow.Status))">
+                    <span class="order-status @(_workflow is null ? "order-tone-neutral" : OrderWorkflowPresentation.StatusTone(_workflow.Status))">
                         @_order?.Header.OrderStatus
-                    </MudChip>
+                    </span>
 
                 </MudStack>
 
@@ -129,8 +126,8 @@
                 }
                 @if (_workflow.Status == OrderStatus.DeliveryFailed)
                 { <MudAlert Severity="Severity.Warning">سبب التعذر: @_workflow.LatestReason</MudAlert> }
-                @if (_workflow.IsArchived) { <MudChip T="string">مؤرشف — للقراءة فقط</MudChip> }
-                <MudButton Href="@($"/orders/{Id}/workflow")" Color="Color.Primary" Variant="Variant.Outlined">
+                @if (_workflow.IsArchived) { <span class="order-status order-tone-neutral">مؤرشف — للقراءة فقط</span> }
+                <MudButton Href="@($"/orders/{Id}/workflow")" Class="order-action order-tone-delivery">
                     @(_workflow.IsArchived || _workflow.Status is OrderStatus.Delivered or OrderStatus.Cancelled ? "عرض دورة الطلب والسجل" : "متابعة دورة الطلب")
                 </MudButton>
             }
@@ -176,7 +173,7 @@
         </MudPaper>
 
         @*Orders Button*@
-        <MudButton Variant="Variant.Filled" Style="align-self: end;" Size="Size.Small" Color="Color.Primary" Href="/orders">الطلبات</MudButton>
+        <MudButton Class="order-action order-tone-neutral" Style="align-self: end;" Size="Size.Small" Href="/orders">الطلبات</MudButton>
 
 
     </MudStack>

@@ -11,12 +11,12 @@
             {
                 <MudText Typo="Typo.body2">✓ الخطوة @step.StepOrder — @step.HandlerName — مكتملة سابقًا، دون تغيير</MudText>
             }
-            <MudButton Disabled="_submitting" Variant="Variant.Outlined" OnClick="CompleteRemaining">اختيار إكمال جميع الخطوات المتبقية</MudButton>
+            <MudButton Disabled="_submitting" Class="order-action order-tone-completed" OnClick="CompleteRemaining">اختيار إكمال جميع الخطوات المتبقية</MudButton>
             @foreach (var outcome in _outcomes)
             {
                 <MudPaper Class="pa-2" Outlined="true" @key="outcome.Step.Id">
                     <MudText Typo="Typo.subtitle2">الخطوة @outcome.Step.StepOrder — @outcome.Step.HandlerName</MudText>
-                    <MudText Typo="Typo.body2">الحالة الحالية: @outcome.Step.Status.GetDescription()</MudText>
+                    <span class="order-status @OrderWorkflowPresentation.StatusTone(outcome.Step.Status)">الحالة الحالية: @outcome.Step.Status.GetDescription()</span>
                     <MudSelect T="DeliveryStatus" @bind-Value="outcome.Status" Label="نتيجة الخطوة" Disabled="_submitting" Variant="Variant.Outlined">
                         <MudSelectItem T="DeliveryStatus" Value="outcome.Step.Status">إبقاء الحالة الحالية (@outcome.Step.Status.GetDescription())</MudSelectItem>
                         @foreach (var choice in new[] { DeliveryStatus.Completed, DeliveryStatus.Failed, DeliveryStatus.Cancelled }.Where(choice => choice != outcome.Step.Status))
@@ -41,8 +41,8 @@
         </MudStack>
     </DialogContent>
     <DialogActions>
-        <MudButton Disabled="_submitting" OnClick="Cancel">رجوع دون تغيير</MudButton>
-        <MudButton Disabled="_submitting" Color="Color.Primary" Variant="Variant.Filled" OnClick="ConfirmAsync">@(_submitting ? "جاري تسجيل التسليم…" : "تأكيد تسليم الطلب بهذه النتائج")</MudButton>
+        <MudButton Disabled="_submitting" OnClick="Cancel" Class="order-action order-tone-neutral">رجوع دون تغيير</MudButton>
+        <MudButton Disabled="_submitting" Class="order-action order-tone-completed" OnClick="ConfirmAsync">@(_submitting ? "جاري تسجيل التسليم…" : "تأكيد تسليم الطلب بهذه النتائج")</MudButton>
     </DialogActions>
 </MudDialog>
 

@@ -33,14 +33,14 @@
                 <MudStack Row="true" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
                     <MudText Typo="Typo.h6">دورة الطلب — @_state.OrderNumber</MudText>
                     <MudSpacer />
-                    <MudButton Href="@($"/orders/{Id}")" Variant="Variant.Text">تفاصيل الطلب</MudButton>
-                    <MudButton Disabled="_busy" OnClick="LoadAsync">تحديث</MudButton>
+                    <MudButton Href="@($"/orders/{Id}")" Class="order-action order-tone-neutral">تفاصيل الطلب</MudButton>
+                    <MudButton Disabled="_busy" OnClick="LoadAsync" Class="order-action order-tone-delivery">تحديث</MudButton>
                 </MudStack>
                 <MudStack Row="true" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap" Class="my-2">
-                    <MudChip T="string" Color="@OrderWorkflowPresentation.StatusColor(_state.Status)">@_state.Status.GetDescription()</MudChip>
+                    <span class="order-status @OrderWorkflowPresentation.StatusTone(_state.Status)">@_state.Status.GetDescription()</span>
                     <MudText Typo="Typo.body2">@(_state.Method.HasValue ? _state.Method.Value.GetDescription() : "طريقة التوصيل غير محددة")</MudText>
                     <MudText Typo="Typo.body2">@_state.HandlerName</MudText>
-                    @if (_state.IsArchived) { <MudChip T="string">مؤرشف — للقراءة فقط</MudChip> }
+                    @if (_state.IsArchived) { <span class="order-status order-tone-neutral">مؤرشف — للقراءة فقط</span> }
                 </MudStack>
                 <OrderStageStrip State="_state" />
                 <MudText Typo="Typo.caption" Class="mt-2">آخر حدث تشغيلي: <UserLocalTime Value="_state.LastChangedAtUtc" /></MudText>
@@ -58,16 +58,16 @@
                 @if (_canWrite && !_state.IsArchived)
                 {
                     <MudStack Row="true" Wrap="Wrap.Wrap" Class="mt-3">
-                        @if (_state.CanEdit) { <MudButton Href="@($"/orders/{Id}/edit")" Disabled="_busy">تعديل بيانات الطلب</MudButton> }
+                        @if (_state.CanEdit) { <MudButton Href="@($"/orders/{Id}/edit")" Disabled="_busy" Class="order-action order-tone-neutral">تعديل بيانات الطلب</MudButton> }
                         @foreach (var target in _state.AllowedStatuses.Where(status => status != OrderStatus.Cancelled))
                         {
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="_busy" OnClick="@(() => ChangeStatusAsync(target))">@OrderWorkflowPresentation.ActionLabel(target, _state.Status)</MudButton>
+                            <MudButton Class="@($"order-action {OrderWorkflowPresentation.StatusTone(target)}")" Disabled="_busy" OnClick="@(() => ChangeStatusAsync(target))">@OrderWorkflowPresentation.ActionLabel(target, _state.Status)</MudButton>
                         }
                         @if (_state.CanDeliverDirectly)
-                        { <MudButton Color="Color.Primary" Variant="Variant.Outlined" Disabled="_busy" OnClick="DeliverDirectlyAsync">تأكيد التسليم المباشر</MudButton> }
+                        { <MudButton Class="order-action order-tone-completed" Disabled="_busy" OnClick="DeliverDirectlyAsync">تأكيد التسليم المباشر</MudButton> }
                         @if (_state.AllowedStatuses.Contains(OrderStatus.Cancelled) || _state.CanArchive)
                         {
-                            <MudMenu Label="إجراءات أخرى" Disabled="_busy">
+                            <MudMenu Label="إجراءات أخرى" Disabled="_busy" Class="order-action order-tone-neutral">
                                 @if (_state.AllowedStatuses.Contains(OrderStatus.Cancelled))
                                 { <MudMenuItem OnClick="@(() => ChangeStatusAsync(OrderStatus.Cancelled))">إلغاء الطلب</MudMenuItem> }
                                 @if (_state.CanArchive) { <MudMenuItem OnClick="ArchiveAsync">أرشفة الطلب</MudMenuItem> }
@@ -85,11 +85,11 @@
                 { <MudAlert Severity="Severity.Info">تم تسليم الطلب مع خطوات غير مكتملة. حالاتها محفوظة، وأُغلق تنفيذها مع تسليم الطلب.</MudAlert> }
                 @foreach (var step in _state.Steps)
                 {
-                    <MudPaper Class="pa-3" Outlined="true" @key="step.Id">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+                    <MudPaper Class="@($"pa-3 order-step-card {OrderWorkflowPresentation.StatusTone(step.Status)}")" Outlined="true" @key="step.Id">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap" Class="order-step-heading">
                             <MudIcon Icon="@(step.Status == DeliveryStatus.Completed ? Icons.Material.Filled.CheckCircle : step.Status == DeliveryStatus.Failed ? Icons.Material.Filled.Warning : step.AllowedStatuses.Count == 0 ? Icons.Material.Filled.Lock : Icons.Material.Filled.LocalShipping)" />
                             <MudText Typo="Typo.subtitle2">الخطوة @step.StepOrder — @step.Method.GetDescription()</MudText>
-                            <MudChip T="string" Size="Size.Small">@step.Status.GetDescription()</MudChip>
+                            <span class="order-status @OrderWorkflowPresentation.StatusTone(step.Status)">@step.Status.GetDescription()</span>
                         </MudStack>
                         <MudText>@(step.HandlerName ?? "جهة التنفيذ غير متوفرة")</MudText>
                         @if (step.BlockingReason is not null) { <MudText Typo="Typo.body2" Color="Color.Secondary">@step.BlockingReason</MudText> }
@@ -102,7 +102,7 @@
                         {
                             <MudStack Row="true" Wrap="Wrap.Wrap" Class="mt-2">
                                 @foreach (var target in step.AllowedStatuses)
-                                { <MudButton Disabled="_busy" Variant="Variant.Outlined" OnClick="@(() => ChangeStepAsync(step, target))">@OrderWorkflowPresentation.StepActionLabel(target, step.Status)</MudButton> }
+                                { <MudButton Disabled="_busy" Class="@($"order-action {OrderWorkflowPresentation.StatusTone(target)}")" OnClick="@(() => ChangeStepAsync(step, target))">@OrderWorkflowPresentation.StepActionLabel(target, step.Status)</MudButton> }
                             </MudStack>
                         }
                         <OrderHistoryPanel OrderId="Id" StepId="step.Id" Version="_state.Version" />
@@ -159,10 +159,10 @@
         finally { if (generation == _generation) _loading = false; }
     }
 
-    private async Task AskAndSubmitAsync(string title, string explanation, Func<string, Task<Result<OrderOperationReceipt>>> submit)
+    private async Task AskAndSubmitAsync(string title, string explanation, Func<string, Task<Result<OrderOperationReceipt>>> submit, string tone = "order-tone-neutral")
     {
         var dialog = await Dialogs.ShowAsync<OrderReasonDialog>(title,
-            new DialogParameters<OrderReasonDialog> { { value => value.Explanation, explanation }, { value => value.ConfirmLabel, title }, { value => value.Submit, submit } },
+            new DialogParameters<OrderReasonDialog> { { value => value.Explanation, explanation }, { value => value.ConfirmLabel, title }, { value => value.Submit, submit }, { value => value.ConfirmTone, tone } },
             new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = false, BackdropClick = false });
         await dialog.Result;
     }
@@ -180,7 +180,7 @@
                     ? $"لن يمكن تشغيل الطلب بعد الإلغاء. {_state.Steps.Count(step => step.Status == DeliveryStatus.Completed)} خطوة مكتملة محفوظة، و{_state.Steps.Count(step => step.Status is not (DeliveryStatus.Completed or DeliveryStatus.Cancelled))} خطوة غير مكتملة ستُلغى."
                     : "سيُسجل سبب تعذر المحاولة، ويمكن إعادة المحاولة لاحقًا.";
                 await AskAndSubmitAsync(OrderWorkflowPresentation.ActionLabel(target, snapshot.Status), effects,
-                    reason => SubmitSnapshotAsync(snapshot, () => Executor.ExecuteAsync(new ChangeOrderStatusCommand(snapshot.Id, snapshot.Version, target, reason))));
+                    reason => SubmitSnapshotAsync(snapshot, () => Executor.ExecuteAsync(new ChangeOrderStatusCommand(snapshot.Id, snapshot.Version, target, reason))), OrderWorkflowPresentation.StatusTone(target));
                 return;
             }
             if (snapshot.Id != Id || _state?.Version != snapshot.Version) return;
@@ -200,7 +200,7 @@
             if (target == DeliveryStatus.Failed)
             {
                 await AskAndSubmitAsync("تسجيل تعذر التنفيذ", "سيُحفظ سبب الفشل. الخطوة التالية ستظل مقفولة حتى اكتمال هذه الخطوة.",
-                    reason => SubmitSnapshotAsync(snapshot, () => Executor.ExecuteAsync(new ChangeDeliveryStepStatusCommand(snapshot.Id, snapshot.Version, step.Id, target, reason))));
+                    reason => SubmitSnapshotAsync(snapshot, () => Executor.ExecuteAsync(new ChangeDeliveryStepStatusCommand(snapshot.Id, snapshot.Version, step.Id, target, reason))), OrderWorkflowPresentation.StatusTone(target));
                 return;
             }
             if (snapshot.Id != Id || _state?.Version != snapshot.Version) return;

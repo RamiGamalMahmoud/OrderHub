@@ -9,7 +9,7 @@
     <MudStack Row="true" AlignItems="AlignItems.Center">
         <MudText Typo="Typo.subtitle2">@(StepId.HasValue ? "تاريخ الخطوة" : "سجل حالات الطلب")</MudText>
         <MudSpacer />
-        @if (!_opened) { <MudButton OnClick="OpenAsync">عرض السجل</MudButton> }
+        @if (!_opened) { <MudButton OnClick="OpenAsync" Class="order-action order-tone-neutral">عرض السجل</MudButton> }
     </MudStack>
     @if (_opened)
     {
@@ -17,10 +17,12 @@
         @if (_error is not null) { <MudAlert Severity="Severity.Error">@_error</MudAlert><MudButton OnClick="ReloadAsync">إعادة المحاولة</MudButton> }
         else if (_data is not null)
         {
+            <ol class="order-history" aria-label="@(StepId.HasValue ? "تاريخ الخطوة" : "سجل حالات الطلب")">
             @foreach (var entry in _data.Items)
             {
-                <MudStack Spacing="1" Class="py-2" @key="entry.Id">
-                    <MudText Typo="Typo.body2">@entry.NewStatus @(entry.Source == OrderHistorySource.Retry ? "— إعادة محاولة" : "")</MudText>
+                <li class="order-history-entry @OrderWorkflowPresentation.HistoryTone(entry.NewStatus, StepId.HasValue)" @key="entry.Id">
+                <MudStack Spacing="1">
+                    <div><span class="order-status">@entry.NewStatus @(entry.Source == OrderHistorySource.Retry ? "— إعادة محاولة" : "")</span></div>
                     <MudText Typo="Typo.caption"><UserLocalTime Value="entry.ChangedAtUtc" /> @(!string.IsNullOrWhiteSpace(entry.UserName) ? $"— بواسطة {entry.UserName}" : "")</MudText>
                     @if (entry.Reason is not null) { <MudText Typo="Typo.body2">السبب: @entry.Reason</MudText> }
                     @if (entry.Source == OrderHistorySource.LegacyMigration)
@@ -31,9 +33,10 @@
                     { <MudText Typo="Typo.caption">ناتج عن إلغاء الطلب.</MudText> }
                     else if (entry.Source == OrderHistorySource.LastStepCompleted)
                     { <MudText Typo="Typo.caption">ناتج عن اكتمال آخر خطوة توصيل.</MudText> }
-                    <MudDivider />
                 </MudStack>
+                </li>
             }
+            </ol>
             @if (_data.TotalCount == 0) { <MudText Typo="Typo.body2">لا توجد أحداث مسجلة.</MudText> }
             <MudStack Row="true" AlignItems="AlignItems.Center">
                 <MudButton Disabled="@(_loading || !_data.HasPreviousPage)" OnClick="PreviousAsync">السابق</MudButton>

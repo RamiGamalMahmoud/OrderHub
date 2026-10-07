@@ -1,0 +1,20 @@
+/* Shared semantic colors for order badges, delivery steps and their actions. */
+.order-tone-processing { --order-ink: #6d28d9; --order-soft: #f3e8ff; --order-border: #ddd6fe; }
+.order-tone-ready { --order-ink: #92400e; --order-soft: #fef3c7; --order-border: #fde68a; }
+.order-tone-delivery { --order-ink: #1d4ed8; --order-soft: #eff6ff; --order-border: #bfdbfe; }
+.order-tone-shipped { --order-ink: #0e7490; --order-soft: #ecfeff; --order-border: #a5f3fc; }
+.order-tone-completed { --order-ink: #047857; --order-soft: #ecfdf5; --order-border: #a7f3d0; }
+.order-tone-failed { --order-ink: #c2410c; --order-soft: #fff7ed; --order-border: #fed7aa; }
+.order-tone-cancelled { --order-ink: #b91c1c; --order-soft: #fef2f2; --order-border: #fecaca; }
+.order-tone-neutral { --order-ink: #475569; --order-soft: #f1f5f9; --order-border: #cbd5e1; }
+.order-status { display: inline-flex; align-items: center; gap: .35rem; padding: .3rem .65rem; margin-block: .2rem; border: 1px solid var(--order-border); border-radius: 8px; background: var(--order-soft); color: var(--order-ink); font-size: .8rem; font-weight: 600; line-height: 1.5; white-space: nowrap; }
+.order-action.mud-button-root { background: var(--order-soft); color: var(--order-ink); border: 1px solid var(--order-border); border-radius: 8px; box-shadow: none; text-transform: none; }
+.order-action.mud-button-root:hover { background: var(--order-border); box-shadow: none; }
+.order-action.mud-button-root:focus-visible { outline: 2px solid var(--order-ink); outline-offset: 3px; }
+.order-action.mud-button-root:disabled, .order-action.mud-disabled { background: #f8fafc; color: #94a3b8; border-color: #e2e8f0; }
+.order-action .mud-button-root { color: var(--order-ink); background: var(--order-soft); border: 1px solid var(--order-border); border-radius: 8px; }
+.order-step-card { border-inline-start: 4px solid var(--order-ink) !important; }
+.order-step-heading { color: var(--order-ink); }
+.order-history { list-style: none; padding: 0; margin: .75rem 0; }
+.order-history-entry { position: relative; margin-inline-start: .4rem; padding: .5rem 1rem 1rem; border-inline-start: 2px solid var(--order-border); }
+.order-history-entry::before { content: ""; position: absolute; inset-inline-start: -5px; top: 1.2rem; width: 8px; height: 8px; border-radius: 2px; background: var(--order-ink); }
