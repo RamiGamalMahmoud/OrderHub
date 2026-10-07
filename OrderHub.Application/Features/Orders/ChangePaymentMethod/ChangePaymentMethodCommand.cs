@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace OrderHub.Application.Features.Orders.ChangePaymentMethod;
 
 [RequirePermission(PermissionFeature.Orders, PermissionLevel.Write)]
-public record ChangePaymentMethodCommand(int OrderId, int PaymentMethodId) : IChangeOrderPaymentMethodCommand;
+public record ChangePaymentMethodCommand(int OrderId, int PaymentMethodId, int ExpectedVersion) : IChangeOrderPaymentMethodCommand;
 
 internal class ChangePaymentMethodCommandHandler : IRequestHandler<ChangePaymentMethodCommand, Result>
 {
@@ -30,9 +30,14 @@ internal class ChangePaymentMethodCommandHandler : IRequestHandler<ChangePayment
         if (order == null)
             return Result.Failure("Order not exists.");
 
-        order.ChangePaymentMethod(request.PaymentMethodId);
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        var valid = order.CheckVersion(request.ExpectedVersion);
+        if (!valid.IsSuccess) return valid;
+        valid = order.ChangePaymentMethod(request.PaymentMethodId);
+        if (!valid.IsSuccess) return valid;
+        order.TouchForEdit();
+        try { await _unitOfWork.SaveChangesAsync(cancellationToken); }
+        catch (PersistenceConflictException exception) { return Result.Failure(exception.Message); }
+        catch (PersistenceException) { return Result.Failure("تعذر حفظ طريقة الدفع."); }
         return Result.Success();
     }
 }

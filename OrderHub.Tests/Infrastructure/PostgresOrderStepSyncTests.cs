@@ -107,7 +107,8 @@ public class PostgresOrderStepSyncTests
         public async Task<OrderHub.Domain.Common.Result> Update(int id, OrderInput.Order input)
         {
             using var db = Db();
-            return await new UpdateOrderHandler(new OrderRepository(db), new UnitOfWork(db)).Handle(new(id, input), default);
+            var order = await new OrderRepository(db).GetForUpdateAsync(id);
+            return await new UpdateOrderHandler(new OrderRepository(db), new UnitOfWork(db)).Handle(new(id, input, order.Version), default);
         }
 
         public void Dispose()

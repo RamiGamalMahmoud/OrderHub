@@ -114,6 +114,8 @@ public class AuthorizationTests
         user.SetupGet(x => x.Id).Returns(id);
         user.SetupGet(x => x.IsAuthenticated).Returns(authenticated);
         user.SetupGet(x => x.IsAdmin).Returns(admin);
+        user.SetupGet(x => x.UserName).Returns("operator");
+        user.SetupGet(x => x.DisplayName).Returns("Operator");
         return user.Object;
     }
 

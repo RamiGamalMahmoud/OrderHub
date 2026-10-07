@@ -13,6 +13,14 @@
 <OrderDrafts @bind-IsOpen="_isDraftsOpen" />
 
 <MudContainer MaxWidth="MaxWidth.Large">
+    @if (_loadError is not null)
+    {
+        <MudAlert Severity="Severity.Error">@_loadError</MudAlert>
+    }
+    else if (IsEdit && !_state.CanEdit)
+    {
+        <MudAlert Severity="Severity.Info">بيانات الطلب مقفولة ولا تقبل التعديل. يمكنك عرض دورة الطلب وسجله من صفحة التفاصيل.</MudAlert>
+    }
 
     <MudStack Spacing="3">
 

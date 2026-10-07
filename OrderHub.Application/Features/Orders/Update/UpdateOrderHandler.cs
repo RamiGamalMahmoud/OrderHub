@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Common;
@@ -13,7 +13,7 @@ using OrderHub.Application.Interfaces.Repositories;
 
 namespace OrderHub.Application.Features.Orders.Update;
 
-internal class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, Result>
+internal class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, Result<OrderUpdateReceipt>>
 {
     private readonly IOrderRepository _orderRepository;
     private readonly IUnitOfWork _unitOfWork;
@@ -24,18 +24,21 @@ internal class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, Result>
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Result> Handle(UpdateOrderCommand request, CancellationToken cancellationToken)
+    public async Task<Result<OrderUpdateReceipt>> Handle(UpdateOrderCommand request, CancellationToken cancellationToken)
     {
         var order = await _orderRepository.GetForUpdateAsync(request.OrderId, cancellationToken);
         if (order is null)
-            return Result.Failure("الطلب غير موجود.");
+            return Result<OrderUpdateReceipt>.Failure("الطلب غير موجود.");
+        var version = order.CheckVersion(request.ExpectedVersion);
+        if (!version.IsSuccess) return Result<OrderUpdateReceipt>.Failure(version.ErrorMessage);
+        if (!order.CanEdit) return Result<OrderUpdateReceipt>.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
         if (request.Order is null)
-            return Result.Failure("بيانات الطلب غير موجودة.");
+            return Result<OrderUpdateReceipt>.Failure("بيانات الطلب غير موجودة.");
 
         var input = request.Order with { DeliverySteps = request.Order.DeliverySteps?.ToList() };
         var prepared = BuildReplacement(order, input);
         if (!prepared.IsSuccess)
-            return Result.Failure(prepared.ErrorMessage);
+            return Result<OrderUpdateReceipt>.Failure(prepared.ErrorMessage);
         var steps = input.DeliveryMethod == DeliveryMethod.DeliveryChain
             ? (input.DeliverySteps ?? Enumerable.Empty<OrderInput.DeliveryStep>()).OrderBy(step => step.StepOrder).ToList()
             : new List<OrderInput.DeliveryStep>();
@@ -58,17 +61,23 @@ internal class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, Result>
                 input.DeliveryMethod == DeliveryMethod.DeliveryMan ? input.DeliveryManId : null,
                 input.DeliveryMethod == DeliveryMethod.ShippingCompany ? input.ShippingCarrierId : null,
                 input.PaymentMethodId);
+            order.TouchForEdit();
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             if (transactionActive)
             {
                 await _unitOfWork.CommitTransactionAsync(cancellationToken);
                 transactionActive = false;
             }
-            return Result.Success();
+            return new OrderUpdateReceipt(order.Version, order.DeliverySteps.OrderBy(step => step.StepOrder)
+                .Select(step => new SavedDeliveryStep(step.Id, step.StepOrder)).ToList());
+        }
+        catch (PersistenceConflictException exception)
+        {
+            return Result<OrderUpdateReceipt>.Failure(exception.Message);
         }
         catch (PersistenceException)
         {
-            return Result.Failure("تعذر حفظ الطلب. تحقق من البيانات المحددة ثم حاول مرة أخرى.");
+            return Result<OrderUpdateReceipt>.Failure("تعذر حفظ الطلب. تحقق من البيانات المحددة ثم حاول مرة أخرى.");
         }
         finally
         {
@@ -89,9 +98,12 @@ internal class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, Result>
         var steps = input.DeliveryMethod == DeliveryMethod.DeliveryChain
             ? (input.DeliverySteps ?? Enumerable.Empty<OrderInput.DeliveryStep>()).ToList()
             : new List<OrderInput.DeliveryStep>();
-        if (steps.Any(step => step.DeliveryMethod is not (DeliveryMethod.DeliveryMan or DeliveryMethod.ShippingCompany) ||
+        if (steps.Any(step => step is null || step.DeliveryMethod is not (DeliveryMethod.DeliveryMan or DeliveryMethod.ShippingCompany) ||
                 step.StepOrder <= 0 || step.HandlerId <= 0) || steps.Select(step => step.StepOrder).Distinct().Count() != steps.Count)
             return Result<Order>.Failure("خطوات التوصيل أو ترتيبها غير صالح.");
+        if ((input.OrderItems ?? Enumerable.Empty<OrderInput.Item>()).Any(item => item is null ||
+            (item.Properties ?? Enumerable.Empty<OrderInput.Property>()).Any(property => property is null)))
+            return Result<Order>.Failure("بنود الطلب أو خصائصها غير صالحة.");
         var ids = steps.Where(step => step.Id.HasValue).Select(step => step.Id.Value).ToList();
         if (ids.Distinct().Count() != ids.Count || ids.Any(id => id <= 0 || !order.DeliverySteps.Any(step => step.Id == id)))
             return Result<Order>.Failure("معرفات خطوات التوصيل غير صالحة لهذا الطلب.");
@@ -99,7 +111,7 @@ internal class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, Result>
         {
             var result = replacement.AddOrderItem(item.ProductId, item.ProductName, item.UnitPrice, item.Quantity,
                 item.VatRate, item.SupplierName, item.SupplierId,
-                item.Properties.Select(property => new OrderItemPropertyData(property.PropertyId, property.Value)).ToList().AsReadOnly());
+                (item.Properties ?? Enumerable.Empty<OrderInput.Property>()).Select(property => new OrderItemPropertyData(property.PropertyId, property.Value)).ToList().AsReadOnly());
             if (!result.IsSuccess)
                 return Result<Order>.Failure(result.ErrorMessage);
         }

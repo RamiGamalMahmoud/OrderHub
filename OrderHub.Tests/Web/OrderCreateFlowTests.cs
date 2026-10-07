@@ -43,6 +43,15 @@ public class OrderCreateFlowTests
         var result = await fixture.Create(input);
         Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.True(result.Value > 0);
+        using (var check = fixture.CreateDbContext())
+        {
+            var created = await check.Orders.Include(order => order.StatusHistory).SingleAsync();
+            var history = Assert.Single(created.StatusHistory);
+            Assert.Equal(OrderStatus.Processing, created.OrderStatus);
+            Assert.Equal(created.CreatedAt, history.ChangedAtUtc);
+            Assert.Equal(1, history.ChangedByUserId);
+            Assert.Equal(OrderHistorySource.Creation, history.Source);
+        }
         var dto = await new OrderReader(fixture).GetForEditAsync(result.Value, default);
         var executor = new Mock<IRequestExecutor>();
         executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderForEditQuery>(), It.IsAny<CancellationToken>())).ReturnsAsync(dto);
@@ -236,7 +245,7 @@ public class OrderCreateFlowTests
             var handler = new CreateOrderCommandHandler(new OrderRepository(db), new UnitOfWork(db),
                 new Mock<IQuotationRepository>(MockBehavior.Strict).Object,
                 new Mock<IProformaInvoiceRepository>(MockBehavior.Strict).Object,
-                new Mock<ICurrentUser>(MockBehavior.Strict).Object,
+                OrderHub.Tests.Application.AuthorizationTests.Identity(true, 1, true),
                 new Mock<IDraftRepository>(MockBehavior.Strict).Object);
             return await handler.Handle(new(null, input), default);
         }

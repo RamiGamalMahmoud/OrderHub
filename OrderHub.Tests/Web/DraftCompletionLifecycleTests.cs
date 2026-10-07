@@ -247,6 +247,8 @@ public class DraftCompletionLifecycleTests
             _productId = product.Id;
             Store = new DraftAccess(this);
             _user.SetupGet(u => u.Id).Returns(11);
+            _user.SetupGet(u => u.IsAuthenticated).Returns(true);
+            _user.SetupGet(u => u.DisplayName).Returns("Operator");
             Executor.Setup(e => e.ExecuteAsync(It.IsAny<CreateOrderCommand>(), It.IsAny<CancellationToken>()))
                 .Returns((CreateOrderCommand command, CancellationToken _) => Create(command));
             Executor.Setup(e => e.ExecuteAsync(It.IsAny<SaveDraftCommand>(), It.IsAny<CancellationToken>()))

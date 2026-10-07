@@ -138,7 +138,7 @@ public class OrderUpdateFlowTests
             var order = await db.Orders.Include(o => o.OrderItems).ThenInclude(i => i.Properties).Include(o => o.DeliverySteps).SingleAsync();
             var original = order.OrderItems.Single();
             var result = await new UpdateOrderHandler(new OrderRepository(db), new UnitOfWork(db))
-                .Handle(new(id, input), default);
+                .Handle(new(id, input, order.Version), default);
             Assert.False(result.IsSuccess);
             Assert.Equal(price == 0 ? "Unit price must be greater than zero." : "Quantity must be greater than zero.", result.ErrorMessage);
             Assert.Same(original, order.OrderItems.Single());
@@ -224,7 +224,7 @@ public class OrderUpdateFlowTests
         var editor = await Editor(await fixture.Read(id));
         var executor = new Mock<IRequestExecutor>();
         executor.Setup(x => x.ExecuteAsync(It.IsAny<UpdateOrderCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(success ? Result.Success() : Result.Failure("Rejected"));
+            .ReturnsAsync(success ? Result<OrderUpdateReceipt>.Success(new(2, [])) : Result<OrderUpdateReceipt>.Failure("Rejected"));
         var snackbar = new Mock<ISnackbar>();
         SetService(editor, "RequestExecutor", executor.Object);
         SetService(editor, "Snackbar", snackbar.Object);
@@ -334,7 +334,7 @@ public class OrderUpdateFlowTests
         var repository = new OrderRepository(db);
         var order = await repository.GetForUpdateAsync(id);
         var originalSteps = order.DeliverySteps.ToList();
-        Assert.False((await new UpdateOrderHandler(repository, new UnitOfWork(db)).Handle(new(id, input), default)).IsSuccess);
+        Assert.False((await new UpdateOrderHandler(repository, new UnitOfWork(db)).Handle(new(id, input, order.Version), default)).IsSuccess);
         Assert.Equal(originalSteps, order.DeliverySteps);
         Assert.All(db.ChangeTracker.Entries(), entry => Assert.Equal(EntityState.Unchanged, entry.State));
         await db.SaveChangesAsync();
@@ -367,7 +367,7 @@ public class OrderUpdateFlowTests
         State(editor).Delivery.Steps.Add(new() { StepOrder = 3, Method = DeliveryMethod.DeliveryMan, HandlerId = 63 });
         var executor = new Mock<IRequestExecutor>();
         executor.Setup(x => x.ExecuteAsync(It.IsAny<UpdateOrderCommand>(), It.IsAny<CancellationToken>()))
-            .Returns((UpdateOrderCommand command, CancellationToken _) => fixture.UpdateOrder(command.OrderId, command.Order));
+            .Returns((UpdateOrderCommand command, CancellationToken _) => fixture.UpdateOrder(command.OrderId, command.Order, command.ExpectedVersion));
         executor.Setup(x => x.ExecuteAsync(It.IsAny<GetOrderForEditQuery>(), It.IsAny<CancellationToken>()))
             .Returns(() => fixture.Read(id));
         SetService(editor, "RequestExecutor", executor.Object);
@@ -385,7 +385,7 @@ public class OrderUpdateFlowTests
         using var fixture = new Fixture();
         var id = await fixture.Seed(DeliveryMethod.DeliveryChain, false);
         var editor = await Editor(await fixture.Read(id));
-        var pending = new TaskCompletionSource<Result>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var pending = new TaskCompletionSource<Result<OrderUpdateReceipt>>(TaskCreationOptions.RunContinuationsAsynchronously);
         var executor = new Mock<IRequestExecutor>();
         executor.Setup(x => x.ExecuteAsync(It.IsAny<UpdateOrderCommand>(), It.IsAny<CancellationToken>())).Returns(pending.Task);
         SetService(editor, "RequestExecutor", executor.Object);
@@ -393,10 +393,57 @@ public class OrderUpdateFlowTests
         var saving = (Task)Method("SaveAsync").Invoke(editor, null);
         await (Task)Method("SaveAsync").Invoke(editor, null);
         executor.Verify(x => x.ExecuteAsync(It.IsAny<UpdateOrderCommand>(), It.IsAny<CancellationToken>()), Times.Once);
-        pending.SetResult(Result.Failure("Rejected"));
+        pending.SetResult(Result<OrderUpdateReceipt>.Failure("Rejected"));
         await saving;
         await (Task)Method("SaveAsync").Invoke(editor, null);
         executor.Verify(x => x.ExecuteAsync(It.IsAny<UpdateOrderCommand>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task Stale_editor_cannot_replace_saved_steps_or_items()
+    {
+        using var fixture = new Fixture();
+        var id = await fixture.Seed(DeliveryMethod.DeliveryChain, false);
+        var original = await fixture.Read(id);
+        var input = Build(await Editor(original));
+        Assert.True((await fixture.UpdateOrder(id, input, original.Version)).IsSuccess);
+        var after = await fixture.Read(id);
+        Assert.False((await fixture.UpdateOrder(id, input with { OrderSource = OrderSource.Salla }, original.Version)).IsSuccess);
+        var final = await fixture.Read(id);
+        Assert.Equal(after.Version, final.Version);
+        Assert.Equal(after.DeliverySteps, final.DeliverySteps);
+        Assert.Equal(after.OrderSource, final.OrderSource);
+    }
+
+    [Fact]
+    public async Task Active_order_rejects_editor_and_separate_payment_writes()
+    {
+        using var fixture = new Fixture();
+        var id = await fixture.Seed(DeliveryMethod.DeliveryChain, false);
+        var input = Build(await Editor(await fixture.Read(id)));
+        using (var db = fixture.CreateDbContext())
+        {
+            var order = await new OrderRepository(db).GetForUpdateAsync(id);
+            Assert.True(order.TransitionTo(OrderStatus.OutForDelivery, new(1, "Operator", DateTime.UtcNow)).IsSuccess);
+            await db.SaveChangesAsync();
+        }
+        var before = await fixture.Read(id);
+        Assert.False(State(await Editor(before)).CanEdit);
+        Assert.False((await fixture.UpdateOrder(id, input, before.Version)).IsSuccess);
+        using (var db = fixture.CreateDbContext())
+        {
+            var result = await new OrderHub.Application.Features.Orders.ChangePaymentMethod.ChangePaymentMethodCommandHandler(
+                new OrderRepository(db), new UnitOfWork(db)).Handle(new(id, 99, before.Version), default);
+            Assert.False(result.IsSuccess);
+            await db.SaveChangesAsync();
+        }
+        var after = await fixture.Read(id);
+        Assert.Equal(before.Version, after.Version);
+        Assert.Equal(before.Status, after.Status);
+        Assert.Equal(before.PaymentMothodId, after.PaymentMothodId);
+        Assert.Equal(before.DeliverySteps, after.DeliverySteps);
+        Assert.Equal(before.OrderItems.Select(item => (item.ProductId, item.ProductName, item.Quantity, item.UnitPrice)),
+            after.OrderItems.Select(item => (item.ProductId, item.ProductName, item.Quantity, item.UnitPrice)));
     }
 
     private static async Task<OrderEditor> Editor(OrderEditorData dto)
@@ -434,10 +481,11 @@ public class OrderUpdateFlowTests
         public override AppDbContext CreateDbContext() => new(new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite(_connection).UseSnakeCaseNamingConvention().Options);
         public Task<OrderEditorData> Read(int id) => new OrderReader(this).GetForEditAsync(id, default);
-        public async Task<Result> UpdateOrder(int id, OrderInput.Order input)
+        public async Task<Result<OrderUpdateReceipt>> UpdateOrder(int id, OrderInput.Order input, int? expectedVersion = null)
         {
             using var db = CreateDbContext();
-            return await new UpdateOrderHandler(new OrderRepository(db), new UnitOfWork(db)).Handle(new(id, input), default);
+            var order = await new OrderRepository(db).GetForUpdateAsync(id);
+            return await new UpdateOrderHandler(new OrderRepository(db), new UnitOfWork(db)).Handle(new(id, input, expectedVersion ?? order?.Version ?? 1), default);
         }
         public async Task<int> Seed(DeliveryMethod method, bool supplier)
         {

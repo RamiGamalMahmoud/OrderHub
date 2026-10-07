@@ -47,6 +47,9 @@ CancellationToken cancellationToken)
         try
         {
             var input = request.Order;
+            if (input is null) return Result<int>.Failure("بيانات الطلب غير موجودة.");
+            if (!_currentUser.IsAuthenticated || _currentUser.Id is not > 0)
+                return Result<int>.Failure("يجب تسجيل الدخول لإنشاء الطلب.");
             if (!Enum.IsDefined(input.DeliveryMethod) || !Enum.IsDefined(input.OrderSource))
                 return Result<int>.Failure("مصدر الطلب أو طريقة التوصيل غير صالح.");
             if (input.DeliveryMethod == DeliveryMethod.DeliveryMan && !input.DeliveryManId.HasValue ||
@@ -55,9 +58,12 @@ CancellationToken cancellationToken)
             var steps = input.DeliveryMethod == DeliveryMethod.DeliveryChain
                 ? (input.DeliverySteps ?? Enumerable.Empty<OrderInput.DeliveryStep>()).ToList()
                 : [];
-            if (steps.Any(step => step.DeliveryMethod is not (DeliveryMethod.DeliveryMan or DeliveryMethod.ShippingCompany) ||
-                    step.StepOrder <= 0) || steps.Select(step => step.StepOrder).Distinct().Count() != steps.Count)
+            if (steps.Any(step => step is null || step.DeliveryMethod is not (DeliveryMethod.DeliveryMan or DeliveryMethod.ShippingCompany) ||
+                    step.StepOrder <= 0 || step.HandlerId <= 0) || steps.Select(step => step.StepOrder).Distinct().Count() != steps.Count)
                 return Result<int>.Failure("خطوات التوصيل أو ترتيبها غير صالح.");
+            if ((input.OrderItems ?? Enumerable.Empty<OrderInput.Item>()).Any(item => item is null ||
+                (item.Properties ?? Enumerable.Empty<OrderInput.Property>()).Any(property => property is null)))
+                return Result<int>.Failure("بنود الطلب أو خصائصها غير صالحة.");
 
             // 2. Create order
             int nextOrderNumber =
@@ -78,6 +84,9 @@ CancellationToken cancellationToken)
                 input.DeliveryMethod == DeliveryMethod.ShippingCompany ? input.ShippingCarrierId : null,
                 request.Order.PaymentMethodId
                 );
+            var initial = order.InitializeHistory(new OrderOperation(_currentUser.Id.Value,
+                _currentUser.DisplayName ?? _currentUser.UserName, order.CreatedAt));
+            if (!initial.IsSuccess) return Result<int>.Failure(initial.ErrorMessage);
 
             foreach (OrderInput.Item item in request.Order.OrderItems ?? Enumerable.Empty<OrderInput.Item>())
             {
@@ -89,7 +98,7 @@ CancellationToken cancellationToken)
                     item.VatRate,
                     item.SupplierName,
                     item.SupplierId,
-                    item.Properties
+                    (item.Properties ?? Enumerable.Empty<OrderInput.Property>())
                         .Select(p => new OrderItemPropertyData(
                             p.PropertyId,
                             p.Value))
@@ -152,9 +161,14 @@ CancellationToken cancellationToken)
 
             return order.Id;
         }
-        catch (Exception ex)
+        catch (OperationCanceledException) { throw; }
+        catch (PersistenceException)
         {
-            return Result<int>.Failure(ex.Message);
+            return Result<int>.Failure("تعذر حفظ الطلب. تحقق من البيانات ثم حاول مرة أخرى.");
+        }
+        catch (Exception)
+        {
+            return Result<int>.Failure("تعذر إنشاء الطلب. راجع البيانات ثم حاول مرة أخرى.");
         }
     }
 }

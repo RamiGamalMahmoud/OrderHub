@@ -19,6 +19,7 @@ public partial class OrderEditor : IDisposable
 {
     private bool _isDraftsOpen;
     private bool _isSavingUpdate;
+    private string? _loadError;
 
     private OrderEditorStep _activeStep = OrderEditorStep.Products;
 
@@ -26,7 +27,7 @@ public partial class OrderEditor : IDisposable
 
     private IReadOnlyList<string> ValidationErrors => GetFinalValidationErrors(_state, IsEdit);
 
-    private bool CanSave => !_isSavingUpdate && !_draftLifecycle.IsClosed && ValidationErrors.Count == 0 &&
+    private bool CanSave => _state.CanEdit && !_isSavingUpdate && !_draftLifecycle.IsClosed && ValidationErrors.Count == 0 &&
         (IsEdit || (!_draftLifecycle.IsCompleting && !_draftLifecycle.IsCompleted));
 
     private long _changeVersion;
@@ -133,6 +134,7 @@ public partial class OrderEditor : IDisposable
             return;
 
         _routeIdentity = identity;
+        _loadError = null;
         _draftLifecycle.IsClosed = true;
         _draftLifecycle = new DraftLifecycle();
         _state = new OrderEditorState();
@@ -270,9 +272,17 @@ public partial class OrderEditor : IDisposable
     private async Task<OrderEditorState> LoadOrderAsync(int value)
     {
         var order = await RequestExecutor!.ExecuteAsync(new Application.Features.Orders.GetForEdit.GetOrderForEditQuery(value));
+        if (order is null)
+        {
+            _loadError = "الطلب غير موجود.";
+            return new OrderEditorState { IsArchived = true };
+        }
 
         OrderEditorState state = new OrderEditorState()
         {
+            Version = order.Version,
+            Status = order.Status,
+            IsArchived = order.IsArchived,
             ClientId = order.ClientId,
             OrderSource = order.OrderSource,
             PaymentMethodId = order.PaymentMothodId,
@@ -499,10 +509,11 @@ public partial class OrderEditor : IDisposable
             var orderId = OrderId!.Value;
             try
             {
-                var updateResult = await RequestExecutor!.ExecuteAsync(new Application.Features.Orders.Update.UpdateOrderCommand(orderId, input));
+                var updateResult = await RequestExecutor!.ExecuteAsync(new Application.Features.Orders.Update.UpdateOrderCommand(orderId, input, _state.Version));
+                if (updateResult.IsSuccess) _state.Version = updateResult.Value.Version;
                 if (updateResult.IsSuccess && input.DeliveryMethod == DeliveryMethod.DeliveryChain)
                 {
-                    var saved = await RequestExecutor.ExecuteAsync(new Application.Features.Orders.GetForEdit.GetOrderForEditQuery(orderId));
+                    var saved = updateResult.Value;
                     if (saved is not null)
                     {
                         for (var index = 0; index < submittedStates.Length; index++)

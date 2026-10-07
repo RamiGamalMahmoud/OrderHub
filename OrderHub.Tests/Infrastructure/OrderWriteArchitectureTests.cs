@@ -81,7 +81,7 @@ public class OrderWriteArchitectureTests
         var repo = new Mock<IOrderRepository>(MockBehavior.Strict);
         var cancellation = new CancellationTokenSource();
         repo.Setup(r => r.GetForUpdateAsync(id, cancellation.Token)).ReturnsAsync(order);
-        var result = await new UpdateOrderHandler(repo.Object, unit.Object).Handle(new(id, input), cancellation.Token);
+        var result = await new UpdateOrderHandler(repo.Object, unit.Object).Handle(new(id, input, order.Version), cancellation.Token);
         Assert.Equal(!invalid, result.IsSuccess);
         unit.Verify(u => u.SaveChangesAsync(cancellation.Token), invalid ? Times.Never() : Times.Once());
         repo.Verify(r => r.GetForUpdateAsync(id, cancellation.Token), Times.Once());
@@ -106,7 +106,7 @@ public class OrderWriteArchitectureTests
         var handler = new CreateOrderCommandHandler(repo.Object, unit.Object,
             new Mock<IQuotationRepository>(MockBehavior.Strict).Object,
             new Mock<IProformaInvoiceRepository>(MockBehavior.Strict).Object,
-            new Mock<ICurrentUser>(MockBehavior.Strict).Object,
+            OrderHub.Tests.Application.AuthorizationTests.Identity(true, 1, true),
             new Mock<IDraftRepository>(MockBehavior.Strict).Object);
         var result = await handler.Handle(new(null, input), default);
         Assert.Equal(!invalid, result.IsSuccess);

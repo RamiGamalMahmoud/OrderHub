@@ -13,4 +13,7 @@ public record OrderEditorData(
         int? PaymentMothodId,
         IEnumerable<OrderEditorItem> OrderItems,
         IEnumerable<OrderEditorDeliveryStep> DeliverySteps,
-        OrderSource? OrderSource = null);
+        OrderSource? OrderSource = null,
+        int Version = 1,
+        OrderStatus Status = OrderStatus.Processing,
+        bool IsArchived = false);
