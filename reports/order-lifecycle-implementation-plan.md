@@ -519,7 +519,7 @@ CSS محدود، دون Bootstrap أو Tailwind أو مؤثرات غير لاز�
 | Task 05 | مكتملة | أوامر الحالة القديمة أزيلت واستبدلت بثلاث عمليات مقيدة للحالة والخطوة والتسليم المباشر. 26 اختبار Domain/Application/PostgreSQL ناجحًا: مستخدم/ساعة موثوقان، save واحد/no-op بلا save، رفض stale وغياب التاريخ، direct delivery مع خطوة Pending محفوظة. ErrorCode يميز التعارض دون مقارنة النصوص. |
 | Task 06 | مكتملة | الحذف الفعلي أزيل من Command/Repository واستبدل بالأرشفة المعتمدة. 30 اختبارًا ناجحًا: metadata/time/actor، منع التشغيل والتكرار، حفظ الأبناء والتاريخ، فاتورة المؤرشف قابلة للقراءة، وفحص استخدام العميل يشمل المؤرشف. لا فلتر عالمي للعلاقات. |
 | Task 07 | مكتملة | قراءات تشغيلية تستعمل قواعد Domain، وتاريخ مقسم بترتيب ثابت، قائمة archive منفصلة دون إخفاء العلاقات. 9 اختبارات PostgreSQL/قراءات ناجحة: action availability، blocked steps، missing/null legacy، history ownership/pagination، archived access، UTC bounds بلا truncation وpage overflow آمن. |
-| Task 08 | لم يبدأ | |
+| Task 08 | مكتملة | Details ملخص وWorkflow مستقلة، تعليمات وأفعال من قراءة Domain، جميع الخطوات والقفل والصلاحيات، editor نهائي read-only وfilters فعالة. 37 اختبار عرض/تعديل/تفاصيل ناجحًا. اختبار HtmlRenderer كشف وأصلح closure في for كان يسبب IndexOutOfRange؛ missing/error والنهائي المختلط معروضون بأمان. حوار direct/history/archive/time ضمن Task 09 التالية. |
 | Task 09 | لم يبدأ | |
 | Task 10 | لم يبدأ | |
 | Task 11 | لم يبدأ | |

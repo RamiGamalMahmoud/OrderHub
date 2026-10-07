@@ -48,7 +48,9 @@ public partial class Orders
             new Application.Features.Orders.GetPage.GetOrdersPageQuery(
                 PageNumber: state.Page + 1,
                 PageSize: state.PageSize,
-                SearchTerm: _searchTerm);
+                SearchTerm: _searchTerm,
+                PaymentMethodId: _selectedPaymentMethodId,
+                OrderStatus: _selectedStatus);
 
         var result = await RequestExecutor.ExecuteAsync(
             query,

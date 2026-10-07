@@ -22,6 +22,8 @@
         <MudAlert Severity="Severity.Info">بيانات الطلب مقفولة ولا تقبل التعديل. يمكنك عرض دورة الطلب وسجله من صفحة التفاصيل.</MudAlert>
     }
 
+    @if (_loadError is null && _state.CanEdit)
+    {
     <MudStack Spacing="3">
 
         @* Header *@
@@ -121,5 +123,6 @@
         }
 
     </MudStack>
+    }
 
 </MudContainer>

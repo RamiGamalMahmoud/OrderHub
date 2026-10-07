@@ -1,5 +1,8 @@
 @attribute [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Read)]
 @using OrderHub.Application.Features.Orders.GetDetails
+@using OrderHub.Application.Features.Orders.Lifecycle
+@using OrderHub.Web.Components.Pages.Features.Orders.Workflow
+@using OrderHub.Application.Common.Extensions
 @page "/orders/{id:int}"
 
 @using OrderHub.Application.Interfaces;
@@ -8,6 +11,21 @@
 @inject IRequestExecutor RequestExecuter
 
 <MudContainer MaxWidth="MaxWidth.Large">
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" aria-label="تحميل الطلب" />
+    }
+    else if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error">@_error</MudAlert>
+        <MudButton OnClick="LoadAsync">إعادة المحاولة</MudButton>
+    }
+    else if (_order is null)
+    {
+        <MudAlert Severity="Severity.Info">الطلب غير موجود.</MudAlert>
+    }
+    else
+    {
 
     <MudStack Spacing="3">
 
@@ -97,6 +115,23 @@
             </MudStack>
 
             <MudChip T="string" Color="Color.Primary" Variant="Variant.Text">@_order?.Delivery.DeliveryMethod</MudChip>
+            @if (_workflow is not null)
+            {
+                <MudText>@_workflow.HandlerName</MudText>
+                <OrderStageStrip State="_workflow" />
+                @if (_workflow.Method == DeliveryMethod.DeliveryChain)
+                {
+                    <MudText Typo="Typo.body2">@_workflow.Steps.Count(step => step.Status == DeliveryStatus.Completed) من @_workflow.Steps.Count خطوات مكتملة</MudText>
+                    @if (_workflow.Steps.Any(step => step.Status == DeliveryStatus.Failed))
+                    { <MudAlert Severity="Severity.Warning">توجد خطوة متعذر تنفيذها؛ راجع دورة الطلب.</MudAlert> }
+                }
+                @if (_workflow.Status == OrderStatus.DeliveryFailed)
+                { <MudAlert Severity="Severity.Warning">سبب التعذر: @_workflow.LatestReason</MudAlert> }
+                @if (_workflow.IsArchived) { <MudChip T="string">مؤرشف — للقراءة فقط</MudChip> }
+                <MudButton Href="@($"/orders/{Id}/workflow")" Color="Color.Primary" Variant="Variant.Outlined">
+                    @(_workflow.IsArchived || _workflow.Status is OrderStatus.Delivered or OrderStatus.Cancelled ? "عرض دورة الطلب والسجل" : "متابعة دورة الطلب")
+                </MudButton>
+            }
 
         </MudPaper>
 
@@ -143,6 +178,7 @@
 
 
     </MudStack>
+    }
 
 </MudContainer>
 
@@ -152,6 +188,10 @@
     public int Id { get; set; }
 
     private OrderDetails? _order;
+    private OrderWorkflowState? _workflow;
+    private bool _loading;
+    private string? _error;
+    private int _loadedId, _generation;
 
     private async Task OrderNumberClicked()
     {
@@ -159,8 +199,25 @@
         Snackbar.Add($"تم نسخ رقم الطلب : {_order?.Header.OrderNumber}");
     }
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnParametersSetAsync() => _loadedId == Id ? Task.CompletedTask : LoadAsync();
+
+    private async Task LoadAsync()
     {
-        _order = await RequestExecuter.ExecuteAsync(new GetOrderDetailsQuery(Id));
+        _loadedId = Id;
+        var generation = ++_generation;
+        _loading = true;
+        _error = null;
+        _order = null;
+        _workflow = null;
+        try
+        {
+            var order = await RequestExecuter.ExecuteAsync(new GetOrderDetailsQuery(Id));
+            var workflow = order is null ? null : await RequestExecuter.ExecuteAsync(new GetOrderWorkflowQuery(Id));
+            if (generation != _generation) return;
+            _order = order;
+            _workflow = workflow;
+        }
+        catch (Exception) { if (generation == _generation) _error = "تعذر تحميل الطلب. حاول مرة أخرى."; }
+        finally { if (generation == _generation) _loading = false; }
     }
 }

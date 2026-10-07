@@ -188,7 +188,7 @@
                 </MudTd>
 
                 <MudTd DataLabel="طريقة الدفع">
-                    @context.PaymentMethod.DisplayName
+                    @(context.PaymentMethod?.DisplayName ?? "غير محددة")
                 </MudTd>
 
                 <MudTd DataLabel="الحالة">
@@ -214,11 +214,14 @@
                                        Href=@($"/orders/{context.Id}")
                                        OnClick="@(() => SelectOrder(context))" />
 
+                        @if (!context.IsArchived && context.OrderStatus == OrderStatus.Processing)
+                        {
                         <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write"><MudIconButton Icon="@Icons.Material.Filled.Edit"
                                        Color="Color.Secondary"
                                        Size="Size.Small"
                                        Href=@($"/orders/{context.Id}/edit")
                                        OnClick="@(() => SelectOrder(context))" /></PermissionView>
+                        }
 
                     </MudStack>
 

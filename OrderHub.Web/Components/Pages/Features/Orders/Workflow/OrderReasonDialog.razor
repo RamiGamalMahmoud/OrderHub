@@ -1,0 +1,31 @@
+@using OrderHub.Domain.Models
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="2">
+            <MudText>@Explanation</MudText>
+            <MudTextField T="string" @bind-Value="_reason" Label="السبب" Required="true" Immediate="true"
+                          MaxLength="200" Counter="200" Lines="3" Variant="Variant.Outlined" />
+            @if (_error is not null) { <MudAlert Severity="Severity.Error">@_error</MudAlert> }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">رجوع دون تغيير</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Confirm">@ConfirmLabel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Parameter] public string Explanation { get; set; } = "سيتم تسجيل العملية في تاريخ الطلب.";
+    [Parameter] public string ConfirmLabel { get; set; } = "تأكيد";
+    private string? _reason;
+    private string? _error;
+    private void Cancel() => Dialog.Cancel();
+    private void Confirm()
+    {
+        var valid = Order.ValidateReason(_reason, true);
+        if (!valid.IsSuccess) { _error = valid.ErrorMessage; return; }
+        Dialog.Close(DialogResult.Ok(_reason!.Trim()));
+    }
+}

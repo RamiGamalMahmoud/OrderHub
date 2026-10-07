@@ -1,0 +1,23 @@
+@using OrderHub.Application.Features.Orders.Lifecycle
+
+@if (State.Status != OrderStatus.Cancelled)
+{
+    <div class="order-stage-strip" aria-label="مراحل الطلب">
+        @for (var index = 0; index < _stages.Length; index++)
+        {
+            var label = _stages[index];
+            var current = State.Status == OrderStatus.Processing ? 0 : State.Status == OrderStatus.Delivered ? 2 : 1;
+            <span class="order-stage">
+                <MudIcon Icon="@(index < current ? Icons.Material.Filled.CheckCircle : index == current ? Icons.Material.Filled.RadioButtonChecked : Icons.Material.Outlined.RadioButtonUnchecked)"
+                         Color="@(index < current ? Color.Success : index == current ? Color.Primary : Color.Default)" Size="Size.Small" />
+                <MudText Typo="Typo.body2">@label</MudText>
+            </span>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public OrderWorkflowState State { get; set; } = null!;
+    private string[] _stages = [];
+    protected override void OnParametersSet() => _stages = OrderWorkflowPresentation.Stages(State.Method);
+}
