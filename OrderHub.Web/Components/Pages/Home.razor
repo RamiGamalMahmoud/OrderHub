@@ -300,7 +300,7 @@
         </MudItem>
 
 
-        @* Pending Orders *@
+        @* Order workflow entry point *@
 
         <MudItem xs="12" lg="4">
 
@@ -320,25 +320,21 @@
 
                         <MudText Typo="Typo.body2"
                                  Color="Color.Secondary">
-                            الطلبات المعلقة
-                        </MudText>
-
-                        <MudText Typo="Typo.h3">
-                            7
+                            متابعة الطلبات
                         </MudText>
 
                     </MudStack>
 
                     <MudText Typo="Typo.body2"
                              Color="Color.Secondary">
-                        يوجد 7 طلبات تحتاج إلى المراجعة أو استكمال إجراءاتها.
+                        افتح الطلب لمراجعة حالته وخطوات التوصيل والإجراءات المتاحة.
                     </MudText>
 
                     <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Read"><MudButton Variant="Variant.Outlined"
                                Color="Color.Warning"
                                EndIcon="@Icons.Material.Filled.ArrowBack"
-                               Href="/orders/pending">
-                        عرض الطلبات المعلقة
+                               Href="/orders">
+                        عرض الطلبات
                     </MudButton></PermissionView>
 
                 </MudStack>

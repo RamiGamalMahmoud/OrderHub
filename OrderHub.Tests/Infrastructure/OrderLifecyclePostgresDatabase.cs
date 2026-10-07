@@ -20,6 +20,8 @@ internal sealed class OrderLifecyclePostgresDatabase : AppDbContextFactory, IDis
     private readonly string _database = "orderhub_lifecycle_test_" + Guid.NewGuid().ToString("N");
     private readonly string _connection;
 
+    internal string ConnectionString => _connection;
+
     public OrderLifecyclePostgresDatabase(bool createSchema = true) : base("")
     {
         _connection = new NpgsqlConnectionStringBuilder(_admin) { Database = _database, Pooling = false }.ConnectionString;

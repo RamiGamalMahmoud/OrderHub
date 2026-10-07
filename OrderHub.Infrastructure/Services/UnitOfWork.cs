@@ -73,6 +73,10 @@ internal sealed class UnitOfWork : IUnitOfWork
         {
             await _transaction.CommitAsync(cancellationToken);
         }
+        catch (System.Data.Common.DbException exception)
+        {
+            throw new PersistenceException("The transaction could not be committed.", exception);
+        }
         finally
         {
             await _transaction.DisposeAsync();

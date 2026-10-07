@@ -65,8 +65,8 @@ internal class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, Result<O
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             if (transactionActive)
             {
-                await _unitOfWork.CommitTransactionAsync(cancellationToken);
                 transactionActive = false;
+                await _unitOfWork.CommitTransactionAsync(cancellationToken);
             }
             return new OrderUpdateReceipt(order.Version, order.DeliverySteps.OrderBy(step => step.StepOrder)
                 .Select(step => new SavedDeliveryStep(step.Id, step.StepOrder)).ToList());

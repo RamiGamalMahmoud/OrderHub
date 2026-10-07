@@ -32,6 +32,27 @@ namespace OrderHub.Tests.Infrastructure;
 public class OrderWriteArchitectureTests
 {
     [Fact]
+    public async Task Failed_commit_returns_save_error_without_rolling_back_disposed_transaction()
+    {
+        using var fixture = new Fixture();
+        var id = await fixture.Seed();
+        using var db = fixture.Db();
+        var order = await new OrderRepository(db).GetForUpdateAsync(id);
+        var input = Input(order) with { DeliverySteps = [] };
+        var repo = new Mock<IOrderRepository>(MockBehavior.Strict);
+        repo.Setup(r => r.GetForUpdateAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(order);
+        repo.Setup(r => r.PrepareDeliveryStepReorderingAsync(order, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        var unit = new Mock<IUnitOfWork>(MockBehavior.Strict);
+        unit.Setup(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        unit.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        unit.Setup(u => u.CommitTransactionAsync(It.IsAny<CancellationToken>())).ThrowsAsync(new PersistenceException("Unavailable", new Exception()));
+        var result = await new UpdateOrderHandler(repo.Object, unit.Object).Handle(new(id, input, order.Version), default);
+        Assert.False(result.IsSuccess);
+        Assert.Contains("تعذر حفظ", result.ErrorMessage);
+        unit.Verify(u => u.RollbackTransactionAsync(It.IsAny<CancellationToken>()), Times.Never());
+    }
+
+    [Fact]
     public async Task Repository_loads_tracked_items_properties_and_steps_for_update()
     {
         using var fixture = new Fixture();

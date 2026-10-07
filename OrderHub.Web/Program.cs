@@ -6,7 +6,6 @@ using OrderHub.Infrastructure.DependencyInjection;
 using OrderHub.Infrastructure.Options;
 using OrderHub.Web.Components;
 using OrderHub.Web.Services;
-using OrderHub.Web.Infrastructure.DeviceAccess;
 using OrderHub.Web.Infrastructure.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -45,7 +44,6 @@ builder.Services.AddMudServices();
 
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
-builder.Services.AddSingleton<IDeviceDetector, UserAgentDeviceDetector>();
 
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -86,8 +84,6 @@ if (!app.Environment.IsDevelopment())
 }
 
 //app.UseHttpsRedirection();
-
-app.UseMiddleware<DeviceAccessMiddleware>();
 
 app.UseStatusCodePagesWithRedirects("/not-found");
 
