@@ -30,7 +30,7 @@ internal class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, Result<O
         if (order is null)
             return Result<OrderUpdateReceipt>.Failure("الطلب غير موجود.");
         var version = order.CheckVersion(request.ExpectedVersion);
-        if (!version.IsSuccess) return Result<OrderUpdateReceipt>.Failure(version.ErrorMessage);
+        if (!version.IsSuccess) return Result<OrderUpdateReceipt>.Failure(version.ErrorMessage, "Conflict");
         if (!order.CanEdit) return Result<OrderUpdateReceipt>.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
         if (request.Order is null)
             return Result<OrderUpdateReceipt>.Failure("بيانات الطلب غير موجودة.");
@@ -73,7 +73,7 @@ internal class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, Result<O
         }
         catch (PersistenceConflictException exception)
         {
-            return Result<OrderUpdateReceipt>.Failure(exception.Message);
+            return Result<OrderUpdateReceipt>.Failure(exception.Message, "Conflict");
         }
         catch (PersistenceException)
         {

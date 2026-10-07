@@ -516,7 +516,7 @@ CSS محدود، دون Bootstrap أو Tailwind أو مؤثرات غير لاز�
 | Task 02 | مكتملة | PostgreSQL معزول: 3 اختبارات ناجحة للمخطط من قاعدة فارغة، الأسباب، immutable history، FKs، step-only version وrollback عند التعارض؛ 27 اختبار update ناجحًا. migration إضافية لا تمس الكميات/الأسعار، وتمنع Down عند وجود تاريخ أو أرشفة. استُبعد تغيير supplier FK المكرر لأن migration سابقة تعالجه. |
 | Task 03 | مكتملة | PostgreSQL: اختبار كل حالات legacy يحفظ IDs الطلب والخطوة وقيم البنود وتاريخ الإنشاء وارتباط الفاتورة؛ 7 order baselines و2 step baselines صحيحة وعدم تكرار؛ تاريخ غير محدود يرفض العملية دون أثر جزئي. 25 اختبار قواعد/persistence/migration ناجحًا. أُصلح اكتشاف migration الموردين القديمة المفقود تعريفها؛ Pending أزيل من enum التشغيلي. لا ترحيل لقاعدة المصدر. |
 | Task 04 | مكتملة | 63 اختبارًا ناجحًا تشمل الإنشاء بنفس timestamp والمستخدم، ربط المسودات، receipts بمعرفات محفوظة، تعديل نسخة قديمة مرفوض، قفل editor والدفع، مزامنة/rollback على PostgreSQL. العقد يتطلب ExpectedVersion. مدخلات null تُرفض، وCreation لا يكشف خطأ persistence. |
-| Task 05 | لم يبدأ | |
+| Task 05 | مكتملة | أوامر الحالة القديمة أزيلت واستبدلت بثلاث عمليات مقيدة للحالة والخطوة والتسليم المباشر. 26 اختبار Domain/Application/PostgreSQL ناجحًا: مستخدم/ساعة موثوقان، save واحد/no-op بلا save، رفض stale وغياب التاريخ، direct delivery مع خطوة Pending محفوظة. ErrorCode يميز التعارض دون مقارنة النصوص. |
 | Task 06 | لم يبدأ | |
 | Task 07 | لم يبدأ | |
 | Task 08 | لم يبدأ | |

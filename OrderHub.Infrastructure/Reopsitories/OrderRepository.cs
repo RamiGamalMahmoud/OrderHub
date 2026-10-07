@@ -50,6 +50,9 @@ internal class OrderRepository : IOrderRepository
         return _dbContext.Orders.SingleOrDefaultAsync(order => order.Id == orderId, cancellationToken);
     }
 
+    public Task<Order> GetForLifecycleAsync(int orderId, CancellationToken cancellationToken = default) =>
+        _dbContext.Orders.Include(order => order.DeliverySteps).SingleOrDefaultAsync(order => order.Id == orderId, cancellationToken);
+
     public async Task PrepareDeliveryStepReorderingAsync(Order order, CancellationToken cancellationToken = default)
     {
         // Vacate positive ranks inside the caller's transaction. The final save restores

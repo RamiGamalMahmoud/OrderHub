@@ -31,12 +31,12 @@ internal class ChangePaymentMethodCommandHandler : IRequestHandler<ChangePayment
             return Result.Failure("Order not exists.");
 
         var valid = order.CheckVersion(request.ExpectedVersion);
-        if (!valid.IsSuccess) return valid;
+        if (!valid.IsSuccess) return Result.Failure(valid.ErrorMessage, "Conflict");
         valid = order.ChangePaymentMethod(request.PaymentMethodId);
         if (!valid.IsSuccess) return valid;
         order.TouchForEdit();
         try { await _unitOfWork.SaveChangesAsync(cancellationToken); }
-        catch (PersistenceConflictException exception) { return Result.Failure(exception.Message); }
+        catch (PersistenceConflictException exception) { return Result.Failure(exception.Message, "Conflict"); }
         catch (PersistenceException) { return Result.Failure("تعذر حفظ طريقة الدفع."); }
         return Result.Success();
     }
