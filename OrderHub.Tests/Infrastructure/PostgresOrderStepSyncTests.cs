@@ -35,7 +35,6 @@ public class PostgresOrderStepSyncTests
             order.AddOrderItem(product.Id, "Product", 10, 1, 0, null, null, []);
             order.AddDeliveryStep(new() { StepOrder = 1, DeliveryMethod = DeliveryMethod.DeliveryMan, DeliverymanId = courier.Id });
             order.AddDeliveryStep(new() { StepOrder = 2, DeliveryMethod = DeliveryMethod.DeliveryMan, DeliverymanId = courier.Id });
-            order.Deliver(); // This fix does not change existing order status behavior.
             db.Orders.Add(order);
             await db.SaveChangesAsync();
             orderId = order.Id;
@@ -62,7 +61,7 @@ public class PostgresOrderStepSyncTests
             afterFailure.Select(step => (step.Id, step.StepOrder, step.DeliverymanId)));
         var root = await verify.Orders.AsNoTracking().SingleAsync();
         Assert.Equal(OrderSource.Online, root.OrderSource);
-        Assert.Equal(OrderStatus.Delivered, root.OrderStatus);
+        Assert.Equal(OrderStatus.Processing, root.OrderStatus);
 
         input = input with { DeliverySteps = [original[0] with { StepOrder = 2 }, original[1] with { Id = null, StepOrder = 1 }] };
         Assert.True((await fixture.Update(orderId, input)).IsSuccess);

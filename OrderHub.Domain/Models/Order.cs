@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace OrderHub.Domain.Models;
 
-public class Order : ModelBase
+public partial class Order : ModelBase
 {
     private readonly List<OrderItem> _orderItems = [];
     private readonly List<OrderDeliveryStep> _deliverySteps = [];
@@ -19,6 +19,7 @@ public class Order : ModelBase
     {
         ClientId = clientId;
         OrderNumber = orderNumber;
+        OrderStatus = OrderStatus.Processing;
     }
 
     public int ClientId { get; private set; }
@@ -53,6 +54,7 @@ public class Order : ModelBase
         int? shippingCarrierId,
         int? paymentMethodId)
     {
+        EnsureEditable();
         ClientId = clientId;
         OrderSource = orderSource;
         DeliveryMethod = deliveryMethod;
@@ -71,6 +73,7 @@ public class Order : ModelBase
         int? supplierId,
         IReadOnlyCollection<OrderItemPropertyData> properties)
     {
+        if (!CanEdit) return Result<OrderItem>.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
         Result<OrderItem> result = OrderItem.Create(
             productId,
             productName,
@@ -91,21 +94,25 @@ public class Order : ModelBase
 
     public void RemoveOrderItem(OrderItem orderItem)
     {
+        EnsureEditable();
         _orderItems.Remove(orderItem);
     }
 
     public void ClearOrderItems()
     {
+        EnsureEditable();
         _orderItems.Clear();
     }
 
     public void AddDeliveryStep(OrderDeliveryStep deliveryStep)
     {
+        EnsureEditable();
         _deliverySteps.Add(deliveryStep);
     }
 
     public Result ChangeClient(int clientId)
     {
+        if (!CanEdit) return Result.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
         ClientId = clientId;
 
         return Result.Success();
@@ -113,18 +120,21 @@ public class Order : ModelBase
 
     public Result ChangeDeliveryman(int? deliverymanId)
     {
+        if (!CanEdit) return Result.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
         DeliverymanId = deliverymanId;
         return Result.Success();
     }
 
     public Result ChangeShippingCarrier(int? shippingCarrierId)
     {
+        if (!CanEdit) return Result.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
         ShippingCarrierId = shippingCarrierId;
         return Result.Success();
     }
 
     public Result ChangePaymentMethod(int? paymentMethodId)
     {
+        if (!CanEdit) return Result.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
         if (PaymentMethodId == paymentMethodId)
             return Result.Success();
 
@@ -135,11 +145,13 @@ public class Order : ModelBase
 
     public void ClearDeliverySteps()
     {
+        EnsureEditable();
         _deliverySteps.Clear();
     }
 
     public void ReplaceOrderItems(IReadOnlyCollection<OrderItem> items)
     {
+        EnsureEditable();
         // Materialize before clearing, including when the caller passes our own items.
         var replacementItems = items.ToList();
         _orderItems.Clear();
@@ -148,6 +160,7 @@ public class Order : ModelBase
 
     public void SynchronizeDeliverySteps(IReadOnlyCollection<(int? Id, OrderDeliveryStep Values)> steps)
     {
+        EnsureEditable();
         // Validate all identities before changing the aggregate.
         var existing = _deliverySteps.ToDictionary(step => step.Id);
         var ids = steps.Where(step => step.Id.HasValue).Select(step => step.Id.Value).ToList();
@@ -170,19 +183,19 @@ public class Order : ModelBase
         _deliverySteps.AddRange(synchronized);
     }
 
-    public void ChangeOrderStatus(OrderStatus orderStatus)
-    {
-        OrderStatus = orderStatus;
-    }
-
     public void ChangeDeliveryMethod(DeliveryMethod deliveryMethod)
     {
+        EnsureEditable();
         DeliveryMethod = deliveryMethod;
     }
-    public void ChangeOrderSource(OrderSource orderSource) => OrderSource = orderSource;
-    public void ReturnToPending() => OrderStatus = OrderStatus.Pending;
-    public void Ship() => OrderStatus = OrderStatus.Shipped;
-    public void StartProcessing() => OrderStatus = OrderStatus.Processing;
-    public void Cancel() => OrderStatus = OrderStatus.Cancelled;
-    public void Deliver() => OrderStatus = OrderStatus.Delivered;
+    public void ChangeOrderSource(OrderSource orderSource)
+    {
+        EnsureEditable();
+        OrderSource = orderSource;
+    }
+
+    private void EnsureEditable()
+    {
+        if (!CanEdit) throw new System.InvalidOperationException("بيانات الطلب مقفولة ولا تقبل التعديل.");
+    }
 }

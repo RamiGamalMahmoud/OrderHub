@@ -11,5 +11,11 @@ public enum DeliveryStatus
     InProgress,
 
     [Description("مكتمل")]
-    Completed
+    Completed,
+
+    [Description("تعذر التنفيذ")]
+    Failed,
+
+    [Description("ملغاة")]
+    Cancelled
 }

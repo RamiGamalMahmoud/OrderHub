@@ -31,10 +31,6 @@ internal class DeliverOrderCommandHandler : IRequestHandler<DeliverOrderCommand,
         if (order is null)
             return Result<OrderStatus>.Failure("الطلب غير موجود.");
 
-        order.Deliver();
-
-        await _unitOfWork.SaveChangesAsync();
-
-        return Result<OrderStatus>.Success(order.OrderStatus);
+        return Result<OrderStatus>.Failure("استخدم عمليات دورة الطلب الجديدة؛ تغيير الحالة القديم غير متاح.");
     }
 }

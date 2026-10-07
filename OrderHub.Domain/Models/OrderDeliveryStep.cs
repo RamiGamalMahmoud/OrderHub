@@ -4,6 +4,10 @@ namespace OrderHub.Domain.Models;
 
 public class OrderDeliveryStep : ModelBase
 {
+    public DeliveryStatus Status { get; private set; } = DeliveryStatus.Pending;
+
+    internal void RecordStatus(DeliveryStatus status) => Status = status;
+
     public int OrderId { get; set; }
     public Order Order { get; set; }
 
