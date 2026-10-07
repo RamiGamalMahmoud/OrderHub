@@ -599,6 +599,80 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("quotation_items", (string)null);
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.DeliveryStepStatusHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ChangedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changed_at_utc");
+
+                    b.Property<int?>("ChangedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("changed_by_user_id");
+
+                    b.Property<string>("ChangedByUserName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("changed_by_user_name");
+
+                    b.Property<int>("DeliveryStepId")
+                        .HasColumnType("integer")
+                        .HasColumnName("delivery_step_id");
+
+                    b.Property<string>("NewStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("new_status");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_id");
+
+                    b.Property<int>("OrderVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_version");
+
+                    b.Property<string>("PreviousStatus")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("previous_status");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("source");
+
+                    b.HasKey("Id")
+                        .HasName("pk_delivery_step_status_history");
+
+                    b.HasIndex("ChangedByUserId")
+                        .HasDatabaseName("ix_delivery_step_status_history_changed_by_user_id");
+
+                    b.HasIndex("DeliveryStepId", "OrderVersion", "Id")
+                        .HasDatabaseName("ix_delivery_step_status_history_delivery_step_id_order_version");
+
+                    b.HasIndex("OrderId", "OrderVersion", "Id")
+                        .HasDatabaseName("ix_delivery_step_status_history_order_id_order_version_id");
+
+                    b.ToTable("delivery_step_status_history", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_step_history_attribution", "source = 'LegacyMigration' OR (changed_by_user_id IS NOT NULL AND changed_by_user_name IS NOT NULL AND (new_status NOT IN ('Failed','Cancelled') OR (reason IS NOT NULL AND length(trim(reason)) BETWEEN 1 AND 200)))");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.Deliveryman", b =>
                 {
                     b.Property<int>("Id")
@@ -643,6 +717,24 @@ namespace OrderHub.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ArchiveReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("archive_reason");
+
+                    b.Property<DateTime?>("ArchivedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("archived_at_utc");
+
+                    b.Property<int?>("ArchivedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("archived_by_user_id");
+
+                    b.Property<string>("ArchivedByUserName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("archived_by_user_name");
+
                     b.Property<int>("ClientId")
                         .HasColumnType("integer")
                         .HasColumnName("client_id");
@@ -659,6 +751,10 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Property<int?>("DeliverymanId")
                         .HasColumnType("integer")
                         .HasColumnName("deliveryman_id");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
 
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("timestamp with time zone")
@@ -679,7 +775,7 @@ namespace OrderHub.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(30)
                         .HasColumnType("varchar(30)")
-                        .HasDefaultValue("Pending")
+                        .HasDefaultValue("Processing")
                         .HasColumnName("order_status");
 
                     b.Property<int?>("PaymentMethodId")
@@ -690,8 +786,18 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("shipping_carrier_id");
 
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("version");
+
                     b.HasKey("Id")
                         .HasName("pk_orders");
+
+                    b.HasIndex("ArchivedByUserId")
+                        .HasDatabaseName("ix_orders_archived_by_user_id");
 
                     b.HasIndex("ClientId")
                         .HasDatabaseName("ix_orders_client_id");
@@ -705,7 +811,13 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasIndex("ShippingCarrierId")
                         .HasDatabaseName("ix_orders_shipping_carrier_id");
 
-                    b.ToTable("orders", (string)null);
+                    b.HasIndex("IsArchived", "CreatedAt")
+                        .HasDatabaseName("ix_orders_is_archived_created_at");
+
+                    b.ToTable("orders", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_orders_archive_metadata", "NOT is_archived OR (archived_at_utc IS NOT NULL AND archived_by_user_id IS NOT NULL AND archive_reason IS NOT NULL AND length(trim(archive_reason)) BETWEEN 1 AND 200)");
+                        });
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.OrderDeliveryStep", b =>
@@ -742,6 +854,14 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Property<int?>("ShippingCarrierId")
                         .HasColumnType("integer")
                         .HasColumnName("shipping_carrier_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("Pending")
+                        .HasColumnName("status");
 
                     b.Property<int>("StepOrder")
                         .HasColumnType("integer")
@@ -869,6 +989,78 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasDatabaseName("ix_order_item_properties_order_item_id_property_id");
 
                     b.ToTable("order_item_properties", (string)null);
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.OrderStatusHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ChangedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changed_at_utc");
+
+                    b.Property<int?>("ChangedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("changed_by_user_id");
+
+                    b.Property<string>("ChangedByUserName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("changed_by_user_name");
+
+                    b.Property<string>("NewStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("new_status");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_id");
+
+                    b.Property<int>("OrderVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_version");
+
+                    b.Property<string>("OriginalStatus")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("original_status");
+
+                    b.Property<string>("PreviousStatus")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("previous_status");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("source");
+
+                    b.HasKey("Id")
+                        .HasName("pk_order_status_history");
+
+                    b.HasIndex("ChangedByUserId")
+                        .HasDatabaseName("ix_order_status_history_changed_by_user_id");
+
+                    b.HasIndex("OrderId", "OrderVersion", "Id")
+                        .HasDatabaseName("ix_order_status_history_order_id_order_version_id");
+
+                    b.ToTable("order_status_history", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_order_history_attribution", "source = 'LegacyMigration' OR (changed_by_user_id IS NOT NULL AND changed_by_user_name IS NOT NULL AND ((new_status NOT IN ('Cancelled','DeliveryFailed') AND source <> 'DirectDelivery') OR (reason IS NOT NULL AND length(trim(reason)) BETWEEN 1 AND 200)))");
+                        });
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.PaymentMethod", b =>
@@ -1446,7 +1638,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("CategoryId");
 
-                            b1.ToTable("categories", (string)null);
+                            b1.ToTable("categories");
 
                             b1.WithOwner()
                                 .HasForeignKey("CategoryId")
@@ -1479,7 +1671,7 @@ namespace OrderHub.Infrastructure.Migrations
                                 .IsUnique()
                                 .HasDatabaseName("ix_cities_name");
 
-                            b1.ToTable("cities", (string)null);
+                            b1.ToTable("cities");
 
                             b1.WithOwner()
                                 .HasForeignKey("CityId")
@@ -1520,7 +1712,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("ClientId");
 
-                            b1.ToTable("clients", (string)null);
+                            b1.ToTable("clients");
 
                             b1.WithOwner()
                                 .HasForeignKey("ClientId")
@@ -1632,6 +1824,33 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Quotation");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.DeliveryStepStatusHistory", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("ChangedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_delivery_step_status_history_users_changed_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.OrderDeliveryStep", "DeliveryStep")
+                        .WithMany()
+                        .HasForeignKey("DeliveryStepId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_delivery_step_status_history_order_delivery_steps_delivery_");
+
+                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
+                        .WithMany("StepHistory")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_delivery_step_status_history_orders_order_id");
+
+                    b.Navigation("DeliveryStep");
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.Deliveryman", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.City", "City")
@@ -1655,7 +1874,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("DeliverymanId");
 
-                            b1.ToTable("deliverymen", (string)null);
+                            b1.ToTable("deliverymen");
 
                             b1.WithOwner()
                                 .HasForeignKey("DeliverymanId")
@@ -1670,6 +1889,12 @@ namespace OrderHub.Infrastructure.Migrations
 
             modelBuilder.Entity("OrderHub.Domain.Models.Order", b =>
                 {
+                    b.HasOne("OrderHub.Domain.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("ArchivedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_orders_users_archived_by_user_id");
+
                     b.HasOne("OrderHub.Domain.Models.Client", "Client")
                         .WithMany("Orders")
                         .HasForeignKey("ClientId")
@@ -1766,7 +1991,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("OrderItemId");
 
-                            b1.ToTable("order_items", (string)null);
+                            b1.ToTable("order_items");
 
                             b1.WithOwner()
                                 .HasForeignKey("OrderItemId")
@@ -1804,6 +2029,24 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Property");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.OrderStatusHistory", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("ChangedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_order_status_history_users_changed_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
+                        .WithMany("StatusHistory")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_order_status_history_orders_order_id");
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.Phone", b =>
                 {
                     b.OwnsOne("OrderHub.Domain.ValueObjects.PhoneNumber", "Number", b1 =>
@@ -1826,7 +2069,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("PhoneId");
 
-                            b1.ToTable("phones", (string)null);
+                            b1.ToTable("phones");
 
                             b1.WithOwner()
                                 .HasForeignKey("PhoneId")
@@ -1860,7 +2103,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("ProductId");
 
-                            b1.ToTable("products", (string)null);
+                            b1.ToTable("products");
 
                             b1.WithOwner()
                                 .HasForeignKey("ProductId")
@@ -1879,7 +2122,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("ProductId");
 
-                            b1.ToTable("products", (string)null);
+                            b1.ToTable("products");
 
                             b1.WithOwner()
                                 .HasForeignKey("ProductId")
@@ -1968,7 +2211,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("ShippingCarrierId");
 
-                            b1.ToTable("shipping_carriers", (string)null);
+                            b1.ToTable("shipping_carriers");
 
                             b1.WithOwner()
                                 .HasForeignKey("ShippingCarrierId")
@@ -1987,7 +2230,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("ShippingCarrierId");
 
-                            b1.ToTable("shipping_carriers", (string)null);
+                            b1.ToTable("shipping_carriers");
 
                             b1.WithOwner()
                                 .HasForeignKey("ShippingCarrierId")
@@ -2019,6 +2262,27 @@ namespace OrderHub.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_suppliers_phones_phone_id");
 
+                    b.OwnsOne("OrderHub.Domain.ValueObjects.EntityName", "Name", b1 =>
+                        {
+                            b1.Property<int>("SupplierId")
+                                .HasColumnType("integer")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("varchar(100)")
+                                .HasColumnName("name");
+
+                            b1.HasKey("SupplierId");
+
+                            b1.ToTable("suppliers");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SupplierId")
+                                .HasConstraintName("fk_suppliers_suppliers_id");
+                        });
+
                     b.OwnsOne("OrderHub.Domain.ValueObjects.BusinessHours", "BusinessHours", b1 =>
                         {
                             b1.Property<int>("SupplierId")
@@ -2035,28 +2299,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("SupplierId");
 
-                            b1.ToTable("suppliers", (string)null);
-
-                            b1.WithOwner()
-                                .HasForeignKey("SupplierId")
-                                .HasConstraintName("fk_suppliers_suppliers_id");
-                        });
-
-                    b.OwnsOne("OrderHub.Domain.ValueObjects.EntityName", "Name", b1 =>
-                        {
-                            b1.Property<int>("SupplierId")
-                                .HasColumnType("integer")
-                                .HasColumnName("id");
-
-                            b1.Property<string>("Value")
-                                .IsRequired()
-                                .HasMaxLength(100)
-                                .HasColumnType("varchar(100)")
-                                .HasColumnName("name");
-
-                            b1.HasKey("SupplierId");
-
-                            b1.ToTable("suppliers", (string)null);
+                            b1.ToTable("suppliers");
 
                             b1.WithOwner()
                                 .HasForeignKey("SupplierId")
@@ -2106,7 +2349,7 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasOne("OrderHub.Domain.Models.Supplier", null)
                         .WithMany()
                         .HasForeignKey("suppliers_id")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_product_supplier_suppliers_suppliers_id");
                 });
@@ -2143,6 +2386,10 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("DeliverySteps");
 
                     b.Navigation("OrderItems");
+
+                    b.Navigation("StatusHistory");
+
+                    b.Navigation("StepHistory");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.OrderItem", b =>

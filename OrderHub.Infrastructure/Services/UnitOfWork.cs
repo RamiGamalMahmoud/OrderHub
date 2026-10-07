@@ -50,6 +50,10 @@ internal sealed class UnitOfWork : IUnitOfWork
         {
             return await _context.SaveChangesAsync(cancellationToken);
         }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            throw new PersistenceConflictException(exception);
+        }
         catch (DbUpdateException exception)
         {
             throw new PersistenceException(exception.Message, exception);

@@ -13,6 +13,8 @@ internal class OrderDeliveryStepConfiguration
 
         builder.ToTable("order_delivery_steps");
 
+        builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(30).HasDefaultValue(OrderHub.Domain.Enums.DeliveryStatus.Pending);
+
         builder.Property(x => x.StepOrder)
             .HasColumnType("integer")
             .IsRequired();

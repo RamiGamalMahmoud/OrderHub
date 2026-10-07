@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
@@ -41,8 +41,22 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
             .HasColumnType("varchar(30)")
             .HasMaxLength(30)
             .HasConversion<string>()
-            .HasDefaultValue(OrderStatus.Pending)
+            .HasDefaultValue(OrderStatus.Processing)
             .IsRequired();
+
+        builder.Property(x => x.Version).IsConcurrencyToken().HasDefaultValue(1);
+        builder.Property(x => x.ArchivedAtUtc).HasColumnType("timestamp with time zone");
+        builder.Property(x => x.ArchiveReason).HasMaxLength(200);
+        builder.Property(x => x.ArchivedByUserName).HasMaxLength(150);
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.ArchivedByUserId).OnDelete(DeleteBehavior.Restrict);
+        builder.Ignore(x => x.CanEdit);
+        builder.Ignore(x => x.IsFinal);
+        builder.Ignore(x => x.CanArchive);
+        builder.HasMany(x => x.StatusHistory).WithOne(x => x.Order).HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasMany(x => x.StepHistory).WithOne(x => x.Order).HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(x => new { x.IsArchived, x.CreatedAt });
+        builder.ToTable("orders", table => table.HasCheckConstraint("ck_orders_archive_metadata",
+            "NOT is_archived OR (archived_at_utc IS NOT NULL AND archived_by_user_id IS NOT NULL AND archive_reason IS NOT NULL AND length(trim(archive_reason)) BETWEEN 1 AND 200)"));
 
         builder.Property(x => x.ShippingCarrierId)
             .HasColumnType("integer")
