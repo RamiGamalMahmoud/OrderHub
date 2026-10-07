@@ -17,6 +17,7 @@ internal static class QueryableExtensions
     {
         pageNumber = Math.Max(1, pageNumber);
         pageSize = Math.Clamp(pageSize, 1, 100);
+        pageNumber = Math.Min(pageNumber, int.MaxValue / pageSize);
 
         var totalCount = await query.CountAsync(cancellationToken);
         

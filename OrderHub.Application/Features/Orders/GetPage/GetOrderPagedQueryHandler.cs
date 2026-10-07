@@ -14,5 +14,5 @@ namespace OrderHub.Application.Features.Orders.GetPage;
 internal sealed class GetOrderPagedQueryHandler(IOrderReader reader) : IRequestHandler<GetOrdersPageQuery, PagedResult<OrderListItem>>
 {
     public Task<PagedResult<OrderListItem>> Handle(GetOrdersPageQuery request, CancellationToken cancellationToken) =>
-        reader.GetPageAsync(request.PageNumber, request.PageSize, request.SearchTerm, request.FromDate, request.ToDate, request.PaymentMethodId, request.OrderStatus, cancellationToken);
+        reader.GetPageAsync(request.PageNumber, request.PageSize, request.SearchTerm, request.FromDate, request.ToDate, request.PaymentMethodId, request.OrderStatus, cancellationToken, request.ArchivedOnly);
 }

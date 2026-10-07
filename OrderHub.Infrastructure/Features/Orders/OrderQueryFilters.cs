@@ -14,8 +14,10 @@ internal static class OrderQueryFilters
         int? paymentMethodId,
         OrderStatus? orderStatus)
     {
-        DateTime? fromDateUtc = fromDate?.Date.ToUniversalTime();
-        DateTime? toDateUtc = toDate?.Date.AddDays(1).ToUniversalTime();
+        // Callers supply UTC instants; the end bound is exclusive. Browser-local
+        // day boundaries are converted before this query, without truncating UTC.
+        DateTime? fromDateUtc = fromDate?.ToUniversalTime();
+        DateTime? toDateUtc = toDate?.ToUniversalTime();
 
         return query.Where(order =>
             (string.IsNullOrWhiteSpace(searchTerm)

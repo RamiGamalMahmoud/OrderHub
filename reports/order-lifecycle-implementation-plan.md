@@ -518,7 +518,7 @@ CSS محدود، دون Bootstrap أو Tailwind أو مؤثرات غير لاز�
 | Task 04 | مكتملة | 63 اختبارًا ناجحًا تشمل الإنشاء بنفس timestamp والمستخدم، ربط المسودات، receipts بمعرفات محفوظة، تعديل نسخة قديمة مرفوض، قفل editor والدفع، مزامنة/rollback على PostgreSQL. العقد يتطلب ExpectedVersion. مدخلات null تُرفض، وCreation لا يكشف خطأ persistence. |
 | Task 05 | مكتملة | أوامر الحالة القديمة أزيلت واستبدلت بثلاث عمليات مقيدة للحالة والخطوة والتسليم المباشر. 26 اختبار Domain/Application/PostgreSQL ناجحًا: مستخدم/ساعة موثوقان، save واحد/no-op بلا save، رفض stale وغياب التاريخ، direct delivery مع خطوة Pending محفوظة. ErrorCode يميز التعارض دون مقارنة النصوص. |
 | Task 06 | مكتملة | الحذف الفعلي أزيل من Command/Repository واستبدل بالأرشفة المعتمدة. 30 اختبارًا ناجحًا: metadata/time/actor، منع التشغيل والتكرار، حفظ الأبناء والتاريخ، فاتورة المؤرشف قابلة للقراءة، وفحص استخدام العميل يشمل المؤرشف. لا فلتر عالمي للعلاقات. |
-| Task 07 | لم يبدأ | |
+| Task 07 | مكتملة | قراءات تشغيلية تستعمل قواعد Domain، وتاريخ مقسم بترتيب ثابت، قائمة archive منفصلة دون إخفاء العلاقات. 9 اختبارات PostgreSQL/قراءات ناجحة: action availability، blocked steps، missing/null legacy، history ownership/pagination، archived access، UTC bounds بلا truncation وpage overflow آمن. |
 | Task 08 | لم يبدأ | |
 | Task 09 | لم يبدأ | |
 | Task 10 | لم يبدأ | |

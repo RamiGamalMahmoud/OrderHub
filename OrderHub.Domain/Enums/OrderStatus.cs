@@ -10,10 +10,10 @@ public enum OrderStatus
     [Description("تم الشحن")]
     Shipped = 2,
 
-    [Description("تم التوصيل")]
+    [Description("تم التسليم")]
     Delivered = 3,
 
-    [Description("ملغى")]
+    [Description("تم الإلغاء")]
     Cancelled = 4,
 
     [Description("جاهز للتسليم")]

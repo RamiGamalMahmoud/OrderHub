@@ -36,9 +36,9 @@ internal sealed partial class OrderReader(AppDbContextFactory contextFactory) : 
                     order.Client.Address.FullAddress),
 
                 new OrderDetailsDelivery(
-                    order.DeliveryMethod.GetDescription(),
-                    order.Deliveryman.Name.Value,
-                    order.ShippingCarrier.Name.Value),
+                    order.DeliveryMethod.HasValue ? order.DeliveryMethod.Value.GetDescription() : "غير محددة",
+                    order.Deliveryman == null ? null : order.Deliveryman.Name.Value,
+                    order.ShippingCarrier == null ? null : order.ShippingCarrier.Name.Value),
 
                     order.OrderItems.Select
                     (oi => new OrderDetailsLine(
@@ -50,24 +50,26 @@ internal sealed partial class OrderReader(AppDbContextFactory contextFactory) : 
                     .ToList(),
 
                 new OrderDetailsPayment(
-                    order.PaymentMethod.Description,
+                    order.PaymentMethod == null ? null : order.PaymentMethod.Description,
                     order.OrderItems.Sum(item => item.UnitPrice.Value * item.Quantity),
                     0,
                     0,
                     order.OrderItems.Sum(item => item.UnitPrice.Value * item.Quantity))
 
                 ))
-            .SingleAsync(cancellationToken);
+            .SingleOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<PagedResult<OrderListItem>> GetPageAsync(int pageNumber, int pageSize, string searchTerm, DateTime? fromDate, DateTime? toDate, int? paymentMethodId, OrderStatus? orderStatus, CancellationToken cancellationToken)
+    public async Task<PagedResult<OrderListItem>> GetPageAsync(int pageNumber, int pageSize, string searchTerm, DateTime? fromDate, DateTime? toDate, int? paymentMethodId, OrderStatus? orderStatus, CancellationToken cancellationToken, bool archivedOnly = false)
     {
         using AppDbContext dbContext = contextFactory.CreateDbContext();
 
         var query = dbContext.Orders
             .AsNoTracking()
+            .Where(order => order.IsArchived == archivedOnly)
             .ApplyFilter(searchTerm, fromDate, toDate, paymentMethodId, orderStatus)
             .OrderByDescending(o => o.CreatedAt)
+            .ThenByDescending(o => o.Id)
             .Select(order => new OrderListItem(
                 order.Id,
                 order.OrderNumber,
@@ -88,7 +90,9 @@ internal sealed partial class OrderReader(AppDbContextFactory contextFactory) : 
                     order.PaymentMethod.Description,
                     order.PaymentMethod.IsActive),
 
-                order.CreatedAt
+                order.CreatedAt,
+                order.DeliveryMethod,
+                order.IsArchived
             ));
 
         return await query.ToPagedResultAsync(pageNumber, pageSize, cancellationToken);

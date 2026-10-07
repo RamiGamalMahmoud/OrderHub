@@ -7,10 +7,10 @@ public enum DeliveryStatus
     [Description("قيد الانتظار")]
     Pending,
 
-    [Description("قيد التنفيذ")]
+    [Description("قيد التسليم")]
     InProgress,
 
-    [Description("مكتمل")]
+    [Description("تم التنفيذ")]
     Completed,
 
     [Description("تعذر التنفيذ")]
