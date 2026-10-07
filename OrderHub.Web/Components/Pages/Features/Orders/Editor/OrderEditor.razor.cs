@@ -546,7 +546,7 @@ public partial class OrderEditor : IDisposable
             if (lifecycle.IsClosed)
                 return;
             var result = await RequestExecutor!.ExecuteAsync(new Application.Features.Orders.Create.CreateOrderCommand(
-                lifecycle.PersistedDraftId, input));
+                lifecycle.PersistedDraftId, input, _sessionId == Guid.Empty ? null : _sessionId));
             if (result.IsSuccess)
                 lifecycle.IsCompleted = true;
             if (!lifecycle.IsClosed)

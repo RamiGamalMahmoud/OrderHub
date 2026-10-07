@@ -15,17 +15,19 @@ public partial class Order : ModelBase
     {
     }
 
-    public Order(int clientId, string orderNumber)
+    public Order(int clientId, string orderNumber, System.Guid? creationRequestId = null)
     {
         ClientId = clientId;
         OrderNumber = orderNumber;
         OrderStatus = OrderStatus.Processing;
+        CreationRequestId = creationRequestId;
     }
 
     public int ClientId { get; private set; }
     public Client Client { get; private set; }
 
     public string OrderNumber { get; private set; }
+    public System.Guid? CreationRequestId { get; private set; }
     public OrderSource? OrderSource { get; private set; }
 
     public DeliveryMethod? DeliveryMethod { get; private set; }
@@ -86,6 +88,7 @@ public partial class Order : ModelBase
 
         if (result.IsSuccess)
         {
+            result.Value.AttachTo(this);
             _orderItems.Add(result.Value);
         }
 
@@ -107,6 +110,7 @@ public partial class Order : ModelBase
     public void AddDeliveryStep(OrderDeliveryStep deliveryStep)
     {
         EnsureEditable();
+        deliveryStep.AttachTo(this);
         _deliverySteps.Add(deliveryStep);
     }
 
@@ -154,6 +158,7 @@ public partial class Order : ModelBase
         EnsureEditable();
         // Materialize before clearing, including when the caller passes our own items.
         var replacementItems = items.ToList();
+        foreach (var item in replacementItems) item.AttachTo(this);
         _orderItems.Clear();
         _orderItems.AddRange(replacementItems);
     }
@@ -175,6 +180,7 @@ public partial class Order : ModelBase
             step.DeliveryMethod = values.DeliveryMethod;
             step.DeliverymanId = values.DeliverymanId;
             step.ShippingCarrierId = values.ShippingCarrierId;
+            step.AttachTo(this);
             synchronized.Add(step);
         }
         // Keep the matched instances. New unsaved entities share Id=0, so identity

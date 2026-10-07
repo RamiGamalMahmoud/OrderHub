@@ -71,14 +71,27 @@ internal class OrderRepository : IOrderRepository
         }
     }
 
-    public async Task<int> GetNextOrderNumberAsync(CancellationToken cancellationToken = default)
+    public Task<int?> FindCreationRequestAsync(Guid requestId, int userId, CancellationToken cancellationToken = default) =>
+        _dbContext.Orders.Where(order => order.CreationRequestId == requestId && order.StatusHistory.Any(history =>
+            history.Source == OrderHub.Domain.Enums.OrderHistorySource.Creation && history.ChangedByUserId == userId))
+            .Select(order => (int?)order.Id).SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<int> GetNextOrderNumberAsync(DateTime numberingDay, CancellationToken cancellationToken = default)
     {
-        string pattern = $"%-{DateTime.Now:yyyy-MM-dd}-%";
+        if (_dbContext.Database.IsNpgsql())
+        {
+            if (_dbContext.Database.CurrentTransaction is null)
+                throw new InvalidOperationException("Order numbering requires a transaction.");
+            // Serialize this short allocation/save transaction, without a workflow lock service.
+            await _dbContext.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(74831621)", cancellationToken);
+        }
+        string pattern = $"%-{numberingDay.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)}-%";
 
         string lastOrderNumber = await _dbContext
             .Orders
             .Where(o => EF.Functions.Like(o.OrderNumber, pattern))
-            .OrderByDescending(o => o.OrderNumber)
+            .OrderByDescending(o => o.OrderNumber.Length)
+            .ThenByDescending(o => o.OrderNumber)
             .Select(o => o.OrderNumber)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -87,7 +100,8 @@ internal class OrderRepository : IOrderRepository
 
         string numberPart = lastOrderNumber.Split('-').LastOrDefault();
 
-        int number = int.Parse(numberPart);
+        if (!int.TryParse(numberPart, out var number) || number >= 99999)
+            throw new InvalidOperationException("Review the existing daily order numbers before creating another order.");
 
         return number + 1;
     }

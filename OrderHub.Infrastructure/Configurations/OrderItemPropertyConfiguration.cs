@@ -12,6 +12,9 @@ internal class OrderItemPropertyConfiguration
         base.Configure(builder);
 
         builder.ToTable("order_item_properties");
+        builder.Property(x => x.PropertyId).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Property(x => x.Value).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Navigation(x => x.Property).UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Property(x => x.OrderItemId)
             .HasColumnType("integer")

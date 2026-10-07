@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
@@ -173,52 +173,12 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
         });
     }
 
-    protected override async Task Save()
+    protected override Task Save()
     {
-        CancelPendingDraftSave();
-
-        var order = BuildOrder();
-
-        Result<int> result =
-            await _requestExecutor.ExecuteAsync(
-                new CreateOrderCommand(_draftSessionId, new OrderInput.Order(
-                    order.ClientId,
-                    SelectedOrderSource.OrderSource,
-                    order.DeliveryMethod,
-                    order.DeliveryManId,
-                    order.ShippingCarrierId,
-
-                    order.OrderItems.Select(item => new OrderInput.Item(
-                        item.ProductId,
-                        item.ProductName,
-                        item.Quantity,
-                        item.UnitPrice,
-                        0,
-                        item.SupplierName,
-                        item.SupplierId,
-                        item.Properties.Select(property => new OrderInput.Property(
-                            property.PropertyId,
-                            property.Value)))),
-                    order.DeliverySteps.Select(step => new OrderInput.DeliveryStep(
-                        step.StepOrder,
-                        step.DeliveryMethod,
-                        step.HandlerId)), 
-                    order.PaymentMethodId
-                    )));
-
-        if (!result.IsSuccess)
-        {
-            HandleOrderFailure();
-            return;
-        }
-
-
-        WeakReferenceMessenger.Default.Send(
-            new OrdersMessages.OrderDraftDeletedMessage(_draftSessionId));
-
-        HandleOrderSuccess(result.Value);
-
+        // Order writes are retired here. Use the versioned Web editor/workflow.
+        OrderHub.UI.Services.NotificationService.Instance.ShowError("إدارة الطلبات انتقلت إلى واجهة الويب. هذه الشاشة للقراءة فقط.");
         OnRequestClose();
+        return Task.CompletedTask;
     }
 
     private async Task LoadDraftDependenciesAsync(Draft draft)

@@ -38,6 +38,8 @@ public partial class OrdersCommands
     private bool CanRead =>
         Authorization.CanRead(PermissionFeature.Orders);
 
+    private bool CanWriteOrders => false;
+
     private bool CanWrite =>
         Authorization.CanWrite(PermissionFeature.Orders);
 
@@ -51,41 +53,23 @@ public partial class OrdersCommands
 
     // CRUD
 
-    [RelayCommand(CanExecute = nameof(CanWrite))]
+    [RelayCommand(CanExecute = nameof(CanWriteOrders))]
     private async Task Create()
     {
-        await DialogService.Instance.ShowDialog<Features.Orders.Create.View>("ÅäÔÇÁ ØáÈ ÌÏíÏ");
+        await DialogService.Instance.ShowDialog<Features.Orders.Create.View>("ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½");
     }
 
-    [RelayCommand(CanExecute = nameof(CanWrite))]
+    [RelayCommand(CanExecute = nameof(CanWriteOrders))]
     private async Task Edit(int id)
     {
-        await DialogService.Instance.ShowDialog<Features.Orders.Edit.View>("ÊÚÏíá ØáÈ", id);
+        await DialogService.Instance.ShowDialog<Features.Orders.Edit.View>("ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½", id);
     }
 
-    [RelayCommand(CanExecute = nameof(CanWrite))]
-    private async Task Delete(int id)
+    [RelayCommand(CanExecute = nameof(CanWriteOrders))]
+    private Task Delete(int id)
     {
-        if (!DialogService.Instance.Confirm($"åá ÊÑíÏ ÍÐÝ ÇáØáÈ¿"))
-        {
-            return;
-        }
-
-        Result result = await _requestExecutor.ExecuteAsync(new Application.Features.Orders.Delete.DeleteOrder.Command(id));
-
-        if (!result.IsSuccess)
-        {
-            NotificationService.Instance
-                .ShowError(result.ErrorMessage);
-
-            return;
-        }
-
-        WeakReferenceMessenger.Default.Send(
-            new OrdersMessages.OrderDeletedMessage(id));
-
-        NotificationService.Instance
-            .ShowSuccess("Êã ÍÐÝ ÇáØáÈ ÈäÌÇÍ.");
+        NotificationService.Instance.ShowError("Use OrderHub Web to archive orders; permanent deletion is unavailable.");
+        return Task.CompletedTask;
     }
 
     // Messaging
@@ -146,7 +130,7 @@ public partial class OrdersCommands
                     id));
 
             NotificationService.Instance.Show(
-                "Êã ÇÖÇÝÉ ÇáÑÓÇáÉ ááÅÑÓÇá, ÊæÌå Åáì ÓÌá ÇáÑÓÇÆá áÅÑÓÇáåÇ Çæ ÊÎÕíÕåÇ ÞÈá ÇáÅÑÓÇá");
+                "ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
 
             return;
         }

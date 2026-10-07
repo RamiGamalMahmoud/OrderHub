@@ -137,14 +137,12 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
         SaveCommand.NotifyCanExecuteChanged();
     }
 
-    protected override async Task Save()
+    protected override Task Save()
     {
-        Result result = await _requestExecutor.ExecuteAsync(new Application.Features.Orders.Update.UpdateOrderCommand(_id, BuildOrder()));
-        if(result.IsSuccess)
-        {
-            WeakReferenceMessenger.Default.Send(new OrdersMessages.OrderUpdatedMessage(_id));
-        }
+        // Order writes are retired here. Use the versioned Web editor/workflow.
+        OrderHub.UI.Services.NotificationService.Instance.ShowError("إدارة الطلبات انتقلت إلى واجهة الويب. هذه الشاشة للقراءة فقط.");
         OnRequestClose();
+        return Task.CompletedTask;
     }
 
     public Task Initialize(object parameter)

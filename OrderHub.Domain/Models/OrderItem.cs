@@ -40,7 +40,7 @@ public class OrderItem : ModelBase
     }
 
     private readonly Collection<OrderItemProperty> _properties = [];
-    public IEnumerable<OrderItemProperty> Properties => _properties;
+    public IReadOnlyCollection<OrderItemProperty> Properties => new ReadOnlyCollection<OrderItemProperty>(_properties);
     public int ProductId { get; private set; }
     public Product Product { get; private set; }
 
@@ -60,6 +60,15 @@ public class OrderItem : ModelBase
     public decimal VatRate { get; private set; }
 
     public Money SubTotal => UnitPrice * Quantity;
+
+    internal void AttachTo(Order order)
+    {
+        if (Id > 0 && Order is not null && !ReferenceEquals(Order, order))
+            throw new System.InvalidOperationException("لا يمكن نقل بند محفوظ إلى طلب آخر.");
+        Order = order;
+        OrderId = order.Id;
+        foreach (var property in _properties) property.AttachTo(this);
+    }
 
     internal static Result<OrderItem> Create(
         int productId,
@@ -91,6 +100,7 @@ public class OrderItem : ModelBase
 
     public Result UpdateQuantity(int quantity)
     {
+        if (Order is not null && !Order.CanEdit) return Result.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
         if (quantity <= 0)
             return Result.Failure("Quantity must be greater than zero.");
 
@@ -101,6 +111,8 @@ public class OrderItem : ModelBase
 
     public Result IncreaseQuantity(int quantity)
     {
+        if (Order is not null && !Order.CanEdit) return Result.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
+        if (quantity > 0 && Quantity > int.MaxValue - quantity) return Result.Failure("الكمية تتجاوز الحد المسموح.");
         if (quantity <= 0)
             return Result.Failure("Quantity must be greater than zero.");
 
@@ -111,6 +123,8 @@ public class OrderItem : ModelBase
 
     public Result DecreaseQuantity(int quantity)
     {
+        if (Order is not null && !Order.CanEdit) return Result.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
+        if (quantity >= Quantity) return Result.Failure("يجب أن تظل الكمية أكبر من صفر.");
         if (quantity <= 0)
             return Result.Failure("Quantity must be greater than zero.");
 
@@ -121,6 +135,7 @@ public class OrderItem : ModelBase
 
     public Result ChangeUnitPrice(decimal unitPrice)
     {
+        if (Order is not null && !Order.CanEdit) return Result.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
         if (unitPrice <= 0)
             return Result.Failure("Unit price must be greater than zero.");
 
@@ -131,6 +146,7 @@ public class OrderItem : ModelBase
 
     public void ChangeSupplier(int? supplierId, string supplierName)
     {
+        if (Order is not null && !Order.CanEdit) throw new System.InvalidOperationException("بيانات الطلب مقفولة ولا تقبل التعديل.");
         SupplierId = supplierId;
         SupplierName = supplierName;
     }

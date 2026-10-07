@@ -8,4 +8,4 @@ using System;
 namespace OrderHub.Application.Features.Orders.Create;
 
 [RequirePermission(PermissionFeature.Orders, PermissionLevel.Write)]
-public record CreateOrderCommand(Guid? OrderDraftId, OrderInput.Order Order) : IRequest<Result<int>>;
+public record CreateOrderCommand(Guid? OrderDraftId, OrderInput.Order Order, Guid? CreationRequestId = null) : IRequest<Result<int>>;

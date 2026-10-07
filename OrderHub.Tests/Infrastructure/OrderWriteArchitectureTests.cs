@@ -102,7 +102,7 @@ public class OrderWriteArchitectureTests
             input = input with { OrderItems = [input.OrderItems.Single() with { UnitPrice = 0 }] };
         var unit = CountingUnit(db);
         var repo = new Mock<IOrderRepository>(MockBehavior.Strict);
-        repo.Setup(r => r.GetNextOrderNumberAsync(It.IsAny<CancellationToken>())).ReturnsAsync(2);
+        repo.Setup(r => r.GetNextOrderNumberAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>())).ReturnsAsync(2);
         repo.Setup(r => r.Add(It.IsAny<Order>())).Callback<Order>(realRepo.Add);
         var handler = new CreateOrderCommandHandler(repo.Object, unit.Object,
             new Mock<IQuotationRepository>(MockBehavior.Strict).Object,
@@ -190,6 +190,9 @@ public class OrderWriteArchitectureTests
         var real = new UnitOfWork(db);
         unit.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns((CancellationToken token) => real.SaveChangesAsync(token));
+        unit.Setup(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>())).Returns((CancellationToken token) => real.BeginTransactionAsync(token));
+        unit.Setup(u => u.CommitTransactionAsync(It.IsAny<CancellationToken>())).Returns((CancellationToken token) => real.CommitTransactionAsync(token));
+        unit.Setup(u => u.RollbackTransactionAsync(It.IsAny<CancellationToken>())).Returns((CancellationToken token) => real.RollbackTransactionAsync(token));
         return unit;
     }
 

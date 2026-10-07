@@ -212,4 +212,19 @@ public class OrderLifecycleTests
         Assert.True(active.TransitionTo(OrderStatus.Cancelled, Actor(active), "Cancel").IsSuccess);
         Assert.True(active.Archive(Actor(active), "Archive").IsSuccess);
     }
+
+    [Fact]
+    public void Owned_steps_items_and_property_values_cannot_bypass_order_lock()
+    {
+        var order = Create();
+        var item = order.AddOrderItem(1, "Saved", 10, 2, 0, null, null, [new(1, "Value")]).Value;
+        Assert.False(item.DecreaseQuantity(2).IsSuccess);
+        order.TransitionTo(OrderStatus.OutForDelivery, Actor(order));
+        Assert.Throws<InvalidOperationException>(() => order.DeliverySteps.First().DeliverymanId = 99);
+        Assert.Throws<InvalidOperationException>(() => order.DeliverySteps.First().StepOrder = 99);
+        Assert.False(item.UpdateQuantity(3).IsSuccess);
+        Assert.False(item.ChangeUnitPrice(20).IsSuccess);
+        Assert.Throws<InvalidOperationException>(() => item.Properties.Single().Value = "Changed");
+        Assert.Equal("Value", item.Properties.Single().Value);
+    }
 }

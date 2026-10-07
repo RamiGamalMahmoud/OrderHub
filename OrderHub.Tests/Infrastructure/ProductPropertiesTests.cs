@@ -217,9 +217,12 @@ public class ProductPropertiesTests
     public void Migration_changes_only_the_order_property_delete_action()
     {
         var migration = new RestrictPropertyDeletionForOrders();
-        var add = Assert.Single(migration.UpOperations.OfType<AddForeignKeyOperation>());
+        var add = Assert.Single(migration.UpOperations.OfType<AddForeignKeyOperation>(), operation => operation.Table == "order_item_properties");
 
-        Assert.Equal(2, migration.UpOperations.Count);
+        Assert.Equal(4, migration.UpOperations.Count);
+        var role = Assert.Single(migration.UpOperations.OfType<AddForeignKeyOperation>(), operation => operation.Table == "users");
+        Assert.Equal("roles", role.PrincipalTable);
+        Assert.Equal(ReferentialAction.Restrict, role.OnDelete);
         Assert.Equal("order_item_properties", add.Table);
         Assert.Equal("properties", add.PrincipalTable);
         Assert.Equal(ReferentialAction.Restrict, add.OnDelete);

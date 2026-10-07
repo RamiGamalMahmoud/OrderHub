@@ -44,12 +44,14 @@ internal class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, R
 CreateOrderCommand request,
 CancellationToken cancellationToken)
     {
+        var transactionActive = false;
         try
         {
             var input = request.Order;
             if (input is null) return Result<int>.Failure("بيانات الطلب غير موجودة.");
             if (!_currentUser.IsAuthenticated || _currentUser.Id is not > 0)
                 return Result<int>.Failure("يجب تسجيل الدخول لإنشاء الطلب.");
+            if (request.CreationRequestId == Guid.Empty) return Result<int>.Failure("معرف عملية الإنشاء غير صالح.");
             if (!Enum.IsDefined(input.DeliveryMethod) || !Enum.IsDefined(input.OrderSource))
                 return Result<int>.Failure("مصدر الطلب أو طريقة التوصيل غير صالح.");
             if (input.DeliveryMethod == DeliveryMethod.DeliveryMan && !input.DeliveryManId.HasValue ||
@@ -65,16 +67,25 @@ CancellationToken cancellationToken)
                 (item.Properties ?? Enumerable.Empty<OrderInput.Property>()).Any(property => property is null)))
                 return Result<int>.Failure("بنود الطلب أو خصائصها غير صالحة.");
 
-            // 2. Create order
+            await _unitOfWork.BeginTransactionAsync(cancellationToken);
+            transactionActive = true;
+            var numberingDay = DateTime.Now.Date;
             int nextOrderNumber =
-                await _orderRepository.GetNextOrderNumberAsync(cancellationToken);
+                await _orderRepository.GetNextOrderNumberAsync(numberingDay, cancellationToken);
+
+            // Check after allocation lock so simultaneous retries see the first committed request.
+            if (request.CreationRequestId.HasValue)
+            {
+                var existing = await _orderRepository.FindCreationRequestAsync(request.CreationRequestId.Value, _currentUser.Id.Value, cancellationToken);
+                if (existing.HasValue) return existing.Value;
+            }
 
             string orderNumber =
-                $"ORD-{DateTime.Now:yyyy-MM-dd}-{nextOrderNumber:D4}";
+                $"ORD-{numberingDay.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)}-{nextOrderNumber:D4}";
 
             Order order = new(
                 request.Order.ClientId,
-                orderNumber);
+                orderNumber, request.CreationRequestId);
 
             order.UpdateHeader(
                 request.Order.ClientId,
@@ -158,6 +169,8 @@ CancellationToken cancellationToken)
 
             // 5. Save changes
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            transactionActive = false;
+            await _unitOfWork.CommitTransactionAsync(cancellationToken);
 
             return order.Id;
         }
@@ -169,6 +182,10 @@ CancellationToken cancellationToken)
         catch (Exception)
         {
             return Result<int>.Failure("تعذر إنشاء الطلب. راجع البيانات ثم حاول مرة أخرى.");
+        }
+        finally
+        {
+            if (transactionActive) await _unitOfWork.RollbackTransactionAsync(CancellationToken.None);
         }
     }
 }

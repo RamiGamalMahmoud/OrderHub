@@ -112,6 +112,24 @@ public class PermissionAuthorizationTests
     }
 
     [Fact]
+    public async Task HTML_permission_denial_keeps_the_existing_access_denied_navigation()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddPermissionAuthorization();
+        using var provider = services.BuildServiceProvider();
+        var policy = await provider.GetRequiredService<IAuthorizationPolicyProvider>().GetPolicyAsync(
+            new PermissionAuthorizeAttribute(PermissionFeature.Orders, PermissionLevel.Read).Policy);
+        var context = new DefaultHttpContext();
+        context.Request.Headers.Accept = "text/html";
+        await provider.GetRequiredService<IAuthorizationMiddlewareResultHandler>().HandleAsync(
+            _ => throw new InvalidOperationException("Endpoint must not run"), context, policy,
+            Microsoft.AspNetCore.Authorization.Policy.PolicyAuthorizationResult.Forbid());
+        Assert.Equal(302, context.Response.StatusCode);
+        Assert.Equal("/access-denied", context.Response.Headers.Location.ToString());
+    }
+
+    [Fact]
     public void Business_routes_have_permissions_and_admin_routes_retain_Admin_gate()
     {
         var pages = typeof(PermissionAccess).Assembly.GetTypes().Where(type => type.Namespace?.Contains("Components.Pages.Features") == true

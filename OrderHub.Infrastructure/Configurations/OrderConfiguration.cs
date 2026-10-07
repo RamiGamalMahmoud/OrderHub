@@ -56,6 +56,8 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
         builder.HasMany(x => x.StatusHistory).WithOne(x => x.Order).HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(x => x.StepHistory).WithOne(x => x.Order).HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(x => new { x.IsArchived, x.CreatedAt });
+        builder.HasIndex(x => x.OrderNumber).IsUnique();
+        builder.HasIndex(x => x.CreationRequestId).IsUnique();
         builder.ToTable("orders", table => table.HasCheckConstraint("ck_orders_archive_metadata",
             "NOT is_archived OR (archived_at_utc IS NOT NULL AND archived_by_user_id IS NOT NULL AND archive_reason IS NOT NULL AND length(trim(archive_reason)) BETWEEN 1 AND 200)"));
 

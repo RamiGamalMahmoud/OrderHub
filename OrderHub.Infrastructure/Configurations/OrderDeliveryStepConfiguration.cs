@@ -12,6 +12,11 @@ internal class OrderDeliveryStepConfiguration
         base.Configure(builder);
 
         builder.ToTable("order_delivery_steps");
+        // Materialization/fixup reads persisted planning facts without invoking an edit.
+        builder.Property(x => x.StepOrder).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Property(x => x.DeliveryMethod).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Property(x => x.DeliverymanId).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Property(x => x.ShippingCarrierId).UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(30).HasDefaultValue(OrderHub.Domain.Enums.DeliveryStatus.Pending);
 

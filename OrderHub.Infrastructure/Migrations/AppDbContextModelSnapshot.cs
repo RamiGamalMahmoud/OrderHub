@@ -743,6 +743,10 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<Guid?>("CreationRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("creation_request_id");
+
                     b.Property<string>("DeliveryMethod")
                         .HasMaxLength(30)
                         .HasColumnType("varchar(30)")
@@ -802,8 +806,16 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasIndex("ClientId")
                         .HasDatabaseName("ix_orders_client_id");
 
+                    b.HasIndex("CreationRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_orders_creation_request_id");
+
                     b.HasIndex("DeliverymanId")
                         .HasDatabaseName("ix_orders_deliveryman_id");
+
+                    b.HasIndex("OrderNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_orders_order_number");
 
                     b.HasIndex("PaymentMethodId")
                         .HasDatabaseName("ix_orders_payment_method_id");
