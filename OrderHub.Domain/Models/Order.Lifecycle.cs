@@ -20,6 +20,8 @@ public partial class Order
     public bool CanEdit => !IsArchived && OrderStatus == OrderStatus.Processing;
     public bool IsFinal => OrderStatus is OrderStatus.Delivered or OrderStatus.Cancelled;
     public bool CanArchive => !IsArchived && (CanEdit || IsFinal);
+    public bool CanDeliverDirectly => !IsArchived && OrderStatus == OrderStatus.OutForDelivery &&
+        DeliveryMethod == Enums.DeliveryMethod.DeliveryChain && DeliveryReadinessError() is null;
     public IReadOnlyCollection<OrderStatusHistory> StatusHistory => _statusHistory.AsReadOnly();
     public IReadOnlyCollection<DeliveryStepStatusHistory> StepHistory => _stepHistory.AsReadOnly();
 
@@ -143,7 +145,7 @@ public partial class Order
         if (!valid.IsSuccess) return valid;
         valid = ValidateReason(reason, true);
         if (!valid.IsSuccess) return valid;
-        if (IsArchived || OrderStatus != OrderStatus.OutForDelivery || DeliveryMethod != Enums.DeliveryMethod.DeliveryChain || DeliveryReadinessError() is not null)
+        if (!CanDeliverDirectly)
             return Result.Failure("التسليم المباشر غير متاح لهذا الطلب.");
         if (outcomes is null || outcomes.Any(item => item is null) || outcomes.Select(item => item.StepId).Distinct().Count() != outcomes.Count)
             return Result.Failure("نتائج الخطوات غير صالحة أو مكررة.");

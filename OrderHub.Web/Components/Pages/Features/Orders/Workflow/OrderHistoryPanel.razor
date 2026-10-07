@@ -1,0 +1,89 @@
+@using OrderHub.Application.Features.Orders.Lifecycle
+@using OrderHub.Application.Common
+@using OrderHub.Application.Interfaces
+@implements IDisposable
+@inject IRequestExecutor Executor
+@inject ILogger<OrderHistoryPanel> Logger
+
+<MudPaper Class="pa-3" Outlined="true">
+    <MudStack Row="true" AlignItems="AlignItems.Center">
+        <MudText Typo="Typo.subtitle2">@(StepId.HasValue ? "تاريخ الخطوة" : "سجل حالات الطلب")</MudText>
+        <MudSpacer />
+        @if (!_opened) { <MudButton OnClick="OpenAsync">عرض السجل</MudButton> }
+    </MudStack>
+    @if (_opened)
+    {
+        @if (_loading) { <MudProgressLinear Indeterminate="true" /> }
+        @if (_error is not null) { <MudAlert Severity="Severity.Error">@_error</MudAlert><MudButton OnClick="ReloadAsync">إعادة المحاولة</MudButton> }
+        else if (_data is not null)
+        {
+            @foreach (var entry in _data.Items)
+            {
+                <MudStack Spacing="1" Class="py-2" @key="entry.Id">
+                    <MudText Typo="Typo.body2">@entry.NewStatus @(entry.Source == OrderHistorySource.Retry ? "— إعادة محاولة" : "")</MudText>
+                    <MudText Typo="Typo.caption"><UserLocalTime Value="entry.ChangedAtUtc" /> @(!string.IsNullOrWhiteSpace(entry.UserName) ? $"— بواسطة {entry.UserName}" : "")</MudText>
+                    @if (entry.Reason is not null) { <MudText Typo="Typo.body2">السبب: @entry.Reason</MudText> }
+                    @if (entry.Source == OrderHistorySource.LegacyMigration)
+                    { <MudText Typo="Typo.caption">سجل ترحيل بيانات قديمة؛ التوقيت لا يثبت وقت التنفيذ الفعلي. @(entry.OriginalStatus is not null ? $"الحالة الأصلية: {OrderWorkflowPresentation.LegacyStatusLabel(entry.OriginalStatus)}" : "")</MudText> }
+                    else if (entry.Source == OrderHistorySource.DirectDelivery)
+                    { <MudText Typo="Typo.caption">ناتج عن تأكيد التسليم المباشر للطلب.</MudText> }
+                    else if (entry.Source == OrderHistorySource.OrderCancellation && StepId.HasValue)
+                    { <MudText Typo="Typo.caption">ناتج عن إلغاء الطلب.</MudText> }
+                    else if (entry.Source == OrderHistorySource.LastStepCompleted)
+                    { <MudText Typo="Typo.caption">ناتج عن اكتمال آخر خطوة توصيل.</MudText> }
+                    <MudDivider />
+                </MudStack>
+            }
+            @if (_data.TotalCount == 0) { <MudText Typo="Typo.body2">لا توجد أحداث مسجلة.</MudText> }
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudButton Disabled="@(_loading || !_data.HasPreviousPage)" OnClick="PreviousAsync">السابق</MudButton>
+                <MudText Typo="Typo.caption">الصفحة @_data.PageNumber من @Math.Max(1, _data.TotalPages)</MudText>
+                <MudButton Disabled="@(_loading || !_data.HasNextPage)" OnClick="NextAsync">التالي</MudButton>
+            </MudStack>
+        }
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public int OrderId { get; set; }
+    [Parameter] public int? StepId { get; set; }
+    [Parameter] public int Version { get; set; }
+    [Parameter] public bool AutoLoad { get; set; }
+    private (int, int?, int)? _identity;
+    private PagedResult<OrderHistoryEntry>? _data;
+    private bool _opened, _loading, _disposed;
+    private int _page = 1, _generation;
+    private string? _error;
+    protected override async Task OnParametersSetAsync()
+    {
+        var identity = (OrderId, StepId, Version);
+        if (_identity == identity) return;
+        var sameOrder = _identity?.Item1 == OrderId && _identity?.Item2 == StepId;
+        _identity = identity;
+        _data = null;
+        _page = 1;
+        _opened = sameOrder && _opened || AutoLoad;
+        if (_opened) await ReloadAsync();
+    }
+    private Task OpenAsync() { _opened = true; return ReloadAsync(); }
+    private Task PreviousAsync() { _page = Math.Max(1, _page - 1); return ReloadAsync(); }
+    private Task NextAsync() { _page++; return ReloadAsync(); }
+    private async Task ReloadAsync()
+    {
+        var generation = ++_generation;
+        _loading = true;
+        _error = null;
+        try
+        {
+            var data = await Executor.ExecuteAsync(new GetOrderHistoryQuery(OrderId, StepId, _page, 5));
+            if (!_disposed && generation == _generation) _data = data;
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed order history {OrderId}", OrderId);
+            if (!_disposed && generation == _generation) _error = "تعذر تحميل السجل.";
+        }
+        finally { if (!_disposed && generation == _generation) _loading = false; }
+    }
+    public void Dispose() { _disposed = true; _generation++; }
+}

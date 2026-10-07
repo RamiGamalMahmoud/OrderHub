@@ -520,7 +520,7 @@ CSS محدود، دون Bootstrap أو Tailwind أو مؤثرات غير لاز�
 | Task 06 | مكتملة | الحذف الفعلي أزيل من Command/Repository واستبدل بالأرشفة المعتمدة. 30 اختبارًا ناجحًا: metadata/time/actor، منع التشغيل والتكرار، حفظ الأبناء والتاريخ، فاتورة المؤرشف قابلة للقراءة، وفحص استخدام العميل يشمل المؤرشف. لا فلتر عالمي للعلاقات. |
 | Task 07 | مكتملة | قراءات تشغيلية تستعمل قواعد Domain، وتاريخ مقسم بترتيب ثابت، قائمة archive منفصلة دون إخفاء العلاقات. 9 اختبارات PostgreSQL/قراءات ناجحة: action availability، blocked steps، missing/null legacy، history ownership/pagination، archived access، UTC bounds بلا truncation وpage overflow آمن. |
 | Task 08 | مكتملة | Details ملخص وWorkflow مستقلة، تعليمات وأفعال من قراءة Domain، جميع الخطوات والقفل والصلاحيات، editor نهائي read-only وfilters فعالة. 37 اختبار عرض/تعديل/تفاصيل ناجحًا. اختبار HtmlRenderer كشف وأصلح closure في for كان يسبب IndexOutOfRange؛ missing/error والنهائي المختلط معروضون بأمان. حوار direct/history/archive/time ضمن Task 09 التالية. |
-| Task 09 | لم يبدأ | |
+| Task 09 | مكتملة | حوارات تحفظ المدخلات عند فشل الحفظ وتغلق للمراجعة عند Conflict، direct defaults تبقي الحالة وbulk لا يحفظ تلقائيًا، السبب العام لا ينسخ بلا اختيار؛ history مقسم/lazy والأرشيف بلا restore، LocalTime من المتصفح. 12 اختبار Web/PostgreSQL ناجحًا، واختبار Node لتنسيق الصيف/الشتاء وحدود 23/25 ساعة ناجح. EF لا يكتشف model drift. |
 | Task 10 | لم يبدأ | |
 | Task 11 | لم يبدأ | |
 

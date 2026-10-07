@@ -1,6 +1,9 @@
 @page "/orders/{Id:int}/workflow"
 @attribute [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Read)]
 @using OrderHub.Application.Features.Orders.Lifecycle
+@using OrderHub.Application.Features.Orders.Archive
+@using OrderHub.Domain.Common
+@using OrderHub.Domain.Models
 @using OrderHub.Application.Interfaces
 @using OrderHub.Application.Common.Extensions
 @using OrderHub.Web.Services
@@ -40,6 +43,8 @@
                     @if (_state.IsArchived) { <MudChip T="string">مؤرشف — للقراءة فقط</MudChip> }
                 </MudStack>
                 <OrderStageStrip State="_state" />
+                <MudText Typo="Typo.caption" Class="mt-2">آخر حدث تشغيلي: <UserLocalTime Value="_state.LastChangedAtUtc" /></MudText>
+                @if (_state.IsLegacy) { <MudText Typo="Typo.caption">آخر حالة ناتجة عن ترحيل بيانات قديمة؛ التوقيت لا يثبت وقت التنفيذ الفعلي.</MudText> }
             </MudPaper>
             <MudPaper Class="pa-3" Outlined="true">
                 <MudText Typo="Typo.subtitle1">المطلوب الآن</MudText>
@@ -58,8 +63,17 @@
                         {
                             <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="_busy" OnClick="@(() => ChangeStatusAsync(target))">@OrderWorkflowPresentation.ActionLabel(target, _state.Status)</MudButton>
                         }
-                        @if (_state.AllowedStatuses.Contains(OrderStatus.Cancelled))
-                        { <MudButton Color="Color.Error" Disabled="_busy" OnClick="@(() => ChangeStatusAsync(OrderStatus.Cancelled))">إلغاء الطلب</MudButton> }
+                        @if (_state.CanDeliverDirectly)
+                        { <MudButton Color="Color.Primary" Variant="Variant.Outlined" Disabled="_busy" OnClick="DeliverDirectlyAsync">تأكيد التسليم المباشر</MudButton> }
+                        @if (_state.AllowedStatuses.Contains(OrderStatus.Cancelled) || _state.CanArchive)
+                        {
+                            <MudMenu Label="إجراءات أخرى" Disabled="_busy">
+                                @if (_state.AllowedStatuses.Contains(OrderStatus.Cancelled))
+                                { <MudMenuItem OnClick="@(() => ChangeStatusAsync(OrderStatus.Cancelled))">إلغاء الطلب</MudMenuItem> }
+                                @if (_state.CanArchive) { <MudMenuItem OnClick="ArchiveAsync">أرشفة الطلب</MudMenuItem> }
+                                else { <MudMenuItem Disabled="true">يجب إلغاء الطلب النشط قبل أرشفته</MudMenuItem> }
+                            </MudMenu>
+                        }
                     </MudStack>
                 }
             </MudPaper>
@@ -82,6 +96,8 @@
                         @if (step.Status is DeliveryStatus.Failed or DeliveryStatus.Cancelled && step.LatestReason is not null)
                         { <MudText>السبب: @step.LatestReason</MudText> }
                         @if (step.IsLegacy) { <MudText Typo="Typo.caption">الحالة ناتجة عن ترحيل بيانات قديمة.</MudText> }
+                        @if (step.LastChangedAtUtc.HasValue)
+                        { <MudText Typo="Typo.caption"><UserLocalTime Value="step.LastChangedAtUtc" /> @(!string.IsNullOrWhiteSpace(step.LastChangedBy) ? $"— سجّلها {step.LastChangedBy}" : "")</MudText> }
                         @if (_canWrite)
                         {
                             <MudStack Row="true" Wrap="Wrap.Wrap" Class="mt-2">
@@ -89,9 +105,19 @@
                                 { <MudButton Disabled="_busy" Variant="Variant.Outlined" OnClick="@(() => ChangeStepAsync(step, target))">@OrderWorkflowPresentation.StepActionLabel(target, step.Status)</MudButton> }
                             </MudStack>
                         }
+                        <OrderHistoryPanel OrderId="Id" StepId="step.Id" Version="_state.Version" />
                     </MudPaper>
                 }
             }
+            @if (_state.IsArchived)
+            {
+                <MudPaper Class="pa-3" Outlined="true">
+                    <MudText Typo="Typo.subtitle2">بيانات الأرشفة — لا توجد استعادة</MudText>
+                    <MudText>السبب: @_state.ArchiveReason</MudText>
+                    <MudText Typo="Typo.caption"><UserLocalTime Value="_state.ArchivedAtUtc" /> — بواسطة @_state.ArchivedByUserName</MudText>
+                </MudPaper>
+            }
+            <OrderHistoryPanel OrderId="Id" Version="_state.Version" AutoLoad="true" />
         </MudStack>
     }
 </MudContainer>
@@ -99,7 +125,7 @@
 @code {
     [Parameter] public int Id { get; set; }
     private OrderWorkflowState? _state;
-    private bool _loading, _busy, _canWrite;
+    private bool _loading, _busy, _canWrite, _disposed;
     private string? _error;
     private int _loadedId, _generation;
     private CancellationTokenSource? _load;
@@ -133,13 +159,12 @@
         finally { if (generation == _generation) _loading = false; }
     }
 
-    private async Task<string?> AskReasonAsync(string title, string explanation)
+    private async Task AskAndSubmitAsync(string title, string explanation, Func<string, Task<Result<OrderOperationReceipt>>> submit)
     {
         var dialog = await Dialogs.ShowAsync<OrderReasonDialog>(title,
-            new DialogParameters<OrderReasonDialog> { { value => value.Explanation, explanation }, { value => value.ConfirmLabel, title } },
-            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true });
-        var result = await dialog.Result;
-        return result is { Canceled: false, Data: string reason } ? reason : null;
+            new DialogParameters<OrderReasonDialog> { { value => value.Explanation, explanation }, { value => value.ConfirmLabel, title }, { value => value.Submit, submit } },
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = false, BackdropClick = false });
+        await dialog.Result;
     }
 
     private async Task ChangeStatusAsync(OrderStatus target)
@@ -149,15 +174,17 @@
         var snapshot = _state;
         try
         {
-            string? reason = null;
             if (target is OrderStatus.Cancelled or OrderStatus.DeliveryFailed)
             {
-                reason = await AskReasonAsync(OrderWorkflowPresentation.ActionLabel(target, snapshot.Status),
-                    target == OrderStatus.Cancelled ? "لن يمكن تشغيل الطلب بعد الإلغاء. الخطوات المكتملة محفوظة وغير المكتملة ستُلغى." : "سيُسجل سبب تعذر المحاولة، ويمكن إعادة المحاولة لاحقًا.");
-                if (reason is null) return;
+                var effects = target == OrderStatus.Cancelled
+                    ? $"لن يمكن تشغيل الطلب بعد الإلغاء. {_state.Steps.Count(step => step.Status == DeliveryStatus.Completed)} خطوة مكتملة محفوظة، و{_state.Steps.Count(step => step.Status is not (DeliveryStatus.Completed or DeliveryStatus.Cancelled))} خطوة غير مكتملة ستُلغى."
+                    : "سيُسجل سبب تعذر المحاولة، ويمكن إعادة المحاولة لاحقًا.";
+                await AskAndSubmitAsync(OrderWorkflowPresentation.ActionLabel(target, snapshot.Status), effects,
+                    reason => SubmitSnapshotAsync(snapshot, () => Executor.ExecuteAsync(new ChangeOrderStatusCommand(snapshot.Id, snapshot.Version, target, reason))));
+                return;
             }
             if (snapshot.Id != Id || _state?.Version != snapshot.Version) return;
-            await CompleteAsync(await Executor.ExecuteAsync(new ChangeOrderStatusCommand(snapshot.Id, snapshot.Version, target, reason)));
+            await CompleteAsync(await Executor.ExecuteAsync(new ChangeOrderStatusCommand(snapshot.Id, snapshot.Version, target)));
         }
         catch (Exception exception) { ShowFailure(exception); }
         finally { _busy = false; }
@@ -170,10 +197,14 @@
         var snapshot = _state;
         try
         {
-            var reason = target == DeliveryStatus.Failed ? await AskReasonAsync("تسجيل تعذر التنفيذ", "سيُحفظ سبب الفشل. الخطوة التالية ستظل مقفولة حتى اكتمال هذه الخطوة.") : null;
-            if (target == DeliveryStatus.Failed && reason is null) return;
+            if (target == DeliveryStatus.Failed)
+            {
+                await AskAndSubmitAsync("تسجيل تعذر التنفيذ", "سيُحفظ سبب الفشل. الخطوة التالية ستظل مقفولة حتى اكتمال هذه الخطوة.",
+                    reason => SubmitSnapshotAsync(snapshot, () => Executor.ExecuteAsync(new ChangeDeliveryStepStatusCommand(snapshot.Id, snapshot.Version, step.Id, target, reason))));
+                return;
+            }
             if (snapshot.Id != Id || _state?.Version != snapshot.Version) return;
-            await CompleteAsync(await Executor.ExecuteAsync(new ChangeDeliveryStepStatusCommand(snapshot.Id, snapshot.Version, step.Id, target, reason)));
+            await CompleteAsync(await Executor.ExecuteAsync(new ChangeDeliveryStepStatusCommand(snapshot.Id, snapshot.Version, step.Id, target)));
         }
         catch (Exception exception) { ShowFailure(exception); }
         finally { _busy = false; }
@@ -185,11 +216,54 @@
         if (result.IsSuccess || result.ErrorCode == "Conflict") await LoadAsync();
     }
 
+    private async Task<Result<OrderOperationReceipt>> SubmitSnapshotAsync(OrderWorkflowState snapshot,
+        Func<Task<Result<OrderOperationReceipt>>> submit)
+    {
+        if (_disposed || snapshot.Id != Id || _state?.Version != snapshot.Version)
+            return Result<OrderOperationReceipt>.Failure("تغيرت الشاشة؛ راجع بيانات الطلب الحالية.", "Conflict");
+        var result = await submit();
+        if (result.IsSuccess || result.ErrorCode == "Conflict") await CompleteAsync(result);
+        return result;
+    }
+
+    private async Task ArchiveAsync()
+    {
+        if (_busy || !_canWrite || _state is null || !_state.CanArchive) return;
+        _busy = true;
+        var snapshot = _state;
+        try
+        {
+            await AskAndSubmitAsync("أرشفة الطلب", "سيختفي الطلب من قائمة التشغيل، وستظل بياناته وخطواته وتاريخه ومستنداته محفوظة في الأرشيف. لا يمكن استعادته أو تعديله أو تشغيله.",
+                reason => SubmitSnapshotAsync(snapshot, () => Executor.ExecuteAsync(new ArchiveOrderCommand(snapshot.Id, snapshot.Version, reason))));
+        }
+        catch (Exception exception) { ShowFailure(exception); }
+        finally { _busy = false; }
+    }
+
+    private async Task DeliverDirectlyAsync()
+    {
+        if (_busy || !_canWrite || _state is null || !_state.CanDeliverDirectly) return;
+        _busy = true;
+        var snapshot = _state;
+        try
+        {
+            Func<IReadOnlyList<DeliveryStepOutcome>, string, Task<Result<OrderOperationReceipt>>> submit =
+                (outcomes, reason) => SubmitSnapshotAsync(snapshot,
+                    () => Executor.ExecuteAsync(new DeliverOrderDirectlyCommand(snapshot.Id, snapshot.Version, outcomes, reason)));
+            var dialog = await Dialogs.ShowAsync<DirectDeliveryDialog>("تأكيد التسليم المباشر",
+                new DialogParameters<DirectDeliveryDialog> { { value => value.State, snapshot }, { value => value.Submit, submit } },
+                new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = false, BackdropClick = false });
+            await dialog.Result;
+        }
+        catch (Exception exception) { ShowFailure(exception); }
+        finally { _busy = false; }
+    }
+
     private void ShowFailure(Exception exception)
     {
         Logger.LogError(exception, "Failed order operation {OrderId}", Id);
         Snackbar.Add("تعذر تنفيذ العملية. حدّث الحالة قبل إعادة المحاولة.", Severity.Error);
     }
 
-    public void Dispose() { _generation++; _load?.Cancel(); _load?.Dispose(); }
+    public void Dispose() { _disposed = true; _canWrite = false; _state = null; _generation++; _load?.Cancel(); _load?.Dispose(); }
 }

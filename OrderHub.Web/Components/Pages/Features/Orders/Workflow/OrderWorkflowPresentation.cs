@@ -5,6 +5,9 @@ namespace OrderHub.Web.Components.Pages.Features.Orders.Workflow;
 
 public static class OrderWorkflowPresentation
 {
+    public static string LegacyStatusLabel(string value) => value == "Pending" ? "قيد الانتظار"
+        : System.Enum.TryParse<OrderStatus>(value, out var status) && System.Enum.IsDefined(status)
+            ? OrderHub.Application.Common.Extensions.EnumExtensions.GetDescription(status) : "حالة قديمة غير معروفة";
     public static string ActionLabel(OrderStatus target, OrderStatus current = OrderStatus.Processing) => target switch
     {
         OrderStatus.ReadyForPickup => "جاهز لاستلام العميل",

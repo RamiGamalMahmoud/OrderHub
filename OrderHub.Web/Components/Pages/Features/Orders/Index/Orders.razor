@@ -5,8 +5,11 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using OrderHub.Domain.Enums
 @using OrderHub.Application.Common.Lookups
+@using OrderHub.Application.Common.Extensions
+@using OrderHub.Web.Components.Pages.Features.Orders.Workflow
 
 @page "/orders"
+@page "/orders/archived"
 
 
 <PageTitle>الطلبات</PageTitle>
@@ -23,12 +26,12 @@
 
         <MudItem xs="12" md="4">
             <MudText Typo="Typo.h5">
-                الطلبات
+                @(_archivedOnly ? "سجل الطلبات المؤرشفة" : "الطلبات")
             </MudText>
 
             <MudText Typo="Typo.body2"
                      Color="Color.Secondary">
-                متابعة وإدارة طلبات العملاء
+                @(_archivedOnly ? "البيانات والتاريخ محفوظان للقراءة فقط؛ لا توجد استعادة." : "متابعة وإدارة طلبات العملاء")
             </MudText>
         </MudItem>
 
@@ -50,6 +53,7 @@
             <MudStack Row
                       Spacing="2"
                       Justify="Justify.FlexEnd">
+                <MudButton Href="@(_archivedOnly ? "/orders" : "/orders/archived")" Variant="Variant.Text">@(_archivedOnly ? "الطلبات الحالية" : "سجل المؤرشف")</MudButton>
 
                 <MudButton Variant="Variant.Outlined"
                            OnClick="@ShowDrafts"
@@ -102,7 +106,8 @@
 
                 <MudSelect T="int?"
                            Label="وسيلة الدفع"
-                           @bind-Value="_selectedPaymentMethodId"
+                           Value="_selectedPaymentMethodId"
+                           ValueChanged="OnPaymentChanged"
                            Clearable="true"
                            Variant="Variant.Outlined"
                            Margin="Margin.Dense"
@@ -160,6 +165,7 @@
                 <MudTh>الإجمالي</MudTh>
                 <MudTh>طريقة الدفع</MudTh>
                 <MudTh>الحالة</MudTh>
+                <MudTh>التوصيل</MudTh>
                 <MudTh>التاريخ</MudTh>
                 <MudTh></MudTh>
 
@@ -197,11 +203,14 @@
                              Size="Size.Small">
                         @context.EnumItem.DisplayName
                     </MudChip>
+                    @if (context.IsArchived) { <MudChip T="string" Size="Size.Small">مؤرشف</MudChip> }
 
                 </MudTd>
 
+                <MudTd DataLabel="التوصيل">@(context.DeliveryMethod.HasValue ? context.DeliveryMethod.Value.GetDescription() : "غير محددة")</MudTd>
+
                 <MudTd DataLabel="التاريخ">
-                    @context.CreatedAt.ToString("dd/MM/yyyy")
+                    <UserLocalTime Value="context.CreatedAt" />
                 </MudTd>
 
                 <MudTd>

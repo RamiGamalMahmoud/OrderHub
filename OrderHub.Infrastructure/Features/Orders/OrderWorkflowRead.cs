@@ -50,7 +50,7 @@ internal sealed partial class OrderReader
             order.Version, order.CanEdit, order.CanArchive, order.IsArchived, order.DeliveryReadinessError(),
             order.AllowedStatuses(), steps, stepIsLatest ? latestStep.ChangedAtUtc : lastOrderEvent?.ChangedAtUtc ?? order.CreatedAt,
             lastOrderEvent?.Reason, (stepIsLatest ? latestStep.Source : lastOrderEvent?.Source) == OrderHistorySource.LegacyMigration,
-            order.ArchivedAtUtc, order.ArchivedByUserName, order.ArchiveReason);
+            order.ArchivedAtUtc, order.ArchivedByUserName, order.ArchiveReason, order.CanDeliverDirectly);
     }
 
     public async Task<PagedResult<OrderHistoryEntry>> GetHistoryAsync(int orderId, int? stepId,

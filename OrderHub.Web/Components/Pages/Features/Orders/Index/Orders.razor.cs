@@ -11,6 +11,15 @@ namespace OrderHub.Web.Components.Pages.Features.Orders.Index;
 
 public partial class Orders
 {
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+    private bool _archivedOnly;
+    protected override async Task OnParametersSetAsync()
+    {
+        var archived = new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/').EndsWith("/archived", StringComparison.OrdinalIgnoreCase);
+        if (_archivedOnly == archived) return;
+        _archivedOnly = archived;
+        if (_table is not null) await _table.ReloadServerData();
+    }
     [Inject]
     private IRequestExecutor RequestExecutor { get; set; } = null!;
 
@@ -50,7 +59,8 @@ public partial class Orders
                 PageSize: state.PageSize,
                 SearchTerm: _searchTerm,
                 PaymentMethodId: _selectedPaymentMethodId,
-                OrderStatus: _selectedStatus);
+                OrderStatus: _selectedStatus,
+                ArchivedOnly: _archivedOnly);
 
         var result = await RequestExecutor.ExecuteAsync(
             query,
@@ -87,5 +97,10 @@ public partial class Orders
     }
 
     private int? _selectedPaymentMethodId = null;
+    private async Task OnPaymentChanged(int? value)
+    {
+        _selectedPaymentMethodId = value;
+        if (_table is not null) await _table.ReloadServerData();
+    }
     private IEnumerable<PaymentMethodListItem?> _paymentMethods = [];
 }

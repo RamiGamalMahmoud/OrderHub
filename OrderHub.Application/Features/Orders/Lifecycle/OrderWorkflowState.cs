@@ -8,7 +8,7 @@ public sealed record OrderWorkflowState(int Id, string OrderNumber, DateTime Cre
     DeliveryMethod? Method, string HandlerName, int Version, bool CanEdit, bool CanArchive, bool IsArchived,
     string ReadinessError, IReadOnlyList<OrderStatus> AllowedStatuses, IReadOnlyList<DeliveryStepWorkflowState> Steps,
     DateTime LastChangedAtUtc, string LatestReason, bool IsLegacy, DateTime? ArchivedAtUtc,
-    string ArchivedByUserName, string ArchiveReason);
+    string ArchivedByUserName, string ArchiveReason, bool CanDeliverDirectly = false);
 
 public sealed record DeliveryStepWorkflowState(int Id, int StepOrder, DeliveryMethod Method, string HandlerName,
     DeliveryStatus Status, IReadOnlyList<DeliveryStatus> AllowedStatuses, string BlockingReason,

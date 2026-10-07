@@ -46,7 +46,7 @@
                     <MudChip T="string"
                         Class="px-4"
                              Size="Size.Small"
-                             Color="Color.Warning">
+                             Color="@(_workflow is null ? Color.Default : OrderWorkflowPresentation.StatusColor(_workflow.Status))">
                         @_order?.Header.OrderStatus
                     </MudChip>
 
@@ -119,6 +119,8 @@
             {
                 <MudText>@_workflow.HandlerName</MudText>
                 <OrderStageStrip State="_workflow" />
+                <MudText Typo="Typo.caption">آخر حدث تشغيلي: <UserLocalTime Value="_workflow.LastChangedAtUtc" /></MudText>
+                @if (_workflow.IsLegacy) { <MudText Typo="Typo.caption">سجل ترحيل بيانات قديمة؛ التوقيت لا يثبت وقت التنفيذ الفعلي.</MudText> }
                 @if (_workflow.Method == DeliveryMethod.DeliveryChain)
                 {
                     <MudText Typo="Typo.body2">@_workflow.Steps.Count(step => step.Status == DeliveryStatus.Completed) من @_workflow.Steps.Count خطوات مكتملة</MudText>

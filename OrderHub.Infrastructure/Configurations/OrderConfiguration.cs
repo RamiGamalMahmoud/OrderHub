@@ -52,6 +52,7 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
         builder.Ignore(x => x.CanEdit);
         builder.Ignore(x => x.IsFinal);
         builder.Ignore(x => x.CanArchive);
+        builder.Ignore(x => x.CanDeliverDirectly);
         builder.HasMany(x => x.StatusHistory).WithOne(x => x.Order).HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(x => x.StepHistory).WithOne(x => x.Order).HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(x => new { x.IsArchived, x.CreatedAt });
