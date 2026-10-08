@@ -1,0 +1,63 @@
+﻿@using OrderHub.Application.Common.Lookups
+@using OrderHub.Domain.Enums
+
+<MudPaper Outlined="true" Class="pa-4">
+    <MudStack Spacing="2">
+
+        <MudStack Row
+                  AlignItems="AlignItems.Center"
+                  Spacing="2">
+
+            <MudIcon Icon="@Icons.Material.Outlined.Storefront"
+                     Size="Size.Medium"
+                     Color="Color.Primary" />
+
+            <div>
+                <MudText Typo="Typo.subtitle1">
+                    مصدر الطلب
+                </MudText>
+
+                <MudText Typo="Typo.body2"
+                         Color="Color.Secondary">
+                    حدد القناة التي تم استلام الطلب من خلالها
+                </MudText>
+            </div>
+
+        </MudStack>
+
+        <MudToggleGroup T="OrderSource?"
+                        CheckMark
+                        FixedContent
+                        Value="OrderSource"
+                        ValueChanged="OnOrderSourceChangedAsync"
+                        SelectionMode="SelectionMode.SingleSelection"
+                        Outlined="true">
+
+            @foreach (var source in EnumItems.For<OrderSource>())
+            {
+                <MudToggleItem T="OrderSource?"
+                               Value="@((OrderSource?)source.Value)"
+                               Text="@source.DisplayName" />
+            }
+
+        </MudToggleGroup>
+
+    </MudStack>
+</MudPaper>
+
+@code
+{
+    [Parameter]
+    public OrderSource? OrderSource { get; set; }
+
+    [Parameter]
+    public EventCallback<OrderSource?> OrderSourceChanged { get; set; }
+
+    private Task OnOrderSourceChangedAsync(OrderSource? value)
+    {
+        if (value == OrderSource)
+            return Task.CompletedTask;
+
+        return OrderSourceChanged.InvokeAsync(value);
+    }
+}

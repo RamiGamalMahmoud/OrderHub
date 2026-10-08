@@ -1,3 +1,4 @@
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Common.Extensions;
@@ -17,16 +18,16 @@ namespace OrderHub.UI.Features.Orders.Edit;
 
 internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
 {
-    private readonly IOrderStore _orderStore;
+    private readonly IRequestExecutor _requestExecutor;
     private int _id;
 
     public ViewModel(
         IMediator mediator,
         IProductStore productStore,
-        IOrderStore orderStore,
+        IRequestExecutor requestExecutor,
         ILookupService lookupService) : base(mediator, productStore, lookupService)
     {
-        _orderStore = orderStore;
+        _requestExecutor = requestExecutor;
     }
 
     public override string ActionName => "حفظ التعديلات";
@@ -136,14 +137,12 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
         SaveCommand.NotifyCanExecuteChanged();
     }
 
-    protected override async Task Save()
+    protected override Task Save()
     {
-        Result result = await _orderStore.UpdateOrder(_id, BuildOrder());
-        if(result.IsSuccess)
-        {
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.OrderUpdatedMessage());
-        }
+        // Order writes are retired here. Use the versioned Web editor/workflow.
+        OrderHub.UI.Services.NotificationService.Instance.ShowError("إدارة الطلبات انتقلت إلى واجهة الويب. هذه الشاشة للقراءة فقط.");
         OnRequestClose();
+        return Task.CompletedTask;
     }
 
     public Task Initialize(object parameter)

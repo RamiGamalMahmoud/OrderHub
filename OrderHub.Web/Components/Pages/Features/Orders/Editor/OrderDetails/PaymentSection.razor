@@ -1,0 +1,70 @@
+﻿@using OrderHub.Application.Common.Lookups
+
+<MudPaper Outlined="true" Class="pa-4">
+    <MudStack Spacing="2">
+
+        <MudStack Row
+                  AlignItems="AlignItems.Center"
+                  Spacing="2">
+
+            <MudIcon Icon="@Icons.Material.Outlined.Payments"
+                     Size="Size.Medium"
+                     Color="Color.Primary" />
+
+            <div>
+                <MudText Typo="Typo.subtitle1">
+                    طريقة الدفع
+                </MudText>
+
+                <MudText Typo="Typo.body2"
+                         Color="Color.Secondary">
+                    حدد طريقة دفع الطلب
+                </MudText>
+            </div>
+
+        </MudStack>
+
+        <MudSelect T="int?"
+                   Label="طريقة الدفع"
+                   Value="PaymentMethodId"
+                   ValueChanged="OnPaymentMethodChangedAsync"
+                   Clearable="true"
+                   Disabled="Disabled"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense">
+
+            @foreach (var payment in PaymentMethods)
+            {
+                <MudSelectItem T="int?"
+                               Value="@((int?)payment.Id)">
+                    @payment.DisplayName
+                </MudSelectItem>
+            }
+
+        </MudSelect>
+
+    </MudStack>
+</MudPaper>
+
+@code
+{
+    [Parameter]
+    public int? PaymentMethodId { get; set; }
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<PaymentMethodLookup> PaymentMethods { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<int?> PaymentMethodIdChanged { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    private Task OnPaymentMethodChangedAsync(int? value)
+    {
+        if (value == PaymentMethodId)
+            return Task.CompletedTask;
+
+        return PaymentMethodIdChanged.InvokeAsync(value);
+    }
+}

@@ -1,6 +1,7 @@
-﻿<UserControl
+<UserControl
     x:Class="OrderHub.UI.Features.ShippingCarriers.Index.View"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:commands="clr-namespace:OrderHub.UI.Commands"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:buttons="clr-namespace:OrderHub.UI.Components.Buttons"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -66,7 +67,7 @@
                 Height="40"
                 hc:BorderElement.CornerRadius="7"
                 Background="#facc15"
-                Command="{Binding ShowCreateCommand}"
+                Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=ShippingCarriers.CreateCommand}"
                 Cursor="Hand"
                 Foreground="Black">
                 <StackPanel Orientation="Horizontal">
@@ -103,8 +104,8 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
-                                <buttons:ButtonEdit />
-                                <buttons:ButtonDelete Margin="5,0" />
+                                <buttons:ButtonEdit Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=ShippingCarriers.EditCommand}" CommandParameter="{Binding Id}" />
+                                <buttons:ButtonDelete Margin="5,0" Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=ShippingCarriers.DeleteCommand}" CommandParameter="{Binding Id}" />
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>

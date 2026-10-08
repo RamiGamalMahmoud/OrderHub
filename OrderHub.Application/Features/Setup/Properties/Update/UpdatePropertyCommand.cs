@@ -1,16 +1,8 @@
-﻿using MediatR;
-using OrderHub.Application.Interfaces.Repositories;
-using System.Threading;
-using System.Threading.Tasks;
+using MediatR;
+using OrderHub.Application.Authorization;
+using OrderHub.Domain.Enums;
 
 namespace OrderHub.Application.Features.Setup.Properties.Update;
 
-public sealed record UpdatePropertyCommand(PropertyUpdateDto Dto) : IRequest;
-
-internal sealed class UpdatePropertyCommandHandler(IPropertyStore propertyStore) : IRequestHandler<UpdatePropertyCommand>
-{
-    public async Task Handle(UpdatePropertyCommand request, CancellationToken cancellationToken)
-    {
-        await propertyStore.UpdateAsync(request.Dto, cancellationToken);
-    }
-}
+[RequirePermission(PermissionFeature.Properties, PermissionLevel.Write)]
+public sealed record UpdatePropertyCommand(PropertyUpdateInput Input) : IRequest;

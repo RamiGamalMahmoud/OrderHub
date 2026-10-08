@@ -6,27 +6,29 @@ using System.Linq;
 
 namespace OrderHub.Domain.Models;
 
-public class Order : ModelBase
+public partial class Order : ModelBase
 {
     private readonly List<OrderItem> _orderItems = [];
     private readonly List<OrderDeliveryStep> _deliverySteps = [];
-    private readonly List<OrderEntitySequence> _entitySequences = [];
-    private readonly List<OutboxMessage> _outboxMessages = [];
-
+    
     private Order()
     {
     }
 
-    public Order(int clientId, string orderNumber)
+    public Order(int clientId, string orderNumber, System.Guid? creationRequestId = null)
     {
         ClientId = clientId;
         OrderNumber = orderNumber;
+        OrderStatus = OrderStatus.Processing;
+        CreationRequestId = creationRequestId;
     }
 
     public int ClientId { get; private set; }
     public Client Client { get; private set; }
 
     public string OrderNumber { get; private set; }
+    public System.Guid? CreationRequestId { get; private set; }
+    public OrderSource? OrderSource { get; private set; }
 
     public DeliveryMethod? DeliveryMethod { get; private set; }
 
@@ -45,17 +47,18 @@ public class Order : ModelBase
 
     public IReadOnlyCollection<OrderItem> OrderItems => _orderItems.AsReadOnly();
     public IReadOnlyCollection<OrderDeliveryStep> DeliverySteps => _deliverySteps.AsReadOnly();
-    public IReadOnlyCollection<OrderEntitySequence> EntitySequences => _entitySequences.AsReadOnly();
-    public IReadOnlyCollection<OutboxMessage> OutboxMessages => _outboxMessages.AsReadOnly();
 
     public void UpdateHeader(
         int clientId,
+        OrderSource orderSource,
         DeliveryMethod deliveryMethod,
         int? deliverymanId,
         int? shippingCarrierId,
         int? paymentMethodId)
     {
+        EnsureEditable();
         ClientId = clientId;
+        OrderSource = orderSource;
         DeliveryMethod = deliveryMethod;
         DeliverymanId = deliverymanId;
         ShippingCarrierId = shippingCarrierId;
@@ -67,21 +70,25 @@ public class Order : ModelBase
         string productName,
         decimal unitPrice,
         int quantity,
+        decimal vatRate,
         string supplierName,
         int? supplierId,
         IReadOnlyCollection<OrderItemPropertyData> properties)
     {
+        if (!CanEdit) return Result<OrderItem>.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
         Result<OrderItem> result = OrderItem.Create(
             productId,
             productName,
             unitPrice,
             quantity,
+            vatRate,
             supplierName,
             supplierId,
             properties);
 
         if (result.IsSuccess)
         {
+            result.Value.AttachTo(this);
             _orderItems.Add(result.Value);
         }
 
@@ -90,21 +97,26 @@ public class Order : ModelBase
 
     public void RemoveOrderItem(OrderItem orderItem)
     {
+        EnsureEditable();
         _orderItems.Remove(orderItem);
     }
 
     public void ClearOrderItems()
     {
+        EnsureEditable();
         _orderItems.Clear();
     }
 
     public void AddDeliveryStep(OrderDeliveryStep deliveryStep)
     {
+        EnsureEditable();
+        deliveryStep.AttachTo(this);
         _deliverySteps.Add(deliveryStep);
     }
 
     public Result ChangeClient(int clientId)
     {
+        if (!CanEdit) return Result.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
         ClientId = clientId;
 
         return Result.Success();
@@ -112,18 +124,21 @@ public class Order : ModelBase
 
     public Result ChangeDeliveryman(int? deliverymanId)
     {
+        if (!CanEdit) return Result.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
         DeliverymanId = deliverymanId;
         return Result.Success();
     }
 
     public Result ChangeShippingCarrier(int? shippingCarrierId)
     {
+        if (!CanEdit) return Result.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
         ShippingCarrierId = shippingCarrierId;
         return Result.Success();
     }
 
     public Result ChangePaymentMethod(int? paymentMethodId)
     {
+        if (!CanEdit) return Result.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
         if (PaymentMethodId == paymentMethodId)
             return Result.Success();
 
@@ -134,54 +149,59 @@ public class Order : ModelBase
 
     public void ClearDeliverySteps()
     {
+        EnsureEditable();
         _deliverySteps.Clear();
     }
 
-    public void AddEntitySequence(OrderEntitySequence entitySequence)
+    public void ReplaceOrderItems(IReadOnlyCollection<OrderItem> items)
     {
-        _entitySequences.Add(entitySequence);
+        EnsureEditable();
+        // Materialize before clearing, including when the caller passes our own items.
+        var replacementItems = items.ToList();
+        foreach (var item in replacementItems) item.AttachTo(this);
+        _orderItems.Clear();
+        _orderItems.AddRange(replacementItems);
     }
 
-    public void RemoveEntitySequence(OrderEntitySequence entitySequence)
+    public void SynchronizeDeliverySteps(IReadOnlyCollection<(int? Id, OrderDeliveryStep Values)> steps)
     {
-        _entitySequences.Remove(entitySequence);
-    }
+        EnsureEditable();
+        // Validate all identities before changing the aggregate.
+        var existing = _deliverySteps.ToDictionary(step => step.Id);
+        var ids = steps.Where(step => step.Id.HasValue).Select(step => step.Id.Value).ToList();
+        if (ids.Distinct().Count() != ids.Count || ids.Any(id => id <= 0 || !existing.ContainsKey(id)))
+            throw new System.ArgumentException("Invalid delivery step identities.", nameof(steps));
 
-    public void ChangeOrderStatus(OrderStatus orderStatus)
-    {
-        OrderStatus = orderStatus;
-    }
-
-    public string GetDisplayTitle(
-        RecipientType recipientType,
-        int? entityId = null)
-    {
-        int resolvedEntityId = entityId ?? recipientType switch
+        var synchronized = new List<OrderDeliveryStep>();
+        foreach (var (id, values) in steps)
         {
-            RecipientType.Client => ClientId,
-            RecipientType.Deliveryman => DeliverymanId ?? 0,
-            _ => 0
-        };
-
-        if (resolvedEntityId <= 0)
-            return OrderNumber;
-
-        return _entitySequences
-            .FirstOrDefault(sequence =>
-                sequence.RecipientType == recipientType &&
-                sequence.EntityId == resolvedEntityId)
-            ?.DisplayTitle
-            ?? OrderNumber;
+            var step = id.HasValue ? existing[id.Value] : values;
+            step.StepOrder = values.StepOrder;
+            step.DeliveryMethod = values.DeliveryMethod;
+            step.DeliverymanId = values.DeliverymanId;
+            step.ShippingCarrierId = values.ShippingCarrierId;
+            step.AttachTo(this);
+            synchronized.Add(step);
+        }
+        // Keep the matched instances. New unsaved entities share Id=0, so identity
+        // must not be compared using ModelBase.Equals when retaining the final graph.
+        _deliverySteps.Clear();
+        _deliverySteps.AddRange(synchronized);
     }
 
     public void ChangeDeliveryMethod(DeliveryMethod deliveryMethod)
     {
+        EnsureEditable();
         DeliveryMethod = deliveryMethod;
     }
+    public void ChangeOrderSource(OrderSource orderSource)
+    {
+        EnsureEditable();
+        OrderSource = orderSource;
+    }
 
-    public void ReturnToPending() => OrderStatus = OrderStatus.Pending;
-    public void Ship() => OrderStatus = OrderStatus.Shipped;
-    public void StartProcessing() => OrderStatus = OrderStatus.Processing;
-    public void Cancel() => OrderStatus = OrderStatus.Cancelled;
-    public void Deliver() => OrderStatus = OrderStatus.Delivered;
+    private void EnsureEditable()
+    {
+        if (!CanEdit) throw new System.InvalidOperationException("بيانات الطلب مقفولة ولا تقبل التعديل.");
+    }
 }

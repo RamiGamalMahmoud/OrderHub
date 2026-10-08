@@ -1,0 +1,90 @@
+﻿@inherits LayoutComponentBase
+
+<MudRTLProvider RightToLeft=true>
+    @* تفعيل خيارات الثيم الحديثة ودعم اللغة العربية *@
+    <MudThemeProvider Theme="_customTheme" DefaultScrollbar="true" />
+    <MudPopoverProvider />
+    <MudDialogProvider />
+    <MudSnackbarProvider />
+
+    <MudLayout>
+
+        <!-- شريط علوي عصري بخلفية بيضاء (أو داكنة حسب الثيم) وفواصل رقيقة جداً -->
+        <MudAppBar Elevation="0" Class="border-bottom-subtle px-4" Color="Color.Surface">
+
+            <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                           Color="Color.Default"
+                           Edge="Edge.Start"
+                           OnClick="ToggleDrawer"
+                           Class="me-2" />
+
+            <MudText Typo="Typo.h6" Class="font-weight-bold tracking-tight text-primary">
+                OrderHub
+            </MudText>
+
+            <MudSpacer />
+
+            @* هنا يمكنك إضافة أيقونة الملف الشخصي أو الإشعارات لاحقاً *@
+            <form method="post" action="/auth/logout">
+                <MudButton ButtonType="ButtonType.Submit">
+                    تسجيل الخروج
+                </MudButton>
+            </form>
+        </MudAppBar>
+
+        <!-- قائمة جانبية مسطحة ممتدة بالكامل بخط فاصل جانبي بدلاً من الظلال التقليدية -->
+        <MudDrawer @bind-Open="_drawerOpen"
+                   Elevation="0"
+                   ClipMode="DrawerClipMode.Always"
+                   Variant="DrawerVariant.Responsive"
+                   Class="border-inline-subtle">
+            <NavMenu />
+        </MudDrawer>
+
+        <!-- منطقة المحتوى الرئيسية مع خلفية ناعمة مريحة للعين لتبرز بداخلها الـ Cards -->
+        <MudMainContent Class="main-content-bg">
+            <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-6 px-4 px-md-8">
+                @Body
+            </MudContainer>
+        </MudMainContent>
+
+    </MudLayout>
+</MudRTLProvider>
+
+<div id="blazor-error-ui" data-nosnippet>
+    حدث خطأ غير متوقع في النظام.
+    <a href="." class="reload">إعادة تحميل</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code
+{
+    private bool _drawerOpen = true;
+
+    // إعداد الـ Theme ليدعم اتجاه اليمين لليسار (RTL) بشكل تلقائي وتخصيص الألوان الأساسية
+    private MudTheme _customTheme = new MudTheme()
+    {
+        Typography = new Typography
+        {
+            Default = new DefaultTypography
+            {
+                FontFamily = ["Tajawal", "Cairo", "sans-serif"]
+            }
+        },
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#2563EB",       // لون أزرق عصري (Tailwind Blue 600) بدلاً من البنفسجي
+            Secondary = "#64748B",     // لون رمادي هادئ للنصوص الثانوية والعناوين
+            Background = "#F8FAFC",    // خلفية ثلجية مريحة جداً للمحتوى (Slate 50)
+            Surface = "#FFFFFF",       // اللون الأبيض للبطاقات، القائمة والهيدر
+            AppbarBackground = "#FFFFFF",
+            AppbarText = "#0F172A",
+            DrawerBackground = "#FFFFFF"
+        }
+    };
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+}

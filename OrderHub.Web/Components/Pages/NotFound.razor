@@ -1,0 +1,36 @@
+﻿@page "/not-found"
+@using OrderHub.Web.Components.Layout
+@layout StandaloneLayout
+
+<PageTitle>Page Not Found</PageTitle>
+
+<MudStack AlignItems="AlignItems.Center"
+          Justify="Justify.Center"
+          Spacing="4"
+          Class="mt-16">
+
+    <MudIcon Icon="@Icons.Material.Filled.SearchOff"
+             Size="Size.Large"
+             Color="Color.Primary" />
+
+    <MudText Typo="Typo.h1">
+        404
+    </MudText>
+
+    <MudText Typo="Typo.h5">
+        Page Not Found
+    </MudText>
+
+    <MudText Typo="Typo.body1"
+             Color="Color.Secondary">
+        The page you're looking for doesn't exist.
+    </MudText>
+
+    <MudButton Href="/"
+               Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Home">
+        Back to Home
+    </MudButton>
+
+</MudStack>

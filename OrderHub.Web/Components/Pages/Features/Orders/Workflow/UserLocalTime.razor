@@ -1,0 +1,41 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+@if (Value.HasValue) { <time datetime="@IsoValue">@_display</time> }
+
+@code {
+    [Parameter] public DateTime? Value { get; set; }
+    private IJSObjectReference? _module;
+    private DateTime? _formatted;
+    private string _display = "…";
+    private bool _disposed;
+    private string? IsoValue => Value.HasValue ? DateTime.SpecifyKind(Value.Value, DateTimeKind.Utc).ToString("O", System.Globalization.CultureInfo.InvariantCulture) : null;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_disposed || !Value.HasValue || Value == _formatted) return;
+        var value = Value;
+        var iso = IsoValue;
+        try
+        {
+            if (_module is null)
+            {
+                var module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/order-local-time.js");
+                if (_disposed) { await module.DisposeAsync(); return; }
+                _module = module;
+            }
+            var display = await _module.InvokeAsync<string>("formatLocalTime", iso);
+            if (_disposed || Value != value) return;
+            _display = display;
+            _formatted = value;
+            StateHasChanged();
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { _formatted = value; _display = "التوقيت المحلي غير متاح"; if (!_disposed) StateHasChanged(); }
+    }
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        if (_module is null) return;
+        try { await _module.DisposeAsync(); } catch (JSDisconnectedException) { }
+    }
+}

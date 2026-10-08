@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OrderHub.Infrastructure;
 
 #nullable disable
@@ -15,27 +16,31 @@ namespace OrderHub.Infrastructure.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "9.0.9")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("OrderHub.Domain.Models.Address", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<bool>("IsPrimary")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(false)
+                        .HasColumnType("boolean")
                         .HasColumnName("is_primary");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<string>("Street")
@@ -44,8 +49,8 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("varchar(150)")
                         .HasColumnName("street");
 
-                    b.Property<int?>("city_id")
-                        .HasColumnType("INTEGER")
+                    b.Property<int>("city_id")
+                        .HasColumnType("integer")
                         .HasColumnName("city_id");
 
                     b.HasKey("Id")
@@ -61,19 +66,21 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<int?>("ParentCategoryId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("parent_category_id");
 
                     b.HasKey("Id")
@@ -89,15 +96,17 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.HasKey("Id")
@@ -110,27 +119,30 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Location")
-                        .HasColumnType("VARCHAR(255)")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)")
                         .HasColumnName("location");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
-                    b.Property<int?>("address_id")
-                        .HasColumnType("INTEGER")
+                    b.Property<int>("address_id")
+                        .HasColumnType("integer")
                         .HasColumnName("address_id");
 
-                    b.Property<int?>("phone_id")
-                        .HasColumnType("INTEGER")
+                    b.Property<int>("phone_id")
+                        .HasColumnType("integer")
                         .HasColumnName("phone_id");
 
                     b.HasKey("Id")
@@ -149,59 +161,61 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("CustomerAddress")
-                        .HasColumnType("TEXT")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
                         .HasColumnName("customer_address");
 
                     b.Property<string>("CustomerName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(200)")
                         .HasColumnName("customer_name");
 
                     b.Property<string>("CustomerPhone")
+                        .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(50)")
                         .HasColumnName("customer_phone");
 
                     b.Property<string>("DocumentNumber")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(50)")
                         .HasColumnName("document_number");
 
                     b.Property<DateTime>("IssueDate")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("issue_date");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<int>("OrderId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("order_id");
 
                     b.Property<decimal>("Subtotal")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("subtotal");
 
                     b.Property<decimal>("TotalAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("total_amount");
 
                     b.Property<decimal>("TotalVat")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("total_vat");
 
                     b.HasKey("Id")
@@ -222,59 +236,55 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<int>("InvoiceId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("invoice_id");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<int>("ProductId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("product_id");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(200)")
                         .HasColumnName("product_name");
 
                     b.Property<decimal>("Quantity")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,3)")
                         .HasColumnName("quantity");
 
                     b.Property<decimal>("Subtotal")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("subtotal");
 
                     b.Property<decimal>("Total")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("total");
 
                     b.Property<decimal>("UnitPrice")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("unit_price");
 
                     b.Property<decimal>("VatAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("vat_amount");
 
                     b.Property<decimal>("VatRate")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(5,2)")
                         .HasColumnName("vat_rate");
 
                     b.HasKey("Id")
@@ -293,63 +303,65 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("CustomerAddress")
-                        .HasColumnType("TEXT")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
                         .HasColumnName("customer_address");
 
                     b.Property<string>("CustomerName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(200)")
                         .HasColumnName("customer_name");
 
                     b.Property<string>("CustomerPhone")
+                        .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(50)")
                         .HasColumnName("customer_phone");
 
                     b.Property<string>("DocumentNumber")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(50)")
                         .HasColumnName("document_number");
 
                     b.Property<DateTime>("IssueDate")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("issue_date");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<int?>("OrderId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("order_id");
 
                     b.Property<Guid?>("SourceDraftReference")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("source_draft_reference");
 
                     b.Property<decimal>("Subtotal")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("subtotal");
 
                     b.Property<decimal>("TotalAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("total_amount");
 
                     b.Property<decimal>("TotalVat")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("total_vat");
 
                     b.HasKey("Id")
@@ -362,9 +374,6 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasIndex("OrderId")
                         .HasDatabaseName("ix_proforma_invoices_order_id");
 
-                    b.HasIndex("SourceDraftReference")
-                        .HasDatabaseName("ix_proforma_invoices_source_draft_reference");
-
                     b.ToTable("proforma_invoices", null, t =>
                         {
                             t.HasCheckConstraint("ck_proforma_invoice_source_reference_or_order", "source_draft_reference IS NOT NULL OR order_id IS NOT NULL");
@@ -375,59 +384,55 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<int>("ProductId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("product_id");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(200)")
                         .HasColumnName("product_name");
 
                     b.Property<int>("ProformaInvoiceId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("proforma_invoice_id");
 
                     b.Property<decimal>("Quantity")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,3)")
                         .HasColumnName("quantity");
 
                     b.Property<decimal>("Subtotal")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("subtotal");
 
                     b.Property<decimal>("Total")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("total");
 
                     b.Property<decimal>("UnitPrice")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("unit_price");
 
                     b.Property<decimal>("VatAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("vat_amount");
 
                     b.Property<decimal>("VatRate")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(5,2)")
                         .HasColumnName("vat_rate");
 
                     b.HasKey("Id")
@@ -446,67 +451,69 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("CustomerAddress")
-                        .HasColumnType("TEXT")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
                         .HasColumnName("customer_address");
 
                     b.Property<string>("CustomerName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(200)")
                         .HasColumnName("customer_name");
 
                     b.Property<string>("CustomerPhone")
+                        .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(50)")
                         .HasColumnName("customer_phone");
 
                     b.Property<string>("DocumentNumber")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(50)")
                         .HasColumnName("document_number");
 
                     b.Property<DateTime>("IssueDate")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("issue_date");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<int?>("OrderId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("order_id");
 
                     b.Property<Guid?>("SourceDraftReference")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("source_draft_reference");
 
                     b.Property<decimal>("Subtotal")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("subtotal");
 
                     b.Property<decimal>("TotalAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("total_amount");
 
                     b.Property<decimal>("TotalVat")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("total_vat");
 
                     b.Property<DateTime>("ValidUntil")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("valid_until");
 
                     b.HasKey("Id")
@@ -519,9 +526,6 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasIndex("OrderId")
                         .HasDatabaseName("ix_quotations_order_id");
 
-                    b.HasIndex("SourceDraftReference")
-                        .HasDatabaseName("ix_quotations_source_draft_reference");
-
                     b.ToTable("quotations", null, t =>
                         {
                             t.HasCheckConstraint("ck_quotation_source_reference_or_order", "source_draft_reference IS NOT NULL OR order_id IS NOT NULL");
@@ -532,59 +536,55 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<int>("ProductId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("product_id");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(200)")
                         .HasColumnName("product_name");
 
                     b.Property<decimal>("Quantity")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,3)")
                         .HasColumnName("quantity");
 
                     b.Property<int>("QuotationId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("quotation_id");
 
                     b.Property<decimal>("Subtotal")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("subtotal");
 
                     b.Property<decimal>("Total")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("total");
 
                     b.Property<decimal>("UnitPrice")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("unit_price");
 
                     b.Property<decimal>("VatAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("vat_amount");
 
                     b.Property<decimal>("VatRate")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(5,2)")
                         .HasColumnName("vat_rate");
 
                     b.HasKey("Id")
@@ -599,19 +599,95 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("quotation_items", (string)null);
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.DeliveryStepStatusHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ChangedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changed_at_utc");
+
+                    b.Property<int?>("ChangedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("changed_by_user_id");
+
+                    b.Property<string>("ChangedByUserName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("changed_by_user_name");
+
+                    b.Property<int>("DeliveryStepId")
+                        .HasColumnType("integer")
+                        .HasColumnName("delivery_step_id");
+
+                    b.Property<string>("NewStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("new_status");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_id");
+
+                    b.Property<int>("OrderVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_version");
+
+                    b.Property<string>("PreviousStatus")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("previous_status");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("source");
+
+                    b.HasKey("Id")
+                        .HasName("pk_delivery_step_status_history");
+
+                    b.HasIndex("ChangedByUserId")
+                        .HasDatabaseName("ix_delivery_step_status_history_changed_by_user_id");
+
+                    b.HasIndex("DeliveryStepId", "OrderVersion", "Id")
+                        .HasDatabaseName("ix_delivery_step_status_history_delivery_step_id_order_version");
+
+                    b.HasIndex("OrderId", "OrderVersion", "Id")
+                        .HasDatabaseName("ix_delivery_step_status_history_order_id_order_version_id");
+
+                    b.ToTable("delivery_step_status_history", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_step_history_attribution", "source = 'LegacyMigration' OR (changed_by_user_id IS NOT NULL AND changed_by_user_name IS NOT NULL AND (new_status NOT IN ('Failed','Cancelled') OR (reason IS NOT NULL AND length(trim(reason)) BETWEEN 1 AND 200)))");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.Deliveryman", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<string>("PhoneNumber")
@@ -620,21 +696,14 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnName("phone_number");
 
                     b.Property<int>("deliveryman_city_id")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("deliveryman_city_id");
-
-                    b.Property<int?>("whatsapp_group_id")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("whatsapp_group_id");
 
                     b.HasKey("Id")
                         .HasName("pk_deliverymen");
 
                     b.HasIndex("deliveryman_city_id")
                         .HasDatabaseName("ix_deliverymen_deliveryman_city_id");
-
-                    b.HasIndex("whatsapp_group_id")
-                        .HasDatabaseName("ix_deliverymen_whatsapp_group_id");
 
                     b.ToTable("deliverymen", (string)null);
                 });
@@ -643,57 +712,110 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ArchiveReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("archive_reason");
+
+                    b.Property<DateTime?>("ArchivedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("archived_at_utc");
+
+                    b.Property<int?>("ArchivedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("archived_by_user_id");
+
+                    b.Property<string>("ArchivedByUserName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("archived_by_user_name");
+
                     b.Property<int>("ClientId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("client_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<Guid?>("CreationRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("creation_request_id");
+
                     b.Property<string>("DeliveryMethod")
-                        .HasColumnType("TEXT")
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
                         .HasColumnName("delivery_method");
 
                     b.Property<int?>("DeliverymanId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("deliveryman_id");
 
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
+
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<string>("OrderNumber")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(20)")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
                         .HasColumnName("order_number");
+
+                    b.Property<string>("OrderSource")
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("order_source");
 
                     b.Property<string>("OrderStatus")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue("Pending")
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
+                        .HasDefaultValue("Processing")
                         .HasColumnName("order_status");
 
                     b.Property<int?>("PaymentMethodId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("payment_method_id");
 
                     b.Property<int?>("ShippingCarrierId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("shipping_carrier_id");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("version");
 
                     b.HasKey("Id")
                         .HasName("pk_orders");
 
+                    b.HasIndex("ArchivedByUserId")
+                        .HasDatabaseName("ix_orders_archived_by_user_id");
+
                     b.HasIndex("ClientId")
                         .HasDatabaseName("ix_orders_client_id");
 
+                    b.HasIndex("CreationRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_orders_creation_request_id");
+
                     b.HasIndex("DeliverymanId")
                         .HasDatabaseName("ix_orders_deliveryman_id");
+
+                    b.HasIndex("OrderNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_orders_order_number");
 
                     b.HasIndex("PaymentMethodId")
                         .HasDatabaseName("ix_orders_payment_method_id");
@@ -701,43 +823,60 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasIndex("ShippingCarrierId")
                         .HasDatabaseName("ix_orders_shipping_carrier_id");
 
-                    b.ToTable("orders", (string)null);
+                    b.HasIndex("IsArchived", "CreatedAt")
+                        .HasDatabaseName("ix_orders_is_archived_created_at");
+
+                    b.ToTable("orders", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_orders_archive_metadata", "NOT is_archived OR (archived_at_utc IS NOT NULL AND archived_by_user_id IS NOT NULL AND archive_reason IS NOT NULL AND length(trim(archive_reason)) BETWEEN 1 AND 200)");
+                        });
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.OrderDeliveryStep", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("DeliveryMethod")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
                         .HasColumnName("delivery_method");
 
                     b.Property<int?>("DeliverymanId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("deliveryman_id");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<int>("OrderId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("order_id");
 
                     b.Property<int?>("ShippingCarrierId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("shipping_carrier_id");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("Pending")
+                        .HasColumnName("status");
+
                     b.Property<int>("StepOrder")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("step_order");
 
                     b.HasKey("Id")
@@ -756,106 +895,55 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("order_delivery_steps", (string)null);
                 });
 
-            modelBuilder.Entity("OrderHub.Domain.Models.OrderEntitySequence", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("DisplayTitle")
-                        .IsRequired()
-                        .HasColumnType("VARCHAR(50)")
-                        .HasColumnName("display_title");
-
-                    b.Property<int>("EntityId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("entity_id");
-
-                    b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("modified_at");
-
-                    b.Property<int>("OrderId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("order_id");
-
-                    b.Property<string>("RecipientType")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("recipient_type");
-
-                    b.Property<int>("SequenceMonth")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("sequence_month");
-
-                    b.Property<int>("SequenceNumber")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("sequence_number");
-
-                    b.Property<int>("SequenceYear")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("sequence_year");
-
-                    b.HasKey("Id")
-                        .HasName("pk_order_entity_sequences");
-
-                    b.HasIndex("OrderId", "RecipientType", "EntityId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_order_entity_sequences_order_id_recipient_type_entity_id");
-
-                    b.HasIndex("RecipientType", "EntityId", "SequenceYear", "SequenceMonth", "SequenceNumber")
-                        .IsUnique()
-                        .HasDatabaseName("ix_order_entity_sequences_recipient_type_entity_id_sequence_year_sequence_month_sequence_number");
-
-                    b.ToTable("order_entity_sequences", (string)null);
-                });
-
             modelBuilder.Entity("OrderHub.Domain.Models.OrderItem", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<int>("OrderId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("order_id");
 
                     b.Property<int>("ProductId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("product_id");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("VARCHAR(100)")
+                        .HasColumnType("varchar(100)")
                         .HasColumnName("product_name");
 
-                    b.Property<int>("Quantity")
-                        .HasColumnType("DECIMAL(18,2)")
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("quantity");
 
                     b.Property<int?>("SupplierId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("supplier_id");
 
                     b.Property<string>("SupplierName")
                         .HasMaxLength(100)
-                        .HasColumnType("VARCHAR(100)")
+                        .HasColumnType("varchar(100)")
                         .HasColumnName("supplier_name");
+
+                    b.Property<decimal>("VatRate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("vat_rate");
 
                     b.HasKey("Id")
                         .HasName("pk_order_items");
@@ -876,26 +964,29 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<int>("OrderItemId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("order_item_id");
 
                     b.Property<int>("PropertyId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("property_id");
 
                     b.Property<string>("Value")
+                        .HasMaxLength(100)
                         .HasColumnType("varchar(100)")
                         .HasColumnName("value");
 
@@ -912,213 +1003,117 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("order_item_properties", (string)null);
                 });
 
-            modelBuilder.Entity("OrderHub.Domain.Models.OutboxMessage", b =>
+            modelBuilder.Entity("OrderHub.Domain.Models.OrderStatusHistory", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("created_at");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime?>("LastAttemptAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("last_attempt_at");
+                    b.Property<DateTime>("ChangedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changed_at_utc");
 
-                    b.PrimitiveCollection<string>("LegacyAttachments")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("legacy_attachments");
+                    b.Property<int?>("ChangedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("changed_by_user_id");
 
-                    b.Property<int?>("MaxRetries")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(3)
-                        .HasColumnName("max_retries");
-
-                    b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("modified_at");
-
-                    b.PrimitiveCollection<string>("Notes")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("notes");
-
-                    b.Property<int?>("OrderId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("order_id");
-
-                    b.Property<int?>("RecipientId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("recipient_id");
-
-                    b.Property<string>("RecipientType")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("recipient_type");
-
-                    b.Property<int?>("RetryCount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(0)
-                        .HasColumnName("retry_count");
-
-                    b.Property<DateTime?>("SentAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("sent_at");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("status");
-
-                    b.Property<string>("Text")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)")
-                        .HasColumnName("text");
-
-                    b.HasKey("Id")
-                        .HasName("pk_outbox_messages");
-
-                    b.HasIndex("RecipientId")
-                        .HasDatabaseName("ix_outbox_messages_recipient_id");
-
-                    b.HasIndex("OrderId", "RecipientId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_outbox_messages_order_id_recipient_id")
-                        .HasFilter("[Status] = 'Pending'");
-
-                    b.ToTable("outbox_messages", (string)null);
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.OutboxMessageAttachment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("id");
-
-                    b.Property<string>("ContentType")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("content_type");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("created_at");
-
-                    b.Property<long>("FileSize")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("file_size");
-
-                    b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("modified_at");
-
-                    b.Property<string>("OriginalFileName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("original_file_name");
-
-                    b.Property<int>("OutboxMessageId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("outbox_message_id");
-
-                    b.Property<string>("RelativePath")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("relative_path");
-
-                    b.Property<string>("StoredFileName")
-                        .IsRequired()
+                    b.Property<string>("ChangedByUserName")
                         .HasMaxLength(150)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("stored_file_name");
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("changed_by_user_name");
 
-                    b.HasKey("Id")
-                        .HasName("pk_message_attachments");
-
-                    b.HasIndex("OutboxMessageId")
-                        .HasDatabaseName("ix_message_attachments_outbox_message_id");
-
-                    b.ToTable("message_attachments", (string)null);
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.OutboxMessageRecipient", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("modified_at");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("name");
-
-                    b.Property<string>("PhoneNumber")
+                    b.Property<string>("NewStatus")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("phone_number");
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("new_status");
 
-                    b.HasKey("Id");
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_id");
 
-                    b.ToTable("outbox_message_recipients", (string)null);
+                    b.Property<int>("OrderVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_version");
 
-                    b.UseTptMappingStrategy();
+                    b.Property<string>("OriginalStatus")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("original_status");
+
+                    b.Property<string>("PreviousStatus")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("previous_status");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("source");
+
+                    b.HasKey("Id")
+                        .HasName("pk_order_status_history");
+
+                    b.HasIndex("ChangedByUserId")
+                        .HasDatabaseName("ix_order_status_history_changed_by_user_id");
+
+                    b.HasIndex("OrderId", "OrderVersion", "Id")
+                        .HasDatabaseName("ix_order_status_history_order_id_order_version_id");
+
+                    b.ToTable("order_status_history", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_order_history_attribution", "source = 'LegacyMigration' OR (changed_by_user_id IS NOT NULL AND changed_by_user_name IS NOT NULL AND ((new_status NOT IN ('Cancelled','DeliveryFailed') AND source <> 'DirectDelivery') OR (reason IS NOT NULL AND length(trim(reason)) BETWEEN 1 AND 200)))");
+                        });
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.PaymentMethod", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(50)
                         .IsUnicode(false)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(50)")
                         .HasColumnName("code");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
-                        .IsUnicode(true)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(500)")
                         .HasColumnName("description");
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .IsUnicode(true)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(100)")
                         .HasColumnName("display_name");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("boolean")
                         .HasDefaultValue(true)
                         .HasColumnName("is_active");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.HasKey("Id")
@@ -1126,13 +1121,13 @@ namespace OrderHub.Infrastructure.Migrations
 
                     b.HasIndex("Code")
                         .IsUnique()
-                        .HasDatabaseName("UX_PaymentMethods_Code");
+                        .HasDatabaseName("ix_payment_methods_code");
 
                     b.HasIndex("DisplayName")
-                        .HasDatabaseName("IX_PaymentMethods_DisplayName");
+                        .HasDatabaseName("ix_payment_methods_display_name");
 
                     b.HasIndex("IsActive")
-                        .HasDatabaseName("IX_PaymentMethods_IsActive");
+                        .HasDatabaseName("ix_payment_methods_is_active");
 
                     b.ToTable("payment_methods", (string)null);
 
@@ -1141,7 +1136,7 @@ namespace OrderHub.Infrastructure.Migrations
                         {
                             Id = 1,
                             Code = "ON_DELIVERY",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "الدفع نقداً عند الاستلام",
                             DisplayName = "نقداً",
                             IsActive = true
@@ -1150,7 +1145,7 @@ namespace OrderHub.Infrastructure.Migrations
                         {
                             Id = 2,
                             Code = "BANK_TRANSFER",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "الدفع عبر التحويل البنكي",
                             DisplayName = "تحويل بنكي",
                             IsActive = true
@@ -1159,7 +1154,7 @@ namespace OrderHub.Infrastructure.Migrations
                         {
                             Id = 3,
                             Code = "SUPPLIER_ACCOUNT",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "الدفع على حساب المورد",
                             DisplayName = "على حساب المورد",
                             IsActive = true
@@ -1168,7 +1163,7 @@ namespace OrderHub.Infrastructure.Migrations
                         {
                             Id = 4,
                             Code = "SALLA",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "الدفع عبر منصة سلة",
                             DisplayName = "سلة",
                             IsActive = true
@@ -1179,21 +1174,23 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<bool>("IsPrimary")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("is_primary");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.HasKey("Id")
@@ -1206,25 +1203,27 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(10)
-                        .HasColumnType("VARCHAR(10)")
+                        .HasColumnType("varchar(10)")
                         .HasColumnName("code");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<int>("category_id")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("category_id");
 
                     b.HasKey("Id")
@@ -1240,27 +1239,29 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<bool>("IsRequired")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("boolean")
                         .HasColumnName("is_required");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<int>("ProductId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("product_id");
 
                     b.Property<int>("PropertyId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("property_id");
 
                     b.HasKey("Id")
@@ -1279,30 +1280,33 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("description");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasMaxLength(100)
                         .HasColumnType("varchar(100)")
                         .HasColumnName("name");
 
                     b.Property<string>("PropertyType")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(20)")
                         .HasColumnName("property_type");
 
                     b.HasKey("Id")
@@ -1319,23 +1323,26 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<int>("PropertyId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("property_id");
 
                     b.Property<string>("Value")
                         .IsRequired()
+                        .HasMaxLength(100)
                         .HasColumnType("varchar(100)")
                         .HasColumnName("value");
 
@@ -1349,27 +1356,88 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("property_options", (string)null);
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.Role", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_roles");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_roles_name");
+
+                    b.ToTable("roles", (string)null);
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.RolePermission", b =>
+                {
+                    b.Property<int>("RoleId")
+                        .HasColumnType("integer")
+                        .HasColumnName("role_id");
+
+                    b.Property<string>("Feature")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("feature");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("level");
+
+                    b.HasKey("RoleId", "Feature")
+                        .HasName("pk_role_permissions");
+
+                    b.ToTable("role_permissions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_role_permissions_level", "level <> 'None'");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.ShippingCarrier", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<int?>("address_id")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("address_id");
 
                     b.Property<int?>("phone_id")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("phone_id");
 
                     b.HasKey("Id")
@@ -1388,28 +1456,26 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
                     b.Property<int?>("address_id")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("address_id");
 
                     b.Property<int?>("phone_id")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("phone_id");
-
-                    b.Property<int?>("whatsapp_group_id")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("whatsapp_group_id");
 
                     b.HasKey("Id")
                         .HasName("pk_suppliers");
@@ -1420,65 +1486,81 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasIndex("phone_id")
                         .HasDatabaseName("ix_suppliers_phone_id");
 
-                    b.HasIndex("whatsapp_group_id")
-                        .HasDatabaseName("ix_suppliers_whatsapp_group_id");
-
                     b.ToTable("suppliers", (string)null);
                 });
 
-            modelBuilder.Entity("OrderHub.Domain.Models.WhatsappGroup", b =>
+            modelBuilder.Entity("OrderHub.Domain.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("GroupLink")
+                    b.Property<string>("DisplayName")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(100)")
-                        .HasColumnName("group_link");
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("display_name");
 
-                    b.Property<string>("GroupName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("VARCHAR(100)")
-                        .HasColumnName("group_name");
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
 
-                    b.Property<string>("GroupType")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("group_type");
+                    b.Property<bool>("IsAdmin")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_admin");
 
                     b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
-                    b.HasKey("Id")
-                        .HasName("pk_whatsapp_groups");
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("password_hash");
 
-                    b.ToTable("whatsapp_groups", (string)null);
+                    b.Property<int?>("RoleId")
+                        .HasColumnType("integer")
+                        .HasColumnName("role_id");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("user_name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_users");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_users_role_id");
+
+                    b.ToTable("users", (string)null);
                 });
 
             modelBuilder.Entity("OrderHub.Infrastructure.Models.DocumentSequence", b =>
                 {
                     b.Property<int>("DocumentType")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("document_type");
 
                     b.Property<int>("Year")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("year");
 
                     b.Property<int>("Month")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("month");
 
                     b.Property<int>("LastNumber")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("last_number");
 
                     b.HasKey("DocumentType", "Year", "Month")
@@ -1487,79 +1569,51 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("document_sequences", (string)null);
                 });
 
-            modelBuilder.Entity("ProductSupplier", b =>
+            modelBuilder.Entity("OrderHub.Infrastructure.Models.DraftRecord", b =>
                 {
-                    b.Property<int>("ProductId")
-                        .HasColumnType("INTEGER")
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Data")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("data");
+
+                    b.Property<DateTime>("LastModified")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_modified");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_order_drafts");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_order_drafts_user_id");
+
+                    b.ToTable("order_drafts", (string)null);
+                });
+
+            modelBuilder.Entity("product_supplier", b =>
+                {
+                    b.Property<int>("product_id")
+                        .HasColumnType("integer")
                         .HasColumnName("product_id");
 
-                    b.Property<int>("SuppliersId")
-                        .HasColumnType("INTEGER")
+                    b.Property<int>("suppliers_id")
+                        .HasColumnType("integer")
                         .HasColumnName("suppliers_id");
 
-                    b.HasKey("ProductId", "SuppliersId")
+                    b.HasKey("product_id", "suppliers_id")
                         .HasName("pk_product_supplier");
 
-                    b.HasIndex("SuppliersId")
+                    b.HasIndex("suppliers_id")
                         .HasDatabaseName("ix_product_supplier_suppliers_id");
 
                     b.ToTable("product_supplier", (string)null);
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.ClientRecipient", b =>
-                {
-                    b.HasBaseType("OrderHub.Domain.Models.OutboxMessageRecipient");
-
-                    b.Property<int>("ClientId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("client_id");
-
-                    b.HasIndex("ClientId")
-                        .HasDatabaseName("ix_client_recipients_client_id");
-
-                    b.ToTable("client_recipients", (string)null);
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.DeliverymanRecipient", b =>
-                {
-                    b.HasBaseType("OrderHub.Domain.Models.OutboxMessageRecipient");
-
-                    b.Property<int>("DeliveryManId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("delivery_man_id");
-
-                    b.HasIndex("DeliveryManId")
-                        .HasDatabaseName("ix_deliveryman_recipients_delivery_man_id");
-
-                    b.ToTable("deliveryman_recipients", (string)null);
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.ShippingCarrierRecipient", b =>
-                {
-                    b.HasBaseType("OrderHub.Domain.Models.OutboxMessageRecipient");
-
-                    b.Property<int>("ShippingCarrierId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("shipping_carrier_id");
-
-                    b.HasIndex("ShippingCarrierId")
-                        .HasDatabaseName("ix_shippingcarrier_recipients_shipping_carrier_id");
-
-                    b.ToTable("shippingcarrier_recipients", (string)null);
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.SupplierRecipient", b =>
-                {
-                    b.HasBaseType("OrderHub.Domain.Models.OutboxMessageRecipient");
-
-                    b.Property<int>("SupplierId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("supplier_id");
-
-                    b.HasIndex("SupplierId")
-                        .HasDatabaseName("ix_supplier_recipients_supplier_id");
-
-                    b.ToTable("supplier_recipients", (string)null);
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Address", b =>
@@ -1568,6 +1622,7 @@ namespace OrderHub.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("city_id")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
                         .HasConstraintName("fk_addresses_cities_city_id");
 
                     b.Navigation("City");
@@ -1584,13 +1639,13 @@ namespace OrderHub.Infrastructure.Migrations
                     b.OwnsOne("OrderHub.Domain.ValueObjects.EntityName", "Name", b1 =>
                         {
                             b1.Property<int>("CategoryId")
-                                .HasColumnType("INTEGER")
+                                .HasColumnType("integer")
                                 .HasColumnName("id");
 
                             b1.Property<string>("Value")
                                 .IsRequired()
                                 .HasMaxLength(100)
-                                .HasColumnType("TEXT")
+                                .HasColumnType("varchar(100)")
                                 .HasColumnName("name");
 
                             b1.HasKey("CategoryId");
@@ -1613,13 +1668,13 @@ namespace OrderHub.Infrastructure.Migrations
                     b.OwnsOne("OrderHub.Domain.ValueObjects.EntityName", "Name", b1 =>
                         {
                             b1.Property<int>("CityId")
-                                .HasColumnType("INTEGER")
+                                .HasColumnType("integer")
                                 .HasColumnName("id");
 
                             b1.Property<string>("Value")
                                 .IsRequired()
                                 .HasMaxLength(100)
-                                .HasColumnType("TEXT")
+                                .HasColumnType("varchar(100)")
                                 .HasColumnName("name");
 
                             b1.HasKey("CityId");
@@ -1644,23 +1699,27 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasOne("OrderHub.Domain.Models.Address", "Address")
                         .WithMany()
                         .HasForeignKey("address_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
                         .HasConstraintName("fk_clients_addresses_address_id");
 
                     b.HasOne("OrderHub.Domain.Models.Phone", "Phone")
                         .WithMany()
                         .HasForeignKey("phone_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
                         .HasConstraintName("fk_clients_phones_phone_id");
 
                     b.OwnsOne("OrderHub.Domain.ValueObjects.EntityName", "Name", b1 =>
                         {
                             b1.Property<int>("ClientId")
-                                .HasColumnType("INTEGER")
+                                .HasColumnType("integer")
                                 .HasColumnName("id");
 
                             b1.Property<string>("Value")
                                 .IsRequired()
-                                .HasMaxLength(200)
-                                .HasColumnType("VARCHAR(100)")
+                                .HasMaxLength(100)
+                                .HasColumnType("varchar(100)")
                                 .HasColumnName("name");
 
                             b1.HasKey("ClientId");
@@ -1674,7 +1733,8 @@ namespace OrderHub.Infrastructure.Migrations
 
                     b.Navigation("Address");
 
-                    b.Navigation("Name");
+                    b.Navigation("Name")
+                        .IsRequired();
 
                     b.Navigation("Phone");
                 });
@@ -1717,6 +1777,7 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasOne("OrderHub.Domain.Models.Order", "Order")
                         .WithMany()
                         .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_proforma_invoices_orders_order_id");
 
                     b.Navigation("Order");
@@ -1748,6 +1809,7 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasOne("OrderHub.Domain.Models.Order", "Order")
                         .WithMany()
                         .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_quotations_orders_order_id");
 
                     b.Navigation("Order");
@@ -1774,6 +1836,33 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Quotation");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.DeliveryStepStatusHistory", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("ChangedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_delivery_step_status_history_users_changed_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.OrderDeliveryStep", "DeliveryStep")
+                        .WithMany()
+                        .HasForeignKey("DeliveryStepId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_delivery_step_status_history_order_delivery_steps_delivery_");
+
+                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
+                        .WithMany("StepHistory")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_delivery_step_status_history_orders_order_id");
+
+                    b.Navigation("DeliveryStep");
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.Deliveryman", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.City", "City")
@@ -1783,22 +1872,16 @@ namespace OrderHub.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_deliverymen_cities_deliveryman_city_id");
 
-                    b.HasOne("OrderHub.Domain.Models.WhatsappGroup", "WhatsappGroup")
-                        .WithMany()
-                        .HasForeignKey("whatsapp_group_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_deliverymen_whatsapp_groups_whatsapp_group_id");
-
                     b.OwnsOne("OrderHub.Domain.ValueObjects.EntityName", "Name", b1 =>
                         {
                             b1.Property<int>("DeliverymanId")
-                                .HasColumnType("INTEGER")
+                                .HasColumnType("integer")
                                 .HasColumnName("id");
 
                             b1.Property<string>("Value")
                                 .IsRequired()
                                 .HasMaxLength(100)
-                                .HasColumnType("VARCHAR(100)")
+                                .HasColumnType("varchar(100)")
                                 .HasColumnName("name");
 
                             b1.HasKey("DeliverymanId");
@@ -1814,12 +1897,16 @@ namespace OrderHub.Infrastructure.Migrations
 
                     b.Navigation("Name")
                         .IsRequired();
-
-                    b.Navigation("WhatsappGroup");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Order", b =>
                 {
+                    b.HasOne("OrderHub.Domain.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("ArchivedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_orders_users_archived_by_user_id");
+
                     b.HasOne("OrderHub.Domain.Models.Client", "Client")
                         .WithMany("Orders")
                         .HasForeignKey("ClientId")
@@ -1882,18 +1969,6 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("ShippingCarrier");
                 });
 
-            modelBuilder.Entity("OrderHub.Domain.Models.OrderEntitySequence", b =>
-                {
-                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
-                        .WithMany("EntitySequences")
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_order_entity_sequences_orders_order_id");
-
-                    b.Navigation("Order");
-                });
-
             modelBuilder.Entity("OrderHub.Domain.Models.OrderItem", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.Order", "Order")
@@ -1919,11 +1994,11 @@ namespace OrderHub.Infrastructure.Migrations
                     b.OwnsOne("OrderHub.Domain.ValueObjects.Money", "UnitPrice", b1 =>
                         {
                             b1.Property<int>("OrderItemId")
-                                .HasColumnType("INTEGER")
+                                .HasColumnType("integer")
                                 .HasColumnName("id");
 
                             b1.Property<decimal>("Value")
-                                .HasColumnType("DECIMAL(18,2)")
+                                .HasColumnType("numeric(18,2)")
                                 .HasColumnName("unit_price");
 
                             b1.HasKey("OrderItemId");
@@ -1957,7 +2032,7 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasOne("OrderHub.Domain.Models.Property", "Property")
                         .WithMany()
                         .HasForeignKey("PropertyId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_order_item_properties_properties_property_id");
 
@@ -1966,34 +2041,22 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Property");
                 });
 
-            modelBuilder.Entity("OrderHub.Domain.Models.OutboxMessage", b =>
+            modelBuilder.Entity("OrderHub.Domain.Models.OrderStatusHistory", b =>
                 {
-                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
-                        .WithMany("OutboxMessages")
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .HasConstraintName("fk_outbox_messages_orders_order_id");
-
-                    b.HasOne("OrderHub.Domain.Models.OutboxMessageRecipient", "Recipient")
+                    b.HasOne("OrderHub.Domain.Models.User", null)
                         .WithMany()
-                        .HasForeignKey("RecipientId")
-                        .HasConstraintName("fk_outbox_messages_outbox_message_recipient_recipient_id");
+                        .HasForeignKey("ChangedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_order_status_history_users_changed_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
+                        .WithMany("StatusHistory")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_order_status_history_orders_order_id");
 
                     b.Navigation("Order");
-
-                    b.Navigation("Recipient");
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.OutboxMessageAttachment", b =>
-                {
-                    b.HasOne("OrderHub.Domain.Models.OutboxMessage", "OutboxMessage")
-                        .WithMany("Attachments")
-                        .HasForeignKey("OutboxMessageId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_message_attachments_outbox_messages_outbox_message_id");
-
-                    b.Navigation("OutboxMessage");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Phone", b =>
@@ -2001,7 +2064,7 @@ namespace OrderHub.Infrastructure.Migrations
                     b.OwnsOne("OrderHub.Domain.ValueObjects.PhoneNumber", "Number", b1 =>
                         {
                             b1.Property<int>("PhoneId")
-                                .HasColumnType("INTEGER")
+                                .HasColumnType("integer")
                                 .HasColumnName("id");
 
                             b1.Property<string>("CountryCode")
@@ -2025,7 +2088,8 @@ namespace OrderHub.Infrastructure.Migrations
                                 .HasConstraintName("fk_phones_phones_id");
                         });
 
-                    b.Navigation("Number");
+                    b.Navigation("Number")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Product", b =>
@@ -2040,13 +2104,13 @@ namespace OrderHub.Infrastructure.Migrations
                     b.OwnsOne("OrderHub.Domain.ValueObjects.EntityName", "Name", b1 =>
                         {
                             b1.Property<int>("ProductId")
-                                .HasColumnType("INTEGER")
+                                .HasColumnType("integer")
                                 .HasColumnName("id");
 
                             b1.Property<string>("Value")
                                 .IsRequired()
                                 .HasMaxLength(100)
-                                .HasColumnType("VARCHAR(100)")
+                                .HasColumnType("varchar(100)")
                                 .HasColumnName("name");
 
                             b1.HasKey("ProductId");
@@ -2061,11 +2125,11 @@ namespace OrderHub.Infrastructure.Migrations
                     b.OwnsOne("OrderHub.Domain.ValueObjects.Money", "Price", b1 =>
                         {
                             b1.Property<int>("ProductId")
-                                .HasColumnType("INTEGER")
+                                .HasColumnType("integer")
                                 .HasColumnName("id");
 
                             b1.Property<decimal>("Value")
-                                .HasColumnType("DECIMAL(18,2)")
+                                .HasColumnType("numeric(18,2)")
                                 .HasColumnName("price");
 
                             b1.HasKey("ProductId");
@@ -2119,28 +2183,42 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Property");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.RolePermission", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Role", "Role")
+                        .WithMany("Permissions")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_role_permissions_roles_role_id");
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.ShippingCarrier", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.Address", "Address")
                         .WithMany()
                         .HasForeignKey("address_id")
+                        .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_shipping_carriers_addresses_address_id");
 
                     b.HasOne("OrderHub.Domain.Models.Phone", "Phone")
                         .WithMany()
                         .HasForeignKey("phone_id")
+                        .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_shipping_carriers_phones_phone_id");
 
                     b.OwnsOne("OrderHub.Domain.ValueObjects.EntityName", "Name", b1 =>
                         {
                             b1.Property<int>("ShippingCarrierId")
-                                .HasColumnType("INTEGER")
+                                .HasColumnType("integer")
                                 .HasColumnName("id");
 
                             b1.Property<string>("Value")
                                 .IsRequired()
                                 .HasMaxLength(100)
-                                .HasColumnType("VARCHAR(100)")
+                                .HasColumnType("varchar(100)")
                                 .HasColumnName("name");
 
                             b1.HasKey("ShippingCarrierId");
@@ -2155,11 +2233,11 @@ namespace OrderHub.Infrastructure.Migrations
                     b.OwnsOne("OrderHub.Domain.ValueObjects.Money", "ShippingCost", b1 =>
                         {
                             b1.Property<int>("ShippingCarrierId")
-                                .HasColumnType("INTEGER")
+                                .HasColumnType("integer")
                                 .HasColumnName("id");
 
                             b1.Property<decimal>("Value")
-                                .HasColumnType("DECIMAL(18,2)")
+                                .HasColumnType("numeric(18,2)")
                                 .HasColumnName("shipping_cost");
 
                             b1.HasKey("ShippingCarrierId");
@@ -2187,23 +2265,19 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasOne("OrderHub.Domain.Models.Address", "Address")
                         .WithMany()
                         .HasForeignKey("address_id")
+                        .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_suppliers_addresses_address_id");
 
                     b.HasOne("OrderHub.Domain.Models.Phone", "Phone")
                         .WithMany()
                         .HasForeignKey("phone_id")
+                        .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_suppliers_phones_phone_id");
-
-                    b.HasOne("OrderHub.Domain.Models.WhatsappGroup", "WhatsappGroup")
-                        .WithMany()
-                        .HasForeignKey("whatsapp_group_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_suppliers_whatsapp_groups_whatsapp_group_id");
 
                     b.OwnsOne("OrderHub.Domain.ValueObjects.EntityName", "Name", b1 =>
                         {
                             b1.Property<int>("SupplierId")
-                                .HasColumnType("INTEGER")
+                                .HasColumnType("integer")
                                 .HasColumnName("id");
 
                             b1.Property<string>("Value")
@@ -2224,14 +2298,14 @@ namespace OrderHub.Infrastructure.Migrations
                     b.OwnsOne("OrderHub.Domain.ValueObjects.BusinessHours", "BusinessHours", b1 =>
                         {
                             b1.Property<int>("SupplierId")
-                                .HasColumnType("INTEGER")
+                                .HasColumnType("integer")
                                 .HasColumnName("id");
 
-                            b1.Property<TimeSpan>("CloseAt")
+                            b1.Property<TimeOnly>("CloseAt")
                                 .HasColumnType("time")
                                 .HasColumnName("close_at");
 
-                            b1.Property<TimeSpan>("OpenAt")
+                            b1.Property<TimeOnly>("OpenAt")
                                 .HasColumnType("time")
                                 .HasColumnName("open_at");
 
@@ -2252,101 +2326,44 @@ namespace OrderHub.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Phone");
-
-                    b.Navigation("WhatsappGroup");
                 });
 
-            modelBuilder.Entity("ProductSupplier", b =>
+            modelBuilder.Entity("OrderHub.Domain.Models.User", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_users_roles_role_id");
+
+                    b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("OrderHub.Infrastructure.Models.DraftRecord", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_order_drafts_users_user_id");
+                });
+
+            modelBuilder.Entity("product_supplier", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.Product", null)
                         .WithMany()
-                        .HasForeignKey("ProductId")
+                        .HasForeignKey("product_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_product_supplier_products_product_id");
 
                     b.HasOne("OrderHub.Domain.Models.Supplier", null)
                         .WithMany()
-                        .HasForeignKey("SuppliersId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("suppliers_id")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_product_supplier_suppliers_suppliers_id");
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.ClientRecipient", b =>
-                {
-                    b.HasOne("OrderHub.Domain.Models.Client", "Client")
-                        .WithMany()
-                        .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_client_recipients_clients_client_id");
-
-                    b.HasOne("OrderHub.Domain.Models.OutboxMessageRecipient", null)
-                        .WithOne()
-                        .HasForeignKey("OrderHub.Domain.Models.ClientRecipient", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_client_recipients_outbox_message_recipients_id");
-
-                    b.Navigation("Client");
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.DeliverymanRecipient", b =>
-                {
-                    b.HasOne("OrderHub.Domain.Models.Deliveryman", "DeliveryMan")
-                        .WithMany()
-                        .HasForeignKey("DeliveryManId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_deliveryman_recipients_deliverymen_delivery_man_id");
-
-                    b.HasOne("OrderHub.Domain.Models.OutboxMessageRecipient", null)
-                        .WithOne()
-                        .HasForeignKey("OrderHub.Domain.Models.DeliverymanRecipient", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_deliveryman_recipients_outbox_message_recipients_id");
-
-                    b.Navigation("DeliveryMan");
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.ShippingCarrierRecipient", b =>
-                {
-                    b.HasOne("OrderHub.Domain.Models.OutboxMessageRecipient", null)
-                        .WithOne()
-                        .HasForeignKey("OrderHub.Domain.Models.ShippingCarrierRecipient", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_shippingcarrier_recipients_outbox_message_recipients_id");
-
-                    b.HasOne("OrderHub.Domain.Models.ShippingCarrier", "ShippingCarrier")
-                        .WithMany()
-                        .HasForeignKey("ShippingCarrierId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_shippingcarrier_recipients_shipping_carriers_shipping_carrier_id");
-
-                    b.Navigation("ShippingCarrier");
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.SupplierRecipient", b =>
-                {
-                    b.HasOne("OrderHub.Domain.Models.OutboxMessageRecipient", null)
-                        .WithOne()
-                        .HasForeignKey("OrderHub.Domain.Models.SupplierRecipient", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_supplier_recipients_outbox_message_recipients_id");
-
-                    b.HasOne("OrderHub.Domain.Models.Supplier", "Supplier")
-                        .WithMany()
-                        .HasForeignKey("SupplierId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_supplier_recipients_suppliers_supplier_id");
-
-                    b.Navigation("Supplier");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Category", b =>
@@ -2380,21 +2397,16 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Navigation("DeliverySteps");
 
-                    b.Navigation("EntitySequences");
-
                     b.Navigation("OrderItems");
 
-                    b.Navigation("OutboxMessages");
+                    b.Navigation("StatusHistory");
+
+                    b.Navigation("StepHistory");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.OrderItem", b =>
                 {
                     b.Navigation("Properties");
-                });
-
-            modelBuilder.Entity("OrderHub.Domain.Models.OutboxMessage", b =>
-                {
-                    b.Navigation("Attachments");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Product", b =>
@@ -2405,6 +2417,11 @@ namespace OrderHub.Infrastructure.Migrations
             modelBuilder.Entity("OrderHub.Domain.Models.Property", b =>
                 {
                     b.Navigation("Options");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.Role", b =>
+                {
+                    b.Navigation("Permissions");
                 });
 #pragma warning restore 612, 618
         }

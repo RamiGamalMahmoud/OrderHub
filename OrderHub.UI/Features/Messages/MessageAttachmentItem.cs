@@ -24,8 +24,31 @@ public class MessageAttachmentItem
         IconBackgroundColor = AddTransparency(visual.Color);
     }
 
+    public MessageAttachmentItem(
+        string filePath,
+        string fileName,
+        string extension,
+        double size)
+    {
+        FilePath = filePath;
+        Name = fileName;
+        Extension = extension.TrimStart('.');
+        Size = Math.Round(size / 1024d / 1024d, 2);
+
+        var visual = GetVisual(Extension);
+        Icon = visual.Icon;
+        IconColor = visual.Color;
+        IconBackgroundColor = AddTransparency(visual.Color);
+    }
+
+    /// <summary>
+    /// The full path of the file
+    /// </summary>
     public string FilePath { get; }
 
+    /// <summary>
+    /// The displayed name of the file
+    /// </summary>
     public string Name { get; }
 
     public string Extension { get; }

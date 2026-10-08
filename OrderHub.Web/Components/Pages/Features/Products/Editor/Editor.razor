@@ -1,0 +1,556 @@
+@page "/products/create"
+@page "/products/{Id:int}/edit"
+@attribute [PermissionAuthorize(PermissionFeature.Products, PermissionLevel.Write)]
+
+@inject IRequestExecutor RequestExecutor
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject ILogger<Editor> Logger
+
+<PageTitle>@Title</PageTitle>
+
+<MudStack Spacing="3">
+    <MudText Typo="Typo.h5">@Title</MudText>
+    <MudText Typo="Typo.body2"
+             Color="Color.Secondary">
+        بيانات المنتج وقسمه وموردوه والخصائص المطلوبة عند الطلب
+    </MudText>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" />
+        <MudText>جاري تحميل بيانات المنتج...</MudText>
+    }
+    else if (_loadError is not null)
+    {
+        <MudAlert Severity="Severity.Error">@_loadError</MudAlert>
+        <MudButton OnClick="LoadAsync">إعادة المحاولة</MudButton>
+    }
+    else
+    {
+        <MudForm @ref="_form">
+            <MudStack Spacing="3">
+                @if (_saveError is not null)
+                {
+                    <MudAlert Severity="Severity.Error"
+                              Dense="true">@_saveError</MudAlert>
+                }
+                <MudPaper Outlined="true"
+                          Class="pa-3">
+                    <MudText Typo="Typo.h6"
+                             Class="mb-2">بيانات المنتج</MudText>
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12"
+                                 md="6">
+                            <MudTextField T="string"
+                                          @bind-Value="_state.Name"
+                                          Label="اسم المنتج"
+                                          Required="true"
+                                          RequiredError="اسم المنتج مطلوب."
+                                          MaxLength="100"
+                                          Validation="@(new Func<string, string?>(ProductEditorState.ValidateName))"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Disabled="_saving" />
+                        </MudItem>
+                        <MudItem xs="12"
+                                 sm="6"
+                                 md="3">
+                            <MudTextField T="string"
+                                          @bind-Value="_state.Code"
+                                          Label="كود المنتج"
+                                          Required="true"
+                                          RequiredError="كود المنتج مطلوب."
+                                          MaxLength="10"
+                                          Validation="@(new Func<string, string?>(ProductEditorState.ValidateCode))"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Disabled="_saving" />
+                        </MudItem>
+                        <MudItem xs="12"
+                                 sm="6"
+                                 md="3">
+                            <MudNumericField T="decimal"
+                                             @bind-Value="_state.Price"
+                                             Label="السعر"
+                                             Min="0"
+                                             Validation="@(new Func<decimal, string?>(ProductEditorState.ValidatePrice))"
+                                             Variant="Variant.Outlined"
+                                             Margin="Margin.Dense"
+                                             Disabled="_saving" />
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+
+                <MudPaper Outlined="true"
+
+                          Class="pa-3">
+                    <MudText Typo="Typo.h6">القسم</MudText>
+                    <MudText Typo="Typo.body2"
+                             Class="mb-2">
+                        القسم المختار: @SelectedCategoryText
+                    </MudText>
+                    @if (!_categoryPickerOpen)
+                    {
+                        <MudButton Variant="Variant.Outlined"
+                                   OnClick="OpenCategoryPickerAsync"
+                                   Disabled="BrowserDisabled">
+                            تغيير القسم
+                        </MudButton>
+                    }
+                    @if (_categoryPickerOpen)
+                    {
+                        <MudStack Row
+                                  Wrap="Wrap.Wrap"
+                                  AlignItems="AlignItems.Center"
+                                  Spacing="0">
+                            <MudButton OnClick="@(() => BrowseAsync(null))" Disabled="BrowserDisabled">كل الأقسام</MudButton>
+                            @foreach (var segment in _browse.Path)
+                            {
+                                <MudText>/</MudText>
+                                <MudButton OnClick="@(() => BrowseAsync(segment.Id))" Disabled="BrowserDisabled">
+                                    @segment.Name
+                                </MudButton>
+                            }
+                        </MudStack>
+                        @if (_browseError is not null)
+                        {
+                            <MudAlert Severity="Severity.Error"
+                                      Dense="true">@_browseError</MudAlert>
+                            <MudButton OnClick="RetryBrowseAsync"
+                                       Disabled="BrowserDisabled">إعادة المحاولة</MudButton>
+                        }
+                        @if (_browsing)
+                        {
+                            <MudProgressLinear Indeterminate="true" />
+                        }
+                        @if (_browse.Path.Count > 0)
+                        {
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       OnClick="SelectCurrentCategory"
+                                       Disabled="BrowserDisabled"
+                                       Class="my-2">
+                                اختيار هذا القسم
+                            </MudButton>
+                        }
+                        <MudGrid Spacing="2">
+                            @foreach (var category in _browse.Categories)
+                            {
+                                <MudItem xs="12"
+                                         sm="6"
+                                         md="4">
+                                    <MudButton FullWidth="true"
+                                               Variant="Variant.Outlined"
+                                               EndIcon="@Icons.Material.Filled.ChevronLeft"
+                                               OnClick="@(() => BrowseAsync(category.Id))"
+                                               Disabled="BrowserDisabled">
+                                        @category.Name
+                                    </MudButton>
+                                </MudItem>
+                            }
+                        </MudGrid>
+                        @if (_browse.Categories.Count == 0 && !_browsing)
+                        {
+                            <MudText Typo="Typo.body2"
+                                     Class="mt-2">لا توجد أقسام فرعية هنا.</MudText>
+                        }
+                    }
+                </MudPaper>
+
+                <MudPaper Outlined="true"
+
+                          Class="pa-3">
+                    <MudText Typo="Typo.h6">الموردون (@_state.SupplierIds.Count)</MudText>
+                    <MudTextField T="string"
+                                  @bind-Value="_supplierSearch"
+                                  Placeholder="ابحث عن مورد"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  Immediate="true"
+                                  Clearable="true"
+                                  Margin="Margin.Dense"
+                                  Disabled="_saving" />
+                    <MudGrid Spacing="1">
+                        @foreach (var supplier in VisibleSuppliers)
+                        {
+                            <MudItem xs="12"
+                                     sm="6"
+                                     md="4">
+                                <MudCheckBox T="bool"
+                                             Value="@_state.SupplierIds.Contains(supplier.Id)"
+                                             ValueChanged="@(value => SetSupplier(supplier.Id, value))"
+                                             Label="@supplier.Name"
+                                             Dense="true"
+                                             Disabled="_saving" />
+                            </MudItem>
+                        }
+                    </MudGrid>
+                    @if (_suppliers.Count == 0)
+                    {
+                        <MudText Typo="Typo.body2">لا يوجد موردون متاحون.</MudText>
+                    }
+                    <MudText Typo="Typo.caption">يمكن اختيار موردين من صفحات مختلفة؛ تبقى الاختيارات محفوظة.</MudText>
+                    <MudPagination Count="SupplierPages"
+                                   Selected="_supplierPage"
+                                   SelectedChanged="SetSupplierPage"
+                                   Disabled="_saving" />
+                </MudPaper>
+
+                <MudPaper Outlined="true"
+
+                          Class="pa-3">
+                    <MudText Typo="Typo.h6">خصائص المنتج</MudText>
+                    <MudText Typo="Typo.body2">اختر الخصائص وحدد الإلزام. تُدخل قيمها داخل الطلب.</MudText>
+                    @foreach (var assignment in AssignedProperties)
+                    {
+                        <MudPaper Outlined="true"
+                                  Class="pa-3 mt-2">
+                            <MudStack Row
+                                      Wrap="Wrap.Wrap"
+                                      AlignItems="AlignItems.Center"
+                                      Justify="Justify.SpaceBetween">
+                                <MudText Typo="Typo.subtitle1">@assignment.Definition.Name — @TypeName(assignment.Definition.Type)</MudText>
+                                <MudStack Row
+                                          AlignItems="AlignItems.Center">
+                                    <MudCheckBox T="bool"
+                                                 @bind-Value="assignment.Required"
+                                                 Label="مطلوبة"
+                                                 Dense="true"
+                                                 Disabled="_saving" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.RemoveCircleOutline"
+                                                   aria-label="إزالة الخاصية"
+                                                   OnClick="@(() => RemoveProperty(assignment))"
+                                                   Disabled="_saving" />
+                                </MudStack>
+                            </MudStack>
+                            @if (assignment.Definition.Type == PropertyType.List)
+                            {
+                                <MudText Typo="Typo.caption">الخيارات المتاحة عند الطلب:</MudText>
+                                <MudStack Row
+                                          Wrap="Wrap.Wrap"
+                                          Spacing="1">
+                                    @foreach (var option in assignment.Definition.Options)
+                                    {
+                                        <MudChip T="string"
+                                                 Size="Size.Small">@option.Value</MudChip>
+                                    }
+                                </MudStack>
+                            }
+                            else if (assignment.Definition.Type == PropertyType.Boolean)
+                            {
+                                <MudText Typo="Typo.caption">اختيار نعم أو لا عند الطلب.</MudText>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.caption">إدخال قيمة نصية عند الطلب.</MudText>
+                            }
+                        </MudPaper>
+                    }
+                    <MudTextField T="string"
+                                  @bind-Value="_propertySearch"
+                                  Placeholder="ابحث عن خاصية لإضافتها"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  Immediate="true"
+                                  Clearable="true"
+                                  Margin="Margin.Dense"
+                                  Disabled="_saving" />
+                    <MudStack Row
+                              Wrap="Wrap.Wrap">
+                        @foreach (var property in AvailableProperties)
+                        {
+                            <MudButton Variant="Variant.Outlined"
+                                       StartIcon="@Icons.Material.Filled.Add"
+                                       OnClick="@(() => AddProperty(property))"
+                                       Disabled="_saving">
+                                @property.Definition.Name (@TypeName(property.Definition.Type))
+                            </MudButton>
+                        }
+                    </MudStack>
+                    @if (_state.Properties.Count == 0)
+                    {
+                        <MudText Typo="Typo.body2">لا توجد خصائص متاحة.</MudText>
+                    }
+                    <MudPagination Count="PropertyPages"
+                                   Selected="_propertyPage"
+                                   SelectedChanged="SetPropertyPage"
+                                   Disabled="_saving" />
+                </MudPaper>
+            </MudStack>
+        </MudForm>
+    }
+    <MudStack Row
+              Spacing="2">
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="SaveAsync"
+                   Disabled="SaveDisabled">
+            @SaveText
+        </MudButton>
+        <MudButton OnClick="Cancel"
+                   Disabled="_saving">العودة إلى المنتجات</MudButton>
+    </MudStack>
+</MudStack>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private ProductEditorState _state = new();
+    private IReadOnlyList<ProductEditorSupplier> _suppliers = [];
+    private GetCategoriesResponse _browse = new(true, [], []);
+    private MudForm? _form;
+    private string? _loadError;
+    private string? _saveError;
+    private string? _browseError;
+    private string? _supplierTerm;
+    private string? _propertyTerm;
+    private int? _browserId;
+    private int? _requestedBrowserId;
+    private int _supplierPage = 1;
+    private int _propertyPage = 1;
+    private bool _loading = true;
+    private bool _saving;
+    private bool _browsing;
+    private bool _categoryPickerOpen = true;
+
+    private string Title => Id.HasValue ? "تعديل المنتج" : "إضافة منتج";
+    private string SaveText => _saving ? "جاري الحفظ..." : "حفظ المنتج";
+    private string SelectedCategoryText => string.IsNullOrEmpty(_state.CategoryPath) ? "لم يتم اختيار قسم بعد" : _state.CategoryPath;
+    private bool BrowserDisabled => _loading || _saving || _browsing;
+    private bool SaveDisabled => BrowserDisabled || _loadError is not null;
+
+    private string? _supplierSearch
+    {
+        get => _supplierTerm;
+        set
+        {
+            _supplierTerm = value;
+            _supplierPage = 1;
+        }
+    }
+
+    private string? _propertySearch
+    {
+        get => _propertyTerm;
+        set
+        {
+            _propertyTerm = value;
+            _propertyPage = 1;
+        }
+    }
+
+    private IEnumerable<ProductEditorSupplier> MatchingSuppliers => _suppliers.Where(item => Matches(item.Name, _supplierTerm));
+    private IEnumerable<ProductEditorSupplier> VisibleSuppliers => MatchingSuppliers.Skip((_supplierPage - 1) * 12).Take(12);
+    private int SupplierPages => Math.Max(1, (MatchingSuppliers.Count() + 11) / 12);
+    private IEnumerable<ProductPropertyEditorState> AssignedProperties => _state.Properties.Where(item => item.Assigned);
+    private IEnumerable<ProductPropertyEditorState> MatchingProperties => _state.Properties.Where(item => !item.Assigned && Matches(item.Definition.Name, _propertyTerm));
+    private IEnumerable<ProductPropertyEditorState> AvailableProperties => MatchingProperties.Skip((_propertyPage - 1) * 12).Take(12);
+    private int PropertyPages => Math.Max(1, (MatchingProperties.Count() + 11) / 12);
+
+    private static bool Matches(string name, string? term) => string.IsNullOrWhiteSpace(term) || name.Contains(term.Trim(), StringComparison.OrdinalIgnoreCase);
+    private static string TypeName(PropertyType type) => type switch
+    {
+        PropertyType.Boolean => "نعم / لا",
+        PropertyType.List => "قائمة",
+        _ => "نص"
+    };
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        _saveError = null;
+        _browseError = null;
+        _categoryPickerOpen = !Id.HasValue;
+        _supplierSearch = null;
+        _propertySearch = null;
+        try
+        {
+            var data = await RequestExecutor.ExecuteAsync(new GetProductEditorQuery(Id));
+            if (data is null)
+            {
+                _loadError = "المنتج غير موجود أو لم يعد متاحًا.";
+                return;
+            }
+            _state = ProductEditorState.FromRead(data);
+            _suppliers = data.Suppliers;
+            _browserId = _state.CategoryId;
+            _requestedBrowserId = _browserId;
+            _browse = await RequestExecutor.ExecuteAsync(new GetProductEditorCategoriesQuery(_browserId));
+            if (!_browse.ParentExists)
+            {
+                _browserId = null;
+                _browse = await RequestExecutor.ExecuteAsync(new GetProductEditorCategoriesQuery());
+            }
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load product editor {Id}", Id);
+            _loadError = "تعذر تحميل بيانات المنتج. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenCategoryPickerAsync()
+    {
+        if (BrowserDisabled)
+        {
+            return;
+        }
+        _categoryPickerOpen = true;
+        await BrowseAsync(_state.CategoryId);
+    }
+
+    private Task RetryBrowseAsync() => BrowseAsync(_requestedBrowserId);
+
+    private async Task BrowseAsync(int? id)
+    {
+        if (BrowserDisabled)
+        {
+            return;
+        }
+        _browsing = true;
+        _browseError = null;
+        _requestedBrowserId = id;
+        try
+        {
+            var response = await RequestExecutor.ExecuteAsync(new GetProductEditorCategoriesQuery(id));
+            if (!response.ParentExists)
+            {
+                _browseError = "القسم لم يعد موجودًا. يمكنك العودة إلى كل الأقسام.";
+                return;
+            }
+            _browserId = id;
+            _browse = response;
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to browse product category {Id}", id);
+            _browseError = "تعذر تحميل الأقسام. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _browsing = false;
+        }
+    }
+
+    private void SelectCurrentCategory()
+    {
+        if (BrowserDisabled || !_categoryPickerOpen || _browserId is null || _browse.Path.Count == 0)
+        {
+            return;
+        }
+        _state.CategoryId = _browserId;
+        _state.CategoryPath = string.Join(" / ", _browse.Path.Select(segment => segment.Name));
+        _categoryPickerOpen = false;
+    }
+
+    private void SetSupplier(int id, bool selected)
+    {
+        if (_saving)
+        {
+            return;
+        }
+        if (selected)
+        {
+            _state.SupplierIds.Add(id);
+        }
+        else
+        {
+            _state.SupplierIds.Remove(id);
+        }
+    }
+
+    private void SetSupplierPage(int page) => _supplierPage = page;
+    private void SetPropertyPage(int page) => _propertyPage = page;
+    private void AddProperty(ProductPropertyEditorState property)
+    {
+        if (_saving)
+        {
+            return;
+        }
+        property.Assigned = true;
+        _propertyPage = Math.Min(_propertyPage, PropertyPages);
+    }
+
+    private void RemoveProperty(ProductPropertyEditorState property)
+    {
+        if (_saving)
+        {
+            return;
+        }
+        property.Assigned = false;
+    }
+
+    private void Cancel()
+    {
+        if (_saving)
+        {
+            return;
+        }
+        Navigation.NavigateTo("/products");
+    }
+
+    private async Task SaveAsync()
+    {
+        if (SaveDisabled || _form is null)
+        {
+            return;
+        }
+        _saving = true;
+        _saveError = null;
+        try
+        {
+            await _form.ValidateAsync();
+            _saveError = _state.Validate();
+            if (!_form.IsValid || _saveError is not null)
+            {
+                return;
+            }
+            Result<int> result;
+            if (Id is int id)
+            {
+                result = await RequestExecutor.ExecuteAsync(_state.UpdateCommand(id));
+            }
+            else
+            {
+                result = await RequestExecutor.ExecuteAsync(_state.CreateCommand());
+            }
+            if (!result.IsSuccess)
+            {
+                _saveError = result.ErrorMessage;
+                return;
+            }
+            Snackbar.Add("تم حفظ المنتج بنجاح.", Severity.Success);
+            Navigation.NavigateTo("/products");
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to save product {Id}", Id);
+            _saveError = "تعذر حفظ المنتج. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

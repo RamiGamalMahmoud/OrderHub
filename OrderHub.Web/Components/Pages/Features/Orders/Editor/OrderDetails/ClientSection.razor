@@ -1,0 +1,66 @@
+﻿@using OrderHub.Application.Common.Lookups
+
+<MudPaper Outlined="true" Class="pa-4">
+    <MudStack Spacing="2">
+
+        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Outlined.Person"
+                     Size="Size.Medium"
+                     Color="Color.Primary" />
+
+            <div>
+                <MudText Typo="Typo.subtitle1">
+                    العميل
+                </MudText>
+
+                <MudText Typo="Typo.body2"
+                         Color="Color.Secondary">
+                    اختر العميل المرتبط بالطلب
+                </MudText>
+            </div>
+        </MudStack>
+
+        <MudSelect T="int?"
+                   Label="العميل"
+                   Value="ClientId"
+                   ValueChanged="OnClientChangedAsync"
+                   Clearable="true"
+                   Disabled="Disabled"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense">
+
+            @foreach (var client in Clients)
+            {
+                <MudSelectItem T="int?"
+                               Value="@((int?)client.Id)">
+                    @client.Name — @client.PhoneNumber
+                </MudSelectItem>
+            }
+
+        </MudSelect>
+
+    </MudStack>
+</MudPaper>
+
+@code
+{
+    [Parameter]
+    public int? ClientId { get; set; }
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ClientLookup> Clients { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<int?> ClientIdChanged { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    private Task OnClientChangedAsync(int? value)
+    {
+        if (value == ClientId)
+            return Task.CompletedTask;
+
+        return ClientIdChanged.InvokeAsync(value);
+    }
+}

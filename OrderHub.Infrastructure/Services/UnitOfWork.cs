@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Storage;
 using OrderHub.Application.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using OrderHub.Domain.Models.CommercialDocuments;
 using System;
 using System.Diagnostics;
@@ -32,7 +33,7 @@ internal sealed class UnitOfWork : IUnitOfWork
             cancellationToken);
     }
 
-    public Task<int> SaveChangesAsync(
+    public async Task<int> SaveChangesAsync(
         CancellationToken cancellationToken = default)
     {
         foreach (var entry in _context.ChangeTracker.Entries<InvoiceItem>())
@@ -45,7 +46,18 @@ internal sealed class UnitOfWork : IUnitOfWork
                 $"InvoiceId: {item.InvoiceId}, " +
                 $"Invoice: {item.Invoice?.Id}");
         }
-        return _context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            return await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            throw new PersistenceConflictException(exception);
+        }
+        catch (DbUpdateException exception)
+        {
+            throw new PersistenceException(exception.Message, exception);
+        }
     }
 
     public async Task CommitTransactionAsync(
@@ -60,6 +72,10 @@ internal sealed class UnitOfWork : IUnitOfWork
         try
         {
             await _transaction.CommitAsync(cancellationToken);
+        }
+        catch (System.Data.Common.DbException exception)
+        {
+            throw new PersistenceException("The transaction could not be committed.", exception);
         }
         finally
         {

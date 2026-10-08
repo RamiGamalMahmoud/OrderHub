@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
@@ -19,15 +20,15 @@ public abstract partial class EditSupplierViewModelBase : EditorViewModelBase
     {
         _notifyPropertiesNames = [nameof(Name), nameof(OpenAt), nameof(CloseAt), nameof(Number), nameof(CountryCode), nameof(City), nameof(Street), nameof(SelectedWhatsappGroup)];
         _mediator = mediator;
-        WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityCreatedMessage>(this, async (r, m) =>
+        WeakReferenceMessenger.Default.Register<CitiesMessages.CityCreatedMessage>(this, async (r, m) =>
         {
             Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
         });
-        WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityUpdatedMessage>(this, async (r, m) =>
+        WeakReferenceMessenger.Default.Register<CitiesMessages.CityUpdatedMessage>(this, async (r, m) =>
         {
             Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
         });
-        WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityDeletedMessage>(this, async (r, m) =>
+        WeakReferenceMessenger.Default.Register<CitiesMessages.CityDeletedMessage>(this, async (r, m) =>
         {
             Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
         });
@@ -91,9 +92,6 @@ public abstract partial class EditSupplierViewModelBase : EditorViewModelBase
     [NotifyDataErrorInfo]
     private Application.DTOs.WhatsappGroupDtos.WhatsappGroupInfoDto _selectedWhatsappGroup;
 
-    [RelayCommand]
-    private async Task ShowCreateCity() => await DialogService.Instance.ShowDialog<Cities.Create.CreateCityView>("إضافة مدينة جديدة");
-
     public virtual async Task LoadAsync()
     {
         Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
@@ -102,10 +100,6 @@ public abstract partial class EditSupplierViewModelBase : EditorViewModelBase
 
     [RelayCommand]
     private void CloseEdit() => OnRequestClose();
-
-    [RelayCommand]
-    private async Task ShowCreateWhatsappGroup() => await DialogService.Instance.ShowDialog<Features.WhatsappGroups.Create.View>("إنشاء مجموعة واستاب جديدة");
-
 
     public override string Title => "انشاء مورد جديد";
 }

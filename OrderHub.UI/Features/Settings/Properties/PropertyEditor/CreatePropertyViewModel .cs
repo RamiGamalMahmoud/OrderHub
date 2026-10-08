@@ -1,4 +1,6 @@
-﻿using MediatR;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using OrderHub.UI.Messaging;
+using MediatR;
 using OrderHub.Application.Features.Setup.Properties.Create;
 using System.Linq;
 using System.Threading.Tasks;
@@ -26,6 +28,8 @@ public sealed partial class CreatePropertyViewModel : PropertyEditorViewModelBas
                 .ToList());
 
         var id = await _mediator.Send(command);
+
+        WeakReferenceMessenger.Default.Send(new PropertiesMessages.PropertyCreatedMessage(id));
 
         await base.Save();
     }

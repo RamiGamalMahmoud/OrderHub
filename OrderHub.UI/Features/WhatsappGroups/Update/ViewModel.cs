@@ -1,3 +1,4 @@
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Common.Extensions;
@@ -42,7 +43,7 @@ public partial class ViewModel(IMediator mediator) : Editor.ViewModel(mediator),
         if(result.IsSuccess)
         {
             NotificationService.Instance.ShowSuccess(MessageBuilder.Build(MessageBuilder.OperationType.Update, true, "مجموعة الواتساب"));
-            WeakReferenceMessenger.Default.Send(new Application.Messages.WhatsappGroups.WhatsappGroupUpdatedMessage());
+            WeakReferenceMessenger.Default.Send(new WhatsAppGroupsMessages.WhatsappGroupUpdatedMessage(_groupId));
             OnRequestClose();
         }
         else

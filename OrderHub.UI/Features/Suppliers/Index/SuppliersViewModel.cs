@@ -1,8 +1,7 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
-using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
-using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,9 +15,9 @@ internal partial class SuppliersViewModel : IndexViewModelBase<SupplierListDto>
 
     public SuppliersViewModel(IMediator mediator) : base(mediator)
     {
-        WeakReferenceMessenger.Default.Register<Application.Messages.Suppliers.SupplierCreatedMessage>(this, async (r, m) => await LoadAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.Suppliers.SupplierUpdatedMessage>(this, async (r, m) => await LoadAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.Suppliers.SupplierDeletedMessage>(this, async (r, m) => await LoadAsync());
+        WeakReferenceMessenger.Default.Register<SuppliersMessages.SupplierCreatedMessage>(this, async (r, m) => await LoadAsync());
+        WeakReferenceMessenger.Default.Register<SuppliersMessages.SupplierUpdatedMessage>(this, async (r, m) => await LoadAsync());
+        WeakReferenceMessenger.Default.Register<SuppliersMessages.SupplierDeletedMessage>(this, async (r, m) => await LoadAsync());
     }
 
     protected override async Task LoadAsync()
@@ -31,34 +30,6 @@ internal partial class SuppliersViewModel : IndexViewModelBase<SupplierListDto>
     {
         _allSuppliers = (await _mediator.Send(new Application.Queries.SupplierQueries.GetAllSuppliersQuery())).ToList();
         ApplyFilter();
-    }
-
-    protected override async Task ShowEditAsync(SupplierListDto dto)
-    {
-        await DialogService.Instance.ShowDialog<Update.View>("تعديل طلب", dto.Id);
-    }
-
-    protected override async Task DeleteAsync(SupplierListDto dto)
-    {
-        if (DialogService.Instance.Confirm($"هل تريد حذف المورد {dto.Name}"))
-        {
-            Result result = await _mediator.Send(new Application.Commands.SupplierCommands.DeleteSupplierCommand(dto.Id));
-            if (result.IsSuccess)
-            {
-                NotificationService.Instance.ShowSuccess(MessageBuilder.Build(MessageBuilder.OperationType.Delete, true, "المورد"));
-                WeakReferenceMessenger.Default.Send(new Application.Messages.Suppliers.SupplierDeletedMessage());
-                await LoadAsync();
-            }
-            else
-            {
-                NotificationService.Instance.ShowError(MessageBuilder.Build(MessageBuilder.OperationType.Delete, false, "المورد"));
-            }
-        }
-    }
-
-    protected override async Task ShowCreateAsync()
-    {
-        await DialogService.Instance.ShowDialog<Create.View>("إضافة مورد جديد");
     }
 
     private IEnumerable<SupplierListDto> _supplierListDtos;

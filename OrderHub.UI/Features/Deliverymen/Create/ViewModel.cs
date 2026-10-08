@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Services;
@@ -24,7 +25,7 @@ internal class ViewModel : Editor.ViewModel
         if (result.IsSuccess)
         {
             NotificationService.Instance.ShowSuccess("تم انشاء المندوب بنجاح");
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Deliveryman.DeliverymanCreatedMessage());
+            WeakReferenceMessenger.Default.Send(new DeliverymenMessages.DeliverymanCreatedMessage());
             OnRequestClose();
         }
         else

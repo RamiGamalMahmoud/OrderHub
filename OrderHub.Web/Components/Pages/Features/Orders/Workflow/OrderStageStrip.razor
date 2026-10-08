@@ -1,0 +1,28 @@
+@using OrderHub.Application.Features.Orders.Lifecycle
+@using OrderHub.Application.Common.Extensions
+
+@if (State.Status != OrderStatus.Cancelled)
+{
+    <ol class="order-stage-strip" aria-label="مراحل الطلب">
+        @for (var index = 0; index < _stages.Length; index++)
+        {
+            var stage = _stages[index];
+            var current = Math.Min(_stages.Length - 1, State.Status == OrderStatus.Processing ? 0 : State.Status == OrderStatus.Delivered ? 2 : 1);
+            var active = index == current;
+            var tone = OrderWorkflowPresentation.StatusTone(active ? State.Status : stage);
+            <li class="order-stage @tone @(active ? "is-current" : index < current ? "is-previous" : "is-upcoming")" aria-current="@(active ? "step" : null)">
+                <span class="order-stage-number" aria-hidden="true">@(index < current ? "✓" : (index + 1).ToString())</span>
+                <span class="order-stage-copy">
+                    <strong>@stage.GetDescription()</strong>
+                    <small>@(active ? State.Status == OrderStatus.DeliveryFailed ? "تحتاج مراجعة" : State.Status == OrderStatus.Delivered ? "اكتملت دورة الطلب" : "المرحلة الحالية" : index < current ? "مرحلة سابقة" : "المرحلة التالية")</small>
+                </span>
+            </li>
+        }
+    </ol>
+}
+
+@code {
+    [Parameter, EditorRequired] public OrderWorkflowState State { get; set; } = null!;
+    private OrderStatus[] _stages = [];
+    protected override void OnParametersSet() => _stages = OrderWorkflowPresentation.Stages(State.Method);
+}

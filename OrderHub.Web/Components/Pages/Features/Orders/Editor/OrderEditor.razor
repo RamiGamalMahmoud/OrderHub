@@ -1,0 +1,128 @@
+@attribute [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Write)]
+@page "/orders/create"
+@page "/orders/continue/{DraftId:guid}"
+@page "/orders/{OrderId:int}/edit"
+
+@using Microsoft.AspNetCore.Authorization
+@using OrderHub.Web.Components.Pages.Features.Orders.Editor.OrderDetails
+@using OrderHub.Web.Components.Pages.Features.Orders.Editor.Products
+
+
+<PageTitle>@_pageTitle</PageTitle>
+
+<OrderDrafts @bind-IsOpen="_isDraftsOpen" />
+
+<MudContainer MaxWidth="MaxWidth.Large">
+    @if (_loadError is not null)
+    {
+        <MudAlert Severity="Severity.Error">@_loadError</MudAlert>
+    }
+    else if (IsEdit && !_state.CanEdit)
+    {
+        <MudAlert Severity="Severity.Info">بيانات الطلب مقفولة ولا تقبل التعديل. يمكنك عرض دورة الطلب وسجله من صفحة التفاصيل.</MudAlert>
+    }
+
+    @if (_loadError is null && _state.CanEdit)
+    {
+    <MudStack Spacing="3">
+
+        @* Header *@
+        <MudStack Row
+                  AlignItems="AlignItems.Center"
+                  Justify="Justify.SpaceBetween">
+
+            <div>
+                <MudText Typo="Typo.h5">
+                    @_pageTitle
+                </MudText>
+
+                <MudText Typo="Typo.body2"
+                         Color="Color.Secondary">
+                    إضافة المنتجات وتحديد بيانات الطلب
+                </MudText>
+            </div>
+
+            <MudSpacer />
+
+            @if (CanShowDrafts)
+            {
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           OnClick="ShowDrafts"
+                           StartIcon="@Icons.Material.Outlined.Description">
+                    المسودات
+                </MudButton>
+            }
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Disabled="@(!CanSave)"
+                       OnClick="SaveAsync">
+                @(IsEdit ? "حفظ التعديلات" : "إنشاء الطلب")
+            </MudButton>
+
+        </MudStack>
+
+        @* Editor *@
+        <MudPaper Elevation="0"
+                  Class="pa-2">
+
+            @* Steps *@
+            <MudStack Row
+                      Spacing="2">
+
+                <MudButton Variant="@GetStepVariant(OrderEditorStep.Products)"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Outlined.Inventory2"
+                           OnClick="@(() => SelectStep(OrderEditorStep.Products))">
+                    المنتجات
+                </MudButton>
+
+                <MudButton Variant="@GetStepVariant(OrderEditorStep.Details)"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Outlined.ReceiptLong"
+                           OnClick="@(() => SelectStep(OrderEditorStep.Details))">
+                    تفاصيل الطلب
+                </MudButton>
+
+            </MudStack>
+
+            @* Step Content *@
+            @if (_activeStep == OrderEditorStep.Products)
+            {
+                <ProductsStep @key="_sessionId" SessionId="_sessionId" Items="_state.Items" ItemsChanged="OnEditorChanged" />
+            }
+            else if (_activeStep == OrderEditorStep.Details)
+            {
+                <DetailsStep @key="_sessionId" State="_state" DetailsChanged="OnEditorChanged" />
+            }
+
+        </MudPaper>
+
+        @if (ValidationErrors.Count > 0)
+        {
+            <MudAlert Severity="Severity.Error"
+                      Variant="Variant.Outlined">
+
+                <MudStack Spacing="1">
+
+                    <MudText Typo="Typo.subtitle2">
+                        يرجى استكمال البيانات التالية:
+                    </MudText>
+
+                    @foreach (var error in ValidationErrors)
+                    {
+                        <MudText Typo="Typo.body2">
+                            • @error
+                        </MudText>
+                    }
+
+                </MudStack>
+
+            </MudAlert>
+        }
+
+    </MudStack>
+    }
+
+</MudContainer>

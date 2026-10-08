@@ -1,3 +1,4 @@
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -31,10 +32,10 @@ public abstract partial class ViewModel : EditorViewModelBase
 
     private void RegisterMessages()
     {
-        WeakReferenceMessenger.Default.Register<Application.Messages.Categories.CategoryCreatedMessage>(this, async (_, _) => await RefreshCategoriesAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.Categories.CategoryUpdatedMessage>(this, async (_, _) => await RefreshCategoriesAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.Suppliers.SupplierCreatedMessage>(this, async (_, _) => await RefreshSuppliersAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.Suppliers.SupplierUpdatedMessage>(this, async (_, _) => await RefreshSuppliersAsync());
+        WeakReferenceMessenger.Default.Register<CategoriesMessages.CategoryCreatedMessage>(this, async (_, _) => await RefreshCategoriesAsync());
+        WeakReferenceMessenger.Default.Register<CategoriesMessages.CategoryUpdatedMessage>(this, async (_, _) => await RefreshCategoriesAsync());
+        WeakReferenceMessenger.Default.Register<SuppliersMessages.SupplierCreatedMessage>(this, async (_, _) => await RefreshSuppliersAsync());
+        WeakReferenceMessenger.Default.Register<SuppliersMessages.SupplierUpdatedMessage>(this, async (_, _) => await RefreshSuppliersAsync());
     }
 
     public virtual async Task LoadDataAsync()

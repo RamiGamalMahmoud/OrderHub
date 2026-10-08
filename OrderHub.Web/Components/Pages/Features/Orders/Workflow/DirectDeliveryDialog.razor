@@ -1,0 +1,97 @@
+@using OrderHub.Application.Features.Orders.Lifecycle
+@using OrderHub.Domain.Models
+@using OrderHub.Domain.Common
+@using OrderHub.Application.Common.Extensions
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="2">
+            <MudAlert Severity="Severity.Info">سيصبح الطلب «تم التسليم». حدد نتائج الخطوات غير المكتملة. الخطوات المكتملة سابقًا لن تتغير.</MudAlert>
+            @foreach (var step in State.Steps.Where(step => step.Status == DeliveryStatus.Completed))
+            {
+                <MudText Typo="Typo.body2">✓ الخطوة @step.StepOrder — @step.HandlerName — مكتملة سابقًا، دون تغيير</MudText>
+            }
+            <MudButton Disabled="_submitting" Class="order-action order-tone-completed" OnClick="CompleteRemaining">اختيار إكمال جميع الخطوات المتبقية</MudButton>
+            @foreach (var outcome in _outcomes)
+            {
+                <MudPaper Class="pa-2" Outlined="true" @key="outcome.Step.Id">
+                    <MudText Typo="Typo.subtitle2">الخطوة @outcome.Step.StepOrder — @outcome.Step.HandlerName</MudText>
+                    <span class="order-status @OrderWorkflowPresentation.StatusTone(outcome.Step.Status)">الحالة الحالية: @outcome.Step.Status.GetDescription()</span>
+                    <MudSelect T="DeliveryStatus" @bind-Value="outcome.Status" Label="نتيجة الخطوة" Disabled="_submitting" Variant="Variant.Outlined">
+                        <MudSelectItem T="DeliveryStatus" Value="outcome.Step.Status">إبقاء الحالة الحالية (@outcome.Step.Status.GetDescription())</MudSelectItem>
+                        @foreach (var choice in new[] { DeliveryStatus.Completed, DeliveryStatus.Failed, DeliveryStatus.Cancelled }.Where(choice => choice != outcome.Step.Status))
+                        { <MudSelectItem T="DeliveryStatus" Value="choice">@choice.GetDescription()</MudSelectItem> }
+                    </MudSelect>
+                    @if (outcome.NeedsReason)
+                    {
+                        <MudCheckBox T="bool" @bind-Value="outcome.UseCommonReason" Label="استخدام سبب التسليم المباشر لهذه الخطوة" Disabled="_submitting" />
+                        @if (!outcome.UseCommonReason)
+                        { <MudTextField T="string" @bind-Value="outcome.Reason" Label="سبب نتيجة الخطوة" Required="true" Immediate="true" MaxLength="200" Counter="200" Lines="2" Disabled="_submitting" /> }
+                    }
+                    else if (outcome.Step.LatestReason is not null && outcome.Status == outcome.Step.Status)
+                    { <MudText Typo="Typo.body2">السبب المسجل: @outcome.Step.LatestReason</MudText> }
+                </MudPaper>
+            }
+            <MudTextField T="string" @bind-Value="_reason" Label="سبب التسليم المباشر" Required="true" Immediate="true" MaxLength="200" Counter="200" Lines="2" Disabled="_submitting" />
+            <MudAlert Severity="Severity.Warning">
+                سيتم إكمال @_outcomes.Count(outcome => outcome.Status == DeliveryStatus.Completed) خطوة من المتبقي، وسيبقى @_outcomes.Count(outcome => outcome.Status != DeliveryStatus.Completed) غير مكتمل.
+                بعد التأكيد تُغلق جميع الخطوات ضد التشغيل، بما فيها غير المكتملة.
+            </MudAlert>
+            @if (_error is not null) { <MudAlert Severity="Severity.Error">@_error</MudAlert> }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Disabled="_submitting" OnClick="Cancel" Class="order-action order-tone-neutral">رجوع دون تغيير</MudButton>
+        <MudButton Disabled="_submitting" Class="order-action order-tone-completed" OnClick="ConfirmAsync">@(_submitting ? "جاري تسجيل التسليم…" : "تأكيد تسليم الطلب بهذه النتائج")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Parameter, EditorRequired] public OrderWorkflowState State { get; set; } = null!;
+    [Parameter, EditorRequired] public Func<IReadOnlyList<DeliveryStepOutcome>, string, Task<Result<OrderOperationReceipt>>> Submit { get; set; } = null!;
+    private List<OutcomeEditor> _outcomes = [];
+    private string? _reason, _error;
+    private bool _submitting;
+    private int _initializedId;
+    protected override void OnParametersSet()
+    {
+        if (_initializedId == State.Id) return;
+        _initializedId = State.Id;
+        _outcomes = State.Steps.Where(step => step.Status != DeliveryStatus.Completed).Select(step => new OutcomeEditor(step)).ToList();
+    }
+    private sealed class OutcomeEditor(DeliveryStepWorkflowState step)
+    {
+        public DeliveryStepWorkflowState Step { get; } = step;
+        public DeliveryStatus Status { get; set; } = step.Status;
+        public string? Reason { get; set; }
+        public bool UseCommonReason { get; set; }
+        public bool NeedsReason => Status != Step.Status && Status is DeliveryStatus.Failed or DeliveryStatus.Cancelled;
+    }
+    private void Cancel() => Dialog.Cancel();
+    private void CompleteRemaining() { if (!_submitting) foreach (var outcome in _outcomes) outcome.Status = DeliveryStatus.Completed; }
+    private async Task ConfirmAsync()
+    {
+        if (_submitting) return;
+        var valid = Order.ValidateReason(_reason, true);
+        if (!valid.IsSuccess) { _error = valid.ErrorMessage; return; }
+        var results = new List<DeliveryStepOutcome>();
+        foreach (var outcome in _outcomes)
+        {
+            var reason = outcome.NeedsReason ? outcome.UseCommonReason ? _reason : outcome.Reason : null;
+            valid = Order.ValidateReason(reason, outcome.NeedsReason);
+            if (!valid.IsSuccess) { _error = $"الخطوة {outcome.Step.StepOrder}: {valid.ErrorMessage}"; return; }
+            results.Add(new(outcome.Step.Id, outcome.Status, reason?.Trim()));
+        }
+        _submitting = true;
+        try
+        {
+            var result = await Submit(results, _reason!.Trim());
+            if (result.IsSuccess) Dialog.Close(DialogResult.Ok(result.Value));
+            else if (result.ErrorCode == "Conflict") Dialog.Cancel();
+            else _error = result.ErrorMessage;
+        }
+        catch (Exception) { _error = "تعذر الحفظ. اختياراتك محفوظة هنا؛ راجع الحالة قبل المحاولة مجددًا."; }
+        finally { _submitting = false; }
+    }
+}

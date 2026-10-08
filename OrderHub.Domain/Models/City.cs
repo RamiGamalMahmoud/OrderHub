@@ -4,19 +4,21 @@ namespace OrderHub.Domain.Models;
 
 public class City : ModelBase
 {
-    private City() { }
+    private City()
+    {
+    }
 
     public City(string name)
     {
-        Name = new EntityName(name);
+        Rename(name);
     }
 
     public void Rename(string name)
     {
-        Name = new EntityName(name);
+        Name = new EntityName(name?.Trim());
     }
 
     public EntityName Name { get; private set; }
-    public override string ToString() => Name.Value;
 
+    public override string ToString() => Name.Value;
 }

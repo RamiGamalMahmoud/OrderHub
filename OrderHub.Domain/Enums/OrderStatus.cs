@@ -4,18 +4,24 @@ namespace OrderHub.Domain.Enums;
 
 public enum OrderStatus
 {
-    [Description("قيد الانتظار")]
-    Pending,
-
     [Description("قيد التجهيز")]
-    Processing,
+    Processing = 1,
 
     [Description("تم الشحن")]
-    Shipped,
+    Shipped = 2,
 
-    [Description("تم التوصيل")]
-    Delivered,
+    [Description("تم التسليم")]
+    Delivered = 3,
 
-    [Description("ملغى")]
-    Cancelled
+    [Description("تم الإلغاء")]
+    Cancelled = 4,
+
+    [Description("جاهز للتسليم")]
+    ReadyForPickup = 5,
+
+    [Description("خرج للتوصيل")]
+    OutForDelivery = 6,
+
+    [Description("تعذر التسليم")]
+    DeliveryFailed = 7
 }

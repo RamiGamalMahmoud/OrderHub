@@ -1,23 +1,26 @@
-﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using OrderHub.Application.Common.Extensions;
 using OrderHub.Application.Features.Documents.ProformaInvoices;
 using OrderHub.Application.Features.Documents.Quotations;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
+using OrderHub.Application.Features.OrderDrafts.Save;
+using OrderHub.Application.Features.OrderDrafts.Get;
+using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Features.Orders.Create;
 using OrderHub.Application.Features.Orders.Queries;
 using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Interfaces;
-using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
 using OrderHub.UI.Features.Orders.Editor;
+using OrderHub.UI.Messaging;
 using OrderHub.UI.Services;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,9 +29,7 @@ namespace OrderHub.UI.Features.Orders.Create;
 
 internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
 {
-    private readonly IDraftService _draftService;
-    private DraftContext _draftContext;
-    private readonly IApplicationDirectoriesService _directoriesService;
+    private Guid _draftSessionId;
     private CancellationTokenSource _draftSaveCancellation;
     private readonly IRequestExecutor _requestExecutor;
 
@@ -36,15 +37,12 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
         IMediator mediator,
         IProductStore productStore,
         ILookupService lookupService,
-        IDraftService draftService,
-        IRequestExecutor requestExecutor,
-        IApplicationDirectoriesService directoriesService)
+        IRequestExecutor requestExecutor)
         : base(
             mediator,
             productStore,
             lookupService)
     {
-        _draftService = draftService;
         HasChanges = true;
         _requestExecutor = requestExecutor;
 
@@ -65,8 +63,6 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
         };
 
         IsDocumentingReady = true;
-
-        _directoriesService = directoriesService;
     }
 
     public override string Title => "إنشاء طلب جديد";
@@ -74,9 +70,9 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
 
     public Task Initialize(object parameter)
     {
-        _draftContext = parameter is Guid draftId
-            ? new DraftContext(draftId)
-            : new DraftContext(Guid.NewGuid());
+        _draftSessionId = parameter is Guid draftId
+            ? draftId
+            : Guid.NewGuid();
         return Task.CompletedTask;
     }
 
@@ -87,7 +83,7 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
     private async Task CreateQuotation()
     {
         CreateQuotationCommand.QuotationData quotation = new CreateQuotationCommand.QuotationData(
-            _draftContext.Id,
+            _draftSessionId,
             PartyPanel.SelectedClient.Name,
             PartyPanel.SelectedClient.PhoneNumber,
             PartyPanel.SelectedClient.Address,
@@ -101,11 +97,12 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
             .ToList());
 
         string quotationNumber = await _requestExecutor.ExecuteAsync(new CreateQuotationCommand.Command(quotation));
-        string path = Path.Combine(_directoriesService.QuotationsDirectory, $"{quotationNumber}.pdf");
+        
         await DialogService.Instance.ShowDialog<Features.Documents.Preview.PreviewDocumentView>(
             "عرض سعر",
             new Features.Documents.Preview.Data(
-                path,
+                $"{quotationNumber}.pdf",
+                DocumentType.Quotation,
                 PartyPanel.SelectedClient.Name,
                 PartyPanel.SelectedClient.PhoneNumber));
     }
@@ -114,7 +111,7 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
     private async Task CreateProformaIncoid()
     {
         CreateProformaInvoiceCommand.ProformaInvoiceData data = new CreateProformaInvoiceCommand.ProformaInvoiceData(
-            _draftContext.Id,
+            _draftSessionId,
             PartyPanel.SelectedClient.Name,
             PartyPanel.SelectedClient.PhoneNumber,
             PartyPanel.SelectedClient.Address,
@@ -128,12 +125,12 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
             .ToList());
 
         string documentNumber = await _requestExecutor.ExecuteAsync(new CreateProformaInvoiceCommand.Command(data));
-        string path = Path.Combine(_directoriesService.ProformaInvoicesDirectory, $"{documentNumber}.pdf");
 
         await DialogService.Instance.ShowDialog<Features.Documents.Preview.PreviewDocumentView>(
             "فاتورة أولية",
             new Features.Documents.Preview.Data(
-                path,
+                $"{documentNumber}.pdf",
+                DocumentType.ProformaInvoice,
                 PartyPanel.SelectedClient.Name,
                 PartyPanel.SelectedClient.PhoneNumber));
     }
@@ -148,7 +145,7 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
     {
         await base.AfterLoadAsync();
 
-        Draft draft = await _draftService.GetAsync(_draftContext);
+        Draft draft = await _requestExecutor.ExecuteAsync(new GetDraftQuery(_draftSessionId));
 
         if (draft is null)
             return;
@@ -176,51 +173,12 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
         });
     }
 
-    protected override async Task Save()
+    protected override Task Save()
     {
-        CancelPendingDraftSave();
-
-        var order = BuildOrder();
-
-        Result<int> result =
-            await _mediator.Send(
-                new CreateOrderCommand.Command(new CreateOrderCommand.OrderInput(
-                    order.ClientId,
-                    order.DeliveryMethod,
-                    order.DeliveryManId,
-                    order.ShippingCarrierId,
-
-                    order.OrderItems.Select(item => new CreateOrderCommand.Item(
-                        item.ProductId,
-                        item.ProductName,
-                        item.Quantity,
-                        item.UnitPrice,
-                        item.SupplierName,
-                        item.SupplierId,
-                        item.Properties.Select(property => new CreateOrderCommand.Property(
-                            property.PropertyId,
-                            property.Value)))),
-                    order.DeliverySteps.Select(step => new CreateOrderCommand.DeliveryStep(
-                        step.StepOrder,
-                        step.DeliveryMethod,
-                        step.HandlerId)), 
-                    order.PaymentMothodId,
-                    _draftContext.Id)));
-
-        if (!result.IsSuccess)
-        {
-            HandleOrderFailure();
-            return;
-        }
-
-        await _draftService.DeleteAsync(_draftContext);
-
-        WeakReferenceMessenger.Default.Send(
-            new Messages.DraftDeletedMessage(_draftContext.Id));
-
-        HandleOrderSuccess();
-
+        // Order writes are retired here. Use the versioned Web editor/workflow.
+        OrderHub.UI.Services.NotificationService.Instance.ShowError("إدارة الطلبات انتقلت إلى واجهة الويب. هذه الشاشة للقراءة فقط.");
         OnRequestClose();
+        return Task.CompletedTask;
     }
 
     private async Task LoadDraftDependenciesAsync(Draft draft)
@@ -402,13 +360,13 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
     {
         OrderDraftData data = BuildDraftData();
 
-        await _draftService.SaveAsync(
-            _draftContext,
-            data);
+        var result = await _requestExecutor.ExecuteAsync(new SaveDraftCommand(_draftSessionId, data));
+        if (!result.IsSuccess)
+            throw new InvalidOperationException(result.ErrorMessage);
 
         WeakReferenceMessenger.Default.Send(
-            new Messages.DraftSavedMessage(
-                _draftContext.Id));
+            new OrdersMessages.OrderDraftSavedMessage(
+                _draftSessionId));
     }
 
     private OrderDraftData BuildDraftData()
@@ -416,6 +374,7 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
         return new OrderDraftData(
             PartyPanel.SelectedClient?.Id,
             PartyPanel.SelectedClient?.Name,
+            SelectedOrderSource?.OrderSource,
             PartyPanel.SelectedPaymentMethod?.Id,
             DeliveryMethodsViewModel.SelecteddDeliveryMethod?.Value,
             DeliveryMethodsViewModel.SelectedDeliveryman?.Id,
@@ -461,9 +420,9 @@ internal partial class ViewModel : Editor.ViewModel, IParameterizedViewModel
         _draftSaveCancellation = null;
     }
 
-    private void HandleOrderSuccess()
+    private void HandleOrderSuccess(int orderId)
     {
-        WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.OrderCreatedMessage());
+        WeakReferenceMessenger.Default.Send(new OrdersMessages.OrderCreatedMessage(orderId));
 
         PublishSuccessNotification("تم انشاء الطلب بنجاح");
     }

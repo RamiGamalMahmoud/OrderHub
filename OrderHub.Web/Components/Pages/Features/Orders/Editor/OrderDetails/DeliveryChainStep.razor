@@ -1,0 +1,200 @@
+﻿@using OrderHub.Application.Common.Lookups
+@using OrderHub.Domain.Enums
+@using OrderHub.Web.Components.Pages.Features.Orders.Editor.State
+
+<MudPaper Outlined="true" Class="pa-3">
+
+    <MudStack Spacing="3">
+
+        @* Header *@
+        <MudStack Row
+                  AlignItems="AlignItems.Center"
+                  Justify="Justify.SpaceBetween">
+
+            <MudStack Row
+                      AlignItems="AlignItems.Center"
+                      Spacing="2">
+
+                <MudAvatar Size="Size.Small"
+                           Color="Color.Primary">
+                    @Step.StepOrder
+                </MudAvatar>
+
+                <div>
+                    <MudText Typo="Typo.subtitle2">
+                        خطوة @Step.StepOrder
+                    </MudText>
+
+                    <MudText Typo="Typo.caption"
+                             Color="Color.Secondary">
+                        @GetStepDescription()
+                    </MudText>
+                </div>
+
+            </MudStack>
+
+            <MudStack Row
+                      AlignItems="AlignItems.Center"
+                      Spacing="1">
+
+                <MudIconButton Icon="@Icons.Material.Outlined.ArrowUpward"
+                               Size="Size.Small"
+                               Disabled="@(Disabled || !CanMoveUp)"
+                               OnClick="MoveUp"
+                               aria-label="نقل الخطوة لأعلى" />
+
+                <MudIconButton Icon="@Icons.Material.Outlined.ArrowDownward"
+                               Size="Size.Small"
+                               Disabled="@(Disabled || !CanMoveDown)"
+                               OnClick="MoveDown"
+                               aria-label="نقل الخطوة لأسفل" />
+
+                <MudIconButton Icon="@Icons.Material.Outlined.DeleteOutline"
+                               Size="Size.Small"
+                               Color="Color.Error"
+                               Disabled="Disabled"
+                               OnClick="Remove"
+                               aria-label="حذف الخطوة" />
+
+            </MudStack>
+
+        </MudStack>
+
+        @* Step type *@
+        <MudToggleGroup T="DeliveryMethod"
+                        CheckMark
+                        FixedContent
+                        Value="Step.Method"
+                        ValueChanged="OnMethodChangedAsync"
+                        SelectionMode="SelectionMode.SingleSelection"
+                        Outlined="true"
+                        Disabled="Disabled">
+
+            <MudToggleItem T="DeliveryMethod"
+                           Value="DeliveryMethod.DeliveryMan"
+                           Text="مندوب" />
+
+            <MudToggleItem T="DeliveryMethod"
+                           Value="DeliveryMethod.ShippingCompany"
+                           Text="شركة شحن" />
+
+        </MudToggleGroup>
+
+        @* Handler *@
+        @if (Step.Method == DeliveryMethod.DeliveryMan)
+        {
+            <MudSelect T="int?"
+                       Label="مندوب التوصيل"
+                       Value="Step.HandlerId"
+                       ValueChanged="OnHandlerChangedAsync"
+                       Clearable="true"
+                       Disabled="Disabled"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense">
+
+                @foreach (var deliveryman in Deliverymen)
+                {
+                    <MudSelectItem T="int?"
+                                   Value="@((int?)deliveryman.Id)">
+                        @deliveryman.Name
+                    </MudSelectItem>
+                }
+
+            </MudSelect>
+        }
+        else if (Step.Method == DeliveryMethod.ShippingCompany)
+        {
+            <MudSelect T="int?"
+                       Label="شركة الشحن"
+                       Value="Step.HandlerId"
+                       ValueChanged="OnHandlerChangedAsync"
+                       Clearable="true"
+                       Disabled="Disabled"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense">
+
+                @foreach (var carrier in ShippingCarriers)
+                {
+                    <MudSelectItem T="int?"
+                                   Value="@((int?)carrier.Id)">
+                        @carrier.Name
+                    </MudSelectItem>
+                }
+
+            </MudSelect>
+        }
+
+    </MudStack>
+
+</MudPaper>
+
+@code
+{
+    [Parameter, EditorRequired]
+    public DeliveryStepEditorState Step { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<DeliverymanLookup> Deliverymen { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ShippingCarrierLookup> ShippingCarriers { get; set; } = [];
+
+    [Parameter]
+    public bool CanMoveUp { get; set; }
+
+    [Parameter]
+    public bool CanMoveDown { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    [Parameter]
+    public EventCallback MoveUp { get; set; }
+
+    [Parameter]
+    public EventCallback MoveDown { get; set; }
+
+    [Parameter]
+    public EventCallback Remove { get; set; }
+
+    private async Task OnMethodChangedAsync(DeliveryMethod value)
+    {
+        if (Disabled ||
+            value == Step.Method ||
+            value is not (DeliveryMethod.DeliveryMan or DeliveryMethod.ShippingCompany))
+        {
+            return;
+        }
+
+        Step.Method = value;
+
+        // الـ Handler القديم ينتمي إلى النوع السابق،
+        // لذلك لا يصح الاحتفاظ به عند تغيير نوع الخطوة.
+        Step.HandlerId = null;
+
+        await Changed.InvokeAsync();
+    }
+
+    private async Task OnHandlerChangedAsync(int? value)
+    {
+        if (Disabled || value == Step.HandlerId)
+            return;
+
+        Step.HandlerId = value;
+
+        await Changed.InvokeAsync();
+    }
+
+    private string GetStepDescription()
+    {
+        return Step.Method switch
+        {
+            DeliveryMethod.DeliveryMan => "التسليم بواسطة مندوب",
+            DeliveryMethod.ShippingCompany => "التسليم بواسطة شركة شحن",
+            _ => "حدد طريقة تنفيذ الخطوة"
+        };
+    }
+}

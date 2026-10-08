@@ -1,0 +1,331 @@
+@page "/properties"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.Properties,
+    PermissionLevel.Read)]
+
+@inject IRequestExecutor RequestExecutor
+@inject OrderHub.Web.Services.PermissionAccess PermissionAccess
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject ILogger<Index> Logger
+
+<PageTitle>خصائص المنتجات</PageTitle>
+
+<MudStack Spacing="3">
+    <MudStack Row
+              Wrap="Wrap.Wrap"
+              AlignItems="AlignItems.Center"
+              Justify="Justify.SpaceBetween">
+        <div>
+            <MudText Typo="Typo.h5">
+                خصائص المنتجات
+            </MudText>
+
+            <MudText Typo="Typo.body2"
+                     Color="Color.Secondary">
+                إدارة خصائص وخيارات المنتجات
+            </MudText>
+        </div>
+
+        @if (CanCreate)
+        {
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="IsBusy"
+                       OnClick="OpenCreateDialogAsync">
+                إضافة خاصية
+            </MudButton>
+        }
+    </MudStack>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true"
+                           Color="Color.Primary" />
+
+        <MudText Typo="Typo.body2">
+            جاري تحميل خصائص المنتجات...
+        </MudText>
+    }
+    else if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error"
+                  Dense="true">
+            @_error
+        </MudAlert>
+
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="LoadAsync">
+            إعادة المحاولة
+        </MudButton>
+    }
+    else if (_properties.Count == 0)
+    {
+        <MudPaper Outlined="true"
+                  Class="pa-4">
+            <MudText Typo="Typo.body1">
+                لم تتم إضافة خصائص بعد.
+            </MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudTable T="PropertyListItem"
+                  Items="_properties"
+                  Dense="true"
+                  Hover="true"
+                  Outlined="true"
+                  Elevation="0"
+                  Breakpoint="Breakpoint.Sm">
+
+            <HeaderContent>
+                <MudTh>
+                    اسم الخاصية
+                </MudTh>
+
+                <MudTh>
+                    النوع
+                </MudTh>
+
+                <MudTh>
+                    الخيارات
+                </MudTh>
+
+                @if (_canWrite)
+                {
+                    <MudTh>
+                        الإجراءات
+                    </MudTh>
+                }
+            </HeaderContent>
+
+            <RowTemplate Context="property">
+                <MudTd DataLabel="اسم الخاصية"
+                       Style="overflow-wrap:anywhere">
+                    @property.Name
+                </MudTd>
+
+                <MudTd DataLabel="النوع">
+                    @PropertyEditorState.TypeLabel(property.Type)
+                </MudTd>
+
+                <MudTd DataLabel="الخيارات">
+                    @if (property.Type == PropertyType.List)
+                    {
+                        <span>@property.OptionsCount خيارات</span>
+                    }
+                    else
+                    {
+                        <span>—</span>
+                    }
+                </MudTd>
+
+                @if (_canWrite)
+                {
+                    <MudTd DataLabel="الإجراءات">
+                        <MudStack Row
+                                  Spacing="0">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           Disabled="IsBusy"
+                                           aria-label="تعديل الخاصية"
+                                           OnClick="@(() => OpenEditDialogAsync(property))" />
+
+                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           Disabled="IsBusy"
+                                           aria-label="حذف الخاصية"
+                                           OnClick="@(() => ConfirmDeleteAsync(property))" />
+                        </MudStack>
+                    </MudTd>
+                }
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2">
+                    لا توجد خصائص.
+                </MudText>
+            </NoRecordsContent>
+
+            <PagerContent>
+                @if (_properties.Count > 10)
+                {
+                    <MudTablePager PageSizeOptions="@(new[] { 10, 25, 50 })"
+                                   RowsPerPageString="خصائص لكل صفحة"
+                                   InfoFormat="{first_item}-{last_item} من {all_items}" />
+                }
+            </PagerContent>
+        </MudTable>
+    }
+</MudStack>
+
+@code {
+    private IReadOnlyList<PropertyListItem> _properties = [];
+    private string? _error;
+    private bool _loading = true;
+    private bool _canWrite;
+    private bool _dialogOpen;
+    private bool _deleting;
+
+    private bool CanCreate =>
+        _canWrite && !_loading && _error is null;
+
+    private bool IsBusy =>
+        _loading || _dialogOpen || _deleting;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _canWrite = false;
+        _error = null;
+
+        try
+        {
+            var properties = await RequestExecutor.ExecuteAsync(new GetPropertiesQuery());
+            bool canWrite = await PermissionAccess.IsAllowedAsync(
+                PermissionFeature.Properties,
+                PermissionLevel.Write);
+
+            _properties = properties.ToList();
+            _canWrite = canWrite;
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load properties");
+            _error = "تعذر تحميل خصائص المنتجات. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Task OpenCreateDialogAsync() => OpenEditorAsync(null);
+
+    private Task OpenEditDialogAsync(PropertyListItem property) => OpenEditorAsync(property.Id);
+
+    private async Task OpenEditorAsync(int? propertyId)
+    {
+        if (IsBusy || !_canWrite)
+        {
+            return;
+        }
+
+        _dialogOpen = true;
+
+        try
+        {
+            DialogParameters<PropertyEditorDialog> parameters = new()
+            {
+                { dialog => dialog.PropertyId, propertyId }
+            };
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = false,
+                CloseOnEscapeKey = false,
+                BackdropClick = false
+            };
+
+            string title = propertyId.HasValue ? "تعديل الخاصية" : "إضافة خاصية";
+
+            var dialog = await DialogService.ShowAsync<PropertyEditorDialog>(
+                title,
+                parameters,
+                options);
+
+            DialogResult? result = await dialog.Result;
+
+            if (result is { Canceled: false, Data: true })
+            {
+                await LoadAsync();
+            }
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to open property editor for {PropertyId}",
+                propertyId);
+
+            Snackbar.Add(
+                "تعذر فتح بيانات الخاصية. يرجى المحاولة مرة أخرى.",
+                Severity.Error);
+        }
+        finally
+        {
+            _dialogOpen = false;
+        }
+    }
+
+    private async Task ConfirmDeleteAsync(PropertyListItem property)
+    {
+        if (IsBusy || !_canWrite)
+        {
+            return;
+        }
+
+        _deleting = true;
+
+        try
+        {
+            bool? confirmed = await DialogService.ShowMessageBoxAsync(
+                "حذف الخاصية",
+                $"هل تريد حذف الخاصية \"{property.Name}\"؟",
+                yesText: "حذف",
+                cancelText: "إلغاء");
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Result result = await RequestExecutor.ExecuteAsync(new DeletePropertyCommand(property.Id));
+
+            if (!result.IsSuccess)
+            {
+                Snackbar.Add(result.ErrorMessage, Severity.Error);
+                return;
+            }
+
+            Snackbar.Add("تم حذف الخاصية بنجاح.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to delete property {PropertyId}",
+                property.Id);
+
+            Snackbar.Add(
+                "تعذر حذف الخاصية. يرجى المحاولة مرة أخرى.",
+                Severity.Error);
+        }
+        finally
+        {
+            _deleting = false;
+        }
+    }
+}
+

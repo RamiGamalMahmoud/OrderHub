@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
@@ -43,7 +44,7 @@ public class ViewModel : Editor.ViewModel, IParameterizedViewModel
         {
             NotificationService.Instance.ShowSuccess("تم التعديل بنجاح.");
             OnRequestClose();
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Categories.CategoryUpdatedMessage());
+            WeakReferenceMessenger.Default.Send(new CategoriesMessages.CategoryUpdatedMessage(_categoryId));
         }
 
         else

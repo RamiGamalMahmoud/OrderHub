@@ -1,0 +1,264 @@
+@attribute [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Read)]
+@using OrderHub.Application.Features.Orders.GetPage
+@using OrderHub.Application.Features.Setup.PaymentMethods.Contracts
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using OrderHub.Domain.Enums
+@using OrderHub.Application.Common.Lookups
+@using OrderHub.Application.Common.Extensions
+@using OrderHub.Web.Components.Pages.Features.Orders.Workflow
+
+@page "/orders"
+@page "/orders/archived"
+
+
+<PageTitle>الطلبات</PageTitle>
+
+<OrderDrafts @bind-IsOpen="@_isDraftsOpen" />
+
+<MudStack Spacing="3">
+
+    @* =========================
+       Header
+       ========================= *@
+
+    <MudGrid Class="align-center">
+
+        <MudItem xs="12" md="4">
+            <MudText Typo="Typo.h5">
+                @(_archivedOnly ? "سجل الطلبات المؤرشفة" : "الطلبات")
+            </MudText>
+
+            <MudText Typo="Typo.body2"
+                     Color="Color.Secondary">
+                @(_archivedOnly ? "البيانات والتاريخ محفوظان للقراءة فقط؛ لا توجد استعادة." : "متابعة وإدارة طلبات العملاء")
+            </MudText>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="4">
+            <MudTextField T="string"
+                          Value="_searchTerm"
+                          ValueChanged="OnSearchChanged"
+                          Placeholder="ابحث برقم الطلب أو اسم العميل..."
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Immediate="true"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          FullWidth="true" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="4">
+
+            <MudStack Row
+                      Spacing="2"
+                      Justify="Justify.FlexEnd">
+                <MudButton Href="@(_archivedOnly ? "/orders" : "/orders/archived")" Class="order-action order-tone-neutral">@(_archivedOnly ? "الطلبات الحالية" : "سجل المؤرشف")</MudButton>
+
+                <MudButton Class="order-action order-tone-processing"
+                           OnClick="@ShowDrafts"
+                           StartIcon="@Icons.Material.Filled.List">
+                    الطلبات المعلقة
+                </MudButton>
+
+                <CreateOrderButton />
+
+            </MudStack>
+
+        </MudItem>
+
+    </MudGrid>
+
+
+    @* =========================
+       Filters
+       ========================= *@
+
+    <MudPaper Class="pa-4"
+              Elevation="0">
+
+        <MudGrid Class="align-center">
+
+            <MudItem xs="12" sm="6" md="4">
+
+                <MudSelect T="OrderStatus?"
+                           Value="_selectedStatus"
+                           ValueChanged="OnStatusChanged"
+                           Label="حالة الطلب"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Clearable="true"
+                           FullWidth="true">
+
+                    @foreach (var item in _enumItems)
+                    {
+                        <MudSelectItem T="OrderStatus?"
+                                       Value="@item.Value">
+                            @item.DisplayName
+                        </MudSelectItem>
+                    }
+
+                </MudSelect>
+
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4">
+
+                <MudSelect T="int?"
+                           Label="وسيلة الدفع"
+                           Value="_selectedPaymentMethodId"
+                           ValueChanged="OnPaymentChanged"
+                           Clearable="true"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           FullWidth="true">
+
+                    @foreach (var paymentMethod in _paymentMethods)
+                    {
+                        <MudSelectItem T="int?"
+                                       Value="@paymentMethod!.Id">
+                            @paymentMethod!.DisplayName
+                        </MudSelectItem>
+                    }
+
+                </MudSelect>
+
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+
+                <MudStack Row
+                          Justify="Justify.FlexEnd">
+
+                    <MudTooltip Text="تحديث">
+                        <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                       OnClick="RefreshAsync" />
+                    </MudTooltip>
+
+                </MudStack>
+
+            </MudItem>
+
+        </MudGrid>
+
+    </MudPaper>
+
+
+    @* =========================
+       Orders
+       ========================= *@
+
+    <MudPaper Elevation="0">
+
+        <MudTable T="OrderListItem"
+                  @ref="_table"
+                  ServerData="LoadOrdersAsync"
+                  Hover="true"
+                  Striped="true">
+
+            <HeaderContent>
+
+                <MudTh>رقم الطلب</MudTh>
+                <MudTh>العميل</MudTh>
+                <MudTh>الهاتف</MudTh>
+                <MudTh>المنتجات</MudTh>
+                <MudTh>الإجمالي</MudTh>
+                <MudTh>طريقة الدفع</MudTh>
+                <MudTh>الحالة</MudTh>
+                <MudTh>التوصيل</MudTh>
+                <MudTh>التاريخ</MudTh>
+                <MudTh></MudTh>
+
+            </HeaderContent>
+
+            <RowTemplate>
+
+                <MudTd DataLabel="رقم الطلب">
+                    @context.OrderNumber
+                </MudTd>
+
+                <MudTd DataLabel="العميل">
+                    @context.ClientName
+                </MudTd>
+
+                <MudTd DataLabel="الهاتف">
+                    @context.ClientPhoneNumber
+                </MudTd>
+
+                <MudTd DataLabel="المنتجات">
+                    @context.ItemsCount
+                </MudTd>
+
+                <MudTd DataLabel="الإجمالي">
+                    @context.Total.ToString("N2")
+                </MudTd>
+
+                <MudTd DataLabel="طريقة الدفع">
+                    @(context.PaymentMethod?.DisplayName ?? "غير محددة")
+                </MudTd>
+
+                <MudTd DataLabel="الحالة">
+
+                    <span class="order-status @OrderWorkflowPresentation.StatusTone(context.OrderStatus)">@context.EnumItem.DisplayName</span>
+                    @if (context.IsArchived) { <span class="order-status order-tone-neutral">مؤرشف</span> }
+
+                </MudTd>
+
+                <MudTd DataLabel="التوصيل">@(context.DeliveryMethod.HasValue ? context.DeliveryMethod.Value.GetDescription() : "غير محددة")</MudTd>
+
+                <MudTd DataLabel="التاريخ">
+                    <UserLocalTime Value="context.CreatedAt" />
+                </MudTd>
+
+                <MudTd>
+
+                    <MudStack Row>
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                       Class="order-action order-tone-delivery"
+                                       Size="Size.Small"
+                                       Href=@($"/orders/{context.Id}")
+                                       OnClick="@(() => SelectOrder(context))" />
+
+                        @if (!context.IsArchived && context.OrderStatus == OrderStatus.Processing)
+                        {
+                        <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write"><MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Class="order-action order-tone-processing"
+                                       Size="Size.Small"
+                                       Href=@($"/orders/{context.Id}/edit")
+                                       OnClick="@(() => SelectOrder(context))" /></PermissionView>
+                        }
+
+                    </MudStack>
+
+                </MudTd>
+
+            </RowTemplate>
+
+            <NoRecordsContent>
+
+                <MudText Class="pa-4">
+                    لا توجد طلبات
+                </MudText>
+
+            </NoRecordsContent>
+
+            <LoadingContent>
+
+                <MudText Class="pa-4">
+                    جاري تحميل الطلبات...
+                </MudText>
+
+            </LoadingContent>
+
+            <PagerContent>
+
+                <MudTablePager PageSizeOptions="@(new[] { 10, 20, 50, 100 })" />
+
+            </PagerContent>
+
+        </MudTable>
+
+    </MudPaper>
+
+</MudStack>

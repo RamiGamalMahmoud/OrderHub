@@ -1,0 +1,353 @@
+@page "/categories/create"
+@page "/categories/{CategoryId:int}/edit"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.Categories,
+    PermissionLevel.Write)]
+
+@inject IRequestExecutor RequestExecutor
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject ILogger<Editor> Logger
+
+<PageTitle>@Title</PageTitle>
+
+<MudStack Spacing="3"
+          Style="max-width: 640px">
+
+    <MudButton Variant="Variant.Text"
+               StartIcon="@Icons.Material.Filled.ArrowForward"
+               Href="@_state.ReturnUrl"
+               Disabled="_saving"
+               Class="align-self-start">
+        الرجوع للأقسام
+    </MudButton>
+
+    <div>
+        <MudText Typo="Typo.h5">
+            @Title
+        </MudText>
+
+        <MudText Typo="Typo.body2"
+                 Color="Color.Secondary">
+            @(CategoryId.HasValue
+                ? "تعديل بيانات القسم"
+                : "أدخل بيانات القسم")
+        </MudText>
+    </div>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true"
+                           Color="Color.Primary" />
+
+        <MudText Typo="Typo.body2">
+            جاري تحميل بيانات القسم...
+        </MudText>
+    }
+    else if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error"
+                  Dense="true">
+            @_error
+        </MudAlert>
+
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="LoadAsync">
+            إعادة المحاولة
+        </MudButton>
+    }
+    else
+    {
+        <MudPaper Outlined="true"
+                  Class="pa-4">
+
+            <MudForm @ref="_form">
+
+                <MudStack Spacing="3">
+
+                    <MudTextField T="string"
+                                  @bind-Value="_state.Name"
+                                  Label="اسم القسم"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  RequiredError="اسم القسم مطلوب."
+                                  MaxLength="100"
+                                  Validation="@(new Func<string, string?>(ValidateName))"
+                                  Immediate="true"
+                                  Disabled="_saving" />
+
+                    <MudSelect T="int?"
+                               @bind-Value="_state.ParentId"
+                               Label="القسم الرئيسي"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Disabled="_saving"
+                               Placeholder="قسم أساسي (بدون قسم رئيسي)"
+                               HelperText="اختر قسمًا رئيسيًا أو اتركه كقسم أساسي.">
+
+                        <MudSelectItem T="int?"
+                                       Value="@((int?)null)">
+                            قسم أساسي (بدون قسم رئيسي)
+                        </MudSelectItem>
+
+                        @foreach (var parent in _parents)
+                        {
+                            <MudSelectItem T="int?"
+                                           Value="@((int?)parent.Id)">
+                                @parent.FullPath
+                            </MudSelectItem>
+                        }
+
+                    </MudSelect>
+
+                    <MudStack Row
+                              Justify="Justify.FlexEnd"
+                              Spacing="2">
+
+                        <MudButton Href="@_state.ReturnUrl"
+                                   Disabled="_saving">
+                            إلغاء
+                        </MudButton>
+
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   OnClick="SaveAsync"
+                                   Disabled="_saving">
+                            @SaveButtonText
+                        </MudButton>
+
+                    </MudStack>
+
+                </MudStack>
+
+            </MudForm>
+
+        </MudPaper>
+    }
+
+</MudStack>
+
+@code {
+    [Parameter]
+    public int? CategoryId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "parentId")]
+    public int? ParentId { get; set; }
+
+
+    private CategoryEditorState _state = new();
+
+    private IReadOnlyList<CategoryInfo> _parents = [];
+
+    private MudForm? _form;
+
+    private bool _loading = true;
+    private bool _saving;
+
+    private string? _error;
+
+    private int _loadVersion;
+
+
+    private string Title =>
+        CategoryId.HasValue
+            ? "تعديل القسم"
+            : "إضافة قسم جديد";
+
+    private string SaveButtonText =>
+        _saving
+            ? "جاري الحفظ..."
+            : CategoryId.HasValue
+                ? "حفظ التعديلات"
+                : "حفظ القسم";
+
+
+    protected override Task OnParametersSetAsync()
+    {
+        return LoadAsync();
+    }
+
+
+    private async Task LoadAsync()
+    {
+        int version = ++_loadVersion;
+
+        int? categoryId = CategoryId;
+        int? parentId = ParentId;
+
+        _loading = true;
+        _error = null;
+
+        _state = CategoryEditorState.Create(
+            categoryId.HasValue
+                ? null
+                : parentId);
+
+        try
+        {
+            CategoryEditorState state;
+
+            if (categoryId is int id)
+            {
+                var category = await RequestExecutor.ExecuteAsync(
+                    new GetCategoryForEditQuery(id));
+
+                if (category is null)
+                {
+                    if (version == _loadVersion)
+                    {
+                        _error = "القسم غير موجود.";
+                    }
+
+                    return;
+                }
+
+                state = CategoryEditorState.Edit(category);
+            }
+            else
+            {
+                state = CategoryEditorState.Create(parentId);
+            }
+
+            var allCategories = (
+                await RequestExecutor.ExecuteAsync(
+                    new GetCategoriesInfoQuery()))
+                .ToList();
+
+            if (version != _loadVersion)
+            {
+                return;
+            }
+
+            _state = state;
+
+            if (state.ParentId.HasValue &&
+                allCategories.All(x => x.Id != state.ParentId.Value))
+            {
+                _error = "القسم الرئيسي غير موجود.";
+                return;
+            }
+
+            _parents = CategoryEditorState.ParentOptions(
+                allCategories,
+                categoryId);
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to load category editor for {CategoryId}",
+                categoryId);
+
+            if (version == _loadVersion)
+            {
+                _error = "تعذر تحميل بيانات القسم. يرجى المحاولة مرة أخرى.";
+            }
+        }
+        finally
+        {
+            if (version == _loadVersion)
+            {
+                _loading = false;
+            }
+        }
+    }
+
+
+    private static string? ValidateName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "اسم القسم يجب أن يتكون من 2 إلى 100 حرف.";
+        }
+
+        int length = name.Trim().Length;
+
+        return length is < 2 or > 100
+            ? "اسم القسم يجب أن يتكون من 2 إلى 100 حرف."
+            : null;
+    }
+
+
+    private async Task SaveAsync()
+    {
+        if (_saving || _form is null)
+        {
+            return;
+        }
+
+        _saving = true;
+
+        try
+        {
+            await _form.ValidateAsync();
+
+            if (!_form.IsValid)
+            {
+                return;
+            }
+
+            Result result;
+
+            if (CategoryId is int id)
+            {
+                var request = new CategoryUpdateInput(
+                    id,
+                    _state.Name,
+                    _state.ParentId);
+
+                result = await RequestExecutor.ExecuteAsync(
+                    new UpdateCategoryCommand(request));
+            }
+            else
+            {
+                var request = new CategoryCreateInput(
+                    _state.Name,
+                    _state.ParentId);
+
+                result = await RequestExecutor.ExecuteAsync(
+                    new CreateCategoryCommand(request));
+            }
+
+            if (!result.IsSuccess)
+            {
+                Snackbar.Add(
+                    result.ErrorMessage,
+                    Severity.Error);
+
+                return;
+            }
+
+            Snackbar.Add(
+                "تم حفظ القسم بنجاح.",
+                Severity.Success);
+
+            Navigation.NavigateTo(_state.SavedUrl);
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to save category {CategoryId}",
+                CategoryId);
+
+            Snackbar.Add(
+                "تعذر حفظ القسم. يرجى المحاولة مرة أخرى.",
+                Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

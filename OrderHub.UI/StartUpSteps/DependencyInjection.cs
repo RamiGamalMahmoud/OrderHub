@@ -3,26 +3,26 @@ using System;
 using System.Linq;
 using System.Reflection;
 
-namespace OrderHub.UI.StartUpSteps
+namespace OrderHub.UI.StartUpSteps;
+
+public static class DependencyInjection
 {
-    public static class DependencyInjection
+    public static IServiceCollection AddStartUp(this IServiceCollection services)
     {
-        public static IServiceCollection AddStartUpSteps(this IServiceCollection services)
+        services.AddTransient<IStartupPipeline, StartupPipeline>();
+
+        Assembly assembly = Assembly.GetExecutingAssembly();
+
+        var stepTypes = assembly
+            .GetTypes()
+            .Where(t => typeof(IStartupStep).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface)
+            .ToList();
+
+        foreach( Type stepType in stepTypes)
         {
-            services.AddSingleton<IStartupPipeline, StartupPipeline>();
-
-            Assembly assembly = Assembly.GetExecutingAssembly();
-
-            var stepTypes = assembly
-                .GetTypes()
-                .Where(t => typeof(IStartupStep).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface).ToList();
-
-            foreach( Type stepType in stepTypes)
-            {
-                services.AddTransient(typeof(IStartupStep), stepType);
-            }
-
-            return services;
+            services.AddTransient(typeof(IStartupStep), stepType);
         }
+
+        return services;
     }
 }

@@ -1,7 +1,11 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
+using OrderHub.Application.Features.OrderDrafts.Delete;
+using OrderHub.Application.Features.OrderDrafts.List;
+using OrderHub.Application.Interfaces;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
@@ -9,25 +13,25 @@ namespace OrderHub.UI.Features.Orders.Index;
 
 internal partial class OrderDraftsDrawerViewModel : ObservableObject
 {
-    private readonly IDraftService _draftService;
+    private readonly IRequestExecutor _requestExecutor;
 
     public ObservableCollection<OrderDraftSummary> Drafts { get; } = [];
 
     [ObservableProperty]
     private bool _isLoading;
 
-    public OrderDraftsDrawerViewModel(IDraftService draftService)
+    public OrderDraftsDrawerViewModel(IRequestExecutor requestExecutor)
     {
-        _draftService = draftService;
+        _requestExecutor = requestExecutor;
 
-        WeakReferenceMessenger.Default.Register<OrderDraftsDrawerViewModel, Messages.DraftSavedMessage>(this, (r, m) =>
+        WeakReferenceMessenger.Default.Register<OrderDraftsDrawerViewModel, OrdersMessages.OrderDraftSavedMessage>(this, (r, m) =>
         {
             OnPropertyChanged(nameof(Drafts));
         });
 
-        WeakReferenceMessenger.Default.Register<OrderDraftsDrawerViewModel, Messages.DraftDeletedMessage>(this, (r, m) =>
+        WeakReferenceMessenger.Default.Register<OrderDraftsDrawerViewModel, OrdersMessages.OrderDraftDeletedMessage>(this, async (r, m) =>
         {
-            OnPropertyChanged(nameof(Drafts));
+            await r.LoadAsync();
         });
     }
 
@@ -42,7 +46,7 @@ internal partial class OrderDraftsDrawerViewModel : ObservableObject
 
             Drafts.Clear();
 
-            var drafts = await _draftService.GetAllAsync();
+            var drafts = await _requestExecutor.ExecuteAsync(new GetDraftListQuery());
 
             foreach (var draft in drafts)
             {
@@ -56,22 +60,7 @@ internal partial class OrderDraftsDrawerViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    private async Task DeleteDraft(OrderDraftSummary draft)
-    {
-        if (draft is null)
-            return;
 
-        bool deleteDraft = DialogService.Instance.Confirm("هل تريد حذف هذه المسودة؟");
-        if (!deleteDraft)
-            return;
-
-        await _draftService.DeleteAsync(
-            new DraftContext(draft.Id));
-
-        Drafts.Remove(draft);
-        OnPropertyChanged(nameof(Drafts.Count));
-    }
 
     [RelayCommand]
     private async Task DeleteAllDrafts()
@@ -82,7 +71,8 @@ internal partial class OrderDraftsDrawerViewModel : ObservableObject
 
         foreach (var draft in Drafts)
         {
-            await _draftService.DeleteAsync(new DraftContext(draft.Id));
+            var result = await _requestExecutor.ExecuteAsync(new DeleteDraftCommand(draft.Id));
+            if (!result.IsSuccess) throw new System.InvalidOperationException(result.ErrorMessage);
         }
         Drafts.Clear();
         OnPropertyChanged(nameof(Drafts.Count));

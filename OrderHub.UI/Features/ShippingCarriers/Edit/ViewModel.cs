@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
@@ -53,7 +54,7 @@ public class ViewModel : Editor.ViewModel, IParameterizedViewModel
         {
             string message = MessageBuilder.Build(MessageBuilder.OperationType.Update, true, "شركة شحن");
             NotificationService.Instance.ShowSuccess(message);
-            WeakReferenceMessenger.Default.Send(new Application.Messages.ShippingCarriers.ShippingCarrierUpdatedMessage());
+            WeakReferenceMessenger.Default.Send(new ShippingCarriersMessages.ShippingCarrierUpdatedMessage(_shippingCarriersId));
             OnRequestClose();
         }
         else

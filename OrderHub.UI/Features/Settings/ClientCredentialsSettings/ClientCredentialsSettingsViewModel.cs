@@ -7,18 +7,18 @@ using System.Threading.Tasks;
 
 namespace OrderHub.UI.Features.Settings.ClientCredentialsSettings;
 
-internal partial class ClientCredentialsSettingsViewModel : ObservableValidator
+public partial class ClientCredentialsSettingsViewModel : ObservableValidator
 {
     private readonly ICredentialsService _credentialsService;
 
     [ObservableProperty]
-    [Required]
+    [Required(ErrorMessage = "معرف العميل مطلوب")]
     [NotifyCanExecuteChangedFor(nameof(SaveCredentialsCommand))]
     [NotifyDataErrorInfo]
     private string _clientId;
 
     [ObservableProperty]
-    [Required]
+    [Required(ErrorMessage = "المفتاح السري للعميل مطلوب")]
     [NotifyCanExecuteChangedFor(nameof(SaveCredentialsCommand))]
     [NotifyDataErrorInfo]
     private string _clientSecret;

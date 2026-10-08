@@ -1,0 +1,153 @@
+﻿@using OrderHub.Application.Features.Products.Contracts
+@using OrderHub.Application.Interfaces
+
+<MudDialog>
+
+    <TitleContent>
+
+        <MudStack Row
+                  AlignItems="AlignItems.Center"
+                  Spacing="2">
+
+            <MudIcon Icon="@Icons.Material.Outlined.AddShoppingCart"
+                     Color="Color.Primary" />
+
+            <MudText Typo="Typo.h6">
+                إضافة منتج
+            </MudText>
+
+        </MudStack>
+
+    </TitleContent>
+
+
+    <DialogContent>
+
+        <div class="product-dialog-content">
+
+            @* ثابت فوق *@
+            <MudTextField T="string"
+                          @bind-Value="_searchTerm"
+                          Placeholder="ابحث عن منتج..."
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          TextChanged="TextChanged"
+                          Disabled="_isAdding"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Outlined.Search"
+                          Immediate />
+
+            @* الجزء الوحيد الذي يعمل Scroll *@
+            <div class="product-list-container">
+
+                @if (_searchError is not null)
+                {
+                    <MudAlert Severity="Severity.Error" role="alert">
+                        @_searchError
+                        <MudButton OnClick="@(() => TextChanged(_searchTerm ?? string.Empty))"
+                                   Disabled="_isAdding">إعادة المحاولة</MudButton>
+                    </MudAlert>
+                }
+
+                <MudList T="ProductLookupItem"
+                         SelectedValue="@_selectedProduct"
+                         Disabled="_isAdding"
+                         SelectedValueChanged="SelectProduct">
+
+                    @foreach (var product in _products)
+                    {
+                        <MudListItem T="ProductLookupItem"
+                                     Class="my-1 list-item"
+                                     Value="@product">
+
+                            <MudStack Row AlignItems="AlignItems.Center">
+
+                                <MudStack Spacing="0">
+
+                                    <MudText Typo="Typo.subtitle2">
+                                        @product.Name
+                                    </MudText>
+
+                                    <MudText Typo="Typo.caption"
+                                             Color="Color.Secondary">
+                                        @product.Code • @product.CategoryName
+                                    </MudText>
+
+                                </MudStack>
+
+                                <MudSpacer />
+
+                                <MudText Color="Color.Primary">
+                                    @product.Price.ToString("N2") ر.س
+                                </MudText>
+
+                            </MudStack>
+
+                        </MudListItem>
+                    }
+                </MudList>
+
+            </div>
+
+            @* ثابت تحت *@
+            <div>
+            <MudGrid Spacing="2">
+
+                <MudItem xs="12" sm="4">
+                    <MudNumericField T="decimal"
+                                     Label="سعر الوحدة"
+                                     @bind-Value="_unitPrice"
+                                     Validation="@(new Func<decimal, string?>(value => value > 0 ? null : "يجب أن يكون السعر أكبر من صفر."))"
+                                     Disabled="_isAdding"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense" />
+                </MudItem>
+
+                <MudItem xs="12" sm="4">
+                    <MudNumericField T="int"
+                                     Label="الكمية"
+                                     @bind-Value="_quantity"
+                                     Disabled="_isAdding"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense" />
+                </MudItem>
+
+                <MudItem xs="12" sm="4">
+                    <MudNumericField T="decimal"
+                                     Label="الضريبة (%)"
+                                     @bind-Value="_vatRate"
+                                     Disabled="_isAdding"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense" />
+                </MudItem>
+
+            </MudGrid>
+
+            @if (_addError is not null)
+            {
+                <MudAlert Severity="Severity.Error" role="alert">@_addError</MudAlert>
+            }
+            </div>
+
+        </div>
+
+    </DialogContent>
+
+
+    <DialogActions>
+
+        <MudButton OnClick="Cancel" Disabled="_isAdding">
+            إلغاء
+        </MudButton>
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Outlined.Add"
+                   Disabled="@(!CanAdd)"
+                   OnClick="Add">
+            إضافة
+        </MudButton>
+
+    </DialogActions>
+
+</MudDialog>

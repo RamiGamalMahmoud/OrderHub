@@ -7,6 +7,7 @@
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:local="clr-namespace:OrderHub.UI.Features.Messages.Index"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:myconverters="clr-namespace:OrderHub.UI.Converters"
     d:DataContext="{d:DesignInstance Type=local:ViewModel}"
     mc:Ignorable="d">
 
@@ -155,7 +156,7 @@
 
                             <StackPanel Orientation="Horizontal">
 
-                                <TextBlock VerticalAlignment="Center" Text="{Binding LastAttemptAt, StringFormat='{}{0:hh\\:mm tt}'}" />
+                                <TextBlock VerticalAlignment="Center" Text="{Binding LastAttemptAt, Converter={StaticResource UtcToLocalTimeConverter}, StringFormat='{}{0:hh\\:mm tt}'}" />
 
                                 <Separator Width="5" Margin="5,0" />
 
@@ -170,49 +171,6 @@
 
                     </DataGridTemplateColumn.CellTemplate>
 
-                </DataGridTemplateColumn>
-
-                <DataGridTemplateColumn>
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-
-                            <StackPanel Orientation="Horizontal">
-
-                                <Button
-                                    Grid.Column="0"
-                                    Height="34"
-                                    Padding="8,0"
-                                    VerticalContentAlignment="Center"
-                                    BorderThickness="0"
-                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}, Path=DataContext.SendMessageCommand}"
-                                    CommandParameter="{Binding}"
-                                    Cursor="Hand"
-                                    FontSize="11"
-                                    Foreground="{StaticResource Primary}">
-
-                                    <StackPanel
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        Orientation="Horizontal">
-
-                                        <icons:MaterialIcon
-                                            Width="15"
-                                            Height="15"
-                                            Margin="0,0,5,0"
-                                            VerticalAlignment="Center"
-                                            Kind="Send" />
-                                        <TextBlock
-                                            VerticalAlignment="Center"
-                                            FontWeight="SemiBold"
-                                            Text="إرسال" />
-
-                                    </StackPanel>
-                                </Button>
-
-                            </StackPanel>
-
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
             </DataGrid.Columns>

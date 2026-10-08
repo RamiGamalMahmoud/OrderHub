@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
@@ -45,7 +46,12 @@ public partial class PropertiesViewModel : ObservableObject
         PropertyItems = new ReadOnlyObservableCollection<PropertyViewModel>(_propertyItems);
         _mediator = mediator;
 
-        WeakReferenceMessenger.Default.Register<PropertyMessage>(this, async (r, m) =>
+        WeakReferenceMessenger.Default.Register<PropertiesMessages.PropertyCreatedMessage>(this, async (r, m) =>
+        {
+            await LoadAsync();
+        });
+
+        WeakReferenceMessenger.Default.Register<PropertiesMessages.PropertyUpdatedMessage>(this, async (r, m) =>
         {
             await LoadAsync();
         });

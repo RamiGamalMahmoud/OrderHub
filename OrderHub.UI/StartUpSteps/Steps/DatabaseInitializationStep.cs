@@ -1,4 +1,5 @@
-﻿using OrderHub.Application.Interfaces.Services;
+﻿using OrderHub.Application.Infrastructure.Installation;
+using OrderHub.Application.Interfaces.Services;
 using OrderHub.UI.Services;
 using System;
 using System.Threading.Tasks;
@@ -8,12 +9,12 @@ namespace OrderHub.UI.StartUpSteps.Steps;
 public class DatabaseInitializationStep : IStartupStep
 {
     private readonly IDatabaseService _db;
-    private readonly IDataMigrationService _migrationService;
+    private readonly IApplicationConfigurationProvider _typeProvider;
 
-    public DatabaseInitializationStep(IDatabaseService db, IDataMigrationService migrationService)
+    public DatabaseInitializationStep(IDatabaseService db, IApplicationConfigurationProvider typeProvider)
     {
         _db = db;
-        _migrationService = migrationService;
+        _typeProvider = typeProvider;
     }
 
     public int Order => (int)StartUpdStepsOrder.DatabaseInitialization;
@@ -23,20 +24,29 @@ public class DatabaseInitializationStep : IStartupStep
 
     public async Task ExecuteAsync()
     {
-        if (!await _db.CanConnectAsync())
+        try
+        {
+            if (await _db.CanConnectAsync())
+            {
+                if (_typeProvider.GetConfiguration().InstallationType is not InstallationType.Server)
+                    return;
+
+                if (await _db.HasPendingMigrationsAsync())
+                {
+                    await _db.MigrateAsync();
+                    NotificationService.Instance.ShowSuccess("تم تحديث قاعدة البيانات");
+                }
+
+                await _db.FixCategoriesAsync();
+            }
+            else
+            {
+                NotificationService.Instance.ShowError("خطأ في الاتصال بقاعدة البيانات");
+            }
+        }
+        catch (Exception)
         {
             NotificationService.Instance.ShowError("خطأ في الاتصال بقاعدة البيانات");
-            throw new Exception("DB connection failed");
         }
-
-        await _db.FixCategoriesAsync();
-
-        if (await _db.HasPendingMigrationsAsync())
-        {
-            await _db.MigrateAsync();
-            NotificationService.Instance.ShowSuccess("تم تحديث قاعدة البيانات");
-        }
-
-        await _migrationService.MigrateLegacyAttachmentsAsync();
     }
 }

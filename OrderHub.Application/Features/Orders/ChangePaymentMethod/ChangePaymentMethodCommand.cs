@@ -1,6 +1,8 @@
-﻿using MediatR;
+using OrderHub.Domain.Enums;
+using OrderHub.Application.Authorization;
+using MediatR;
 using OrderHub.Application.Interfaces;
-using OrderHub.Application.Interfaces.Stores;
+using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using System.Threading;
@@ -8,7 +10,8 @@ using System.Threading.Tasks;
 
 namespace OrderHub.Application.Features.Orders.ChangePaymentMethod;
 
-public record ChangePaymentMethodCommand(int OrderId, int PaymentMethodId) : IChangeOrderPaymentMethodCommand;
+[RequirePermission(PermissionFeature.Orders, PermissionLevel.Write)]
+public record ChangePaymentMethodCommand(int OrderId, int PaymentMethodId, int ExpectedVersion) : IChangeOrderPaymentMethodCommand;
 
 internal class ChangePaymentMethodCommandHandler : IRequestHandler<ChangePaymentMethodCommand, Result>
 {
@@ -27,9 +30,14 @@ internal class ChangePaymentMethodCommandHandler : IRequestHandler<ChangePayment
         if (order == null)
             return Result.Failure("Order not exists.");
 
-        order.ChangePaymentMethod(request.PaymentMethodId);
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        var valid = order.CheckVersion(request.ExpectedVersion);
+        if (!valid.IsSuccess) return Result.Failure(valid.ErrorMessage, "Conflict");
+        valid = order.ChangePaymentMethod(request.PaymentMethodId);
+        if (!valid.IsSuccess) return valid;
+        order.TouchForEdit();
+        try { await _unitOfWork.SaveChangesAsync(cancellationToken); }
+        catch (PersistenceConflictException exception) { return Result.Failure(exception.Message, "Conflict"); }
+        catch (PersistenceException) { return Result.Failure("تعذر حفظ طريقة الدفع."); }
         return Result.Success();
     }
 }

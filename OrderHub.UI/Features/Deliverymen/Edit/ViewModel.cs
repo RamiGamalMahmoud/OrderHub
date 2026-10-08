@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
@@ -46,7 +47,7 @@ internal class ViewModel : Editor.ViewModel, IParameterizedViewModel
         if(result.IsSuccess)
         {
             NotificationService.Instance.ShowSuccess("تم تعديل بيانات المندوب بنجاح.");
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Deliveryman.DeleverymanUpdateMessage());
+            WeakReferenceMessenger.Default.Send(new DeliverymenMessages.DeliverymanUpdatedMessage(_deliverymanId));
             OnRequestClose();
         }
         else

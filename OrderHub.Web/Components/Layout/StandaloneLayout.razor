@@ -1,0 +1,39 @@
+﻿@inherits LayoutComponentBase
+
+<MudRTLProvider RightToLeft="true">
+    <MudThemeProvider Theme="_customTheme" DefaultScrollbar="true" />
+    <MudPopoverProvider />
+    <MudDialogProvider />
+    <MudSnackbarProvider />
+
+
+    <MudLayout Style="max-height: 100dvh" Class="p-0">
+        <MudMainContent>
+            @Body
+        </MudMainContent>
+    </MudLayout>
+</MudRTLProvider>
+
+@code
+{
+    private MudTheme _customTheme = new MudTheme()
+    {
+        Typography = new Typography
+        {
+            Default = new DefaultTypography
+            {
+                FontFamily = ["Tajawal", "Cairo", "sans-serif"]
+            }
+        },
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#2563EB",       // لون أزرق عصري (Tailwind Blue 600) بدلاً من البنفسجي
+            Secondary = "#64748B",     // لون رمادي هادئ للنصوص الثانوية والعناوين
+            Background = "#F8FAFC",    // خلفية ثلجية مريحة جداً للمحتوى (Slate 50)
+            Surface = "#FFFFFF",       // اللون الأبيض للبطاقات، القائمة والهيدر
+            AppbarBackground = "#FFFFFF",
+            AppbarText = "#0F172A",
+            DrawerBackground = "#FFFFFF"
+        }
+    };
+}

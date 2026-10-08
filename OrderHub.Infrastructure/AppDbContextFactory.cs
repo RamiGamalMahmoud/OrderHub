@@ -1,32 +1,23 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using OrderHub.Application.Interfaces.Services;
 
 namespace OrderHub.Infrastructure;
 
 internal class AppDbContextFactory
 {
-    private readonly DbContextOptions<AppDbContext> _options;
-    private readonly IApplicationDirectoriesService _directories;
+    private readonly string _connectionString;
 
-    public AppDbContextFactory(IApplicationDirectoriesService directories)
+    public AppDbContextFactory(string connectionString)
     {
-        _directories = directories;
-    }
-
-    public AppDbContextFactory(DbContextOptions<AppDbContext> options)
-    {
-        _options = options;
+        _connectionString = connectionString;
     }
 
     public virtual AppDbContext CreateDbContext()
     {
-        if (_options != null)
-            return new AppDbContext(_options);
+        DbContextOptionsBuilder<AppDbContext> builder = new();
 
-        DbContextOptionsBuilder<AppDbContext> builder = new DbContextOptionsBuilder<AppDbContext>();
-
-        builder.UseSqlite($"Data Source={_directories.DatabaseFilePath}")
-               .UseSnakeCaseNamingConvention();
+        builder
+            .UseNpgsql(_connectionString)
+            .UseSnakeCaseNamingConvention();
 
         return new AppDbContext(builder.Options);
     }

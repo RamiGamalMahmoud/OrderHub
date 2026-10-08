@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Domain.Enums;
 using System;
@@ -115,7 +114,6 @@ public abstract partial class PropertyEditorViewModelBase : ObservableValidator
     [RelayCommand(CanExecute = nameof(CanSave))]
     protected virtual Task Save()
     {
-        WeakReferenceMessenger.Default.Send(new PropertyMessage());
         Clear();
         return Task.CompletedTask;
     }

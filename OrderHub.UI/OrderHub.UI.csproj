@@ -8,31 +8,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Noto\NotoSans-Bold.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Noto\NotoSans-BoldItalic.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Noto\NotoSans-Italic.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Noto\NotoSans-Regular.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\Roboto-Black.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\Roboto-BlackItalic.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\Roboto-Bold.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\Roboto-BoldItalic.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\Roboto-Italic.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\Roboto-Light.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\Roboto-LightItalic.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\Roboto-Medium.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\Roboto-MediumItalic.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\Roboto-Regular.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\Roboto-Thin.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\Roboto-ThinItalic.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\RobotoCondensed-Bold.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\RobotoCondensed-BoldItalic.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\RobotoCondensed-Italic.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\RobotoCondensed-Light.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\RobotoCondensed-LightItalic.ttf" />
-		<Content Remove="C:\Users\ramig\.nuget\packages\materialdesignthemes\5.3.0\contentFiles\any\net8.0-windows7.0\Resources\Roboto\RobotoCondensed-Regular.ttf" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<None Remove="Resources\Fonts\Cairo.ttf" />
 		<None Remove="Resources\Fonts\Tajawal\Tajawal-Regular.ttf" />
 		<None Remove="Resources\Images\documents-background.png" />
@@ -41,28 +16,31 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-		<PackageReference Include="HandyControls" Version="3.6.0" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+		<PackageReference Include="HandyControls" Version="3.7.0" />
 		<PackageReference Include="Hoax.WpfConverters" Version="1.0.0" />
-		<PackageReference Include="InputSimulatorCore" Version="1.0.5" />
-		<PackageReference Include="Material.Icons.WPF" Version="2.4.1" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
-		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4129.50" />
-		<PackageReference Include="Notification.Wpf" Version="8.0.0" />
+		<PackageReference Include="Material.Icons.WPF" Version="3.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
+		<PackageReference Include="Notification.Wpf" Version="11.0.0" />
+		<PackageReference Include="QRCoder" Version="1.8.0" />
 		<PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
+		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.12" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<Content Include="Resources\Images\documents-background.png">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
 		<Content Include="Resources\Images\almasajid.png">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 		<Content Include="Resources\Images\order-hub-banner.png">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
-		<Content Include="Resources\Images\order-hub-icon.ico" />
+		<Content Include="Resources\Images\order-hub-icon.ico">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
 		<Content Include="Resources\Images\OrderHub.png">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
@@ -75,44 +53,44 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\OrderHub.Application\OrderHub.Application.csproj" />
-	  <ProjectReference Include="..\OrderHub.Domain\OrderHub.Domain.csproj" />
-	  <ProjectReference Include="..\OrderHub.Infrastructure\OrderHub.Infrastructure.csproj" />
+		<ProjectReference Include="..\OrderHub.Application\OrderHub.Application.csproj" />
+		<ProjectReference Include="..\OrderHub.Domain\OrderHub.Domain.csproj" />
+		<ProjectReference Include="..\OrderHub.Infrastructure\OrderHub.Infrastructure.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="Properties\Settings.settings">
-	    <Generator>SettingsSingleFileGenerator</Generator>
-	    <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-	  </None>
-	  <None Update="response.txt">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+		<None Update="Properties\Settings.settings">
+			<Generator>SettingsSingleFileGenerator</Generator>
+			<LastGenOutput>Settings.Designer.cs</LastGenOutput>
+		</None>
+		<None Update="response.txt">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Resources\Fonts\Tajawal\" />
-	  <Folder Include="Resources\Theme\" />
+		<Folder Include="Resources\Fonts\Tajawal\" />
+		<Folder Include="Resources\Theme\" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Resource Include="Resources\Fonts\Cairo.ttf">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Resource>
-	  <Resource Include="Resources\Fonts\Tajawal-Regular.ttf">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Resource>
+		<Resource Include="Resources\Fonts\Cairo.ttf">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Resources\Fonts\Tajawal-Regular.ttf">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</Resource>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="Features\Suppliers\Editor\EditSupplierView.xaml.cs">
-	    <SubType>Code</SubType>
-	  </Compile>
-	  <Compile Update="Properties\Settings.Designer.cs">
-	    <DesignTimeSharedInput>True</DesignTimeSharedInput>
-	    <AutoGen>True</AutoGen>
-	    <DependentUpon>Settings.settings</DependentUpon>
-	  </Compile>
+		<Compile Update="Features\Suppliers\Editor\EditSupplierView.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Properties\Settings.Designer.cs">
+			<DesignTimeSharedInput>True</DesignTimeSharedInput>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Settings.settings</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 </Project>

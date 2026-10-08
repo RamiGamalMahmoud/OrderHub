@@ -1,0 +1,222 @@
+@attribute [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Read)]
+@using OrderHub.Application.Features.Orders.GetDetails
+@using OrderHub.Application.Features.Orders.Lifecycle
+@using OrderHub.Web.Components.Pages.Features.Orders.Workflow
+@using OrderHub.Application.Common.Extensions
+@page "/orders/{id:int}"
+
+@using OrderHub.Application.Interfaces;
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+@inject IRequestExecutor RequestExecuter
+
+<MudContainer MaxWidth="MaxWidth.Large">
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" aria-label="تحميل الطلب" />
+    }
+    else if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error">@_error</MudAlert>
+        <MudButton OnClick="LoadAsync">إعادة المحاولة</MudButton>
+    }
+    else if (_order is null)
+    {
+        <MudAlert Severity="Severity.Info">الطلب غير موجود.</MudAlert>
+    }
+    else
+    {
+
+    <MudStack Spacing="3">
+
+        @*Header*@
+        <MudPaper Elevation="0" Class="pa-4">
+
+            <MudStack Spacing="2">
+
+
+                <MudStack Row
+                          AlignItems="AlignItems.Center">
+                    <MudText Typo="Typo.h6">
+                        تفاصيل الطلب
+                    </MudText>
+
+                    <MudSpacer />
+
+                    <span class="order-status @(_workflow is null ? "order-tone-neutral" : OrderWorkflowPresentation.StatusTone(_workflow.Status))">
+                        @_order?.Header.OrderStatus
+                    </span>
+
+                </MudStack>
+
+                <MudStack Row Spacing="2">
+
+                    <MudText Typo="Typo.body2"
+                             Color="Color.Secondary">
+                        رقم الطلب:
+                    </MudText>
+
+                    <MudText Typo="Typo.body2"
+                             @onclick="OrderNumberClicked"
+                             style="cursor: pointer">
+                        @_order?.Header.OrderNumber
+                    </MudText>
+
+                </MudStack>
+
+            </MudStack>
+        </MudPaper>
+
+        @*Customer Informatino*@
+        <MudPaper Elevation="0" Class="pa-4">
+
+            <MudStack>
+
+                <MudStack Row Spacing="2">
+
+                    <MudIcon Icon="@Icons.Material.Outlined.PersonOutline"
+                             Color="Color.Primary" />
+
+                    <MudText Color="Color.Primary" Typo="Typo.subtitle1">
+                        بيانات العميل
+                    </MudText>
+
+                </MudStack>
+
+                <MudStack Row Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Outlined.Person" Size="Size.Small" />
+                    <MudText Typo="Typo.subtitle2">@_order?.Client.Name</MudText>
+                </MudStack>
+
+                <MudStack Row Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Outlined.Phone" Size="Size.Small" />
+                    <MudText Typo="Typo.body2" Style="direction: ltr">@_order?.Client.PhoneNumber</MudText>
+                </MudStack>
+
+                <MudStack Row>
+                    <MudIcon Icon="@Icons.Material.Outlined.LocationOn" />
+                    <MudText Typo="Typo.body2">@_order?.Client.Address</MudText>
+                </MudStack>
+
+            </MudStack>
+
+        </MudPaper>
+
+        @*Delivery Information*@
+        <MudPaper Elevation="0" Class="pa-4">
+
+            <MudStack Row Spacing="2">
+                <MudIcon Icon="@Icons.Material.Filled.DeliveryDining" />
+                <MudText Typo="Typo.subtitle1"
+                         Color="Color.Primary">التوصيل</MudText>
+            </MudStack>
+
+            <MudChip T="string" Color="Color.Primary" Variant="Variant.Text">@_order?.Delivery.DeliveryMethod</MudChip>
+            @if (_workflow is not null)
+            {
+                <MudText>@_workflow.HandlerName</MudText>
+                <OrderStageStrip State="_workflow" />
+                <MudText Typo="Typo.caption">آخر حدث تشغيلي: <UserLocalTime Value="_workflow.LastChangedAtUtc" /></MudText>
+                @if (_workflow.IsLegacy) { <MudText Typo="Typo.caption">سجل ترحيل بيانات قديمة؛ التوقيت لا يثبت وقت التنفيذ الفعلي.</MudText> }
+                @if (_workflow.Method == DeliveryMethod.DeliveryChain)
+                {
+                    <MudText Typo="Typo.body2">@_workflow.Steps.Count(step => step.Status == DeliveryStatus.Completed) من @_workflow.Steps.Count خطوات مكتملة</MudText>
+                    @if (_workflow.Steps.Any(step => step.Status == DeliveryStatus.Failed))
+                    { <MudAlert Severity="Severity.Warning">توجد خطوة متعذر تنفيذها؛ راجع دورة الطلب.</MudAlert> }
+                }
+                @if (_workflow.Status == OrderStatus.DeliveryFailed)
+                { <MudAlert Severity="Severity.Warning">سبب التعذر: @_workflow.LatestReason</MudAlert> }
+                @if (_workflow.IsArchived) { <span class="order-status order-tone-neutral">مؤرشف — للقراءة فقط</span> }
+                <MudButton Href="@($"/orders/{Id}/workflow")" Class="order-action order-tone-delivery">
+                    @(_workflow.IsArchived || _workflow.Status is OrderStatus.Delivered or OrderStatus.Cancelled ? "عرض دورة الطلب والسجل" : "متابعة دورة الطلب")
+                </MudButton>
+            }
+
+        </MudPaper>
+
+        @*Order Items*@
+        <MudPaper Elevation="0" Class="pa-4">
+
+            <MudStack Row Spacing="2">
+                <MudIcon Icon="@Icons.Material.Outlined.Inventory2" Color="Color.Primary" />
+                <MudText Typo="Typo.subtitle1"
+                         Color="Color.Primary">محتويات الطلب</MudText>
+                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@_order?.Items.ToList().Count()</MudChip>
+            </MudStack>
+
+            <MudDataGrid Items="@_order?.Items" Hover Class="mt-4">
+                <Columns>
+                    <PropertyColumn Property="x => x.ProductName" Title="المنتج" />
+                    <PropertyColumn Property="x => x.UnitPrice" Title="السعر" />
+                    <PropertyColumn Property="x => x.Quantity" Title="الكمية" />
+                    <PropertyColumn Property="x => x.Total" Title="الإجمالي" />
+                </Columns>
+            </MudDataGrid>
+
+        </MudPaper>
+
+        @*Invoice Summary*@
+        <MudPaper Elevation="0" Class="pa-4">
+
+            <MudStack Row Spacing="2">
+                <MudIcon Icon="@Icons.Material.Filled.LocalAtm" Color="Color.Primary" />
+                <MudText Typo="Typo.subtitle1"
+                         Color="Color.Primary">ملخص الفاتورة</MudText>
+            </MudStack>
+
+            <MudStack Row Spacing="2">
+                <MudText Style="font-weight: 600" Color="Color.Primary">الإجمالي</MudText>
+                <MudSpacer />
+                <MudText Style="font-weight: 600" Color="Color.Primary">@($"{_order?.Payment.GrandTotal} ر.س")</MudText>
+            </MudStack>
+
+        </MudPaper>
+
+        @*Orders Button*@
+        <MudButton Class="order-action order-tone-neutral" Style="align-self: end;" Size="Size.Small" Href="/orders">الطلبات</MudButton>
+
+
+    </MudStack>
+    }
+
+</MudContainer>
+
+@code
+{
+    [Parameter]
+    public int Id { get; set; }
+
+    private OrderDetails? _order;
+    private OrderWorkflowState? _workflow;
+    private bool _loading;
+    private string? _error;
+    private int _loadedId, _generation;
+
+    private async Task OrderNumberClicked()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _order?.Header.OrderNumber);
+        Snackbar.Add($"تم نسخ رقم الطلب : {_order?.Header.OrderNumber}");
+    }
+
+    protected override Task OnParametersSetAsync() => _loadedId == Id ? Task.CompletedTask : LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loadedId = Id;
+        var generation = ++_generation;
+        _loading = true;
+        _error = null;
+        _order = null;
+        _workflow = null;
+        try
+        {
+            var order = await RequestExecuter.ExecuteAsync(new GetOrderDetailsQuery(Id));
+            var workflow = order is null ? null : await RequestExecuter.ExecuteAsync(new GetOrderWorkflowQuery(Id));
+            if (generation != _generation) return;
+            _order = order;
+            _workflow = workflow;
+        }
+        catch (Exception) { if (generation == _generation) _error = "تعذر تحميل الطلب. حاول مرة أخرى."; }
+        finally { if (generation == _generation) _loading = false; }
+    }
+}

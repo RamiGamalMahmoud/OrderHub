@@ -1,0 +1,88 @@
+@using OrderHub.Application.Features.Orders.GetEditorLookups
+@using OrderHub.Application.Common.Lookups
+@using OrderHub.Application.Interfaces
+@using OrderHub.Domain.Enums
+@using OrderHub.Web.Components.Pages.Features.Orders.Editor.State
+
+@implements IDisposable
+
+@inject IRequestExecutor RequestExecutor
+@inject ILogger<DetailsStep> Logger
+
+<MudStack Spacing="4">
+
+    <div>
+        <MudText Typo="Typo.h6">
+            تفاصيل الطلب
+        </MudText>
+
+        <MudText Typo="Typo.body2"
+                 Color="Color.Secondary">
+            بيانات العميل والدفع ومصدر الطلب وطريقة التوصيل
+        </MudText>
+    </div>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true"
+                           aria-label="تحميل بيانات الطلب" />
+    }
+
+    @if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error"
+                  Variant="Variant.Outlined"
+                  role="alert">
+
+            <MudStack Row
+                      AlignItems="AlignItems.Center"
+                      Justify="Justify.SpaceBetween">
+
+                <MudText Typo="Typo.body2">
+                    @_error
+                </MudText>
+
+                <MudButton Variant="Variant.Text"
+                           Disabled="_loading"
+                           OnClick="LoadLookupsAsync">
+                    إعادة المحاولة
+                </MudButton>
+
+            </MudStack>
+
+        </MudAlert>
+    }
+
+    <ClientSection ClientId="State.ClientId"
+                   ClientIdChanged="SetClientAsync"
+                   Clients="_clients"
+                   Disabled="_loading" />
+
+    <MudGrid Spacing="3">
+
+        <MudItem xs="12" md="6">
+            <PaymentSection PaymentMethodId="State.PaymentMethodId"
+                            PaymentMethodIdChanged="SetPaymentAsync"
+                            PaymentMethods="_payments"
+                            Disabled="_loading" />
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <OrderSourceSection OrderSource="State.OrderSource"
+                                OrderSourceChanged="SetSourceAsync" />
+        </MudItem>
+
+    </MudGrid>
+
+    <DeliverySection Delivery="State.Delivery"
+                     Deliverymen="_deliverymen"
+                     ShippingCarriers="_carriers"
+                     Disabled="_loading"
+                     Changed="NotifyChangedAsync" />
+
+</MudStack>
+
+@code
+{
+
+}

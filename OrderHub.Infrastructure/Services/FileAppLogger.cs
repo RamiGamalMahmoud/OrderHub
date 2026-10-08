@@ -32,8 +32,9 @@ internal class FileAppLogger : IAppLogger
         return WriteAsync("ERROR", builder.ToString().TrimEnd());
     }
 
-    private async Task WriteAsync(string level, string message)
+    private async Task WriteAsync(string level, string message, string file = "")
     {
+        string fileName = !string.IsNullOrEmpty(file) ? $"orderhub-{file}-{DateTime.Now:yyyy-MM-dd}.log" : $"orderhub-{DateTime.Now:yyyy-MM-dd}.log";
         string logFilePath = Path.Combine(_directoriesService.LogsDirectory, $"orderhub-{DateTime.Now:yyyy-MM-dd}.log");
         string entry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{level}] {message}{Environment.NewLine}{Environment.NewLine}";
 

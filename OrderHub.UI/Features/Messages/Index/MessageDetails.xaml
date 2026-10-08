@@ -1,10 +1,12 @@
-﻿<UserControl
+<UserControl
     x:Class="OrderHub.UI.Features.Messages.Index.MessageDetails"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:commands="clr-namespace:OrderHub.UI.Commands"
     xmlns:enums="clr-namespace:OrderHub.Domain.Enums;assembly=OrderHub.Domain"
     xmlns:hc="https://handyorg.github.io/handycontrol"
-    xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF">
+    xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
+    xmlns:local="clr-namespace:OrderHub.UI.Features.Messages.Index">
 
     <Border
         Background="White"
@@ -872,143 +874,7 @@
             -->
 
             <!--  Footer  -->
-
-            <Border
-                Grid.Row="2"
-                Padding="10,8"
-                BorderBrush="#E5E7EB"
-                BorderThickness="0,1,0,0">
-
-                <Grid>
-
-                    <Grid.ColumnDefinitions>
-
-                        <ColumnDefinition Width="*" />
-
-                        <ColumnDefinition Width="5" />
-
-                        <ColumnDefinition Width="*" />
-
-                        <ColumnDefinition Width="5" />
-
-                        <ColumnDefinition Width="*" />
-
-                    </Grid.ColumnDefinitions>
-
-
-                    <!--  Resend  -->
-
-                    <Button
-                        Grid.Column="0"
-                        Height="34"
-                        Padding="8,0"
-                        HorizontalAlignment="Stretch"
-                        hc:BorderElement.CornerRadius="5"
-                        Background="{StaticResource Primary}"
-                        BorderThickness="0"
-                        Command="{Binding ResendMessageCommand}"
-                        CommandParameter="{Binding SelectedMessage}"
-                        Cursor="Hand"
-                        FontSize="11"
-                        Foreground="White">
-
-                        <StackPanel
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Orientation="Horizontal">
-
-                            <icons:MaterialIcon
-                                Width="15"
-                                Height="15"
-                                Margin="0,0,5,0"
-                                VerticalAlignment="Center"
-                                Kind="Send" />
-
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                FontWeight="SemiBold"
-                                Text="إعادة إرسال" />
-
-                        </StackPanel>
-
-                    </Button>
-
-                    <Button
-                        Grid.Column="2"
-                        Height="34"
-                        Padding="8,0"
-                        HorizontalAlignment="Stretch"
-                        BorderThickness="0"
-                        Command="{Binding CancelSendingMessageCommand}"
-                        CommandParameter="{Binding SelectedMessage}"
-                        Cursor="Hand"
-                        FontSize="11"
-                        Foreground="White"
-                        Style="{StaticResource ButtonWarning}">
-
-                        <StackPanel
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Orientation="Horizontal">
-
-                            <icons:MaterialIcon
-                                Width="15"
-                                Height="15"
-                                Margin="0,0,5,0"
-                                VerticalAlignment="Center"
-                                Kind="Cancel" />
-
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                FontWeight="SemiBold"
-                                Text="إلغاء الإرسال" />
-
-                        </StackPanel>
-
-                    </Button>
-
-
-                    <!--  Delete  -->
-
-                    <Button
-                        Grid.Column="4"
-                        Height="34"
-                        Padding="8,0"
-                        HorizontalAlignment="Stretch"
-                        hc:BorderElement.CornerRadius="5"
-                        Background="#EF2B2D"
-                        BorderThickness="0"
-                        Command="{Binding DeleteMessageCommand}"
-                        CommandParameter="{Binding SelectedMessage}"
-                        Cursor="Hand"
-                        FontSize="11"
-                        Foreground="White">
-
-                        <StackPanel
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Orientation="Horizontal">
-
-                            <icons:MaterialIcon
-                                Width="15"
-                                Height="15"
-                                Margin="0,0,5,0"
-                                VerticalAlignment="Center"
-                                Kind="Delete" />
-
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                FontWeight="SemiBold"
-                                Text="حذف" />
-
-                        </StackPanel>
-
-                    </Button>
-
-                </Grid>
-
-            </Border>
-
+            <local:MessageActions Grid.Row="2" />
         </Grid>
 
     </Border>

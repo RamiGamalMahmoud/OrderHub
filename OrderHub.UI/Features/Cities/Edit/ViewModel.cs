@@ -1,3 +1,4 @@
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
@@ -48,7 +49,7 @@ public partial class ViewModel : Editor.ViewModelBase, IParameterizedViewModel
         {
             NotificationService.Instance.ShowSuccess($"تم تحديث المدينة ({Name}) بنجاح.");
             OnRequestClose();
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Cities.CityUpdatedMessage());
+            WeakReferenceMessenger.Default.Send(new CitiesMessages.CityUpdatedMessage(_cityId));
             return;
         }
 

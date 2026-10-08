@@ -1,0 +1,229 @@
+@inject IRequestExecutor RequestExecutor
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject ILogger<CityEditorDialog> Logger
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            @DialogTitle
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true"
+                               Color="Color.Primary" />
+
+            <MudText Typo="Typo.body2"
+                     Class="mt-2">
+                جاري تحميل بيانات المدينة...
+            </MudText>
+        }
+        else if (_loadError is not null)
+        {
+            <MudAlert Severity="Severity.Error"
+                      Dense="true">
+                @_loadError
+            </MudAlert>
+
+            <MudButton Variant="Variant.Text"
+                       OnClick="LoadAsync"
+                       Class="mt-2">
+                إعادة المحاولة
+            </MudButton>
+        }
+        else
+        {
+            <MudForm @ref="_form">
+                <MudStack Spacing="2">
+                    @if (_saveError is not null)
+                    {
+                        <MudAlert Severity="Severity.Error"
+                                  Dense="true">
+                            @_saveError
+                        </MudAlert>
+                    }
+
+                    <MudTextField T="string"
+                                  @bind-Value="_state.Name"
+                                  Label="اسم المدينة"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  RequiredError="اسم المدينة مطلوب."
+                                  MaxLength="100"
+                                  Validation="@(new Func<string, string?>(CityEditorState.ValidateName))"
+                                  Immediate="true"
+                                  Disabled="_saving" />
+                </MudStack>
+            </MudForm>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Disabled="_saving"
+                   OnClick="Cancel">
+            إلغاء
+        </MudButton>
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Disabled="SaveDisabled"
+                   OnClick="SaveAsync">
+            @SaveButtonText
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public int? CityId { get; set; }
+
+    private CityEditorState _state = new();
+    private MudForm? _form;
+    private string? _loadError;
+    private string? _saveError;
+    private bool _loading = true;
+    private bool _saving;
+
+    private string DialogTitle =>
+        CityId.HasValue ? "تعديل المدينة" : "إضافة مدينة";
+
+    private string SaveButtonText
+    {
+        get
+        {
+            if (_saving)
+            {
+                return "جاري الحفظ...";
+            }
+
+            return CityId.HasValue ? "حفظ التعديلات" : "إضافة";
+        }
+    }
+
+    private bool SaveDisabled =>
+        _loading || _saving || _loadError is not null;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        _saveError = null;
+        _state = new CityEditorState();
+
+        try
+        {
+            if (CityId is not int cityId)
+            {
+                return;
+            }
+
+            var city = await RequestExecutor.ExecuteAsync(new GetCityForEditQuery(cityId));
+
+            if (city is null)
+            {
+                _loadError = "المدينة غير موجودة.";
+                return;
+            }
+
+            _state = CityEditorState.FromCity(city);
+        }
+        catch (AuthorizationDeniedException)
+        {
+            MudDialog.Cancel();
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to load city {CityId}",
+                CityId);
+
+            _loadError = "تعذر تحميل بيانات المدينة. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        if (_saving)
+        {
+            return;
+        }
+
+        MudDialog.Cancel();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (SaveDisabled || _form is null)
+        {
+            return;
+        }
+
+        _saving = true;
+        _saveError = null;
+
+        try
+        {
+            await _form.ValidateAsync();
+
+            if (!_form.IsValid)
+            {
+                return;
+            }
+
+            Result result;
+
+            if (CityId is int cityId)
+            {
+                result = await RequestExecutor.ExecuteAsync(
+                    new UpdateCityCommand(new(cityId, _state.Name)));
+            }
+            else
+            {
+                result = await RequestExecutor.ExecuteAsync(
+                    new CreateCityCommand(new(_state.Name)));
+            }
+
+            if (!result.IsSuccess)
+            {
+                _saveError = result.ErrorMessage;
+                return;
+            }
+
+            Snackbar.Add("تم حفظ المدينة بنجاح.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (AuthorizationDeniedException)
+        {
+            MudDialog.Cancel();
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to save city {CityId}",
+                CityId);
+
+            _saveError = "تعذر حفظ المدينة. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

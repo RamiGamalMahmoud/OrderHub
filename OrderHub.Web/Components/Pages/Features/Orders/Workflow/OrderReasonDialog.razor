@@ -1,0 +1,45 @@
+@using OrderHub.Domain.Models
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="2">
+            <MudText>@Explanation</MudText>
+            <MudTextField T="string" @bind-Value="_reason" Label="السبب" Required="true" Immediate="true"
+                          MaxLength="200" Counter="200" Lines="3" Variant="Variant.Outlined" Disabled="_submitting" />
+            @if (_error is not null) { <MudAlert Severity="Severity.Error">@_error</MudAlert> }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="_submitting" Class="order-action order-tone-neutral">رجوع دون تغيير</MudButton>
+        <MudButton Class="@($"order-action {ConfirmTone}")" OnClick="ConfirmAsync" Disabled="_submitting">@(_submitting ? "جاري الحفظ…" : ConfirmLabel)</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Parameter] public string Explanation { get; set; } = "سيتم تسجيل العملية في تاريخ الطلب.";
+    [Parameter] public string ConfirmLabel { get; set; } = "تأكيد";
+    [Parameter] public string ConfirmTone { get; set; } = "order-tone-neutral";
+    [Parameter] public Func<string, Task<OrderHub.Domain.Common.Result<OrderHub.Application.Features.Orders.Lifecycle.OrderOperationReceipt>>>? Submit { get; set; }
+    private string? _reason;
+    private string? _error;
+    private bool _submitting;
+    private void Cancel() => Dialog.Cancel();
+    private async Task ConfirmAsync()
+    {
+        if (_submitting) return;
+        var valid = Order.ValidateReason(_reason, true);
+        if (!valid.IsSuccess) { _error = valid.ErrorMessage; return; }
+        if (Submit is null) { Dialog.Close(DialogResult.Ok(_reason!.Trim())); return; }
+        _submitting = true;
+        try
+        {
+            var result = await Submit(_reason!.Trim());
+            if (result.IsSuccess) Dialog.Close(DialogResult.Ok(result.Value));
+            else if (result.ErrorCode == "Conflict") Dialog.Cancel();
+            else _error = result.ErrorMessage;
+        }
+        catch (Exception) { _error = "تعذر الحفظ. السبب محفوظ هنا؛ يمكنك مراجعة الحالة والمحاولة مجددًا."; }
+        finally { _submitting = false; }
+    }
+}

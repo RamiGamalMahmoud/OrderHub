@@ -1,0 +1,279 @@
+@inject IRequestExecutor RequestExecutor
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject ILogger<DeliverymanEditorDialog> Logger
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            @DialogTitle
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true"
+                               Color="Color.Primary" />
+
+            <MudText Typo="Typo.body2"
+                     Class="mt-2">
+                جاري تحميل بيانات المندوب...
+            </MudText>
+        }
+        else if (_loadError is not null)
+        {
+            <MudAlert Severity="Severity.Error"
+                      Dense="true">
+                @_loadError
+            </MudAlert>
+
+            <MudButton Variant="Variant.Text"
+                       OnClick="LoadAsync"
+                       Class="mt-2">
+                إعادة المحاولة
+            </MudButton>
+        }
+        else
+        {
+            <MudForm @ref="_form">
+                <MudStack Spacing="3"
+                          Class="pa-1">
+                    @if (_saveError is not null)
+                    {
+                        <MudAlert Severity="Severity.Error"
+                                  Dense="true">
+                            @_saveError
+                        </MudAlert>
+                    }
+
+                    <MudTextField T="string"
+                                  @bind-Value="_state.Name"
+                                  Label="اسم المندوب"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  RequiredError="اسم المندوب مطلوب."
+                                  MaxLength="100"
+                                  Validation="@(new Func<string, string?>(DeliverymanEditorState.ValidateName))"
+                                  Immediate="true"
+                                  Disabled="_saving" />
+                    @if (_cities.Count == 0)
+                    {
+                        <MudAlert Severity="Severity.Info"
+                                  Dense="true">
+                            لا توجد مدن متاحة. يرجى إضافة مدينة أولًا ثم إعادة المحاولة.
+                        </MudAlert>
+
+                        <MudButton OnClick="LoadAsync"
+                                   Disabled="_saving">
+                            إعادة المحاولة
+                        </MudButton>
+                    }
+
+                    <MudSelect T="int?"
+                               @bind-Value="_state.CityId"
+                               Label="المدينة"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Required="true"
+                               RequiredError="اختر المدينة."
+                               Disabled="_saving">
+                        @foreach (var city in _cities)
+                        {
+                            <MudSelectItem T="int?"
+                                           Value="@((int?)city.Id)">
+                                @city.Name
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudTextField T="string"
+                                  @bind-Value="_state.PhoneNumber"
+                                  Label="رقم الهاتف (اختياري)"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  MaxLength="15"
+                                  Validation="@(new Func<string, string?>(DeliverymanEditorState.ValidatePhone))"
+                                  Disabled="_saving" />
+                </MudStack>
+            </MudForm>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Disabled="_saving"
+                   OnClick="Cancel">
+            إلغاء
+        </MudButton>
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Disabled="SaveDisabled"
+                   OnClick="SaveAsync">
+            @SaveButtonText
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter]
+    public int? DeliverymanId { get; set; }
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private DeliverymanEditorState _state = new();
+    private MudForm? _form;
+    private IReadOnlyList<CityInfo> _cities = [];
+    private string? _loadError;
+    private string? _saveError;
+    private bool _loading = true;
+    private bool _saving;
+
+    private string DialogTitle =>
+        DeliverymanId.HasValue
+            ? "تعديل المندوب"
+            : "إضافة مندوب";
+
+    private string SaveButtonText
+    {
+        get
+        {
+            if (_saving)
+            {
+                return "جاري الحفظ...";
+            }
+
+            return DeliverymanId.HasValue ? "حفظ التعديلات" : "إضافة";
+        }
+    }
+
+    private bool SaveDisabled =>
+        _loading || _saving || _loadError is not null || _cities.Count == 0;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        _saveError = null;
+        _state = new DeliverymanEditorState();
+
+        try
+        {
+            if (DeliverymanId is int deliverymanId)
+            {
+                var deliveryman = await RequestExecutor.ExecuteAsync(new GetDeliverymanForEditQuery(deliverymanId));
+
+                if (deliveryman is null)
+                {
+                    _loadError = "تعذر العثور على المندوب المطلوب.";
+                    return;
+                }
+
+                _state = DeliverymanEditorState.FromRead(deliveryman);
+            }
+
+            var cities = await RequestExecutor.ExecuteAsync(new GetDeliverymanEditorCitiesQuery());
+            _cities = cities.OrderBy(city => city.Name).ThenBy(city => city.Id).ToList();
+        }
+        catch (AuthorizationDeniedException)
+        {
+            MudDialog.Cancel();
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to load deliveryman {DeliverymanId}",
+                DeliverymanId);
+
+            _loadError = "تعذر تحميل بيانات المندوب. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        if (_saving)
+        {
+            return;
+        }
+
+        MudDialog.Cancel();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (SaveDisabled || _form is null)
+        {
+            return;
+        }
+
+        _saving = true;
+        _saveError = null;
+
+        try
+        {
+            await _form.ValidateAsync();
+
+            if (!_form.IsValid)
+            {
+                return;
+            }
+
+            _saveError = _state.ValidateAdditional();
+
+            if (_saveError is not null)
+            {
+                return;
+            }
+
+            Result result;
+
+            if (DeliverymanId is int deliverymanId)
+            {
+                result = await RequestExecutor.ExecuteAsync(
+                    _state.UpdateCommand(deliverymanId));
+            }
+            else
+            {
+                result = await RequestExecutor.ExecuteAsync(
+                    _state.CreateCommand());
+            }
+
+            if (!result.IsSuccess)
+            {
+                _saveError = result.ErrorMessage;
+                return;
+            }
+
+            Snackbar.Add("تم حفظ المندوب بنجاح.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (AuthorizationDeniedException)
+        {
+            MudDialog.Cancel();
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to save deliveryman {DeliverymanId}",
+                DeliverymanId);
+
+            _saveError = "تعذر حفظ المندوب. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

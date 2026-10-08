@@ -1,17 +1,13 @@
-﻿using MediatR;
-using OrderHub.Application.Interfaces.Repositories;
+using OrderHub.Domain.Enums;
+using OrderHub.Application.Authorization;
+using MediatR;
+using OrderHub.Application.Features.Setup.Properties.Contracts;
+using OrderHub.Application.Interfaces;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace OrderHub.Application.Features.Setup.Properties.GetAll;
 
-public sealed record GetPropertiesQuery : IRequest<IEnumerable<PropertyListDto>>;
-
-internal sealed class GetPropertiesQueryHandler(IPropertyStore propertyStore) : IRequestHandler<GetPropertiesQuery, IEnumerable<PropertyListDto>>
-{
-    public async Task<IEnumerable<PropertyListDto>> Handle(GetPropertiesQuery request, CancellationToken cancellationToken)
-    {
-        return await propertyStore.GetAllAsync(cancellationToken);
-    }
-}
+[RequirePermission(PermissionFeature.Properties, PermissionLevel.Read)]
+public sealed record GetPropertiesQuery : IRequest<IEnumerable<PropertyListItem>>;

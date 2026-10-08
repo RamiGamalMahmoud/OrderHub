@@ -1,0 +1,115 @@
+﻿@page "/login"
+@using OrderHub.Web.Components.Layout
+@layout StandaloneLayout
+
+<PageTitle>تسجيل الدخول - OrderHub</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small"
+              Class="d-flex align-center justify-center pa-4"
+              Style="min-height: 100dvh;">
+
+    <MudPaper Elevation="3"
+              Class="pa-6"
+              Style="width: 100%; max-width: 480px; border-radius: 12px;">
+
+        <MudStack Spacing="4">
+
+            @* ============================= *@
+            @* Header                        *@
+            @* ============================= *@
+
+            <MudStack Row
+                      AlignItems="AlignItems.Center"
+                      Spacing="2">
+
+                <MudPaper Elevation="0"
+                          Class="d-flex align-center justify-center pa-3"
+                          Style="border-radius: 10px;">
+
+                    <MudIcon Icon="@Icons.Material.Filled.Lock"
+                             Color="Color.Primary"
+                             Size="Size.Medium" />
+
+                </MudPaper>
+
+                <MudStack Spacing="0">
+
+                    <MudText Typo="Typo.h6">
+                        تسجيل الدخول
+                    </MudText>
+
+                    <MudText Typo="Typo.body2"
+                             Color="Color.Secondary">
+                        تسجيل الدخول إلى نظام OrderHub
+                    </MudText>
+
+                </MudStack>
+
+            </MudStack>
+
+
+            <MudDivider />
+
+
+            @* ============================= *@
+            @* Form                          *@
+            @* ============================= *@
+
+            <form method="post" action="/auth/login">
+
+                <MudStack Spacing="3">
+
+                    <MudTextField T="string"
+                                  name="username"
+                                  Label="اسم المستخدم"
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Person" />
+
+                    <MudTextField T="string"
+                                  name="password"
+                                  Label="كلمة المرور"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Password"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Lock" />
+
+                    <MudCheckBox T="bool"
+                                 name="rememberMe"
+                                 Value="false"
+                                 Label="تذكرني" />
+
+                    <MudButton ButtonType="ButtonType.Submit"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Size="Size.Large"
+                               FullWidth
+                               StartIcon="@Icons.Material.Filled.Login">
+                        تسجيل الدخول
+                    </MudButton>
+
+                </MudStack>
+
+            </form>
+
+
+            @* ============================= *@
+            @* Footer                        *@
+            @* ============================= *@
+
+            <MudText Typo="Typo.caption"
+                     Color="Color.Secondary"
+                     Align="Align.Center">
+                OrderHub
+            </MudText>
+
+        </MudStack>
+
+    </MudPaper>
+
+</MudContainer>
+
+
+@code 
+{
+}

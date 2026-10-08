@@ -1,52 +1,79 @@
-﻿using OrderHub.Domain.ValueObjects;
+using OrderHub.Domain.ValueObjects;
+using System;
 using System.Collections.Generic;
 
-namespace OrderHub.Domain.Models
+namespace OrderHub.Domain.Models;
+
+public partial class Client : ModelBase
 {
-    public partial class Client : ModelBase
+    private Client() { }
+
+    public Client(string name, string street, City city, string phoneNumber, string countryCode)
     {
-        private Client() { }
+        UpdateName(name);
+        UpdateAddress(city, street);
+        UpdatePhone(countryCode, phoneNumber);
+    }
 
-        public Client(string name, string street, City city, string phoneNumber, string countryCode)
+    public EntityName Name { get; private set; }
+    public string Location { get; private set; }
+    private readonly List<Order> _orders = [];
+    public IReadOnlyCollection<Order> Orders => _orders.AsReadOnly();
+    public Phone Phone { get; private set; }
+    public Address Address { get; private set; }
+
+    public void UpdateLocation(string location)
+    {
+        Location = string.IsNullOrWhiteSpace(location) ? null : location.Trim();
+    }
+
+    public void UpdateName(string name) => Name = new EntityName(name?.Trim());
+
+    public void UpdatePhone(string countryCode, string number)
+    {
+        var phone = Phone.Create(number?.Trim() ?? "", countryCode?.Trim() ?? "");
+        if (!phone.IsSuccess)
         {
-            UpdateName(name);
-            UpdateAddress(city, street);
-            UpdatePhone(countryCode, phoneNumber);
+            throw new ArgumentException(phone.ErrorMessage);
         }
 
-        public EntityName Name { get; private set; }
-        public string Location { get; set; }
-        public void UpdateName(string name)
+        if (Phone is null)
         {
-            Name = new EntityName(name);
+            Phone = phone.Value;
+            return;
         }
 
-        private List<Order> _orders = new List<Order>();
-        public IReadOnlyCollection<Order> Orders => _orders.AsReadOnly();
+        Phone.ChangeNumber(phone.Value.Number.NationalNumber, phone.Value.Number.CountryCode);
+    }
 
-        public Phone Phone { get; private set; }
-
-        public Address Address { get; private set; }
-
-        public void UpdatePhone(string countryCode, string number)
+    public void UpdateAddress(City city, string street)
+    {
+        var address = Address.Create(street?.Trim(), city);
+        if (!address.IsSuccess)
         {
-            if(Phone is null)
-            {
-                Phone = Phone.Create(number, countryCode).Value;
-            }
-
-            Phone.ChangeNumber(number, countryCode);
+            throw new ArgumentException(address.ErrorMessage);
         }
 
-        public void UpdateAddress(City city, string street)
+        if (Address is null)
         {
-            if(Address is null)
-            {
-                Address = Address.Create(street, city).Value;
-            }
-
-            Address.ChangeCity(city);
-            Address.ChangeStreet(street);
+            Address = address.Value;
+            return;
         }
+
+        Address.ChangeCity(city);
+        Address.ChangeStreet(address.Value.Street);
+    }
+
+    // A contact may be shared by another party; replacing it keeps that party intact.
+    public void ReplacePhone(Phone phone)
+    {
+        ArgumentNullException.ThrowIfNull(phone);
+        Phone = phone;
+    }
+
+    public void ReplaceAddress(Address address)
+    {
+        ArgumentNullException.ThrowIfNull(address);
+        Address = address;
     }
 }

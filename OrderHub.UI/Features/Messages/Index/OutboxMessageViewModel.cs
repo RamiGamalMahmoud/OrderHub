@@ -7,6 +7,7 @@ using OrderHub.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 
 namespace OrderHub.UI.Features.Messages.Index;
@@ -39,11 +40,15 @@ public partial class OutboxMessageViewModel : ObservableObject
 
     public string OrderNumber { get; init; }
     public string RecipientName { get; init; }
+    public int RecipientId { get; init; }
     public EnumItem<RecipientType> RecipientType { get; init; }
     public string Text { get; init; }
     public string PhoneNumber { get; init; }
-    public DateTime CreatedAt { get; init; }
-    public DateTime? LastAttemptAt { get; init; }
+    [ObservableProperty]
+    private DateTime _createdAt;
+
+    [ObservableProperty]
+    private DateTime? _lastAttemptAt;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddNoteCommand))]
@@ -62,15 +67,23 @@ public partial class OutboxMessageViewModel : ObservableObject
     public int AttachmentsCount => Attachments.Count;
     public int NotesCount => Notes.Count;
 
-    public void AddAttachments(Dictionary<string, string> attachments)
+    public void AddAttachments(IEnumerable<MessageAttachmentItem> attachments)
     {
-        if (attachments is null || attachments.Count == 0)
+        if (attachments is null)
             return;
 
-        foreach (var attachment in attachments)
+        foreach (MessageAttachmentItem attachment in attachments)
         {
-            if (!string.IsNullOrEmpty(attachment.Key) && !Attachments.Any(x => x.FilePath == attachment.Key))
-                Attachments.Add(new MessageAttachmentItem(attachment.Key, attachment.Value));
+            bool exists = Attachments.Any(x =>
+                string.Equals(
+                    x.Name,
+                    attachment.Name,
+                    StringComparison.OrdinalIgnoreCase));
+
+            if (exists)
+                continue;
+
+            Attachments.Add(attachment);
         }
     }
 
@@ -79,10 +92,19 @@ public partial class OutboxMessageViewModel : ObservableObject
         if (attachments is null || attachments.Count == 0)
             return;
 
-        foreach (string attachment in attachments)
+        foreach (string filePath in attachments)
         {
-            if (!Attachments.Any(x => x.FilePath == attachment))
-                Attachments.Add(new MessageAttachmentItem(attachment));
+            bool exist = Attachments
+                .Any(x =>
+                string.Equals(
+                    x.Name,
+                    filePath,
+                    StringComparison.OrdinalIgnoreCase));
+
+            if (exist)
+                continue;
+
+            Attachments.Add(new MessageAttachmentItem(filePath));
         }
     }
 

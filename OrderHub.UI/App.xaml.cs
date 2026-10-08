@@ -1,9 +1,13 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Notification.Wpf;
+using OrderHub.Application.Infrastructure.Connection;
 using OrderHub.Application.Interfaces.Services;
+using OrderHub.UI.Commands;
+using OrderHub.UI.DependencyInjection;
 using OrderHub.UI.Services;
 using OrderHub.UI.StartUpSteps;
+using OrderHub.UI.States;
 using QuestPDF.Infrastructure;
 using System;
 using System.Globalization;
@@ -24,7 +28,7 @@ public partial class App : System.Windows.Application
             .CreateDefaultBuilder()
             .ConfigureServices((context, services) =>
             {
-                services.AddServices();
+                services.AddUI();
             })
             .Build();
 
@@ -32,9 +36,22 @@ public partial class App : System.Windows.Application
         DialogService.Init(_host.Services);
         NavigationService.Init(_host.Services);
         NotificationService.Initialize(_host.Services.GetRequiredService<INotificationManager>());
+        AppCommands.SetInstance(_host.Services.GetRequiredService<IAppCommands>());
+        AppState.SetInstance(_host.Services.GetRequiredService<IAppState>());
+
+        RegisterApplicationResources();
     }
 
-    protected override void OnStartup(StartupEventArgs e)
+    private void RegisterApplicationResources()
+    {
+        Resources["AppCommands"] =
+            _host.Services.GetRequiredService<IAppCommands>();
+
+        Resources["AppState"] =
+            _host.Services.GetRequiredService<AppState>();
+    }
+
+    protected async override void OnStartup(StartupEventArgs e)
     {
         QuestPDF.Settings.License = LicenseType.Community;
         CultureInfo culture = new CultureInfo("en-US");
@@ -50,9 +67,9 @@ public partial class App : System.Windows.Application
         CultureInfo.DefaultThreadCurrentUICulture = culture;
         base.OnStartup(e);
 
-        ShowSplashScreen();
-        _ = StartAsync();
-        //_ = InitializeAsync();
+        DialogService.Instance.SwitchWindow<Features.Splash>();
+        await StartAsync();
+        await _host.StartAsync();
     }
 
     private async Task StartAsync()
@@ -61,11 +78,9 @@ public partial class App : System.Windows.Application
         {
             await Dispatcher.Yield(DispatcherPriority.Render);
 
-            IStartupPipeline startupPipeline = GetService<IStartupPipeline>();
+            await RunStartUpPipeline();
 
-            await startupPipeline.RunAsync();
-
-            ShowMainWindow();
+            await InitializeApplicationAsync();
         }
         catch (Exception ex)
         {
@@ -73,26 +88,23 @@ public partial class App : System.Windows.Application
         }
     }
 
-    private void ShowSplashScreen()
+    private async Task RunStartUpPipeline()
     {
-        MainWindow = GetService<Features.Splash>();
-        MainWindow.Show();
+        await _host.Services.CreateScope()
+            .ServiceProvider
+            .GetRequiredService<IStartupPipeline>()
+            .RunAsync();
+
     }
 
-    private void ShowMainWindow()
+
+    private async Task InitializeApplicationAsync()
     {
-        SwitchWindow<Features.MainWindow.MainWindowView>();
-    }
+        await GetService<IConnectionConfigurationStorage>()
+            .LoadAsync();
 
-    private void SwitchWindow<T>() where T : Window
-    {
-        Window oldWindow = MainWindow;
-
-        T newWindow = GetService<T>();
-        MainWindow = newWindow;
-
-        newWindow.Show();
-        oldWindow?.Close();
+        await GetService<IApplicationInitializationService>()
+            .InitializeAsync();
     }
 
     #region Exception Handling
@@ -152,10 +164,12 @@ public partial class App : System.Windows.Application
 
     protected override async void OnExit(ExitEventArgs e)
     {
-        base.OnExit(e);
         await GetService<IMessageService>().StopAsync();
-        GetService<IWhatsappService>().Close();
+        GetService<IWhatsappService>().Stop();
+
         await _host.StopAsync();
+
+        base.OnExit(e);
     }
 
     #endregion

@@ -1,0 +1,143 @@
+@using OrderHub.Web.Components.Pages.Features.Orders.Editor.State
+@using OrderHub.Domain.Common
+@using OrderHub.Domain.Enums
+
+<MudDrawer Open="IsOpen" OpenChanged="OnOpenChanged" Anchor="Anchor.End"
+           Variant="DrawerVariant.Temporary" Width="min(420px, 100vw)" Class="pa-4">
+    @if (_workingCopy is not null)
+    {
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.h6">@_workingCopy.ProductName</MudText>
+            <MudForm @ref="_form">
+                <MudStack>
+                    <MudSelect T="int?" Label="المورد" @bind-Value="_workingCopy.SupplierId" Clearable="true" Disabled="_saving">
+                        @foreach (var supplier in _workingCopy.Suppliers)
+                        {
+                            <MudSelectItem T="int?" Value="@((int?)supplier.Id)">@supplier.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                    @if (_workingCopy.SupplierId.HasValue && !_workingCopy.Suppliers.Any(s => s.Id == _workingCopy.SupplierId))
+                    {
+                        <MudAlert Severity="Severity.Warning">المورد المحدد لم يعد متاحاً. اختر مورداً متاحاً أو امسح الاختيار.</MudAlert>
+                    }
+                    <MudNumericField T="decimal" Label="سعر الوحدة" @bind-Value="_workingCopy.UnitPrice"
+                                     Disabled="_saving" Validation="@(new Func<decimal, string?>(value => value > 0 ? null : "يجب أن يكون السعر أكبر من صفر."))" />
+                    <MudNumericField T="int" Label="الكمية" @bind-Value="_workingCopy.Quantity" Min="1"
+                                     Disabled="_saving" Validation="@(new Func<int, string?>(value => value > 0 ? null : "يجب أن تكون الكمية أكبر من صفر."))" />
+                    <MudNumericField T="decimal" Label="الضريبة (%)" @bind-Value="_workingCopy.VatRate" Min="0" Max="100"
+                                     Disabled="_saving" Validation="@(new Func<decimal, string?>(value => value is >= 0 and <= 100 ? null : "الضريبة يجب أن تكون بين 0 و100."))" />
+                    @foreach (var property in _workingCopy.Properties)
+                    {
+                        @if (!property.HasMetadata)
+                        {
+                            <MudAlert Severity="Severity.Warning">@property.ValidateValue(property.Value) — @property.Value</MudAlert>
+                            continue;
+                        }
+                        @switch (property.Type)
+                        {
+                            case PropertyType.Text:
+                                <MudTextField T="string" @key="property.PropertyId" Label="@property.Name" @bind-Value="property.Value"
+                                              Required="property.IsRequired" Disabled="_saving" Validation="@(new Func<string?, string?>(property.ValidateValue))" />
+                                break;
+                            case PropertyType.Boolean:
+                                <MudSelect T="string" @key="property.PropertyId" Label="@property.Name" @bind-Value="property.Value" Clearable="true"
+                                           Required="property.IsRequired" Disabled="_saving" Validation="@(new Func<string?, string?>(property.ValidateValue))">
+                                    <MudSelectItem T="string" Value='@("true")'>نعم</MudSelectItem>
+                                    <MudSelectItem T="string" Value='@("false")'>لا</MudSelectItem>
+                                </MudSelect>
+                                break;
+                            case PropertyType.List:
+                                <MudSelect T="string" @key="property.PropertyId" Label="@property.Name" @bind-Value="property.Value" Clearable="true"
+                                           Required="property.IsRequired" Disabled="_saving" Validation="@(new Func<string?, string?>(property.ValidateValue))">
+                                    @foreach (var option in property.Options)
+                                    {
+                                        <MudSelectItem T="string" Value="@option.Value">@option.Value</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                break;
+                        }
+                        @if (property.Value is not null && property.ValidateValue(property.Value) is { } error)
+                        {
+                            <MudAlert Severity="Severity.Warning">@error</MudAlert>
+                        }
+                    }
+                </MudStack>
+            </MudForm>
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" role="alert">@_error</MudAlert>
+            }
+            <MudStack Row Justify="Justify.FlexEnd">
+                <MudButton OnClick="Cancel" Disabled="_saving">إلغاء</MudButton>
+                <MudButton OnClick="SaveAsync" Disabled="_saving" Color="Color.Primary" Variant="Variant.Filled">حفظ</MudButton>
+            </MudStack>
+        </MudStack>
+    }
+</MudDrawer>
+
+@code {
+    [Parameter, EditorRequired] public OrderItemEditorState Item { get; set; } = null!;
+    [Parameter] public Guid SessionId { get; set; }
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter, EditorRequired]
+    public Func<OrderItemEditorState, Guid, OrderItemEditorState, Task<Result>> Commit { get; set; } = null!;
+
+    private OrderItemEditorState? _workingCopy;
+    private OrderItemEditorState? _original;
+    private Guid _originalSession;
+    private bool _wasOpen;
+    private bool _saving;
+    private string? _error;
+    private MudForm? _form;
+
+    protected override void OnParametersSet()
+    {
+        if (IsOpen && (!_wasOpen || !ReferenceEquals(Item, _original) || SessionId != _originalSession))
+        {
+            _original = Item;
+            _originalSession = SessionId;
+            _workingCopy = Item.CreateWorkingCopy();
+            _error = null;
+        }
+        _wasOpen = IsOpen;
+    }
+
+    private Task OnOpenChanged(bool open) => open || _saving ? Task.CompletedTask : Cancel();
+
+    private Task Cancel()
+    {
+        if (_saving)
+            return Task.CompletedTask;
+        _workingCopy = null;
+        return IsOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_saving || _workingCopy is null || _original is null)
+            return;
+        _saving = true;
+        try
+        {
+            if (_form is not null)
+            {
+                await _form.ValidateAsync();
+                if (!_form.IsValid)
+                    return;
+            }
+            var result = await Commit(_original, _originalSession, _workingCopy);
+            if (result.IsSuccess)
+            {
+                _workingCopy = null;
+                await IsOpenChanged.InvokeAsync(false);
+            }
+            else
+                _error = result.ErrorMessage;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

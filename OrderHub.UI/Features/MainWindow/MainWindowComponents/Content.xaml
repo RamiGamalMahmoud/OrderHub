@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:OrderHub.UI.Features.MainWindow.MainWindowComponents"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:services="clr-namespace:OrderHub.UI.Services"
     mc:Ignorable="d">
 
     <Border
@@ -12,7 +13,7 @@
         Background="White"
         CornerRadius="5">
 
-        <ContentControl Content="{Binding NavigationService.Instance.CurrentView}" />
+        <ContentControl Content="{Binding Source={x:Static services:NavigationService.Instance}, Path=CurrentView}" />
     </Border>
 
 </UserControl>

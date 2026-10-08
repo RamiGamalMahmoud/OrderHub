@@ -2,36 +2,51 @@
     x:Class="OrderHub.UI.Features.MainWindow.MainWindowComponents.BottomBanner"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:commands="clr-namespace:OrderHub.UI.Commands"
     xmlns:converters="clr-namespace:Hoax.WpfConverters;assembly=Hoax.WpfConverters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
     xmlns:local="clr-namespace:OrderHub.UI.Features.MainWindow.MainWindowComponents"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:states="clr-namespace:OrderHub.UI.States"
     xmlns:viewModel="clr-namespace:OrderHub.UI.Features.MainWindow"
     d:DataContext="{d:DesignInstance Type=viewModel:MainWindowViewModel}"
+    FlowDirection="RightToLeft"
     mc:Ignorable="d">
 
     <UserControl.Resources>
 
+        <!--  Salla Status  -->
+
         <Style x:Key="SallaConnectionIcon" TargetType="icons:MaterialIcon">
+
             <Setter Property="Width" Value="16" />
             <Setter Property="Height" Value="16" />
 
             <Style.Triggers>
 
-                <DataTrigger Binding="{Binding IsAuthenticated}" Value="True">
+                <DataTrigger Binding="{Binding Source={x:Static states:AppState.Instance}, Path=Salla.IsAuthenticated}" Value="True">
                     <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
-                    <Setter Property="ToolTip" Value="Connected to Salla" />
+                    <Setter Property="ToolTip" Value="متصل بـ Salla" />
                     <Setter Property="Kind" Value="Basket" />
                 </DataTrigger>
 
-                <DataTrigger Binding="{Binding IsAuthenticated}" Value="False">
+                <DataTrigger Binding="{Binding Source={x:Static states:AppState.Instance}, Path=Salla.IsAuthenticated}" Value="False">
                     <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
-                    <Setter Property="ToolTip" Value="Not connected to Salla" />
+                    <Setter Property="ToolTip" Value="غير متصل بـ Salla" />
                     <Setter Property="Kind" Value="BasketOff" />
                 </DataTrigger>
 
             </Style.Triggers>
+
+        </Style>
+
+        <!--  Status Icon  -->
+
+        <Style x:Key="StatusIconStyle" TargetType="icons:MaterialIcon">
+
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
 
         </Style>
 
@@ -48,23 +63,404 @@
         <Grid>
 
             <Grid.ColumnDefinitions>
+                <!--  User  -->
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="12" />
+
+                <!--  Main / Update  -->
                 <ColumnDefinition Width="*" />
+
+                <!--  Application Status  -->
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <!--  Status Icons  -->
 
-            <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+            <!--  =========================================================  -->
+            <!--  User  -->
+            <!--  =========================================================  -->
+
+            <Button
+                Grid.Column="0"
+                Height="32"
+                Padding="5,0"
+                Background="Transparent"
+                BorderThickness="0"
+                Cursor="Hand">
+
+                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+
+                    <Border
+                        Width="32"
+                        Height="32"
+                        Background="#F3F4F6"
+                        CornerRadius="16">
+
+                        <icons:MaterialIcon
+                            Width="25"
+                            Height="25"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+
+                            <icons:MaterialIcon.Style>
+
+                                <Style TargetType="icons:MaterialIcon">
+
+                                    <Setter Property="Kind" Value="User" />
+
+                                    <Setter Property="Foreground" Value="{StaticResource Primary}" />
+
+                                    <Style.Triggers>
+
+                                        <DataTrigger Binding="{Binding ApplicationContext.User.IsAdmin}" Value="True">
+
+                                            <Setter Property="Kind" Value="AdministratorOutline" />
+
+                                            <Setter Property="Foreground" Value="#7C3AED" />
+
+                                        </DataTrigger>
+
+                                    </Style.Triggers>
+
+                                </Style>
+
+                            </icons:MaterialIcon.Style>
+
+                        </icons:MaterialIcon>
+
+                    </Border>
+
+                    <StackPanel
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal">
+
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontFamily="{StaticResource Cairo}"
+                            FontSize="14"
+                            FontWeight="SemiBold"
+                            Foreground="#1F2937"
+                            Text="{Binding ApplicationContext.User.DisplayName}"
+                            TextTrimming="CharacterEllipsis" />
+
+                        <TextBlock
+                            Margin="8,0,0,0"
+                            VerticalAlignment="Center"
+                            FontFamily="{StaticResource Cairo}"
+                            FontSize="11"
+                            FontWeight="Medium"
+                            Foreground="#7C3AED"
+                            Text="مدير النظام"
+                            Visibility="{Binding ApplicationContext.User.IsAdmin, Converter={converters:BoolToVisibilityConverter}}" />
+
+                    </StackPanel>
+
+                </StackPanel>
+
+            </Button>
+
+            <!--  =========================================================  -->
+            <!--  Navigation  -->
+            <!--  =========================================================  -->
+
+            <Border
+                Grid.Column="1"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Background="#F9FAFB"
+                BorderBrush="#E5E7EB"
+                BorderThickness="1"
+                CornerRadius="5">
+
+                <StackPanel Orientation="Horizontal">
+
+                    <Button
+                        Width="30"
+                        Height="28"
+                        Padding="0"
+                        BorderThickness="0"
+                        Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Navigation.GoBackCommand}"
+                        Cursor="Hand"
+                        ToolTip="رجوع">
+
+                        <icons:MaterialIcon
+                            Width="17"
+                            Height="17"
+                            Foreground="#4B5563"
+                            Kind="ArrowRight" />
+
+                    </Button>
+
+                    <Border
+                        Width="1"
+                        Margin="0,5"
+                        Background="#E5E7EB" />
+
+                    <Button
+                        Width="30"
+                        Height="28"
+                        Padding="0"
+                        BorderThickness="0"
+                        Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Navigation.GoForwardCommand}"
+                        Cursor="Hand"
+                        ToolTip="تقدم">
+
+                        <icons:MaterialIcon
+                            Width="17"
+                            Height="17"
+                            Foreground="#4B5563"
+                            Kind="ArrowLeft" />
+
+                    </Button>
+
+                </StackPanel>
+
+            </Border>
+
+            <!--  =========================================================  -->
+            <!--  Update  -->
+            <!--  =========================================================  -->
+
+            <Grid
+                Grid.Column="1"
+                Margin="20,0"
+                VerticalAlignment="Center"
+                Visibility="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Update.CanUpdate, Converter={converters:BoolToVisibilityConverter}}">
+
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal"
+                    Visibility="{Binding ApplicationContext.Update.NeedToUpdate, Converter={converters:BoolToVisibilityConverter}}">
+
+                    <icons:MaterialIcon
+                        Width="16"
+                        Height="16"
+                        VerticalAlignment="Center"
+                        Foreground="{StaticResource Primary}"
+                        Kind="Update" />
+
+                    <TextBlock
+                        Margin="6,0,10,0"
+                        VerticalAlignment="Center"
+                        FontSize="11"
+                        FontWeight="Medium"
+                        Foreground="#4B5563"
+                        Text="يتوفر تحديث جديد للبرنامج" />
+
+                    <!--  Update  -->
+
+                    <Button
+                        Height="25"
+                        Padding="8,0"
+                        BorderThickness="0"
+                        Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Update.UpdateCommand}"
+                        Cursor="Hand"
+                        Style="{StaticResource ButtonInfo}"
+                        Visibility="{Binding Source={x:Static states:AppState.Instance}, Path=Update.IsUpdating, Converter={converters:BoolToVisibilityConverter ForTrue=Collapsed, ForFalse=Visible}}">
+
+                        <StackPanel Orientation="Horizontal">
+
+                            <icons:MaterialIcon
+                                Width="14"
+                                Height="14"
+                                Kind="Download" />
+
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                FontSize="10"
+                                FontWeight="SemiBold"
+                                Text="تحديث الآن" />
+
+                        </StackPanel>
+
+                    </Button>
+
+                    <!--  Progress  -->
+
+                    <ProgressBar
+                        Width="100"
+                        Height="20"
+                        Margin="10,0,0,0"
+                        Maximum="100"
+                        Minimum="0"
+                        Visibility="{Binding Source={x:Static states:AppState.Instance}, Path=Update.IsUpdating, Converter={converters:BoolToVisibilityConverter}}"
+                        Value="{Binding Source={x:Static states:AppState.Instance}, Path=Update.Progress, Mode=OneWay}" />
+
+                    <!--  Cancel  -->
+
+                    <Button
+                        Height="25"
+                        Margin="10,0,0,0"
+                        Padding="8,0"
+                        BorderThickness="0"
+                        Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Update.CancelUpdateCommand}"
+                        Cursor="Hand"
+                        Style="{StaticResource ButtonDashedDanger}"
+                        Visibility="{Binding Source={x:Static states:AppState.Instance}, Path=Update.IsUpdating, Converter={converters:BoolToVisibilityConverter}}">
+
+                        <StackPanel Orientation="Horizontal">
+
+                            <icons:MaterialIcon
+                                Width="14"
+                                Height="14"
+                                Kind="CloseBox" />
+
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                FontSize="10"
+                                FontWeight="SemiBold"
+                                Text="إلغاء التحديث" />
+
+
+                        </StackPanel>
+
+                    </Button>
+
+                </StackPanel>
+
+            </Grid>
+
+
+            <!--  =========================================================  -->
+            <!--  Application Status  -->
+            <!--  =========================================================  -->
+
+            <StackPanel
+                Grid.Column="2"
+                VerticalAlignment="Center"
+                Orientation="Horizontal">
+
+
+                <!--  Version  -->
+
+                <Border
+                    Height="28"
+                    Margin="0,0,4,0"
+                    Padding="8,0"
+                    Background="#F9FAFB"
+                    CornerRadius="5">
+
+                    <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+
+                        <icons:MaterialIcon
+                            Width="16"
+                            Height="16"
+                            VerticalAlignment="Center"
+                            Foreground="#6B7280"
+                            Kind="InformationOutline" />
+
+                        <TextBlock
+                            Margin="5,0,0,0"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="#6B7280"
+                            Text="الإصدار" />
+
+                        <TextBlock
+                            Margin="5,0,0,0"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="#6B7280"
+                            Text="{Binding ApplicationContext.Application.Version}" />
+
+                    </StackPanel>
+
+                </Border>
+
+
+                <!--  Database  -->
 
                 <Button
-                    Width="26"
-                    Height="26"
-                    Margin="0,0,4,0"
+                    Height="28"
+                    Margin="2,0"
+                    Padding="7,0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Application.OpenDataFolderCommand}"
+                    Cursor="Hand"
+                    Foreground="#4B5563">
+
+                    <StackPanel Orientation="Horizontal">
+
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontSize="11"
+                            Text="قاعدة البيانات" />
+
+                        <icons:MaterialIcon
+                            Width="17"
+                            Height="17"
+                            Margin="5,0,0,0"
+                            Kind="Database" />
+
+                    </StackPanel>
+
+                </Button>
+
+
+                <!--  Connection  -->
+
+                <Border
+                    Height="28"
+                    Margin="2,0"
+                    Padding="7,0"
+                    Background="#F9FAFB"
+                    CornerRadius="5">
+
+                    <StackPanel Orientation="Horizontal">
+
+                        <icons:MaterialIcon VerticalAlignment="Center" Kind="Internet">
+
+                            <icons:MaterialIcon.Style>
+
+                                <Style BasedOn="{StaticResource StatusIconStyle}" TargetType="icons:MaterialIcon">
+
+                                    <Style.Triggers>
+
+                                        <DataTrigger Binding="{Binding Source={x:Static states:AppState.Instance}, Path=Connection.IsConnected}" Value="True">
+
+                                            <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+
+                                        </DataTrigger>
+
+                                        <DataTrigger Binding="{Binding Source={x:Static states:AppState.Instance}, Path=Connection.IsConnected}" Value="False">
+
+                                            <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+
+                                        </DataTrigger>
+
+                                    </Style.Triggers>
+
+                                </Style>
+
+                            </icons:MaterialIcon.Style>
+
+                        </icons:MaterialIcon>
+
+                        <TextBlock
+                            Margin="5,0,0,0"
+                            VerticalAlignment="Center"
+                            FontSize="10"
+                            Foreground="#6B7280"
+                            Text="الاتصال" />
+
+                    </StackPanel>
+
+                </Border>
+
+
+                <!--  Salla  -->
+
+                <Button
+                    Width="28"
+                    Height="28"
+                    Margin="2,0"
                     Padding="0"
                     Background="Transparent"
                     BorderThickness="0"
-                    Command="{Binding LoginSallaCommand}"
+                    Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Salla.LoginCommand}"
                     Cursor="Hand"
                     Visibility="{Binding IsAppInDebug, Converter={converters:BoolToVisibilityConverter}}">
 
@@ -72,58 +468,46 @@
 
                 </Button>
 
-                <icons:MaterialIcon
-                    Width="16"
-                    Height="16"
-                    VerticalAlignment="Center"
-                    Kind="Internet">
 
-                    <icons:MaterialIcon.Style>
+                <!--  Separator  -->
 
-                        <Style TargetType="icons:MaterialIcon">
+                <Border
+                    Width="1"
+                    Height="20"
+                    Margin="7,0"
+                    Background="#E5E7EB" />
 
-                            <Style.Triggers>
 
-                                <DataTrigger Binding="{Binding AppState.IsConnected}" Value="True">
-                                    <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
-                                </DataTrigger>
-
-                                <DataTrigger Binding="{Binding AppState.IsConnected}" Value="False">
-                                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
-                                </DataTrigger>
-
-                            </Style.Triggers>
-
-                        </Style>
-
-                    </icons:MaterialIcon.Style>
-
-                </icons:MaterialIcon>
+                <!--  Logout  -->
 
                 <Button
-                    Height="26"
-                    Margin="4,0,4,0"
-                    Command="{Binding OpenDataFolderCommand}"
+                    Height="30"
+                    Padding="8,0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Command="{Binding Source={x:Static commands:AppCommands.Instance}, Path=Auth.LogoutCommand}"
                     Cursor="Hand"
-                    FontWeight="SemiBold"
-                    Foreground="{StaticResource Primary}">
+                    Foreground="{StaticResource DangerBrush}">
+
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock VerticalAlignment="Center" Text="مجلد قاعدة البيانات" />
-                        <icons:MaterialIcon Width="20" Kind="Database" />
+
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Text="تسجيل الخروج" />
+
+                        <icons:MaterialIcon
+                            Width="17"
+                            Height="17"
+                            Margin="5,0,0,0"
+                            Kind="Logout" />
+
                     </StackPanel>
+
                 </Button>
 
             </StackPanel>
-
-            <!--  Status Message  -->
-
-            <TextBlock
-                Grid.Column="2"
-                VerticalAlignment="Center"
-                FontSize="12"
-                Foreground="#4B5563"
-                Text="{Binding Message}"
-                TextTrimming="CharacterEllipsis" />
 
         </Grid>
 

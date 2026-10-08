@@ -5,7 +5,9 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:hc="https://handyorg.github.io/handycontrol"
     xmlns:icons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
+    xmlns:local="clr-namespace:OrderHub.UI.Features.Messages.Index"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    d:DataContext="{d:DesignInstance Type=local:ViewModel}"
     FlowDirection="RightToLeft"
     mc:Ignorable="d">
 
@@ -58,8 +60,8 @@
             VerticalContentAlignment="Center"
             Cursor="Hand"
             DisplayMemberPath="DisplayName"
-            ItemsSource="{Binding StatusFilters}"
-            SelectedItem="{Binding SelectedStatusFilter}" />
+            ItemsSource="{Binding Filter.StatusFilters}"
+            SelectedItem="{Binding Filter.SelectedStatus}" />
 
 
         <!--
@@ -82,7 +84,7 @@
             Padding="7,0"
             VerticalContentAlignment="Center"
             Cursor="Hand"
-            SelectedDate="{Binding FromDate}" />
+            SelectedDate="{Binding Filter.FromDate}" />
 
 
         <!--
@@ -105,7 +107,7 @@
             Padding="7,0"
             VerticalContentAlignment="Center"
             Cursor="Hand"
-            SelectedDate="{Binding ToDate}" />
+            SelectedDate="{Binding Filter.ToDate}" />
 
 
         <!--
@@ -133,7 +135,7 @@
                     hc:BorderElement.CornerRadius="5"
                     Background="Transparent"
                     BorderThickness="0"
-                    Command="{Binding SetTodayCommand}"
+                    Command="{Binding Filter.SetTodayCommand}"
                     Content="اليوم"
                     Cursor="Hand"
                     Foreground="#475569" />
@@ -147,7 +149,7 @@
                     hc:BorderElement.CornerRadius="5"
                     Background="Transparent"
                     BorderThickness="0"
-                    Command="{Binding SetCurrentWeekCommand}"
+                    Command="{Binding Filter.SetCurrentWeekCommand}"
                     Content="هذا الأسبوع"
                     Cursor="Hand"
                     Foreground="#475569" />
@@ -161,7 +163,7 @@
                     hc:BorderElement.CornerRadius="5"
                     Background="Transparent"
                     BorderThickness="0"
-                    Command="{Binding SetCurrentMonthCommand}"
+                    Command="{Binding Filter.SetCurrentMonthCommand}"
                     Content="هذا الشهر"
                     Cursor="Hand"
                     Foreground="#475569" />

@@ -1,0 +1,109 @@
+<MudCard Outlined="true"
+         Class="d-flex flex-column"
+         Style="height: 100%">
+
+    <MudCardContent Class="pa-3 flex-grow-1">
+
+        <MudStack Spacing="2">
+
+            <MudStack Row
+                      AlignItems="AlignItems.Center"
+                      Justify="Justify.SpaceBetween">
+
+                <MudIcon Icon="@Icons.Material.Filled.Category"
+                         Color="Color.Primary" />
+
+                @if (CanWrite)
+                {
+                    <MudStack Row
+                              Spacing="0">
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Size="Size.Small"
+                                       Href="@($"/categories/{Category.Id}/edit")"
+                                       Disabled="Busy"
+                                       aria-label="تعديل القسم" />
+
+                        <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                       Size="Size.Small"
+                                       Color="Color.Error"
+                                       Disabled="Busy"
+                                       OnClick="DeleteAsync"
+                                       aria-label="حذف القسم" />
+
+                    </MudStack>
+                }
+
+            </MudStack>
+
+            <MudText Typo="Typo.subtitle1"
+                     Class="font-weight-bold"
+                     Style="overflow-wrap: anywhere">
+                @Category.Name
+            </MudText>
+
+            <MudStack Row
+                      Wrap="Wrap.Wrap"
+                      Spacing="2">
+
+                <MudText Typo="Typo.body2"
+                         Color="Color.Secondary">
+                    @Category.DirectChildrenCount أقسام فرعية
+                </MudText>
+
+                <MudText Typo="Typo.body2"
+                         Color="Color.Secondary">
+                    @Category.TotalProductsCount منتجات
+                </MudText>
+
+            </MudStack>
+
+        </MudStack>
+
+    </MudCardContent>
+
+    <MudCardActions Class="px-3 pb-3">
+
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Primary"
+                   Size="Size.Small"
+                   Disabled="@(!Category.HasChildren || Busy)"
+                   Href="@SubCategoriesUrl"
+                   EndIcon="@Icons.Material.Filled.ArrowBack">
+            @SubCategoriesButtonText
+        </MudButton>
+
+    </MudCardActions>
+
+</MudCard>
+
+@code {
+    [Parameter, EditorRequired]
+    public CategoryIndexItem Category { get; set; } = null!;
+
+    [Parameter]
+    public bool CanWrite { get; set; }
+
+    [Parameter]
+    public bool Busy { get; set; }
+
+    [Parameter]
+    public EventCallback<CategoryIndexItem> OnDelete { get; set; }
+
+
+    private string? SubCategoriesUrl =>
+        Category.HasChildren
+            ? $"/categories/{Category.Id}"
+            : null;
+
+    private string SubCategoriesButtonText =>
+        Category.HasChildren
+            ? "الأقسام الفرعية"
+            : "لا توجد أقسام فرعية";
+
+
+    private Task DeleteAsync()
+    {
+        return OnDelete.InvokeAsync(Category);
+    }
+}

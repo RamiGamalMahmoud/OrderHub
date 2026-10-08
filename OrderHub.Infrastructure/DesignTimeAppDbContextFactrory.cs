@@ -3,15 +3,17 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace OrderHub.Infrastructure;
 
-internal class DesignTimeAppDbContextFactrory : IDesignTimeDbContextFactory<AppDbContext>
+internal class DesignTimeAppDbContextFactrory
+    : IDesignTimeDbContextFactory<AppDbContext>
 {
     public AppDbContext CreateDbContext(string[] args)
     {
-        DbContextOptionsBuilder<AppDbContext> dbContextOptionsBuilder = new();
-        dbContextOptionsBuilder
-            .UseSqlite("Data Source=./Data/order_hub.db")
+        DbContextOptionsBuilder<AppDbContext> optionsBuilder = new();
+
+        optionsBuilder
+            .UseNpgsql("Host=localhost;Port=5432;Database=orderhub;Username=postgres;Password=12015")
             .UseSnakeCaseNamingConvention();
-        AppDbContext appDbContext = new(dbContextOptionsBuilder.Options);
-        return appDbContext;
+
+        return new AppDbContext(optionsBuilder.Options);
     }
 }

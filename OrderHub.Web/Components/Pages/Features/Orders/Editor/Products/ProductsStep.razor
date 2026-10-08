@@ -1,0 +1,126 @@
+@using OrderHub.Web.Components.Pages.Features.Orders.Editor.State
+
+<MudStack Spacing="3" Class="pa-4">
+
+    @* Header *@
+    <MudStack Row
+              AlignItems="AlignItems.Center"
+              Justify="Justify.SpaceBetween">
+
+        <div>
+            <MudText Typo="Typo.h6">
+                المنتجات
+            </MudText>
+
+            <MudText Typo="Typo.body2"
+                     Color="Color.Secondary">
+                المنتجات المضافة إلى الطلب
+            </MudText>
+        </div>
+
+        @if (Items.Count > 0)
+        {
+            <PermissionView Feature="PermissionFeature.Products"><MudButton Variant="Variant.Outlined"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Outlined.Add"
+                       OnClick="AddProductAsync">
+                إضافة منتج
+            </MudButton></PermissionView>
+        }
+
+    </MudStack>
+
+    @if (Items.Count == 0)
+    {
+        @* Empty State *@
+        <MudPaper Elevation="0"
+                  Outlined="true"
+                  Class="pa-6">
+
+            <MudStack AlignItems="AlignItems.Center"
+                      Spacing="2">
+
+                <MudIcon Icon="@Icons.Material.Outlined.Inventory2"
+                         Size="Size.Large"
+                         Color="Color.Secondary" />
+
+                <MudText Typo="Typo.subtitle1">
+                    لا توجد منتجات مضافة
+                </MudText>
+
+                <MudText Typo="Typo.body2"
+                         Color="Color.Secondary">
+                    ابدأ بإضافة المنتجات المطلوبة لهذا الطلب
+                </MudText>
+
+                <PermissionView Feature="PermissionFeature.Products"><MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Outlined.Add"
+                           OnClick="AddProductAsync">
+                    إضافة منتج
+                </MudButton></PermissionView>
+
+            </MudStack>
+
+        </MudPaper>
+    }
+    else
+    {
+        @* Products *@
+        <MudTable T="OrderItemEditorState"
+                  Items="Items"
+                  Hover="true"
+                  Elevation="0">
+
+            <HeaderContent>
+
+                <MudTh>المنتج</MudTh>
+                <MudTh>السعر</MudTh>
+                <MudTh>الكمية</MudTh>
+                <MudTh>الضريبة</MudTh>
+                <MudTh></MudTh>
+
+            </HeaderContent>
+
+            <RowTemplate>
+
+                <MudTd DataLabel="المنتج">
+                    @context.ProductName
+                </MudTd>
+
+                <MudTd DataLabel="السعر">
+                    @context.UnitPrice
+                </MudTd>
+
+                <MudTd DataLabel="الكمية">
+                    @context.Quantity
+                </MudTd>
+
+                <MudTd DataLabel="الضريبة">
+                    @context.VatRate%
+                </MudTd>
+
+                <MudTd>
+
+                    <MudIconButton Icon="@Icons.Material.Outlined.Edit"
+                                   Size="Size.Small"
+                                   OnClick="@(() => EditItem(context))" />
+
+                    <MudIconButton Icon="@Icons.Material.Outlined.DeleteOutline"
+                                   Color="Color.Error"
+                                   Size="Size.Small"
+                                   OnClick="@(() => RemoveItem(context))" />
+
+                </MudTd>
+
+            </RowTemplate>
+
+        </MudTable>
+    }
+
+</MudStack>
+
+@if (_editingItem is not null)
+{
+    <ProductEditorDrawer Item="_editingItem" SessionId="SessionId" @bind-IsOpen="_isEditorOpen" Commit="CommitItemAsync" />
+}

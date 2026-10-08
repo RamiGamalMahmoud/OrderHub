@@ -7,8 +7,8 @@ internal static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddDrafts(this IServiceCollection services)
     {
-        services.AddSingleton<IDraftService, DraftService>();
-        services.AddSingleton<IDraftStore, JsonDraftStore>();
+        services.AddSingleton<IDraftReadService, DraftReadService>();
+        services.AddScoped<IDraftRepository, DraftRepository>();
         return services;
     }
 }

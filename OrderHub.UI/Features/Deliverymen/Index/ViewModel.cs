@@ -1,8 +1,7 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
-using OrderHub.Domain.Common;
 using OrderHub.UI.Common;
-using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,9 +16,9 @@ public partial class ViewModel : IndexViewModelBase<DeliverymanListDto>
 
     public ViewModel(IMediator mediator) : base(mediator)
     {
-        WeakReferenceMessenger.Default.Register<Application.Messages.Deliveryman.DeliverymanCreatedMessage>(this, async (r, m) => await ReloadAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.Deliveryman.DeleverymanUpdateMessage>(this, async (r, m) => await ReloadAsync());
-        WeakReferenceMessenger.Default.Register<Application.Messages.Deliveryman.DeliverymanDeletedMessage>(this, async (r, m) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<DeliverymenMessages.DeliverymanCreatedMessage>(this, async (r, m) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<DeliverymenMessages.DeliverymanUpdatedMessage>(this, async (r, m) => await ReloadAsync());
+        WeakReferenceMessenger.Default.Register<DeliverymenMessages.DeliverymanDeletedMessage>(this, async (r, m) => await ReloadAsync());
     }
 
     protected override async Task LoadAsync()
@@ -32,35 +31,6 @@ public partial class ViewModel : IndexViewModelBase<DeliverymanListDto>
     {
         _allDeliverymen = (await _mediator.Send(new Application.Queries.DeliverymanQueries.GetAllDeliverymenListQuery())).ToList();
         ApplyFilter();
-    }
-
-    protected override async Task DeleteAsync(DeliverymanListDto deliveryman)
-    {
-        if (DialogService.Instance.Confirm($"هل تريد حذف المندوب ({deliveryman.Name})؟") is not true)
-        {
-            return;
-        }
-        Result result = await _mediator.Send(new Application.Commands.DeliverymanCommands.DeleteDeliverymanCommand(deliveryman.Id));
-
-        if (result.IsSuccess)
-        {
-            NotificationService.Instance.ShowSuccess("تم حذف المندوب بنجاح.");
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Deliveryman.DeliverymanDeletedMessage());
-        }
-        else
-        {
-            NotificationService.Instance.ShowError("حدث خطأ أثناء حذف المندوب.");
-        }
-    }
-
-    protected override async Task ShowEditAsync(DeliverymanListDto deliveryman)
-    {
-        await DialogService.Instance.ShowDialog<Edit.View>("تعديل بيانات مندوب", deliveryman.Id);
-    }
-
-    protected override async Task ShowCreateAsync()
-    {
-        await DialogService.Instance.ShowDialog<Create.View>("إضافة مندوب جديد");
     }
 
     public IEnumerable<DeliverymanListDto> Deliverymen

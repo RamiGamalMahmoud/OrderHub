@@ -1,13 +1,14 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Win32;
-using OpenQA.Selenium.DevTools.V145.Autofill;
 using OrderHub.Application.Common.Extensions;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Enums;
 using OrderHub.UI.Common;
+using OrderHub.UI.Messaging;
 using OrderHub.UI.Services;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -117,6 +118,7 @@ public partial class SendMessageViewModel : ObservableObject, IParameterizedView
 
         if (result.IsSuccess)
         {
+            WeakReferenceMessenger.Default.Send(new MessagesMessages.OutboxMessagesQueuedMessage(null));
             NotificationService.Instance.ShowSuccess("تم قيد الرسالة للارسال");
 
             Message = string.Empty;
@@ -139,7 +141,11 @@ public partial class SendMessageViewModel : ObservableObject, IParameterizedView
             throw new System.ArgumentException(null, nameof(parameter));
 
         Message = data.Text;
-        AttachedFiles.Add(new MessageAttachmentItem(data.Attachments[0]));
+        AttachedFiles.Add(new MessageAttachmentItem(
+            data.Attachments[0],
+            "",
+            "",
+            0));
         await LoadAsync();
         SelectedRecipient = Recipients.Where(recipient => recipient.Destination == data.Destination).FirstOrDefault();
     }

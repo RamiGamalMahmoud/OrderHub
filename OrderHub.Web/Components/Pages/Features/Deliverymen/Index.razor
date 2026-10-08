@@ -1,0 +1,360 @@
+@page "/deliverymen"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.Deliverymen,
+    PermissionLevel.Read)]
+
+@inject IRequestExecutor RequestExecutor
+@inject OrderHub.Web.Services.PermissionAccess PermissionAccess
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject ILogger<Index> Logger
+
+<PageTitle>المناديب</PageTitle>
+
+<MudStack Spacing="3">
+    <MudStack Row
+              Wrap="Wrap.Wrap"
+              AlignItems="AlignItems.Center"
+              Justify="Justify.SpaceBetween">
+        <div>
+            <MudText Typo="Typo.h5">
+                المناديب
+            </MudText>
+
+            <MudText Typo="Typo.body2"
+                     Color="Color.Secondary">
+                إدارة المناديب المتاحة في النظام
+            </MudText>
+        </div>
+
+        @if (CanCreate)
+        {
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="IsBusy"
+                       OnClick="OpenCreateDialogAsync">
+                إضافة مندوب
+            </MudButton>
+        }
+    </MudStack>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true"
+                           Color="Color.Primary" />
+
+        <MudText Typo="Typo.body2">
+            جاري تحميل المناديب...
+        </MudText>
+    }
+    else if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error"
+                  Dense="true">
+            @_error
+        </MudAlert>
+
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="LoadAsync">
+            إعادة المحاولة
+        </MudButton>
+    }
+    else if (_deliverymen.Count == 0)
+    {
+        <MudPaper Outlined="true"
+                  Class="pa-4">
+            <MudText Typo="Typo.body1">
+                لم تتم إضافة مناديب بعد.
+            </MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudTable T="DeliverymanListItem"
+                  Items="FilteredDeliverymen"
+                  Dense="true"
+                  Hover="true"
+                  Outlined="true"
+                  Elevation="0"
+                  Breakpoint="Breakpoint.Sm">
+            <ToolBarContent>
+                <MudTextField T="string"
+                              @bind-Value="_searchTerm"
+                              Placeholder="ابحث عن مندوب..."
+                              aria-label="البحث عن مندوب"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Immediate="true"
+                              Clearable="true"
+                              Style="max-width:320px" />
+            </ToolBarContent>
+
+            <HeaderContent>
+                <MudTh>
+                    اسم المندوب
+                </MudTh>
+
+                <MudTh>
+                    المدينة
+                </MudTh>
+
+                <MudTh>
+                    الهاتف
+                </MudTh>
+
+                @if (_canWrite)
+                {
+                    <MudTh>
+                        الإجراءات
+                    </MudTh>
+                }
+            </HeaderContent>
+
+            <RowTemplate Context="deliveryman">
+                <MudTd DataLabel="اسم المندوب"
+                       Style="overflow-wrap:anywhere">
+                    @deliveryman.Name
+                </MudTd>
+
+                <MudTd DataLabel="المدينة"
+                       Style="overflow-wrap:anywhere">
+                    @deliveryman.CityName
+                </MudTd>
+
+                <MudTd DataLabel="الهاتف"
+                       Style="overflow-wrap:anywhere">
+                    @ContactText(deliveryman.PhoneNumber)
+                </MudTd>
+
+                @if (_canWrite)
+                {
+                    <MudTd DataLabel="الإجراءات">
+                        <MudStack Row
+                                  Spacing="0">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           Disabled="IsBusy"
+                                           aria-label="تعديل المندوب"
+                                           OnClick="@(() => OpenEditDialogAsync(deliveryman))" />
+
+                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           Disabled="IsBusy"
+                                           aria-label="حذف المندوب"
+                                           OnClick="@(() => ConfirmDeleteAsync(deliveryman))" />
+                        </MudStack>
+                    </MudTd>
+                }
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2">
+                    لا توجد مناديب تطابق البحث.
+                </MudText>
+            </NoRecordsContent>
+
+            <PagerContent>
+                @if (_deliverymen.Count > 10)
+                {
+                    <MudTablePager PageSizeOptions="@(new[] { 10, 25, 50 })"
+                                   RowsPerPageString="مناديب لكل صفحة"
+                                   InfoFormat="{first_item}-{last_item} من {all_items}" />
+                }
+            </PagerContent>
+        </MudTable>
+    }
+</MudStack>
+
+@code {
+    private IReadOnlyList<DeliverymanListItem> _deliverymen = [];
+    private string? _searchTerm;
+    private string? _error;
+    private bool _loading = true;
+    private bool _canWrite;
+    private bool _dialogOpen;
+    private bool _deleting;
+
+    private bool CanCreate =>
+        _canWrite && !_loading && _error is null;
+
+    private bool IsBusy =>
+        _loading || _dialogOpen || _deleting;
+
+    private IEnumerable<DeliverymanListItem> FilteredDeliverymen
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_searchTerm))
+            {
+                return _deliverymen;
+            }
+
+            string searchTerm = _searchTerm.Trim();
+
+            return _deliverymen.Where(deliveryman =>
+                deliveryman.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (deliveryman.PhoneNumber?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true) ||
+                (deliveryman.CityName?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true));
+        }
+    }
+
+    private static string ContactText(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "—" : value;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _canWrite = false;
+        _error = null;
+
+        try
+        {
+            var deliverymen = await RequestExecutor.ExecuteAsync(new GetAllDeliverymenListQuery());
+            bool canWrite = await PermissionAccess.IsAllowedAsync(
+                PermissionFeature.Deliverymen,
+                PermissionLevel.Write);
+
+            _deliverymen = deliverymen.ToList();
+            _canWrite = canWrite;
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load deliverymen");
+            _error = "تعذر تحميل المناديب. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Task OpenCreateDialogAsync() => OpenEditorAsync(null);
+
+    private Task OpenEditDialogAsync(DeliverymanListItem deliveryman) => OpenEditorAsync(deliveryman.Id);
+
+    private async Task OpenEditorAsync(int? deliverymanId)
+    {
+        if (IsBusy || !_canWrite)
+        {
+            return;
+        }
+
+        _dialogOpen = true;
+
+        try
+        {
+            DialogParameters<DeliverymanEditorDialog> parameters = new()
+            {
+                { dialog => dialog.DeliverymanId, deliverymanId }
+            };
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.ExtraSmall,
+                FullWidth = true,
+                CloseButton = false,
+                CloseOnEscapeKey = false,
+                BackdropClick = false
+            };
+
+            string title = deliverymanId.HasValue ? "تعديل المندوب" : "إضافة مندوب";
+
+            var dialog = await DialogService.ShowAsync<DeliverymanEditorDialog>(
+                title,
+                parameters,
+                options);
+
+            DialogResult? result = await dialog.Result;
+
+            if (result is { Canceled: false, Data: true })
+            {
+                await LoadAsync();
+            }
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to open deliveryman editor for {DeliverymanId}",
+                deliverymanId);
+
+            Snackbar.Add(
+                "تعذر فتح بيانات المندوب. يرجى المحاولة مرة أخرى.",
+                Severity.Error);
+        }
+        finally
+        {
+            _dialogOpen = false;
+        }
+    }
+
+    private async Task ConfirmDeleteAsync(DeliverymanListItem deliveryman)
+    {
+        if (IsBusy || !_canWrite)
+        {
+            return;
+        }
+
+        _deleting = true;
+
+        try
+        {
+            bool? confirmed = await DialogService.ShowMessageBoxAsync(
+                "حذف المندوب",
+                $"هل تريد حذف المندوب \"{deliveryman.Name}\"؟",
+                yesText: "حذف",
+                cancelText: "إلغاء");
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Result result = await RequestExecutor.ExecuteAsync(new DeleteDeliverymanCommand(deliveryman.Id));
+
+            if (!result.IsSuccess)
+            {
+                Snackbar.Add(result.ErrorMessage, Severity.Error);
+                return;
+            }
+
+            Snackbar.Add("تم حذف المندوب بنجاح.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to delete deliveryman {DeliverymanId}",
+                deliveryman.Id);
+
+            Snackbar.Add(
+                "تعذر حذف المندوب. يرجى المحاولة مرة أخرى.",
+                Severity.Error);
+        }
+        finally
+        {
+            _deleting = false;
+        }
+    }
+}

@@ -1,8 +1,9 @@
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Features.Orders.ChangePaymentMethod;
-using OrderHub.Application.Features.Orders.ChangeStatus;
+
 using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
@@ -81,14 +82,10 @@ public partial class OrderViewModel : ObservableObject
         }
     }
 
-    private async Task ChangePaymentMethod(int paymentMethodId)
+    private Task ChangePaymentMethod(int paymentMethodId)
     {
-        Result result = await _requestExecutor.ExecuteAsync(new ChangePaymentMethodCommand(Id, paymentMethodId));
-
-        if (result.IsSuccess)
-        {
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Orders.OrderUpdatedMessage());
-        }
+        // The Web workflow owns versioned order writes; the retired WPF view is read-only.
+        return Task.CompletedTask;
     }
 
     public DateTime CreatedAt { get; init; }
@@ -136,26 +133,10 @@ public partial class OrderViewModel : ObservableObject
 
     public IEnumerable<EnumItem<OrderStatus>> OrderStatuses => EnumItems.For<OrderStatus>();
 
-    private bool _canEdit = true;
+    private bool _canEdit = false;
     public bool CanEdit { get => _canEdit; private set => SetProperty(ref _canEdit, value); }
 
-    private async Task ChangeOrderStatus(OrderStatus orderStatus)
-    {
-        IChangeOrderStatusCommand changeOrderStatusCommand = orderStatus switch
-        {
-            Domain.Enums.OrderStatus.Cancelled => new CancelOrderCommand(Id),
-            Domain.Enums.OrderStatus.Delivered => new DeliverOrderCommand(Id),
-            Domain.Enums.OrderStatus.Processing => new StartOrderProcessingCommand(Id),
-            Domain.Enums.OrderStatus.Shipped => new ShipOrderCommand(Id),
-            Domain.Enums.OrderStatus.Pending => new ReturnOrderToPendingCommand(Id),
-            _ => null
-        };
-
-        if (changeOrderStatusCommand is not null)
-        {
-            await _requestExecutor.ExecuteAsync(changeOrderStatusCommand);
-        }
-    }
+    private Task ChangeOrderStatus(OrderStatus orderStatus) => Task.CompletedTask;
 
     partial void OnHasClientRecipientChanged(bool oldValue, bool newValue)
     {

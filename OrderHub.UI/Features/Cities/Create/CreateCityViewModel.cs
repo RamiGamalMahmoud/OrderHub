@@ -1,3 +1,4 @@
+using OrderHub.UI.Messaging;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Domain.Common;
@@ -25,7 +26,7 @@ public partial class CreateCityViewModel : Editor.ViewModelBase
         {
             NotificationService.Instance.ShowSuccess($"تم إضافة مدينة ({Name}) بنجاح.");
             OnRequestClose();
-            WeakReferenceMessenger.Default.Send(new Application.Messages.Cities.CityCreatedMessage());
+            WeakReferenceMessenger.Default.Send(new CitiesMessages.CityCreatedMessage());
         }
         else
         {

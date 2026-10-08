@@ -1,5 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.UI.Common;
@@ -29,15 +29,15 @@ namespace OrderHub.UI.Features.Clients.Edit
 
             _mediator = mediator;
 
-            WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityCreatedMessage>(this, async (r, m) =>
+            WeakReferenceMessenger.Default.Register<CitiesMessages.CityCreatedMessage>(this, async (r, m) =>
             {
                 Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
             });
-            WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityUpdatedMessage>(this, async (r, m) =>
+            WeakReferenceMessenger.Default.Register<CitiesMessages.CityUpdatedMessage>(this, async (r, m) =>
             {
                 Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
             });
-            WeakReferenceMessenger.Default.Register<Application.Messages.Cities.CityDeletedMessage>(this, async (r, m) =>
+            WeakReferenceMessenger.Default.Register<CitiesMessages.CityDeletedMessage>(this, async (r, m) =>
             {
                 Cities = await _mediator.Send(new Application.Queries.CommonQueries.GetCitiesInfoQuery());
             });
@@ -87,7 +87,5 @@ namespace OrderHub.UI.Features.Clients.Edit
         [ObservableProperty]
         private string _location;
 
-        [RelayCommand]
-        private async Task ShowCreateCity() => await DialogService.Instance.ShowDialog<Features.Cities.Create.CreateCityView>("إضافة مدينة جديدة");
     }
 }

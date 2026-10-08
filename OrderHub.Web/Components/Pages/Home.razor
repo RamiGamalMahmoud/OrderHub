@@ -1,0 +1,372 @@
+@page "/"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<PageTitle>لوحة التحكم</PageTitle>
+
+<MudStack Spacing="3">
+
+    @* =========================
+       Header
+       ========================= *@
+
+    <MudStack Row="true"
+              Justify="Justify.SpaceBetween"
+              AlignItems="AlignItems.Center">
+
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4" Class="fw-bolder">
+                لوحة التحكم
+            </MudText>
+
+            <MudText Typo="Typo.body2"
+                     Color="Color.Secondary">
+                نظرة سريعة على حالة العمل اليوم
+            </MudText>
+        </MudStack>
+
+        <MudChip T="string"
+                 Icon="@Icons.Material.Filled.Circle"
+                 Color="Color.Success"
+                 Variant="Variant.Text">
+            النظام يعمل بشكل طبيعي
+        </MudChip>
+
+    </MudStack>
+
+
+    @* =========================
+       Quick Actions
+       ========================= *@
+
+    <MudGrid Spacing="2">
+
+        <MudItem xs="12" sm="6" lg="3">
+            <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write"><MudButton FullWidth="true"
+                Class="rounded-lg"
+                       Size="Size.Large"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.AddShoppingCart"
+                       Href="/orders/create">
+                إضافة طلب
+            </MudButton></PermissionView>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" lg="3">
+            <PermissionView Feature="PermissionFeature.Products" Level="PermissionLevel.Write"><MudButton FullWidth="true"
+                       Size="Size.Large"
+                       Variant="Variant.Filled"
+                       Color="Color.Secondary"
+                       StartIcon="@Icons.Material.Filled.AddBox"
+                       Href="/products/create">
+                إضافة منتج
+            </MudButton></PermissionView>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" lg="3">
+            <PermissionView Feature="PermissionFeature.Clients" Level="PermissionLevel.Write"><MudButton FullWidth="true"
+                       Size="Size.Large"
+                       Variant="Variant.Filled"
+                       Color="Color.Success"
+                       StartIcon="@Icons.Material.Filled.PersonAdd"
+                       Href="/clients/create">
+                إضافة عميل
+            </MudButton></PermissionView>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" lg="3">
+            <MudButton FullWidth="true"
+                       Size="Size.Large"
+                       Variant="Variant.Filled"
+                       Color="Color.Warning"
+                       StartIcon="@Icons.Material.Filled.AddComment"
+                       Href="/messages/create">
+                إرسال رسالة
+            </MudButton>
+        </MudItem>
+
+    </MudGrid>
+
+
+    @* =========================
+       Statistics
+       ========================= *@
+
+    <MudGrid Spacing="2">
+
+        @* Orders *@
+
+        <MudItem xs="12" sm="6" lg="3">
+            <MudPaper Class="dashboard-card">
+
+                <MudStack Row="true"
+                          Justify="Justify.SpaceBetween"
+                          AlignItems="AlignItems.Center">
+
+                    <MudStack Spacing="1">
+
+                        <MudText Typo="Typo.body2"
+                                 Color="Color.Secondary">
+                            إجمالي الطلبات
+                        </MudText>
+
+                        <MudText Typo="Typo.h4">
+                            35
+                        </MudText>
+
+                        <MudText Typo="Typo.caption"
+                                 Color="Color.Success">
+                            +5 هذا الأسبوع
+                        </MudText>
+
+                    </MudStack>
+
+                    <MudAvatar Class="stat-icon stat-icon-primary"
+                               Size="Size.Large">
+
+                        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart"
+                                 Color="Color.Primary" />
+
+                    </MudAvatar>
+
+                </MudStack>
+
+            </MudPaper>
+        </MudItem>
+
+
+        @* Products *@
+
+        <MudItem xs="12" sm="6" lg="3">
+            <MudPaper Class="dashboard-card">
+
+                <MudStack Row="true"
+                          Justify="Justify.SpaceBetween"
+                          AlignItems="AlignItems.Center">
+
+                    <MudStack Spacing="1">
+
+                        <MudText Typo="Typo.body2"
+                                 Color="Color.Secondary">
+                            المنتجات
+                        </MudText>
+
+                        <MudText Typo="Typo.h4">
+                            56
+                        </MudText>
+
+                        <MudText Typo="Typo.caption"
+                                 Color="Color.Secondary">
+                            +3 منتجات جديدة
+                        </MudText>
+
+                    </MudStack>
+
+                    <MudAvatar Class="stat-icon stat-icon-secondary"
+                               Size="Size.Large">
+
+                        <MudIcon Icon="@Icons.Material.Filled.Inventory"
+                                 Color="Color.Secondary" />
+
+                    </MudAvatar>
+
+                </MudStack>
+
+            </MudPaper>
+        </MudItem>
+
+
+        @* Clients *@
+
+        <MudItem xs="12" sm="6" lg="3">
+            <MudPaper Class="dashboard-card">
+
+                <MudStack Row="true"
+                          Justify="Justify.SpaceBetween"
+                          AlignItems="AlignItems.Center">
+
+                    <MudStack Spacing="1">
+
+                        <MudText Typo="Typo.body2"
+                                 Color="Color.Secondary">
+                            العملاء
+                        </MudText>
+
+                        <MudText Typo="Typo.h4">
+                            18
+                        </MudText>
+
+                        <MudText Typo="Typo.caption"
+                                 Color="Color.Success">
+                            +2 عملاء جدد
+                        </MudText>
+
+                    </MudStack>
+
+                    <MudAvatar Class="stat-icon stat-icon-success"
+                               Size="Size.Large">
+
+                        <MudIcon Icon="@Icons.Material.Filled.Groups"
+                                 Color="Color.Success" />
+
+                    </MudAvatar>
+
+                </MudStack>
+
+            </MudPaper>
+        </MudItem>
+
+
+        @* Messages *@
+
+        <MudItem xs="12" sm="6" lg="3">
+            <MudPaper Class="dashboard-card">
+
+                <MudStack Row="true"
+                          Justify="Justify.SpaceBetween"
+                          AlignItems="AlignItems.Center">
+
+                    <MudStack Spacing="1">
+
+                        <MudText Typo="Typo.body2"
+                                 Color="Color.Secondary">
+                            الرسائل اليوم
+                        </MudText>
+
+                        <MudText Typo="Typo.h4">
+                            12
+                        </MudText>
+
+                        <MudText Typo="Typo.caption"
+                                 Color="Color.Warning">
+                            9 تم إرسالها
+                        </MudText>
+
+                    </MudStack>
+
+                    <MudAvatar Class="stat-icon stat-icon-warning"
+                               Size="Size.Large">
+
+                        <MudIcon Icon="@Icons.Material.Filled.Message"
+                                 Color="Color.Warning" />
+
+                    </MudAvatar>
+
+                </MudStack>
+
+            </MudPaper>
+        </MudItem>
+
+    </MudGrid>
+
+
+    @* =========================
+       Bottom Section
+       ========================= *@
+
+    <MudGrid Spacing="2">
+
+        @* Orders Activity *@
+
+        <MudItem xs="12" lg="8">
+
+            <MudPaper Class="dashboard-card dashboard-bottom-card">
+
+                <MudStack Row="true"
+                          Justify="Justify.SpaceBetween"
+                          AlignItems="AlignItems.Center">
+
+                    <MudText Typo="Typo.h6">
+                        نشاط الطلبات
+                    </MudText>
+
+                    <MudText Typo="Typo.caption"
+                             Color="Color.Secondary">
+                        آخر 7 أيام
+                    </MudText>
+
+                </MudStack>
+
+                <MudChart T="double"
+                          ChartType="ChartType.Bar"
+                          ChartSeries="@_orderSeries"
+                          ChartLabels="@_orderLabels"
+                          Width="100%"
+                          Height="250px" />
+
+            </MudPaper>
+
+        </MudItem>
+
+
+        @* Order workflow entry point *@
+
+        <MudItem xs="12" lg="4">
+
+            <MudPaper Class="dashboard-card dashboard-bottom-card">
+
+                <MudStack Spacing="2">
+
+                    <MudAvatar Class="stat-icon stat-icon-warning"
+                               Size="Size.Large">
+
+                        <MudIcon Icon="@Icons.Material.Filled.Schedule"
+                                 Color="Color.Warning" />
+
+                    </MudAvatar>
+
+                    <MudStack Spacing="0">
+
+                        <MudText Typo="Typo.body2"
+                                 Color="Color.Secondary">
+                            متابعة الطلبات
+                        </MudText>
+
+                    </MudStack>
+
+                    <MudText Typo="Typo.body2"
+                             Color="Color.Secondary">
+                        افتح الطلب لمراجعة حالته وخطوات التوصيل والإجراءات المتاحة.
+                    </MudText>
+
+                    <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Read"><MudButton Variant="Variant.Outlined"
+                               Color="Color.Warning"
+                               EndIcon="@Icons.Material.Filled.ArrowBack"
+                               Href="/orders">
+                        عرض الطلبات
+                    </MudButton></PermissionView>
+
+                </MudStack>
+
+            </MudPaper>
+
+        </MudItem>
+
+    </MudGrid>
+
+</MudStack>
+
+
+@code
+{
+    private readonly List<ChartSeries<double>> _orderSeries =
+    [
+        new()
+    {
+        Name = "الطلبات",
+        Data = new([5, 8, 6, 11, 9, 13, 10])
+    }
+    ];
+
+    private readonly string[] _orderLabels =
+    [
+        "السبت",
+    "الأحد",
+    "الاثنين",
+    "الثلاثاء",
+    "الأربعاء",
+    "الخميس",
+    "الجمعة"
+    ];
+}

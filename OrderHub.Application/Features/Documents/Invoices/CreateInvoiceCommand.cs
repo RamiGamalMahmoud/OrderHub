@@ -1,10 +1,10 @@
-﻿using MediatR;
+using OrderHub.Application.Authorization;
+using MediatR;
 using OrderHub.Application.DTOs.Documents;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Documents;
 using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Application.Interfaces.Services;
-using OrderHub.Application.Interfaces.Stores;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using OrderHub.Domain.Models.CommercialDocuments;
@@ -18,6 +18,7 @@ namespace OrderHub.Application.Features.Documents.Invoices;
 
 public static class CreateInvoiceCommand
 {
+    [RequirePermission(PermissionFeature.Documents, PermissionLevel.Write)]
     public record Command(int OrderId) : IRequest<string>;
 
     internal sealed class Handler : IRequestHandler<Command, string>
@@ -26,7 +27,7 @@ public static class CreateInvoiceCommand
         private readonly IInvoiceRepository _invoiceRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IPdfDocumentFactory _documentFactory;
-        private readonly IFileStorageService _fileStorageService;
+        private readonly ILocalFileAccessService _fileStorageService;
         private readonly IOrderRepository _orderRepository;
 
         public Handler(
@@ -34,7 +35,7 @@ public static class CreateInvoiceCommand
             IInvoiceRepository invoiceRepository,
             IUnitOfWork unitOfWork,
             IPdfDocumentFactory documentFactory,
-            IFileStorageService fileStorageService,
+            ILocalFileAccessService fileStorageService,
             IOrderRepository orderRepository)
         {
             _documentSequenceRepository = documentSequenceRepository;
@@ -165,9 +166,9 @@ public static class CreateInvoiceCommand
 
             byte[] pdfBytes = document.Build();
 
-            await _fileStorageService.SaveInvoiceDocumentAsync(
-                pdfBytes,
-                $"{createdInvoice.DocumentNumber}.pdf");
+            await _fileStorageService.SaveInvoiceAsync(
+                $"{createdInvoice.DocumentNumber}.pdf",
+                pdfBytes);
         }
     }
 }

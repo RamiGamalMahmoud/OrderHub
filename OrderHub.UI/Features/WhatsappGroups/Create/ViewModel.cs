@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using OrderHub.UI.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using OrderHub.Application.Commands;
 using OrderHub.UI.Common;
@@ -22,7 +23,7 @@ public class ViewModel : Editor.ViewModel
         if (result.IsSuccess)
         {
             NotificationService.Instance.ShowSuccess(MessageBuilder.Build(MessageBuilder.OperationType.Create, true, "مجموعة الواتساب"));
-            WeakReferenceMessenger.Default.Send(new Application.Messages.WhatsappGroups.WhatsappGroupCreatedMessage());
+            WeakReferenceMessenger.Default.Send(new WhatsAppGroupsMessages.WhatsappGroupCreatedMessage());
             OnRequestClose();
         }
         else

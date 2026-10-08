@@ -1,6 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using MediatR;
 using OrderHub.Application.Common.Extensions;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Interfaces;
@@ -12,12 +10,10 @@ namespace OrderHub.UI.Features.Orders.Editor;
 
 internal partial class OrderPartyPanelViewModel : ObservableValidator
 {
-    private readonly IMediator _mediator;
     private readonly ILookupService _lookupService;
 
-    public OrderPartyPanelViewModel(IMediator mediator, ILookupService lookupService)
+    public OrderPartyPanelViewModel(ILookupService lookupService)
     {
-        _mediator = mediator;
 
         ValidateAllProperties();
         _lookupService = lookupService;
@@ -43,9 +39,4 @@ internal partial class OrderPartyPanelViewModel : ObservableValidator
         Clients = (await _lookupService.GetClients()).MergeSelectedItem(SelectedClient);
     }
 
-    [RelayCommand]
-    private async Task ShowCreateClient()
-    {
-        await DialogService.Instance.ShowDialog<Features.Clients.Create.View>("إضافة عميل جديد");
-    }
 }

@@ -77,7 +77,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
         Items.PropertyChanged += Items_PropertyChanged;
 
         ProductsPanel = new OrderProductsPanelViewModel(mediator, productStore);
-        PartyPanel = new OrderPartyPanelViewModel(mediator, lookupService);
+        PartyPanel = new OrderPartyPanelViewModel(lookupService);
         DeliveryMethodsViewModel = new DeliveryMethodsViewModel(mediator);
 
         ProductsPanel.ProductSelected += ProductsPanel_ProductSelected;
@@ -102,7 +102,7 @@ internal abstract partial class ViewModel : EditorViewModelBase
             SaveCommand.NotifyCanExecuteChanged();
         };
 
-        WeakReferenceMessenger.Default.Register<Application.Messages.Clients.ClientCreatedMessage>(this, async (r, m) =>
+        WeakReferenceMessenger.Default.Register<OrderHub.UI.Messaging.ClientsMessages.ClientCreatedMessage>(this, async (r, m) =>
         {
             await PartyPanel.LoadAsync();
         });
@@ -243,12 +243,6 @@ internal abstract partial class ViewModel : EditorViewModelBase
         }
     }
 
-    [RelayCommand]
-    private async Task AddProduct() => await DialogService.Instance.ShowDialog<Features.Products.Create.View>("ÅÖÇÝÉ ãäÊÌ");
-
-    [RelayCommand]
-    private async Task AddSupplier() => await DialogService.Instance.ShowDialog<Features.Suppliers.Create.View>("ÅÖÇÝÉ ãæÑÏ");
-
     private void ProductsPanel_ProductSelected(ProductSelectedEventArgs e)
     {
         _ = LoadProducDetails(e.Id, e.Price, e.Quantity, e.VAT);
@@ -303,26 +297,28 @@ internal abstract partial class ViewModel : EditorViewModelBase
         MarkAsChanged();
     }
 
-    protected OrderDetails.Order BuildOrder()
+    protected OrderInput.Order BuildOrder()
     {
-        return new OrderDetails.Order(
+        return new OrderInput.Order(
             PartyPanel.SelectedClient.Id,
+            SelectedOrderSource.OrderSource,
             DeliveryMethodsViewModel.SelecteddDeliveryMethod.Value,
             DeliveryMethodsViewModel.SelectedDeliveryman?.Id,
             DeliveryMethodsViewModel.SelectedShippingCarrier?.Id,
 
-            Items.Items.Select(item => new OrderDetails.Item(
+            Items.Items.Select(item => new OrderInput.Item(
                 item.ProductId,
                 item.ProductName,
                 item.Quantity,
                 item.Price,
+                0,
                 item.Supplier?.Name,
                 item.Supplier?.Id,
-                item.Properties.Select(property => new OrderDetails.Property(
+                item.Properties.Select(property => new OrderInput.Property(
                     property.Id,
                     property.Value)))),
 
-            DeliveryMethodsViewModel.BuildDeliverySteps().Select(deliveryStep => new OrderDetails.DeliveryStep(
+            DeliveryMethodsViewModel.BuildDeliverySteps().Select(deliveryStep => new OrderInput.DeliveryStep(
                     deliveryStep.StepOrder,
                     deliveryStep.DeliveryMethod,
                     deliveryStep.HandlerId)),

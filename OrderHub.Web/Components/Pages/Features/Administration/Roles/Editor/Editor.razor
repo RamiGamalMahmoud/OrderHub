@@ -1,0 +1,951 @@
+@attribute [PermissionAuthorize(PermissionFeature.Users, PermissionLevel.Write)]
+@page "/admin/roles/create"
+@page "/admin/roles/{RoleId:int}/edit"
+
+@using Microsoft.AspNetCore.Authorization
+@using MudBlazor
+
+@using OrderHub.Application.Features.Administration.Roles
+@using OrderHub.Application.Features.Administration.Roles.Create
+@using OrderHub.Application.Features.Administration.Roles.GetRole
+@using OrderHub.Application.Features.Administration.Roles.Update
+@using OrderHub.Application.Interfaces
+@using OrderHub.Domain.Enums
+
+@attribute [Authorize(Roles = "Admin")]
+
+@inject IRequestExecutor RequestExecutor
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+
+<PageTitle>@PageTitleText</PageTitle>
+
+
+<MudStack Spacing="3">
+
+    @* ============================================================
+       Header
+       ============================================================ *@
+
+    <MudStack Row
+              AlignItems="AlignItems.Center"
+              Spacing="2">
+
+        <MudIconButton Icon="@Icons.Material.Filled.ArrowForward"
+                       Disabled="_saving"
+                       OnClick="GoBack" />
+
+        <div>
+
+            <MudText Typo="Typo.h5">
+                @PageTitleText
+            </MudText>
+
+            <MudText Typo="Typo.body2"
+                     Color="Color.Secondary">
+                @PageDescription
+            </MudText>
+
+        </div>
+
+    </MudStack>
+
+
+    @* ============================================================
+       Loading
+       ============================================================ *@
+
+    @if (_loading)
+    {
+        <MudPaper Outlined="true"
+                  Class="pa-8">
+
+            <MudStack AlignItems="AlignItems.Center"
+                      Spacing="2">
+
+                <MudProgressCircular Indeterminate="true"
+                                     Color="Color.Primary" />
+
+                <MudText Typo="Typo.body2"
+                         Color="Color.Secondary">
+                    جاري تحميل بيانات الدور...
+                </MudText>
+
+            </MudStack>
+
+        </MudPaper>
+    }
+
+    @* ============================================================
+       Role not found
+       ============================================================ *@
+
+    else if (IsEditMode && !_roleFound)
+    {
+        <MudPaper Outlined="true"
+                  Class="pa-6">
+
+            <MudStack AlignItems="AlignItems.Center"
+                      Spacing="3">
+
+                <MudIcon Icon="@Icons.Material.Filled.ErrorOutline"
+                         Size="Size.Large"
+                         Color="Color.Error" />
+
+                <MudText Typo="Typo.h6">
+                    الدور غير موجود
+                </MudText>
+
+                <MudText Typo="Typo.body2"
+                         Color="Color.Secondary">
+                    تعذر العثور على الدور المطلوب.
+                </MudText>
+
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.ArrowForward"
+                           OnClick="GoBack">
+                    العودة إلى الأدوار
+                </MudButton>
+
+            </MudStack>
+
+        </MudPaper>
+    }
+
+    @* ============================================================
+       Editor
+       ============================================================ *@
+
+    else
+    {
+        <MudForm @ref="_form"
+                 Model="_state"
+                 ValidationDelay="0">
+
+            <MudStack Spacing="3">
+
+
+                @* ==================================================
+                   Role information
+                   ================================================== *@
+
+                <MudPaper Outlined="true"
+                          Class="pa-4">
+
+                    <MudStack Spacing="3">
+
+                        <div>
+
+                            <MudText Typo="Typo.h6">
+                                بيانات الدور
+                            </MudText>
+
+                            <MudText Typo="Typo.body2"
+                                     Color="Color.Secondary">
+                                أدخل اسمًا واضحًا يعبّر عن مسؤوليات المستخدمين التابعين لهذا الدور
+                            </MudText>
+
+                        </div>
+
+                        <MudDivider />
+
+                        <MudTextField T="string"
+                                      @bind-Value="_state.Name"
+                                      Label="اسم الدور"
+                                      Placeholder="مثال: المبيعات"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Required="true"
+                                      RequiredError="اسم الدور مطلوب."
+                                      MaxLength="100"
+                                      Counter="100"
+                                      Immediate="true"
+                                      Disabled="_saving"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Badge" />
+
+                    </MudStack>
+
+                </MudPaper>
+
+
+                @* ==================================================
+                   Permissions
+                   ================================================== *@
+
+                <MudPaper Outlined="true">
+
+                    <MudStack Spacing="0">
+
+                        <div class="pa-4">
+
+                            <MudText Typo="Typo.h6">
+                                الصلاحيات
+                            </MudText>
+
+                            <MudText Typo="Typo.body2"
+                                     Color="Color.Secondary">
+                                حدد مستوى الوصول لكل جزء من النظام
+                            </MudText>
+
+                        </div>
+
+                        <MudDivider />
+
+
+                        @* ==========================================
+                           Columns header
+                           ========================================== *@
+
+                        <MudGrid Class="pa-3"
+                                 AlignItems="AlignItems.Center">
+
+                            <MudItem xs="12"
+                                     sm="6">
+
+                                <MudText Typo="Typo.subtitle2">
+                                    الميزة
+                                </MudText>
+
+                            </MudItem>
+
+                            <MudItem xs="12"
+                                     sm="6">
+
+                                <MudText Typo="Typo.subtitle2">
+                                    مستوى الوصول
+                                </MudText>
+
+                            </MudItem>
+
+                        </MudGrid>
+
+                        <MudDivider />
+
+
+                        @* ==========================================
+                           Permission rows
+                           ========================================== *@
+
+                        @foreach (RolePermissionEditorState permission
+                                            in _state.Permissions)
+                        {
+                            <MudGrid Class="pa-3"
+                                     AlignItems="AlignItems.Center">
+
+                                <MudItem xs="12"
+                                         sm="6">
+
+                                    <MudStack Row
+                                              AlignItems="AlignItems.Center"
+                                              Spacing="2">
+
+                                        <MudIcon Icon="@GetFeatureIcon(permission.Feature)"
+                                                 Color="Color.Secondary" />
+
+                                        <div>
+
+                                            <MudText Typo="Typo.body1">
+                                                @GetFeatureName(permission.Feature)
+                                            </MudText>
+
+                                            <MudText Typo="Typo.caption"
+                                                     Color="Color.Secondary">
+                                                @GetFeatureDescription(permission.Feature)
+                                            </MudText>
+
+                                        </div>
+
+                                    </MudStack>
+
+                                </MudItem>
+
+
+                                <MudItem xs="12"
+                                         sm="6">
+
+                                    <MudRadioGroup T="PermissionLevel"
+                                                   @bind-Value="permission.Level">
+
+                                        <MudStack Row
+                                                  Spacing="2">
+
+                                            <MudRadio T="PermissionLevel"
+                                                      Value="PermissionLevel.None"
+                                                      Color="Color.Default"
+                                                      Disabled="_saving">
+                                                لا شيء
+                                            </MudRadio>
+
+                                            <MudRadio T="PermissionLevel"
+                                                      Value="PermissionLevel.Read"
+                                                      Color="Color.Info"
+                                                      Disabled="_saving">
+                                                قراءة
+                                            </MudRadio>
+
+                                            <MudRadio T="PermissionLevel"
+                                                      Value="PermissionLevel.Write"
+                                                      Color="Color.Primary"
+                                                      Disabled="_saving">
+                                                كتابة
+                                            </MudRadio>
+
+                                        </MudStack>
+
+                                    </MudRadioGroup>
+
+                                </MudItem>
+
+                            </MudGrid>
+
+                            <MudDivider />
+                        }
+
+                    </MudStack>
+
+                </MudPaper>
+
+
+                @* ==================================================
+                   Permission explanation
+                   ================================================== *@
+
+                <MudAlert Severity="Severity.Info"
+                          Variant="Variant.Outlined"
+                          Dense="true">
+
+                    <MudStack Spacing="1">
+
+                        <MudText Typo="Typo.body2">
+                            <strong>لا شيء:</strong>
+                            لا يمكن للمستخدم الوصول إلى الميزة.
+                        </MudText>
+
+                        <MudText Typo="Typo.body2">
+                            <strong>قراءة:</strong>
+                            يمكن عرض البيانات والبحث فيها دون تعديلها.
+                        </MudText>
+
+                        <MudText Typo="Typo.body2">
+                            <strong>كتابة:</strong>
+                            تشمل القراءة بالإضافة إلى عمليات الإضافة والتعديل
+                            والحذف والعمليات التي تغيّر البيانات.
+                        </MudText>
+
+                    </MudStack>
+
+                </MudAlert>
+
+
+                @* ==================================================
+                   Summary
+                   ================================================== *@
+
+                <MudPaper Outlined="true"
+                          Class="pa-4">
+
+                    <MudStack Row
+                              AlignItems="AlignItems.Center"
+                              Justify="Justify.SpaceBetween">
+
+                        <div>
+
+                            <MudText Typo="Typo.subtitle1">
+                                ملخص الصلاحيات
+                            </MudText>
+
+                            <MudText Typo="Typo.body2"
+                                     Color="Color.Secondary">
+
+                                @if (GrantedPermissionCount == 0)
+                                {
+                                    <span>
+                                        لم يتم منح أي صلاحيات لهذا الدور
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span>
+                                        تم تحديد @GrantedPermissionCount صلاحية
+                                    </span>
+                                }
+
+                            </MudText>
+
+                        </div>
+
+
+                        <MudStack Row
+                                  Spacing="1">
+
+                            <MudChip T="string"
+                                     Size="Size.Small"
+                                     Variant="Variant.Outlined"
+                                     Color="Color.Info">
+                                قراءة: @ReadPermissionCount
+                            </MudChip>
+
+                            <MudChip T="string"
+                                     Size="Size.Small"
+                                     Variant="Variant.Outlined"
+                                     Color="Color.Primary">
+                                كتابة: @WritePermissionCount
+                            </MudChip>
+
+                        </MudStack>
+
+                    </MudStack>
+
+                </MudPaper>
+
+
+                @* ==================================================
+                   No permissions warning
+                   ================================================== *@
+
+                @if (GrantedPermissionCount == 0)
+                {
+                    <MudAlert Severity="Severity.Warning"
+                              Variant="Variant.Outlined"
+                              Dense="true">
+
+                        لم يتم منح أي صلاحيات لهذا الدور.
+                        يمكن حفظ الدور بهذه الحالة، لكن المستخدمين المرتبطين به
+                        لن يحصلوا على صلاحيات وصول من خلاله.
+
+                    </MudAlert>
+                }
+
+
+                @* ==================================================
+                   Actions
+                   ================================================== *@
+
+                <MudStack Row
+                          Justify="Justify.FlexEnd"
+                          AlignItems="AlignItems.Center"
+                          Spacing="2">
+
+                    <MudButton Variant="Variant.Text"
+                               Disabled="_saving"
+                               OnClick="GoBack">
+                        إلغاء
+                    </MudButton>
+
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               Disabled="_saving"
+                               OnClick="SaveAsync">
+
+                        @if (_saving)
+                        {
+                            <MudProgressCircular Indeterminate="true"
+                                                 Size="Size.Small"
+                                                 Class="me-2" />
+
+                            <span>جاري الحفظ...</span>
+                        }
+                        else
+                        {
+                            <span>@SaveButtonText</span>
+                        }
+
+                    </MudButton>
+
+                </MudStack>
+
+            </MudStack>
+
+        </MudForm>
+    }
+
+</MudStack>
+
+
+@code {
+
+    // ============================================================
+    // Parameters
+    // ============================================================
+
+    [Parameter]
+    public int? RoleId { get; set; }
+
+
+    // ============================================================
+    // State
+    // ============================================================
+
+    private MudForm? _form;
+
+    private RoleEditorState _state = new();
+
+    private bool _loading = true;
+
+    private bool _saving;
+
+    private bool _roleFound;
+
+
+    // ============================================================
+    // Mode
+    // ============================================================
+
+    private bool IsEditMode =>
+        RoleId.HasValue;
+
+
+    private string PageTitleText =>
+        IsEditMode
+            ? "تعديل الدور"
+            : "إضافة دور";
+
+
+    private string PageDescription =>
+        IsEditMode
+            ? "تعديل بيانات الدور وصلاحيات الوصول الخاصة به"
+            : "إنشاء دور جديد وتحديد صلاحيات الوصول الخاصة به";
+
+
+    private string SaveButtonText =>
+        IsEditMode
+            ? "حفظ التعديلات"
+            : "إضافة الدور";
+
+
+    // ============================================================
+    // Permission summary
+    // ============================================================
+
+    private int ReadPermissionCount =>
+        _state.Permissions.Count(
+            x => x.Level == PermissionLevel.Read);
+
+
+    private int WritePermissionCount =>
+        _state.Permissions.Count(
+            x => x.Level == PermissionLevel.Write);
+
+
+    private int GrantedPermissionCount =>
+        ReadPermissionCount + WritePermissionCount;
+
+
+    // ============================================================
+    // Lifecycle
+    // ============================================================
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await InitializeAsync();
+    }
+
+
+    // ============================================================
+    // Initialization
+    // ============================================================
+
+    private async Task InitializeAsync()
+    {
+        _loading = true;
+
+        try
+        {
+            _state = new RoleEditorState();
+
+            if (!IsEditMode)
+            {
+                _roleFound = true;
+                return;
+            }
+
+            await LoadRoleAsync();
+        }
+        catch (Exception)
+        {
+            _roleFound = false;
+
+            Snackbar.Add(
+                "تعذر تحميل بيانات الدور.",
+                Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+
+    // ============================================================
+    // Load existing role
+    // ============================================================
+
+    private async Task LoadRoleAsync()
+    {
+        if (!RoleId.HasValue)
+            return;
+
+        GetRoleResponse? role =
+            await RequestExecutor.ExecuteAsync(
+                new GetRoleQuery(RoleId.Value));
+
+        if (role is null)
+        {
+            _roleFound = false;
+            return;
+        }
+
+        _state.Name = role.Name;
+
+        ApplyPermissions(role.Permissions);
+
+        _roleFound = true;
+    }
+
+
+    // ============================================================
+    // Apply existing permissions
+    // ============================================================
+
+    private void ApplyPermissions(
+        IReadOnlyList<RolePermissionItem> permissions)
+    {
+        foreach (RolePermissionEditorState editorPermission
+                 in _state.Permissions)
+        {
+            editorPermission.Level =
+                PermissionLevel.None;
+        }
+
+        foreach (RolePermissionItem permission in permissions)
+        {
+            RolePermissionEditorState? editorPermission =
+                _state.Permissions.FirstOrDefault(
+                    x => x.Feature == permission.Feature);
+
+            if (editorPermission is null)
+                continue;
+
+            editorPermission.Level =
+                permission.Level;
+        }
+    }
+
+
+    // ============================================================
+    // Save
+    // ============================================================
+
+    private async Task SaveAsync()
+    {
+        if (_saving || _form is null)
+            return;
+
+        await _form.ValidateAsync();
+
+        if (!_form.IsValid)
+            return;
+
+        try
+        {
+            _saving = true;
+
+            if (IsEditMode)
+                await UpdateAsync();
+            else
+                await CreateAsync();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add(
+                IsEditMode
+                    ? "حدث خطأ أثناء حفظ تعديلات الدور."
+                    : "حدث خطأ أثناء إضافة الدور.",
+                Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+
+    // ============================================================
+    // Create
+    // ============================================================
+
+    private async Task CreateAsync()
+    {
+        IReadOnlyList<RolePermissionInput> permissions =
+            BuildPermissionInputs();
+
+        var request = new CreateRoleRequest(
+            _state.Name.Trim(),
+            permissions);
+
+        var result =
+            await RequestExecutor.ExecuteAsync(
+                new CreateRoleCommand(request));
+
+        if (!result.IsSuccess)
+        {
+            Snackbar.Add(
+                result.ErrorMessage,
+                Severity.Error);
+
+            return;
+        }
+
+        Snackbar.Add(
+            "تمت إضافة الدور بنجاح.",
+            Severity.Success);
+
+        NavigateToRoles();
+    }
+
+
+    // ============================================================
+    // Update
+    // ============================================================
+
+    private async Task UpdateAsync()
+    {
+        if (!RoleId.HasValue)
+            return;
+
+        IReadOnlyList<RolePermissionInput> permissions =
+            BuildPermissionInputs();
+
+        var request = new UpdateRoleRequest(
+            _state.Name.Trim(),
+            permissions);
+
+        var result =
+            await RequestExecutor.ExecuteAsync(
+                new UpdateRoleCommand(
+                    RoleId.Value,
+                    request));
+
+        if (!result.IsSuccess)
+        {
+            Snackbar.Add(
+                result.ErrorMessage,
+                Severity.Error);
+
+            return;
+        }
+
+        Snackbar.Add(
+            "تم حفظ تعديلات الدور بنجاح.",
+            Severity.Success);
+
+        NavigateToRoles();
+    }
+
+
+    // ============================================================
+    // Build application input
+    // ============================================================
+
+    private IReadOnlyList<RolePermissionInput> BuildPermissionInputs()
+    {
+        return _state.Permissions
+            .Where(
+                x => x.Level != PermissionLevel.None)
+            .Select(
+                x => new RolePermissionInput(
+                    x.Feature,
+                    x.Level))
+            .ToList();
+    }
+
+
+    // ============================================================
+    // Navigation
+    // ============================================================
+
+    private void GoBack()
+    {
+        NavigateToRoles();
+    }
+
+
+    private void NavigateToRoles()
+    {
+        NavigationManager.NavigateTo(
+            "/admin/roles");
+    }
+
+
+    // ============================================================
+    // Feature name
+    // ============================================================
+
+    private static string GetFeatureName(
+        PermissionFeature feature)
+    {
+        return feature switch
+        {
+            PermissionFeature.Orders =>
+                "الطلبات",
+
+            PermissionFeature.Documents =>
+                "المستندات",
+
+            PermissionFeature.Products =>
+                "المنتجات",
+
+            PermissionFeature.Categories =>
+                "الأقسام",
+
+            PermissionFeature.Properties =>
+                "خصائص المنتجات",
+
+            PermissionFeature.Clients =>
+                "العملاء",
+
+            PermissionFeature.Suppliers =>
+                "الموردون",
+
+            PermissionFeature.Deliverymen =>
+                "المناديب",
+
+            PermissionFeature.ShippingCarriers =>
+                "شركات الشحن",
+
+            PermissionFeature.Cities =>
+                "المدن",
+
+            PermissionFeature.PaymentMethods =>
+                "طرق الدفع",
+
+            PermissionFeature.Logs =>
+                "سجلات النظام",
+
+            PermissionFeature.Users =>
+                "إدارة المستخدمين",
+
+            PermissionFeature.Settings =>
+                "إعدادات النظام",
+
+            _ => feature.ToString()
+        };
+    }
+
+
+    // ============================================================
+    // Feature description
+    // ============================================================
+
+    private static string GetFeatureDescription(
+        PermissionFeature feature)
+    {
+        return feature switch
+        {
+            PermissionFeature.Orders =>
+                "عرض وإدارة الطلبات",
+
+            PermissionFeature.Documents =>
+                "عروض الأسعار والفواتير والمستندات",
+
+            PermissionFeature.Products =>
+                "عرض وإدارة المنتجات",
+
+            PermissionFeature.Categories =>
+                "إدارة أقسام المنتجات",
+
+            PermissionFeature.Properties =>
+                "إدارة خصائص وخيارات المنتجات",
+
+            PermissionFeature.Clients =>
+                "عرض وإدارة بيانات العملاء",
+
+            PermissionFeature.Suppliers =>
+                "عرض وإدارة الموردين",
+
+            PermissionFeature.Deliverymen =>
+                "عرض وإدارة المناديب",
+
+            PermissionFeature.ShippingCarriers =>
+                "عرض وإدارة شركات الشحن",
+
+            PermissionFeature.Cities =>
+                "إدارة المدن",
+
+            PermissionFeature.PaymentMethods =>
+                "إدارة طرق الدفع",
+
+            PermissionFeature.Logs =>
+                "عرض سجلات النظام",
+
+            PermissionFeature.Users =>
+                "إدارة حسابات المستخدمين",
+
+            PermissionFeature.Settings =>
+                "إدارة إعدادات النظام",
+
+            _ => string.Empty
+        };
+    }
+
+
+    // ============================================================
+    // Feature icon
+    // ============================================================
+
+    private static string GetFeatureIcon(
+        PermissionFeature feature)
+    {
+        return feature switch
+        {
+            PermissionFeature.Orders =>
+                Icons.Material.Filled.ShoppingCart,
+
+            PermissionFeature.Documents =>
+                Icons.Material.Filled.Description,
+
+            PermissionFeature.Products =>
+                Icons.Material.Filled.Inventory2,
+
+            PermissionFeature.Categories =>
+                Icons.Material.Filled.Category,
+
+            PermissionFeature.Properties =>
+                Icons.Material.Filled.Tune,
+
+            PermissionFeature.Clients =>
+                Icons.Material.Filled.People,
+
+            PermissionFeature.Suppliers =>
+                Icons.Material.Filled.Store,
+
+            PermissionFeature.Deliverymen =>
+                Icons.Material.Filled.DeliveryDining,
+
+            PermissionFeature.ShippingCarriers =>
+                Icons.Material.Filled.LocalShipping,
+
+            PermissionFeature.Cities =>
+                Icons.Material.Filled.LocationCity,
+
+            PermissionFeature.PaymentMethods =>
+                Icons.Material.Filled.Payments,
+
+            PermissionFeature.Logs =>
+                Icons.Material.Filled.ReceiptLong,
+
+            PermissionFeature.Users =>
+                Icons.Material.Filled.ManageAccounts,
+
+            PermissionFeature.Settings =>
+                Icons.Material.Filled.Settings,
+
+            _ =>
+                Icons.Material.Filled.Security
+        };
+    }
+}
