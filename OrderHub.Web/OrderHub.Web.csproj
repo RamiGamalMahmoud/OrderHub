@@ -34,4 +34,9 @@
     <Content Include="Resources\Images\documents-background.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- Release archives use only base settings; server configuration is external. -->
+  <ItemGroup Condition="'$(ReleasePackage)' == 'true'">
+    <Content Update="appsettings.*.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
 </Project>

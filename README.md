@@ -15,7 +15,7 @@ OrderHub is an ASP.NET Core Blazor application for managing orders, products, cu
 
 ## Development and verification
 
-Install a .NET SDK capable of targeting .NET 9, the .NET 9 ASP.NET Core runtime, and PostgreSQL. Run commands from the repository root:
+Install a stable .NET 9 SDK (selected by `global.json`), the .NET 9 ASP.NET Core runtime, and PostgreSQL. Run commands from the repository root:
 
 ```powershell
 dotnet restore OrderHub.sln
@@ -47,3 +47,7 @@ The Web host supports Windows service operation as `OrderHubWeb`. In Production 
 All EF Core migrations remain in `OrderHub.Infrastructure/Migrations`. Follow the [release runbook](docs/order-lifecycle-release-runbook.md) for backups, migration prerequisites, verification, and rollback. Its SQL script has a specific starting migration; verify the target schema before using it. The current Web `--migrate` branch is a placeholder and does not apply migrations.
 
 Build outputs, test results, logs, temporary files, and publish output are ignored by Git. Keep source assets, migration files, deployment configuration, and operational documentation tracked.
+
+## GitHub releases
+
+Production releases are created only by pushing an unused X.Y.Z tag at the latest master commit. See [Web release instructions](docs/web-releases.md) for package contents, test scope, production configuration, and the first release steps.

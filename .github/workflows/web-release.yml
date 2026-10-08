@@ -1,0 +1,200 @@
+name: OrderHub Web release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  RELEASE_TAG: ${{ github.ref_name }}
+
+jobs:
+  build:
+    name: Validate, test, and package
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
+    steps:
+      - name: Check out the pushed commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Validate version and latest master commit
+        id: validate
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:RELEASE_TAG -cnotmatch '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') {
+            throw 'Only canonical vX.Y.Z production tags are accepted.'
+          }
+          git fetch --no-tags origin '+refs/heads/master:refs/remotes/origin/master' "+refs/tags/$($env:RELEASE_TAG):refs/tags/$($env:RELEASE_TAG)"
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to fetch the current production branch and tag.' }
+          $tagCommit = git rev-parse --verify "refs/tags/$($env:RELEASE_TAG)^{commit}"
+          if ($LASTEXITCODE -ne 0) { throw 'Tag does not resolve to a commit.' }
+          $masterCommit = git rev-parse --verify 'refs/remotes/origin/master^{commit}'
+          if ($LASTEXITCODE -ne 0) { throw 'Production branch is missing.' }
+          $headCommit = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to resolve the checked-out commit.' }
+          if ($tagCommit -ne $masterCommit -or $tagCommit -ne $headCommit -or $tagCommit -ne $env:GITHUB_SHA) {
+            throw 'The pushed tag must point to the latest commit on master.'
+          }
+          "version=$($env:RELEASE_TAG.Substring(1))" >> $env:GITHUB_OUTPUT
+
+      - name: Set up .NET 9
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Set up Node.js for browser time tests
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Restore solution dependencies
+        run: dotnet restore OrderHub.sln
+
+      - name: Build the Release solution
+        run: dotnet build OrderHub.sln --configuration Release --no-restore
+
+      # PostgreSQL/rehearsal tests are opt-in and stay disabled: no database
+      # connection variables, production access, or migrations in this workflow.
+      - name: Run applicable .NET tests
+        run: dotnet test OrderHub.sln --configuration Release --no-build --no-restore
+
+      - name: Run browser-local time tests
+        run: node OrderHub.Tests/Web/order-local-time.test.mjs
+
+      - name: Publish the self-contained Windows application
+        env:
+          RELEASE_VERSION: ${{ steps.validate.outputs.version }}
+        run: |
+          dotnet publish OrderHub.Web/OrderHub.Web.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/publish -p:Version=$env:RELEASE_VERSION -p:ReleasePackage=true -p:DebugSymbols=false -p:DebugType=None -p:CopyOutputSymbolsToPublishDirectory=false
+
+      - name: Inspect, package, and checksum
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $publishPath = (Resolve-Path -LiteralPath 'artifacts/publish').Path
+          # Browser source maps are debugging output, not runtime requirements.
+          Get-ChildItem -LiteralPath $publishPath -File -Recurse -Force |
+            Where-Object { $_.Name -match '\.map(?:\.(?:br|gz))?$' } |
+            ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force }
+          $files = @(Get-ChildItem -LiteralPath $publishPath -File -Recurse -Force)
+          $forbidden = @($files | Where-Object {
+            $_.Name -match '^appsettings\..+\.json$|^launchSettings\.json$|^secrets\.json$|^\.env' -or
+            $_.Extension -match '^\.(cs|razor|csproj|sln|slnx|pdb|map|log|trx|tmp|bak|sql|dump|dmp|pfx|pem|key)$' -or
+            $_.FullName.Substring($publishPath.Length) -match '[/\\](TestResults|tests|obj|bin|ref|refs|\.git)[/\\]' -or
+            $_.Name -match '^OrderHub\.Tests\.'
+          })
+          if ($forbidden.Count) { throw "Unexpected release files: $($forbidden.Name -join ', ')" }
+          foreach ($required in @('OrderHub.Web.exe', 'OrderHub.Web.dll', 'OrderHub.Web.deps.json', 'OrderHub.Web.runtimeconfig.json', 'coreclr.dll', 'hostfxr.dll', 'Microsoft.Extensions.Hosting.WindowsServices.dll', 'Resources/Images/almasajid.png', 'Resources/Images/documents-background.png', 'wwwroot/app.css')) {
+            if (-not (Test-Path -LiteralPath (Join-Path $publishPath $required) -PathType Leaf)) { throw "Missing runtime asset: $required" }
+          }
+          # Only the credential-free base settings are allowed in the package.
+          $settings = Get-Content -LiteralPath (Join-Path $publishPath 'appsettings.json') -Raw | ConvertFrom-Json
+          $unexpectedSettings = @($settings.PSObject.Properties.Name | Where-Object { $_ -notin @('Logging', 'AllowedHosts') })
+          if ($unexpectedSettings.Count) { throw 'Base settings contain deployment-specific configuration.' }
+          $settingsText = Get-Content -LiteralPath (Join-Path $publishPath 'appsettings.json') -Raw
+          if ($settingsText -match '(?i)password|connectionstrings|secret|token|apikey') { throw 'Base settings contain sensitive configuration.' }
+          $runtimeConfig = Get-Content -LiteralPath (Join-Path $publishPath 'OrderHub.Web.runtimeconfig.json') -Raw | ConvertFrom-Json
+          if (-not $runtimeConfig.runtimeOptions.includedFrameworks -or $runtimeConfig.runtimeOptions.framework -or $runtimeConfig.runtimeOptions.frameworks) {
+            throw 'Publish output is not self-contained.'
+          }
+          New-Item -ItemType Directory -Path 'artifacts/release' -Force | Out-Null
+          $zipName = "OrderHub-Web-$($env:RELEASE_TAG)-win-x64.zip"
+          $zipPath = Join-Path (Join-Path $PWD 'artifacts/release') $zipName
+          [IO.Compression.ZipFile]::CreateFromDirectory($publishPath, $zipPath, [IO.Compression.CompressionLevel]::Optimal, $false)
+          $archive = [IO.Compression.ZipFile]::OpenRead($zipPath)
+          try {
+            $entries = @($archive.Entries | Where-Object { $_.Name })
+            if ($entries.Count -ne $files.Count) { throw 'ZIP file count does not match publish output.' }
+          } finally { $archive.Dispose() }
+          $hash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $zipName" | Set-Content -LiteralPath "$zipPath.sha256" -Encoding ascii
+
+      - name: Transfer verified release files
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-release-${{ github.run_id }}
+          path: |
+            artifacts/release/*.zip
+            artifacts/release/*.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 3
+          overwrite: true
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Check out the validated commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Download verified release files
+        uses: actions/download-artifact@v8
+        with:
+          name: web-release-${{ github.run_id }}
+          path: artifacts/release
+
+      - name: Revalidate and publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          function Assert-CurrentProductionTag {
+            git fetch --no-tags origin '+refs/heads/master:refs/remotes/origin/master' "+refs/tags/$($env:RELEASE_TAG):refs/tags/$($env:RELEASE_TAG)"
+            if ($LASTEXITCODE -ne 0) { throw 'Unable to revalidate the production branch and tag.' }
+            $tagCommit = git rev-parse --verify "refs/tags/$($env:RELEASE_TAG)^{commit}"
+            if ($LASTEXITCODE -ne 0) { throw 'Release tag is missing.' }
+            $masterCommit = git rev-parse --verify 'refs/remotes/origin/master^{commit}'
+            if ($LASTEXITCODE -ne 0) { throw 'Production branch is missing.' }
+            if ($tagCommit -ne $masterCommit -or $tagCommit -ne $env:GITHUB_SHA) {
+              throw 'Master or the tag moved after validation; release refused.'
+            }
+          }
+          Assert-CurrentProductionTag
+          $existingTags = @(gh api --paginate "repos/$($env:GITHUB_REPOSITORY)/releases?per_page=100" --jq '.[].tag_name')
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot check for existing releases.' }
+          if ($env:RELEASE_TAG -in $existingTags) { throw 'A release or draft already exists for this tag. No assets will be overwritten.' }
+          $zipName = "OrderHub-Web-$($env:RELEASE_TAG)-win-x64.zip"
+          $zipPath = Join-Path 'artifacts/release' $zipName
+          $checksumPath = "$zipPath.sha256"
+          if (@(Get-ChildItem -LiteralPath 'artifacts/release' -File).Count -ne 2) { throw 'Unexpected release assets.' }
+          $expectedChecksum = (Get-Content -LiteralPath $checksumPath -Raw).Trim()
+          $actualHash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($expectedChecksum -cne "$actualHash  $zipName") { throw 'Release ZIP checksum mismatch.' }
+          # Upload to a draft first: a failed upload must never expose a release.
+          gh release create $env:RELEASE_TAG $zipPath $checksumPath --repo $env:GITHUB_REPOSITORY --verify-tag --target master --title "OrderHub Web $($env:RELEASE_TAG)" --generate-notes --draft
+          if ($LASTEXITCODE -ne 0) { throw 'Draft creation or upload failed. Any remaining draft must be reviewed before retrying.' }
+          $assetNames = @(gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json assets --jq '.assets[].name')
+          if ($LASTEXITCODE -ne 0 -or $assetNames.Count -ne 2 -or $zipName -notin $assetNames -or "$zipName.sha256" -notin $assetNames) {
+            throw 'Draft assets are incomplete; the release remains unpublished.'
+          }
+          Assert-CurrentProductionTag
+          gh release edit $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --draft=false --latest
+          if ($LASTEXITCODE -ne 0) { throw 'Publishing the verified draft failed.' }
