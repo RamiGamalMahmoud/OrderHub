@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using MudBlazor.Services;
 using OrderHub.Application;
-using OrderHub.Domain;
 using OrderHub.Infrastructure.DependencyInjection;
 using OrderHub.Infrastructure.Options;
 using OrderHub.Web.Components;
@@ -54,7 +53,6 @@ builder.Services.AddOptions<ApplicationDataOptions>()
     .ValidateOnStart();
 
 builder.Services.AddInfrastructure(connectionString);
-builder.Services.AddDomain();
 
 builder.Services.AddMudServices();
 

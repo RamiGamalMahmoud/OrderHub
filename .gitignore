@@ -361,3 +361,19 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# OrderHub generated output and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.trx
+*.dmp
+*.dump
+*.orig
+*.rej
+coverage/
+TestResults/
+.tmp/
+.temp/
+/publish/

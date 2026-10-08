@@ -1,5 +1,7 @@
 # Changelog
 
+Historical development notes, including retired desktop features. See [README.md](README.md) for the current OrderHub Web architecture and development instructions.
+
 This changelog summarizes the feature work and behavior changes added on the current branch after `master`.
 
 ## Order Editing
