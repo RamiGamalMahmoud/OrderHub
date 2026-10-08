@@ -5,10 +5,22 @@ using OrderHub.Domain;
 using OrderHub.Infrastructure.DependencyInjection;
 using OrderHub.Infrastructure.Options;
 using OrderHub.Web.Components;
-using OrderHub.Web.Services;
+using OrderHub.Web.Infrastructure;
 using OrderHub.Web.Infrastructure.Authorization;
+using OrderHub.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+if (args.Contains("--migrate", StringComparer.OrdinalIgnoreCase))
+{
+    // 1. Create backup
+
+    // 2. Check pending migrations
+
+    // 3. Apply migrations
+
+    return;
+}
 
 // =========================
 // Services
@@ -23,6 +35,10 @@ builder.Services.AddWindowsService(options =>
     options.ServiceName = "OrderHubWeb";
 });
 
+if (builder.Environment.IsProduction())
+{
+    ServerConfiguration.Add(builder.Configuration);
+}
 
 builder.Services.AddApplication();
 string connectionString =
@@ -32,7 +48,7 @@ string connectionString =
 
 builder.Services.AddOptions<ApplicationDataOptions>()
     .Bind(builder.Configuration.GetSection(ApplicationDataOptions.SECTION_NAME))
-    .Validate(options => 
+    .Validate(options =>
         !string.IsNullOrWhiteSpace(options.RootPath),
         "Application data root path is required.")
     .ValidateOnStart();
