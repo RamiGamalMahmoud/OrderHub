@@ -15,7 +15,8 @@ using System.Threading.Tasks;
 
 namespace OrderHub.Application.Features.Orders.Create;
 
-internal class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Result<int>>
+internal class CreateOrderCommandHandler
+    : IRequestHandler<CreateOrderCommand, Result<int>>
 {
     private readonly IOrderRepository _orderRepository;
     private readonly IQuotationRepository _quotationRepository;
@@ -41,43 +42,91 @@ internal class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, R
     }
 
     public async Task<Result<int>> Handle(
-CreateOrderCommand request,
-CancellationToken cancellationToken)
+        CreateOrderCommand request,
+        CancellationToken cancellationToken)
     {
         var transactionActive = false;
+
         try
         {
             var input = request.Order;
-            if (input is null) return Result<int>.Failure("بيانات الطلب غير موجودة.");
+
+            if (input is null)
+                return Result<int>.Failure("بيانات الطلب غير موجودة.");
+
             if (!_currentUser.IsAuthenticated || _currentUser.Id is not > 0)
                 return Result<int>.Failure("يجب تسجيل الدخول لإنشاء الطلب.");
-            if (request.CreationRequestId == Guid.Empty) return Result<int>.Failure("معرف عملية الإنشاء غير صالح.");
-            if (!Enum.IsDefined(input.DeliveryMethod) || !Enum.IsDefined(input.OrderSource))
-                return Result<int>.Failure("مصدر الطلب أو طريقة التوصيل غير صالح.");
-            if (input.DeliveryMethod == DeliveryMethod.DeliveryMan && !input.DeliveryManId.HasValue ||
-                input.DeliveryMethod == DeliveryMethod.ShippingCompany && !input.ShippingCarrierId.HasValue)
+
+            if (request.CreationRequestId == Guid.Empty)
+                return Result<int>.Failure("معرف عملية الإنشاء غير صالح.");
+
+            if (!Enum.IsDefined(input.DeliveryMethod) ||
+                !Enum.IsDefined(input.OrderSource))
+            {
+                return Result<int>.Failure(
+                    "مصدر الطلب أو طريقة التوصيل غير صالح.");
+            }
+
+            if (input.DeliveryMethod == DeliveryMethod.DeliveryMan &&
+                !input.DeliveryManId.HasValue ||
+                input.DeliveryMethod == DeliveryMethod.ShippingCompany &&
+                !input.ShippingCarrierId.HasValue)
+            {
                 return Result<int>.Failure("يجب اختيار جهة التوصيل.");
+            }
+
             var steps = input.DeliveryMethod == DeliveryMethod.DeliveryChain
-                ? (input.DeliverySteps ?? Enumerable.Empty<OrderInput.DeliveryStep>()).ToList()
+                ? (input.DeliverySteps ??
+                   Enumerable.Empty<OrderInput.DeliveryStep>()).ToList()
                 : [];
-            if (steps.Any(step => step is null || step.DeliveryMethod is not (DeliveryMethod.DeliveryMan or DeliveryMethod.ShippingCompany) ||
-                    step.StepOrder <= 0 || step.HandlerId <= 0) || steps.Select(step => step.StepOrder).Distinct().Count() != steps.Count)
-                return Result<int>.Failure("خطوات التوصيل أو ترتيبها غير صالح.");
-            if ((input.OrderItems ?? Enumerable.Empty<OrderInput.Item>()).Any(item => item is null ||
-                (item.Properties ?? Enumerable.Empty<OrderInput.Property>()).Any(property => property is null)))
-                return Result<int>.Failure("بنود الطلب أو خصائصها غير صالحة.");
+
+            if (steps.Any(step =>
+                    step is null ||
+                    step.DeliveryMethod is not (
+                        DeliveryMethod.DeliveryMan or
+                        DeliveryMethod.ShippingCompany) ||
+                    step.StepOrder <= 0 ||
+                    step.HandlerId <= 0) ||
+                steps.Select(step => step.StepOrder)
+                    .Distinct()
+                    .Count() != steps.Count)
+            {
+                return Result<int>.Failure(
+                    "خطوات التوصيل أو ترتيبها غير صالح.");
+            }
+
+            if ((input.OrderItems ?? Enumerable.Empty<OrderInput.Item>())
+                .Any(item =>
+                    item is null ||
+                    (item.Properties ?? Enumerable.Empty<OrderInput.Property>())
+                        .Any(property => property is null)))
+            {
+                return Result<int>.Failure(
+                    "بنود الطلب أو خصائصها غير صالحة.");
+            }
 
             await _unitOfWork.BeginTransactionAsync(cancellationToken);
             transactionActive = true;
-            var numberingDay = DateTime.Now.Date;
-            int nextOrderNumber =
-                await _orderRepository.GetNextOrderNumberAsync(numberingDay, cancellationToken);
 
-            // Check after allocation lock so simultaneous retries see the first committed request.
+            var numberingDay = DateTime.Now.Date;
+
+            int nextOrderNumber =
+                await _orderRepository.GetNextOrderNumberAsync(
+                    numberingDay,
+                    cancellationToken);
+
+            // Check after allocation lock so simultaneous retries see
+            // the first committed request.
             if (request.CreationRequestId.HasValue)
             {
-                var existing = await _orderRepository.FindCreationRequestAsync(request.CreationRequestId.Value, _currentUser.Id.Value, cancellationToken);
-                if (existing.HasValue) return existing.Value;
+                var existing =
+                    await _orderRepository.FindCreationRequestAsync(
+                        request.CreationRequestId.Value,
+                        _currentUser.Id.Value,
+                        cancellationToken);
+
+                if (existing.HasValue)
+                    return existing.Value;
             }
 
             string orderNumber =
@@ -85,21 +134,32 @@ CancellationToken cancellationToken)
 
             Order order = new(
                 request.Order.ClientId,
-                orderNumber, request.CreationRequestId);
+                orderNumber,
+                request.CreationRequestId);
 
             order.UpdateHeader(
                 request.Order.ClientId,
                 request.Order.OrderSource,
                 request.Order.DeliveryMethod,
-                input.DeliveryMethod == DeliveryMethod.DeliveryMan ? input.DeliveryManId : null,
-                input.DeliveryMethod == DeliveryMethod.ShippingCompany ? input.ShippingCarrierId : null,
-                request.Order.PaymentMethodId
-                );
-            var initial = order.InitializeHistory(new OrderOperation(_currentUser.Id.Value,
-                _currentUser.DisplayName ?? _currentUser.UserName, order.CreatedAt));
-            if (!initial.IsSuccess) return Result<int>.Failure(initial.ErrorMessage);
+                input.DeliveryMethod == DeliveryMethod.DeliveryMan
+                    ? input.DeliveryManId
+                    : null,
+                input.DeliveryMethod == DeliveryMethod.ShippingCompany
+                    ? input.ShippingCarrierId
+                    : null,
+                request.Order.PaymentMethodId);
 
-            foreach (OrderInput.Item item in request.Order.OrderItems ?? Enumerable.Empty<OrderInput.Item>())
+            var initial = order.InitializeHistory(
+                new OrderOperation(
+                    _currentUser.Id.Value,
+                    _currentUser.DisplayName ?? _currentUser.UserName,
+                    order.CreatedAt));
+
+            if (!initial.IsSuccess)
+                return Result<int>.Failure(initial.ErrorMessage);
+
+            foreach (OrderInput.Item item in
+                request.Order.OrderItems ?? Enumerable.Empty<OrderInput.Item>())
             {
                 Result<OrderItem> result = order.AddOrderItem(
                     item.ProductId,
@@ -130,12 +190,16 @@ CancellationToken cancellationToken)
                 {
                     StepOrder = step.StepOrder,
                     DeliveryMethod = step.DeliveryMethod,
-                    DeliverymanId = step.DeliveryMethod == DeliveryMethod.DeliveryMan
-                        ? step.HandlerId
-                        : null,
-                    ShippingCarrierId = step.DeliveryMethod == DeliveryMethod.ShippingCompany
-                        ? step.HandlerId
-                        : null
+
+                    DeliverymanId =
+                        step.DeliveryMethod == DeliveryMethod.DeliveryMan
+                            ? step.HandlerId
+                            : null,
+
+                    ShippingCarrierId =
+                        step.DeliveryMethod == DeliveryMethod.ShippingCompany
+                            ? step.HandlerId
+                            : null
                 });
             }
 
@@ -147,45 +211,63 @@ CancellationToken cancellationToken)
             if (request.OrderDraftId is Guid draftReference)
             {
                 int? userId = _currentUser.Id;
-                var quotations = await _quotationRepository.GetByDraftReference(
-                    draftReference,
-                    cancellationToken);
+
+                var quotations =
+                    await _quotationRepository.GetByDraftReference(
+                        draftReference,
+                        cancellationToken);
 
                 foreach (Quotation quotation in quotations)
                 {
                     quotation.LinkToOrder(order);
                 }
 
-                var proformaInvoices = await _proformaInvoiceRepository.GetByDraftReference(
-                    draftReference,
-                    cancellationToken);
+                var proformaInvoices =
+                    await _proformaInvoiceRepository.GetByDraftReference(
+                        draftReference,
+                        cancellationToken);
 
                 foreach (ProformaInvoice proformaInvoice in proformaInvoices)
                 {
                     proformaInvoice.LinkToOrder(order);
                 }
-                await _draftRepository.StageDeleteAsync(draftReference, userId.Value, cancellationToken);
+
+                await _draftRepository.StageDeleteAsync(
+                    draftReference,
+                    userId.Value,
+                    cancellationToken);
             }
 
             // 5. Save changes
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
             transactionActive = false;
+
             await _unitOfWork.CommitTransactionAsync(cancellationToken);
 
             return order.Id;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (PersistenceException)
         {
-            return Result<int>.Failure("تعذر حفظ الطلب. تحقق من البيانات ثم حاول مرة أخرى.");
+            return Result<int>.Failure(
+                "تعذر حفظ الطلب. تحقق من البيانات ثم حاول مرة أخرى.");
         }
         catch (Exception)
         {
-            return Result<int>.Failure("تعذر إنشاء الطلب. راجع البيانات ثم حاول مرة أخرى.");
+            return Result<int>.Failure(
+                "تعذر إنشاء الطلب. راجع البيانات ثم حاول مرة أخرى.");
         }
         finally
         {
-            if (transactionActive) await _unitOfWork.RollbackTransactionAsync(CancellationToken.None);
+            if (transactionActive)
+            {
+                await _unitOfWork.RollbackTransactionAsync(
+                    CancellationToken.None);
+            }
         }
     }
 }
