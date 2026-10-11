@@ -41,6 +41,7 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<User> Users { get; set; }
     public DbSet<DraftRecord> DraftRecords { get; set; }
     public DbSet<Role> Roles { get; set; }
+    public DbSet<NumberSequence> NumberSequences { get; set; }
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {

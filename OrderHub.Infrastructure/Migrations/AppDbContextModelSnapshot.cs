@@ -1597,6 +1597,42 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("order_drafts", (string)null);
                 });
 
+            modelBuilder.Entity("OrderHub.Infrastructure.Models.NumberSequence", b =>
+                {
+                    b.Property<string>("Kind")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("kind");
+
+                    b.Property<int>("PartyId")
+                        .HasColumnType("integer")
+                        .HasColumnName("party_id");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer")
+                        .HasColumnName("year");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("integer")
+                        .HasColumnName("month");
+
+                    b.Property<long>("LastNumber")
+                        .HasColumnType("bigint")
+                        .HasColumnName("last_number");
+
+                    b.HasKey("Kind", "PartyId", "Year", "Month")
+                        .HasName("pk_number_sequences");
+
+                    b.ToTable("number_sequences", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_number_sequences_kind", "kind IN ('Order', 'Supplier', 'Deliveryman', 'ShippingCarrier')");
+
+                            t.HasCheckConstraint("ck_number_sequences_last_number", "last_number >= 0");
+
+                            t.HasCheckConstraint("ck_number_sequences_scope", "(\r\n    kind = 'Order'\r\n    AND party_id = 0\r\n    AND year = 0\r\n    AND month = 0\r\n)\r\nOR\r\n(\r\n    kind IN ('Supplier', 'Deliveryman', 'ShippingCarrier')\r\n    AND party_id > 0\r\n    AND year > 0\r\n    AND month BETWEEN 1 AND 12\r\n)");
+                        });
+                });
+
             modelBuilder.Entity("product_supplier", b =>
                 {
                     b.Property<int>("product_id")
