@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Documents;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Infrastructure.Features.Documents;
@@ -18,6 +17,7 @@ internal static class ServicesRegistration
         services.AddSingleton<IApplicationDirectoriesService, ApplicationDirectoriesService>();
         services.AddSingleton<IAppLogger, FileAppLogger>();
         services.AddSingleton<IHashShervice, HashShervice>();
+        services.AddScoped<INumberSequenceService, NumberSequenceService>();
         return services;
     }
 }

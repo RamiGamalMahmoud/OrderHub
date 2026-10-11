@@ -4,6 +4,7 @@ using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Repositories;
+using OrderHub.Application.Interfaces.Services;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
@@ -24,6 +25,7 @@ internal class CreateOrderCommandHandler
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUser _currentUser;
     private readonly IDraftRepository _draftRepository;
+    private readonly INumberSequenceService _numberSequenceService;
 
     public CreateOrderCommandHandler(
         IOrderRepository orderRepository,
@@ -31,7 +33,8 @@ internal class CreateOrderCommandHandler
         IQuotationRepository quotationRepository,
         IProformaInvoiceRepository proformaInvoiceRepository,
         ICurrentUser currentUser,
-        IDraftRepository draftRepository)
+        IDraftRepository draftRepository,
+        INumberSequenceService numberSequenceService)
     {
         _orderRepository = orderRepository;
         _unitOfWork = unitOfWork;
@@ -39,6 +42,7 @@ internal class CreateOrderCommandHandler
         _proformaInvoiceRepository = proformaInvoiceRepository;
         _currentUser = currentUser;
         _draftRepository = draftRepository;
+        _numberSequenceService = numberSequenceService;
     }
 
     public async Task<Result<int>> Handle(
@@ -108,12 +112,7 @@ internal class CreateOrderCommandHandler
             await _unitOfWork.BeginTransactionAsync(cancellationToken);
             transactionActive = true;
 
-            var numberingDay = DateTime.Now.Date;
-
-            int nextOrderNumber =
-                await _orderRepository.GetNextOrderNumberAsync(
-                    numberingDay,
-                    cancellationToken);
+            long nextOrderNumber = await _numberSequenceService.NextGlobalAsync(NumberSequenceKind.Order, cancellationToken);
 
             // Check after allocation lock so simultaneous retries see
             // the first committed request.
@@ -129,8 +128,7 @@ internal class CreateOrderCommandHandler
                     return existing.Value;
             }
 
-            string orderNumber =
-                $"ORD-{numberingDay.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)}-{nextOrderNumber:D4}";
+            string orderNumber = $"ORD-{nextOrderNumber:D5}";
 
             Order order = new(
                 request.Order.ClientId,
