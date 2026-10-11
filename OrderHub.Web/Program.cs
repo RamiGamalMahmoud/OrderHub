@@ -8,18 +8,21 @@ using OrderHub.Web.Infrastructure;
 using OrderHub.Web.Infrastructure.Authorization;
 using OrderHub.Web.Services;
 
-var builder = WebApplication.CreateBuilder(args);
-
 if (args.Contains("--migrate", StringComparer.OrdinalIgnoreCase))
 {
-    // 1. Create backup
-
-    // 2. Check pending migrations
-
-    // 3. Apply migrations
+    Environment.ExitCode =
+        await MigrationRunner.RunAsync(
+            args.Where(x =>
+                !string.Equals(
+                    x,
+                    "--migrate",
+                    StringComparison.OrdinalIgnoreCase))
+            .ToArray());
 
     return;
 }
+
+var builder = WebApplication.CreateBuilder(args);
 
 // =========================
 // Services

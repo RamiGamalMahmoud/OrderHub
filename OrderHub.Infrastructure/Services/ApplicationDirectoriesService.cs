@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿
+using Microsoft.Extensions.Options;
 using OrderHub.Application.Interfaces.Services;
 using OrderHub.Infrastructure.Options;
 using System.IO;
@@ -8,12 +9,16 @@ namespace OrderHub.Infrastructure.Services;
 internal sealed class ApplicationDirectoriesService
     : IApplicationDirectoriesService
 {
-    public ApplicationDirectoriesService(IOptions<ApplicationDataOptions> options)
+    public ApplicationDirectoriesService(
+        IOptions<ApplicationDataOptions> options)
     {
         RootDirectory = Path.GetFullPath(options.Value.RootPath);
     }
 
     public string RootDirectory { get; }
+
+    public string ConfigDirectory =>
+        Path.Combine(RootDirectory, "Config");
 
     public string AttachmentsDirectory =>
         Path.Combine(RootDirectory, "Attachments");
@@ -36,9 +41,13 @@ internal sealed class ApplicationDirectoriesService
     public string LogsDirectory =>
         Path.Combine(RootDirectory, "Logs");
 
+    public string DataProtectionDirectory =>
+        Path.Combine(RootDirectory, "DataProtection");
+
     public void EnsureDirectoriesCreated()
     {
         Directory.CreateDirectory(RootDirectory);
+        Directory.CreateDirectory(ConfigDirectory);
         Directory.CreateDirectory(AttachmentsDirectory);
         Directory.CreateDirectory(DocumentsDirectory);
         Directory.CreateDirectory(InvoicesDirectory);
@@ -46,5 +55,6 @@ internal sealed class ApplicationDirectoriesService
         Directory.CreateDirectory(QuotationsDirectory);
         Directory.CreateDirectory(BackupsDirectory);
         Directory.CreateDirectory(LogsDirectory);
+        Directory.CreateDirectory(DataProtectionDirectory);
     }
 }

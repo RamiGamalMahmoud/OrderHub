@@ -1,8 +1,11 @@
 ﻿namespace OrderHub.Application.Interfaces.Services;
 
+
 public interface IApplicationDirectoriesService
 {
     string RootDirectory { get; }
+
+    string ConfigDirectory { get; }
 
     string LogsDirectory { get; }
 
@@ -17,6 +20,8 @@ public interface IApplicationDirectoriesService
     string QuotationsDirectory { get; }
 
     string BackupsDirectory { get; }
+
+    string DataProtectionDirectory { get; }
 
     void EnsureDirectoriesCreated();
 }
