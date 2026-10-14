@@ -1,0 +1,113 @@
+@using OrderHub.Application.Features.Documents.GetDocuments
+@using OrderHub.Application.Features.Documents.Invoices
+@using OrderHub.Application.Interfaces
+@using OrderHub.Domain.Enums
+@inject IRequestExecutor RequestExecutor
+@inject ILogger<OrderInvoiceSection> Logger
+
+<MudPaper Elevation="0" Class="pa-4">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+        <MudIcon Icon="@Icons.Material.Outlined.ReceiptLong" Color="Color.Primary" />
+        <MudText Typo="Typo.subtitle1" Color="Color.Primary">فاتورة الطلب</MudText>
+        <MudSpacer />
+        @if (_invoice is not null)
+        {
+            <MudChip T="string" Color="Color.Success" Variant="Variant.Outlined">@_invoice.DocumentNumber</MudChip>
+        }
+    </MudStack>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Class="mt-2" aria-label="تحميل الفاتورة" />
+    }
+    else if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error" Class="mt-2">@_error</MudAlert>
+        <MudButton OnClick="LoadAsync" Disabled="_busy">إعادة المحاولة</MudButton>
+    }
+    else if (_invoice is null)
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="my-2">لم تصدر فاتورة لهذا الطلب بعد.</MudText>
+        <PermissionView Feature="PermissionFeature.Documents" Level="PermissionLevel.Write">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="_busy"
+                       OnClick="CreateOrRegenerateAsync" StartIcon="@Icons.Material.Filled.ReceiptLong">
+                إنشاء الفاتورة
+            </MudButton>
+        </PermissionView>
+    }
+    else
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-2">
+            <MudText Typo="Typo.body2">الإجمالي شامل الضريبة: @_invoice.TotalAmount.ToString("N2") ر.س</MudText>
+            <MudButton Href="@InvoiceFileUrl" Target="_blank" Size="Size.Small"
+                       Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.PictureAsPdf">
+                فتح PDF
+            </MudButton>
+            <PermissionView Feature="PermissionFeature.Documents" Level="PermissionLevel.Write">
+                <MudButton Size="Size.Small" Disabled="_busy" OnClick="CreateOrRegenerateAsync">
+                    إعادة توليد PDF
+                </MudButton>
+            </PermissionView>
+        </MudStack>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public int OrderId { get; set; }
+
+    private DocumentListItem? _invoice;
+    private bool _loading;
+    private bool _busy;
+    private string? _error;
+    private int _loadedOrderId;
+    private string? InvoiceFileUrl => _invoice is null
+        ? null
+        : $"/files/invoices/{Uri.EscapeDataString(_invoice.DocumentNumber)}.pdf";
+
+    protected override Task OnParametersSetAsync() => _loadedOrderId == OrderId
+        ? Task.CompletedTask
+        : LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loadedOrderId = OrderId;
+        _loading = true;
+        _error = null;
+        try
+        {
+            var page = await RequestExecutor.ExecuteAsync(new GetDocumentsPageQuery(
+                DocumentType.Invoice, PageSize: 1, OrderId: OrderId));
+            _invoice = page.Items.FirstOrDefault();
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load invoice for order {OrderId}.", OrderId);
+            _error = "تعذر تحميل بيانات الفاتورة.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task CreateOrRegenerateAsync()
+    {
+        if (_busy) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            await RequestExecutor.ExecuteAsync(new CreateInvoiceCommand.Command(OrderId));
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to create invoice for order {OrderId}.", OrderId);
+            _error = "تعذر إنشاء الفاتورة. حاول مرة أخرى.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

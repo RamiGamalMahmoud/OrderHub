@@ -1,0 +1,4 @@
+@page "/quotations"
+@using OrderHub.Domain.Enums
+@attribute [PermissionAuthorize(PermissionFeature.Documents, PermissionLevel.Read)]
+<DocumentIndexPage Type="DocumentType.Quotation" Title="عروض الأسعار" />

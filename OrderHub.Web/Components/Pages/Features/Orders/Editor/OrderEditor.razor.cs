@@ -7,6 +7,8 @@ using OrderHub.Application.Features.OrderDrafts.Get;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Features.Orders;
+using OrderHub.Application.Features.Documents.ProformaInvoices;
+using OrderHub.Application.Features.Documents.Quotations;
 
 using OrderHub.Application.Features.Setup.Properties.Get;
 using OrderHub.Application.Interfaces;
@@ -20,7 +22,10 @@ public partial class OrderEditor : IDisposable
 {
     private bool _isDraftsOpen;
     private bool _isSavingUpdate;
+    private bool _isCreatingDocument;
     private string? _loadError;
+    private string? _createdDocumentNumber;
+    private DocumentType? _createdDocumentType;
 
     private OrderEditorStep _activeStep = OrderEditorStep.Products;
 
@@ -30,6 +35,9 @@ public partial class OrderEditor : IDisposable
 
     private bool CanSave => _state.CanEdit && !_isSavingUpdate && !_draftLifecycle.IsClosed && ValidationErrors.Count == 0 &&
         (IsEdit || (!_draftLifecycle.IsCompleting && !_draftLifecycle.IsCompleted));
+
+    private bool CanCreateDraftDocument => !IsEdit && !_isCreatingDocument && !_draftLifecycle.IsCompleting &&
+        !_draftLifecycle.IsClosed && CurrentPricing is not null && _state.ClientId is > 0;
 
     private long _changeVersion;
     private (int? OrderId, Guid? DraftId)? _routeIdentity;
@@ -119,6 +127,9 @@ public partial class OrderEditor : IDisposable
     [Inject]
     private ISnackbar? Snackbar { get; set; }
 
+    [Inject]
+    private ILogger<OrderEditor> Logger { get; set; } = null!;
+
     [Parameter]
     public Guid? DraftId { get; set; }
 
@@ -134,6 +145,54 @@ public partial class OrderEditor : IDisposable
         : PricingCalculator.Calculate(_state.Items.Select(item => new PricingItem(
             item.ProductId, item.ProductName, item.Quantity, item.UnitPrice, item.VatRate)).ToList());
 
+    private Task CreateQuotationAsync() => CreateDraftDocumentAsync(DocumentType.Quotation);
+
+    private Task CreateProformaInvoiceAsync() => CreateDraftDocumentAsync(DocumentType.ProformaInvoice);
+
+    private async Task CreateDraftDocumentAsync(DocumentType type)
+    {
+        if (!CanCreateDraftDocument)
+            return;
+
+        _isCreatingDocument = true;
+        _createdDocumentNumber = null;
+        try
+        {
+            await SaveDraft();
+            _createdDocumentNumber = type switch
+            {
+                DocumentType.Quotation => await RequestExecutor!.ExecuteAsync(
+                    new CreateQuotationCommand.Command(_sessionId)),
+                DocumentType.ProformaInvoice => await RequestExecutor!.ExecuteAsync(
+                    new CreateProformaInvoiceCommand.Command(_sessionId)),
+                _ => throw new ArgumentOutOfRangeException(nameof(type))
+            };
+            _createdDocumentType = type;
+            Snackbar?.Add($"تم إنشاء الوثيقة {_createdDocumentNumber}.", Severity.Success);
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to create {DocumentType} for order draft {DraftId}.", type, _sessionId);
+            Snackbar?.Add("تعذر إنشاء الوثيقة. تحقق من بيانات العميل والمنتجات ثم أعد المحاولة.", Severity.Error);
+        }
+        finally
+        {
+            _isCreatingDocument = false;
+        }
+    }
+
+    private static string DocumentFileUrl(DocumentType type, string number)
+    {
+        var route = type switch
+        {
+            DocumentType.Quotation => "quotations",
+            DocumentType.ProformaInvoice => "proforma-invoices",
+            DocumentType.Invoice => "invoices",
+            _ => throw new ArgumentOutOfRangeException(nameof(type))
+        };
+        return $"/files/{route}/{Uri.EscapeDataString(number)}.pdf";
+    }
+
     protected override async Task OnParametersSetAsync()
     {
         var identity = (OrderId, DraftId: OrderId.HasValue ? null : DraftId);
@@ -146,6 +205,8 @@ public partial class OrderEditor : IDisposable
         _draftLifecycle = new DraftLifecycle();
         _state = new OrderEditorState();
         _changeVersion = 0;
+        _createdDocumentNumber = null;
+        _createdDocumentType = null;
         _activeStep = OrderEditorStep.Products;
         _isDraftsOpen = false;
 

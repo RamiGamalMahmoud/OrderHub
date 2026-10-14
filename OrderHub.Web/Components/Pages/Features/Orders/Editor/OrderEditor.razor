@@ -113,6 +113,38 @@
                 <MudText Typo="Typo.caption" Color="Color.Secondary">سعر الوحدة قبل الضريبة، وتُضاف ضريبة كل منتج إلى إجمالي الطلب.</MudText>
             </MudPaper>
 
+            @if (!IsEdit)
+            {
+                <PermissionView Feature="PermissionFeature.Documents" Level="PermissionLevel.Write">
+                    <MudPaper Outlined="true" Class="pa-3 mt-3">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Primary">وثائق الطلب</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2">
+                            تُنشأ من بيانات المسودة الحالية، ويمكن إصدار نسخة جديدة برقم جديد في كل مرة.
+                        </MudText>
+                        <MudStack Row="true" Spacing="2">
+                            <MudButton Variant="Variant.Outlined" Disabled="@(!CanCreateDraftDocument)"
+                                       OnClick="CreateQuotationAsync" StartIcon="@Icons.Material.Outlined.RequestPage">
+                                إنشاء عرض سعر
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" Disabled="@(!CanCreateDraftDocument)"
+                                       OnClick="CreateProformaInvoiceAsync" StartIcon="@Icons.Material.Outlined.FactCheck">
+                                إنشاء فاتورة أولية
+                            </MudButton>
+                        </MudStack>
+                        @if (_createdDocumentNumber is not null && _createdDocumentType is { } documentType)
+                        {
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mt-2">
+                                <MudText Typo="Typo.body2">تم إنشاء @_createdDocumentNumber</MudText>
+                                <MudButton Href="@DocumentFileUrl(documentType, _createdDocumentNumber)" Target="_blank"
+                                           Size="Size.Small" StartIcon="@Icons.Material.Outlined.PictureAsPdf">
+                                    فتح PDF
+                                </MudButton>
+                            </MudStack>
+                        }
+                    </MudPaper>
+                </PermissionView>
+            }
+
             @* Step Content *@
             @if (_activeStep == OrderEditorStep.Products)
             {

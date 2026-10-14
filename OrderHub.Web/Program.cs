@@ -7,22 +7,14 @@ using OrderHub.Web.Components;
 using OrderHub.Web.Infrastructure;
 using OrderHub.Web.Infrastructure.Authorization;
 using OrderHub.Web.Services;
+using QuestPDF.Infrastructure;
 
-if (args.Contains("--migrate", StringComparer.OrdinalIgnoreCase))
-{
-    Environment.ExitCode =
-        await MigrationRunner.RunAsync(
-            args.Where(x =>
-                !string.Equals(
-                    x,
-                    "--migrate",
-                    StringComparison.OrdinalIgnoreCase))
-            .ToArray());
-
-    return;
-}
+await MigrationRunner.RunAsync();
 
 var builder = WebApplication.CreateBuilder(args);
+
+QuestPDF.Settings.License = LicenseType.Community;
+QuestPDF.Settings.UseSystemFonts = true;
 
 // =========================
 // Services

@@ -5,11 +5,11 @@ namespace OrderHub.Web.Infrastructure;
 
 public static class MigrationRunner
 {
-    public static async Task<int> RunAsync(string[] args)
+    public static async Task<int> RunAsync()
     {
         try
         {
-            var builder = Host.CreateApplicationBuilder(args);
+            var builder = Host.CreateApplicationBuilder();
 
             if (builder.Environment.IsProduction())
             {

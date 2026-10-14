@@ -6,6 +6,10 @@ using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Documents;
 using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Application.Interfaces.Services;
+using OrderHub.Application.Context;
+using OrderHub.Application.Features.OrderDrafts;
+using OrderHub.Application.Features.OrderDrafts.Contracts;
+using OrderHub.Application.Features.Setup.Clients.Contracts;
 using OrderHub.Domain.Models.CommercialDocuments;
 using OrderHub.Domain.Services.Pricing;
 using System;
@@ -19,22 +23,7 @@ namespace OrderHub.Application.Features.Documents.Quotations;
 public static class CreateQuotationCommand
 {
     [RequirePermission(PermissionFeature.Documents, PermissionLevel.Write)]
-    public record Command(QuotationData Data) : IRequest<string>;
-
-    public record QuotationData(
-        Guid SourceDraftReference,
-        string CustomerName,
-        string CustomerPhone,
-        string CustomerAddress,
-        decimal Discount,
-        IReadOnlyCollection<QuotationItemData> Items);
-
-    public record QuotationItemData(
-        int ProductId,
-        string ProductName,
-        decimal Price,
-        decimal Quantity,
-        decimal VatRate);
+    public sealed record Command(Guid DraftReference) : IRequest<string>;
 
     internal class Handler : IRequestHandler<Command, string>
     {
@@ -43,34 +32,52 @@ public static class CreateQuotationCommand
         private readonly IDocumentSequenceRepository _sequenceRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IQuotationRepository _quotationRepository;
+        private readonly IDraftReadService _draftReadService;
+        private readonly ICurrentUser _currentUser;
+        private readonly IClientReader _clientReader;
 
         public Handler(
             IPdfDocumentFactory documentFactory,
             ILocalFileAccessService fileStorageService,
             IDocumentSequenceRepository sequenceRepository,
             IQuotationRepository quotationRepository,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IDraftReadService draftReadService,
+            ICurrentUser currentUser,
+            IClientReader clientReader)
         {
             _documentFactory = documentFactory;
             _fileStorageService = fileStorageService;
             _sequenceRepository = sequenceRepository;
             _quotationRepository = quotationRepository;
             _unitOfWork = unitOfWork;
+            _draftReadService = draftReadService;
+            _currentUser = currentUser;
+            _clientReader = clientReader;
         }
 
         public async Task<string> Handle(Command request, CancellationToken cancellationToken)
         {
-            // 1. Validate & Prepare
-            //    - Receive the command.
             ArgumentNullException.ThrowIfNull(request);
-            ArgumentException.ThrowIfNullOrWhiteSpace(request.Data.CustomerName);
-            ArgumentException.ThrowIfNullOrWhiteSpace(request.Data.CustomerPhone);
-            ArgumentException.ThrowIfNullOrWhiteSpace(request.Data.CustomerAddress);
-            ArgumentNullException.ThrowIfNull(request.Data.Items);
-            if (request.Data.Items.Count == 0)
+            if (request.DraftReference == Guid.Empty)
+                throw new ArgumentException("مسودة الطلب غير صالحة.", nameof(request.DraftReference));
+
+            var draft = await _draftReadService.GetOwnedAsync(
+                request.DraftReference,
+                DraftUser.Require(_currentUser),
+                cancellationToken);
+            if (draft?.Data is null)
+                throw new InvalidOperationException("المسودة غير موجودة أو غير متاحة للمستخدم الحالي.");
+            if (draft.Data.ClientId is not > 0)
+                throw new InvalidOperationException("يجب اختيار العميل قبل إنشاء عرض السعر.");
+            if (draft.Data.Items.Count == 0)
                 throw new ArgumentException(
                     "The collection cannot be empty.",
-                    nameof(request.Data.Items));
+                    nameof(draft.Data.Items));
+
+            var client = await _clientReader.GetClientByIdAsync(draft.Data.ClientId.Value, cancellationToken);
+            if (client is null)
+                throw new InvalidOperationException("العميل المرتبط بالمسودة غير موجود.");
 
             // 2. Create Document
             //    - Begin transaction.
@@ -84,25 +91,26 @@ public static class CreateQuotationCommand
                 int newSequence = await _sequenceRepository.ReserveNextNumberAsync(
                     Domain.Enums.DocumentType.Quotation,
                     currentDate.Year,
-                    currentDate.Month);
+                    currentDate.Month,
+                    cancellationToken);
 
                 string documentNumber = $"QT-{currentDate.Year:D4}-{currentDate.Month:D2}-{newSequence:D4}";
 
                 //    - Calculate pricing and item totals.
-                var documentPricing = CalculateDocument(request.Data.Items);
+                var documentPricing = CalculateDocument(draft.Data.Items);
 
                 //    - Create the domain document and add its items.
                 quotation = Quotation.Create(
                     documentNumber,
                     currentDate,
-                    request.Data.CustomerName,
-                    request.Data.CustomerPhone,
-                    request.Data.CustomerAddress,
+                    client.Name,
+                    client.PhoneNumber,
+                    client.Address,
                     documentPricing.Subtotal,
                     documentPricing.TotalVat,
                     documentPricing.TotalAmount,
                     currentDate.AddDays(30),
-                    request.Data.SourceDraftReference);
+                    draft.Id);
 
                 foreach (var item in documentPricing.Items)
                 {
@@ -116,7 +124,9 @@ public static class CreateQuotationCommand
                         item.VatAmount,
                         item.Total));
                 }
-                // 3. Persist
+                await SaveQuotationDocument(quotation);
+
+                // Persist the document together with its reserved number.
                 //    - Add the document to the repository.
                 await _quotationRepository.AddAsync(quotation, cancellationToken);
 
@@ -133,25 +143,18 @@ public static class CreateQuotationCommand
                 throw;
             }
 
-            // 4. Generate PDF
-            await SaveQuotationDocument(quotation);
-
-
-            // 5. Store & Return
-            //    - Save the PDF file.
-            //    - Return the document number.
             return quotation.DocumentNumber;
 
         }
 
-        private static PricingResult CalculateDocument(IEnumerable<QuotationItemData> items)
+        private static PricingResult CalculateDocument(IEnumerable<OrderDraftItem> items)
         {
             return PricingCalculator.Calculate(items.Select(item => new PricingItem(
                 item.ProductId,
                 item.ProductName,
                 item.Quantity,
                 item.Price,
-                item.VatRate))
+                item.VAT))
                 .ToList());
         }
 

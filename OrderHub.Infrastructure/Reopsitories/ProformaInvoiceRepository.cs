@@ -30,8 +30,12 @@ internal class ProformaInvoiceRepository : IProformaInvoiceRepository
             .ToListAsync(cancellationToken);
     }
 
-    public Task<IEnumerable<ProformaInvoice>> GetByOrderId(int orderId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ProformaInvoice>> GetByOrderId(int orderId, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        return await _dbContext.ProformaInvoices
+            .Where(x => x.OrderId == orderId)
+            .OrderByDescending(x => x.IssueDate)
+            .ThenByDescending(x => x.Id)
+            .ToListAsync(cancellationToken);
     }
 }

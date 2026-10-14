@@ -32,11 +32,13 @@ public class InvoiceTableComponent : IComponent
                 float cellBorderWidth = 0.8f;
                 table.ColumnsDefinition(columns =>
                 {
-                    columns.RelativeColumn(1.0f); // متسلسل
-                    columns.RelativeColumn(3.5f); // المنتج
-                    columns.RelativeColumn(1.5f); // سعر الوحدة
-                    columns.RelativeColumn(1.0f); // الكمية
-                    columns.RelativeColumn(1.5f); // الإجمالي
+                    columns.RelativeColumn(.7f);
+                    columns.RelativeColumn(2.8f);
+                    columns.RelativeColumn(1.25f);
+                    columns.RelativeColumn(.8f);
+                    columns.RelativeColumn(.9f);
+                    columns.RelativeColumn(1.1f);
+                    columns.RelativeColumn(1.3f);
                 });
 
                 // --------------------------------------------------------
@@ -75,7 +77,7 @@ public class InvoiceTableComponent : IComponent
                         .BorderColor(cellBorderColor)
                         .Padding(6f)
                         .AlignRight()
-                        .Text("سعر الوحدة")
+                        .Text("سعر الوحدة قبل الضريبة")
                         .Style(headerStyle);
 
                     header.Cell()
@@ -93,7 +95,25 @@ public class InvoiceTableComponent : IComponent
                         .BorderColor(cellBorderColor)
                         .Padding(6f)
                         .AlignRight()
-                        .Text("الإجمالي")
+                        .Text("الضريبة %")
+                        .Style(headerStyle);
+
+                    header.Cell()
+                        .Background(headerBackground)
+                        .Border(cellBorderWidth)
+                        .BorderColor(cellBorderColor)
+                        .Padding(6f)
+                        .AlignRight()
+                        .Text("قيمة الضريبة")
+                        .Style(headerStyle);
+
+                    header.Cell()
+                        .Background(headerBackground)
+                        .Border(cellBorderWidth)
+                        .BorderColor(cellBorderColor)
+                        .Padding(6f)
+                        .AlignRight()
+                        .Text("الإجمالي شامل الضريبة")
                         .Style(headerStyle);
                 });
 
@@ -146,7 +166,23 @@ public class InvoiceTableComponent : IComponent
                         .BorderColor(cellBorderColor)
                         .Padding(paddingSize)
                         .AlignRight()
-                        .Text($"{item.Subtotal:N2}");
+                        .Text($"{item.VatRate:N2}");
+
+                    table.Cell()
+                        .BorderBottom(0.8f)
+                        .Border(cellBorderWidth)
+                        .BorderColor(cellBorderColor)
+                        .Padding(paddingSize)
+                        .AlignRight()
+                        .Text($"{item.VatAmount:N2}");
+
+                    table.Cell()
+                        .BorderBottom(0.8f)
+                        .Border(cellBorderWidth)
+                        .BorderColor(cellBorderColor)
+                        .Padding(paddingSize)
+                        .AlignRight()
+                        .Text($"{item.Total:N2}");
 
                     itemNumber++;
                 }
@@ -162,8 +198,8 @@ public class InvoiceTableComponent : IComponent
                     itemCount,
                     totalQuantity,
                     _invoice.Subtotal,
-                    _invoice.TotalVat,
                     0,
+                    _invoice.TotalVat,
                     _invoice.TotalAmount));
         });
     }

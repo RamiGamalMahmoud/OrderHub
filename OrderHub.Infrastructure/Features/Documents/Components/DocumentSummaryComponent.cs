@@ -72,20 +72,18 @@ internal class DocumentSummaryComponent : IComponent
                     "إجمالي الكمية",
                     $"{_totalQuantity:N}");
 
-                //ComposeSummaryRow(
-                //    column,
-                //    "الإجمالي قبل الخصم",
-                //    $"{_subtotal:N2}");
+                ComposeSummaryRow(
+                    column,
+                    "الإجمالي قبل الضريبة",
+                    $"{_subtotal:N2}");
 
-                //ComposeSummaryRow(
-                //    column,
-                //    "الخصم",
-                //    $"{_discount:N2}");
+                if (_discount > 0)
+                    ComposeSummaryRow(column, "الخصم", $"{_discount:N2}");
 
-                //ComposeSummaryRow(
-                //    column,
-                //    "الضريبة (0%)",
-                //    $"{_tax:N2}");
+                ComposeSummaryRow(
+                    column,
+                    "إجمالي الضريبة",
+                    $"{_tax:N2}");
 
                 // --------------------------------------------------------
                 // Separator Line

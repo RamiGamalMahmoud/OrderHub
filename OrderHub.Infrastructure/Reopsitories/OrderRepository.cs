@@ -26,6 +26,7 @@ internal class OrderRepository : IOrderRepository
                 .ThenInclude(c => c.Phone)
             .Include(o => o.Client)
                 .ThenInclude(c => c.Address)
+                    .ThenInclude(address => address.City)
             .Include(o => o.OrderItems)
             .SingleOrDefaultAsync(o => o.Id == orderId);
     }

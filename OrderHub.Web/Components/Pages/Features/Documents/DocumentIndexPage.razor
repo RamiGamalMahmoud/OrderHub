@@ -1,0 +1,102 @@
+@using OrderHub.Application.Features.Documents.GetDocuments
+@using OrderHub.Domain.Enums
+@using OrderHub.Application.Common
+@using OrderHub.Application.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@attribute [PermissionAuthorize(PermissionFeature.Documents, PermissionLevel.Read)]
+@inject IRequestExecutor RequestExecutor
+
+<PageTitle>@Title</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large">
+    <MudStack Spacing="3">
+        <div>
+            <MudText Typo="Typo.h5">@Title</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">الوثائق المنشأة، بما فيها الوثائق المرتبطة بمسودات لم تتحول إلى طلب بعد.</MudText>
+        </div>
+
+        <MudTextField T="string" Value="_searchTerm" ValueChanged="OnSearchChangedAsync"
+                      Label="بحث برقم الوثيقة أو العميل أو الطلب" Variant="Variant.Outlined"
+                      Margin="Margin.Dense" Immediate="true" Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search" />
+
+        <MudTable T="DocumentListItem" @ref="_table" ServerData="LoadPageAsync" Hover="true" Striped="true">
+            <HeaderContent>
+                <MudTh>رقم الوثيقة</MudTh>
+                <MudTh>العميل</MudTh>
+                <MudTh>الطلب المرتبط</MudTh>
+                <MudTh>تاريخ الإصدار</MudTh>
+                @if (Type == DocumentType.Quotation)
+                {
+                    <MudTh>صالحة حتى</MudTh>
+                }
+                <MudTh>الضريبة</MudTh>
+                <MudTh>الإجمالي شامل الضريبة</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="رقم الوثيقة">@context.DocumentNumber</MudTd>
+                <MudTd DataLabel="العميل">@context.CustomerName</MudTd>
+                <MudTd DataLabel="الطلب المرتبط">
+                    @if (context.OrderId is int orderId && context.OrderNumber is not null)
+                    {
+                        <MudLink Href="@($"/orders/{orderId}")">@context.OrderNumber</MudLink>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">لم يتحول الطلب من المسودة بعد</MudText>
+                    }
+                </MudTd>
+                <MudTd DataLabel="تاريخ الإصدار">@context.IssueDate.ToLocalTime().ToString("dd/MM/yyyy")</MudTd>
+                @if (Type == DocumentType.Quotation)
+                {
+                    <MudTd DataLabel="صالحة حتى">@context.ValidUntil?.ToLocalTime().ToString("dd/MM/yyyy")</MudTd>
+                }
+                <MudTd DataLabel="الضريبة">@context.TotalVat.ToString("N2") ر.س</MudTd>
+                <MudTd DataLabel="الإجمالي شامل الضريبة">@context.TotalAmount.ToString("N2") ر.س</MudTd>
+                <MudTd>
+                    <MudButton Href="@DocumentFileUrl(context.Type, context.DocumentNumber)" Target="_blank"
+                               Size="Size.Small" Variant="Variant.Outlined"
+                               StartIcon="@Icons.Material.Outlined.PictureAsPdf">فتح PDF</MudButton>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent><MudText Class="pa-4">لا توجد وثائق</MudText></NoRecordsContent>
+            <LoadingContent><MudText Class="pa-4">جاري تحميل الوثائق...</MudText></LoadingContent>
+            <PagerContent><MudTablePager PageSizeOptions="@(new[] { 10, 20, 50 })" /></PagerContent>
+        </MudTable>
+    </MudStack>
+</MudContainer>
+
+@code {
+    [Parameter, EditorRequired] public DocumentType Type { get; set; }
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+
+    private MudTable<DocumentListItem>? _table;
+    private string? _searchTerm;
+
+    private async Task<TableData<DocumentListItem>> LoadPageAsync(TableState state, CancellationToken cancellationToken)
+    {
+        var page = await RequestExecutor.ExecuteAsync(new GetDocumentsPageQuery(
+            Type, state.Page + 1, state.PageSize, _searchTerm), cancellationToken);
+        return new TableData<DocumentListItem> { Items = page.Items, TotalItems = page.TotalCount };
+    }
+
+    private async Task OnSearchChangedAsync(string? value)
+    {
+        _searchTerm = value;
+        if (_table is not null)
+            await _table.ReloadServerData();
+    }
+
+    private static string DocumentFileUrl(DocumentType type, string number)
+    {
+        var path = type switch
+        {
+            DocumentType.Invoice => "invoices",
+            DocumentType.Quotation => "quotations",
+            DocumentType.ProformaInvoice => "proforma-invoices",
+            _ => throw new ArgumentOutOfRangeException(nameof(type))
+        };
+        return $"/files/{path}/{Uri.EscapeDataString(number)}.pdf";
+    }
+}

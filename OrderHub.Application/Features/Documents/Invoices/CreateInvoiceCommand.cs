@@ -58,10 +58,12 @@ public static class CreateInvoiceCommand
             }
 
             await _unitOfWork.BeginTransactionAsync(cancellationToken);
-            Order order = await _orderRepository.GetById(request.OrderId);
             Invoice createdInvoice;
             try
             {
+                Order order = await _orderRepository.GetById(request.OrderId);
+                if (order is null)
+                    throw new InvalidOperationException("الطلب غير موجود.");
 
                 int year = DateTime.UtcNow.Year;
                 int month = DateTime.UtcNow.Month;
@@ -81,7 +83,7 @@ public static class CreateInvoiceCommand
                     item.ProductName,
                     item.Quantity,
                     item.UnitPrice.Value,
-                    0.0m))
+                    item.VatRate))
                     .ToList());
 
                 var itemsResult = order.OrderItems.Select(item => PricingCalculator.CalculateItem(new PricingItem(
@@ -89,7 +91,7 @@ public static class CreateInvoiceCommand
                     item.ProductName,
                     item.Quantity,
                     item.UnitPrice.Value,
-                    0.0m)));
+                    item.VatRate)));
 
                 createdInvoice = Invoice.Create(
                     invoiceFullNumber,
@@ -116,6 +118,8 @@ public static class CreateInvoiceCommand
                     createdInvoice.AddItem(invoiceItem);
                 }
 
+                await CreateInoiveDocument(createdInvoice, order.OrderNumber);
+
                 await _invoiceRepository.AddAsync(createdInvoice, cancellationToken);
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -127,8 +131,6 @@ public static class CreateInvoiceCommand
                 await _unitOfWork.RollbackTransactionAsync(cancellationToken);
                 throw;
             }
-
-            await CreateInoiveDocument(createdInvoice, order.OrderNumber);
 
             return createdInvoice.DocumentNumber;
         }

@@ -1,0 +1,4 @@
+@page "/proforma-invoices"
+@using OrderHub.Domain.Enums
+@attribute [PermissionAuthorize(PermissionFeature.Documents, PermissionLevel.Read)]
+<DocumentIndexPage Type="DocumentType.ProformaInvoice" Title="الفواتير الأولية" />

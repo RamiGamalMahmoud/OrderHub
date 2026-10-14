@@ -190,6 +190,10 @@
 
         </MudPaper>
 
+        <PermissionView Feature="PermissionFeature.Documents" Level="PermissionLevel.Read">
+            <OrderInvoiceSection OrderId="Id" />
+        </PermissionView>
+
         @*Orders Button*@
         <MudButton Class="order-action order-tone-neutral" Style="align-self: end;" Size="Size.Small" Href="/orders">الطلبات</MudButton>
 

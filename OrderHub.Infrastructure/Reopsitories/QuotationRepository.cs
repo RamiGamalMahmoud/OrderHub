@@ -30,8 +30,12 @@ internal class QuotationRepository : IQuotationRepository
             .ToListAsync(cancellationToken);
     }
 
-    public Task<IEnumerable<Quotation>> GetByOrderId(int orderId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Quotation>> GetByOrderId(int orderId, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        return await _dbContext.Quotations
+            .Where(x => x.OrderId == orderId)
+            .OrderByDescending(x => x.IssueDate)
+            .ThenByDescending(x => x.Id)
+            .ToListAsync(cancellationToken);
     }
 }
