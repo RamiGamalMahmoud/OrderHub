@@ -1,10 +1,18 @@
 using OrderHub.Domain.Enums;
+using System.Collections.Generic;
 
 namespace OrderHub.Domain.Models;
 
 public class OrderDeliveryStep : ModelBase
 {
+    private readonly List<Shipment> _shipments = [];
+    private readonly List<DeliveryTrip> _deliveryTrips = [];
     public DeliveryStatus Status { get; private set; } = DeliveryStatus.Pending;
+    public IReadOnlyCollection<Shipment> Shipments => _shipments.AsReadOnly();
+    public IReadOnlyCollection<DeliveryTrip> DeliveryTrips => _deliveryTrips.AsReadOnly();
+
+    internal Shipment StartShipment() { var item = new Shipment(null, this); _shipments.Add(item); return item; }
+    internal DeliveryTrip StartDeliveryTrip() { var item = new DeliveryTrip(null, this); _deliveryTrips.Add(item); return item; }
 
     internal void RecordStatus(DeliveryStatus status) => Status = status;
 

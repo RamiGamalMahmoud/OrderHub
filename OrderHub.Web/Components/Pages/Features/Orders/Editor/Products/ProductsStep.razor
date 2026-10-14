@@ -75,9 +75,11 @@
             <HeaderContent>
 
                 <MudTh>المنتج</MudTh>
-                <MudTh>السعر</MudTh>
+                <MudTh>سعر الوحدة قبل الضريبة</MudTh>
                 <MudTh>الكمية</MudTh>
                 <MudTh>الضريبة</MudTh>
+                <MudTh>قيمة الضريبة</MudTh>
+                <MudTh>الإجمالي شامل الضريبة</MudTh>
                 <MudTh></MudTh>
 
             </HeaderContent>
@@ -98,6 +100,14 @@
 
                 <MudTd DataLabel="الضريبة">
                     @context.VatRate%
+                </MudTd>
+
+                <MudTd DataLabel="قيمة الضريبة">
+                    @PricingOf(context).VatAmount.ToString("N2") ر.س
+                </MudTd>
+
+                <MudTd DataLabel="الإجمالي شامل الضريبة">
+                    @PricingOf(context).Total.ToString("N2") ر.س
                 </MudTd>
 
                 <MudTd>

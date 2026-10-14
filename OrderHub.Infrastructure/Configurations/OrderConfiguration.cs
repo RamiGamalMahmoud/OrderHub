@@ -30,6 +30,7 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
             .IsRequired();
 
         builder.Ignore(x => x.Total);
+        builder.Ignore(x => x.Pricing);
 
         builder.Property(x => x.DeliveryMethod)
             .HasColumnType("varchar(30)")
@@ -96,6 +97,12 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
             .HasForeignKey(x => x.OrderId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(x => x.Supplies)
+            .WithOne(x => x.Order)
+            .HasForeignKey(x => x.OrderId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(x => x.DeliverySteps)
             .WithOne(x => x.Order)

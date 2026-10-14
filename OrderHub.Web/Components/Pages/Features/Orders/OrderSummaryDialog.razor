@@ -1,0 +1,150 @@
+@using OrderHub.Application.Features.Orders.GetSummaries
+@using QRCoder
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.subtitle2">الجهات المشتركة في الطلب</MudText>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+                @foreach (var audience in Audiences)
+                {
+                    <MudButton Size="Size.Small" Variant="@(_selectedAudience == audience ? Variant.Filled : Variant.Outlined)"
+                               Color="Color.Primary" OnClick="() => SelectAudience(audience)">
+                        @audience.Label
+                    </MudButton>
+                }
+            </div>
+
+            @if (CurrentRecords.Count > 1)
+            {
+                <MudSelect T="OrderSummaryText" Value="_selectedRecord" ValueChanged="SelectRecord"
+                           Label="السجل" Variant="Variant.Outlined" ToStringFunc="@(record => record?.Title ?? string.Empty)">
+                    @foreach (var record in CurrentRecords)
+                    {
+                        <MudSelectItem Value="@record">@record.Title</MudSelectItem>
+                    }
+                </MudSelect>
+            }
+
+            @if (_selectedRecord is not null)
+            {
+                <MudPaper Outlined="true" Class="pa-4 summary-preview" dir="rtl">
+                    <MudText Typo="Typo.h6" Align="Align.Right">@_selectedRecord.Title</MudText>
+                    <MudDivider Class="my-3" />
+                    <MudText Typo="Typo.body2" Style="white-space:pre-line;overflow-wrap:anywhere">@_selectedRecord.Text</MudText>
+                </MudPaper>
+            }
+            @if (_qrData is not null)
+            {
+                <MudPaper Outlined="true" Class="pa-3" Style="text-align:center">
+                    <img src="@_qrData" alt="QR code يحتوي على نص الملخص" style="width:min(100%, 360px);height:auto" />
+                    <MudText Typo="Typo.caption">امسح الرمز بكاميرا الهاتف لقراءة الملخص.</MudText>
+                </MudPaper>
+            }
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Warning">@_error</MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Outlined.ContentCopy" OnClick="CopyAsync" Disabled="_selectedRecord is null">نسخ</MudButton>
+        <MudButton StartIcon="@Icons.Material.Outlined.Share" OnClick="ShareAsync" Disabled="_selectedRecord is null">مشاركة</MudButton>
+        <MudButton StartIcon="@Icons.Material.Outlined.QrCode2" OnClick="ShowQrCode" Disabled="_selectedRecord is null">QR Code</MudButton>
+        <MudButton OnClick="() => Dialog.Cancel()">إغلاق</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Parameter, EditorRequired] public IReadOnlyList<OrderSummaryText> Summaries { get; set; } = [];
+
+    private AudienceChoice? _selectedAudience;
+    private OrderSummaryText? _selectedRecord;
+    private string? _qrData;
+    private string? _error;
+
+    private IReadOnlyList<AudienceChoice> Audiences => Summaries
+        .GroupBy(summary => (summary.AudienceType, summary.PartyId))
+        .Select(group => group.First())
+        .Select(summary => new AudienceChoice(summary.AudienceType, summary.PartyId, AudienceLabel(summary)))
+        .ToList();
+
+    private List<OrderSummaryText> CurrentRecords => _selectedAudience is null ? [] : Summaries
+        .Where(summary => summary.AudienceType == _selectedAudience.Type && summary.PartyId == _selectedAudience.PartyId)
+        .ToList();
+
+    protected override void OnInitialized() => SelectAudience(Audiences.FirstOrDefault());
+
+    private void SelectAudience(AudienceChoice? audience)
+    {
+        _selectedAudience = audience;
+        _selectedRecord = audience is null ? null : Summaries.FirstOrDefault(summary =>
+            summary.AudienceType == audience.Type && summary.PartyId == audience.PartyId);
+        _qrData = null;
+        _error = null;
+    }
+
+    private void SelectRecord(OrderSummaryText record)
+    {
+        _selectedRecord = record;
+        _qrData = null;
+        _error = null;
+    }
+
+    private async Task CopyAsync()
+    {
+        if (_selectedRecord is null) return;
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _selectedRecord.Text);
+            Snackbar.Add("تم نسخ الملخص.");
+        }
+        catch (JSException) { _error = "تعذر النسخ من هذا المتصفح."; }
+    }
+
+    private async Task ShareAsync()
+    {
+        if (_selectedRecord is null) return;
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.share", new { title = _selectedRecord.Title, text = _selectedRecord.Text });
+        }
+        catch (JSException)
+        {
+            _error = "المشاركة المباشرة غير متاحة في هذا المتصفح. يمكنك نسخ الملخص.";
+        }
+    }
+
+    private void ShowQrCode()
+    {
+        if (_selectedRecord is null) return;
+        try
+        {
+            using var qrData = QRCodeGenerator.GenerateQrCode(_selectedRecord.Text,
+                QRCodeGenerator.ECCLevel.M, forceUtf8: true, eciMode: QRCodeGenerator.EciMode.Utf8);
+            using var renderer = new PngByteQRCode(qrData);
+            _qrData = $"data:image/png;base64,{Convert.ToBase64String(renderer.GetGraphic(8))}";
+            _error = null;
+        }
+        catch (QRCoder.Exceptions.DataTooLongException)
+        {
+            _qrData = null;
+            _error = "محتوى الملخص أطول من سعة رمز QR. استخدم النسخ أو المشاركة.";
+        }
+    }
+
+    private static string AudienceLabel(OrderSummaryText summary) => summary.AudienceType switch
+    {
+        "order" => "الطلب",
+        "customer" => "العميل",
+        "deliveryman" => $"المندوب — {summary.AudienceName}",
+        "shipping" => $"شركة الشحن — {summary.AudienceName}",
+        "supplier" => $"المورد — {summary.AudienceName}",
+        _ => summary.AudienceName
+    };
+
+    private sealed record AudienceChoice(string Type, int PartyId, string Label);
+}

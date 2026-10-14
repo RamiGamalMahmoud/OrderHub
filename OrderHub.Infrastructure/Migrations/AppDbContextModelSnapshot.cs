@@ -673,6 +673,74 @@ namespace OrderHub.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.DeliveryTrip", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("DeliveryStepId")
+                        .HasColumnType("integer")
+                        .HasColumnName("delivery_step_id");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("NumberingPartyId")
+                        .HasColumnType("integer")
+                        .HasColumnName("numbering_party_id");
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_id");
+
+                    b.Property<int>("SequenceMonth")
+                        .HasColumnType("integer")
+                        .HasColumnName("sequence_month");
+
+                    b.Property<int>("SequenceYear")
+                        .HasColumnType("integer")
+                        .HasColumnName("sequence_year");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.Property<long>("WorkRecordNumber")
+                        .HasColumnType("bigint")
+                        .HasColumnName("work_record_number");
+
+                    b.HasKey("Id")
+                        .HasName("pk_delivery_trips");
+
+                    b.HasIndex("DeliveryStepId")
+                        .HasDatabaseName("ix_delivery_trips_delivery_step_id");
+
+                    b.HasIndex("OrderId")
+                        .HasDatabaseName("ix_delivery_trips_order_id");
+
+                    b.HasIndex("NumberingPartyId", "SequenceYear", "SequenceMonth", "WorkRecordNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_delivery_trips_numbering_party_id_sequence_year_sequence_mo");
+
+                    b.ToTable("delivery_trips", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_delivery_trips_numbering", "numbering_party_id > 0 AND work_record_number > 0 AND sequence_year > 0 AND sequence_month BETWEEN 1 AND 12");
+
+                            t.HasCheckConstraint("ck_delivery_trips_single_parent", "(order_id IS NOT NULL) <> (delivery_step_id IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.Deliveryman", b =>
                 {
                     b.Property<int>("Id")
@@ -1415,6 +1483,74 @@ namespace OrderHub.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.Shipment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("DeliveryStepId")
+                        .HasColumnType("integer")
+                        .HasColumnName("delivery_step_id");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("NumberingPartyId")
+                        .HasColumnType("integer")
+                        .HasColumnName("numbering_party_id");
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_id");
+
+                    b.Property<int>("SequenceMonth")
+                        .HasColumnType("integer")
+                        .HasColumnName("sequence_month");
+
+                    b.Property<int>("SequenceYear")
+                        .HasColumnType("integer")
+                        .HasColumnName("sequence_year");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.Property<long>("WorkRecordNumber")
+                        .HasColumnType("bigint")
+                        .HasColumnName("work_record_number");
+
+                    b.HasKey("Id")
+                        .HasName("pk_shipments");
+
+                    b.HasIndex("DeliveryStepId")
+                        .HasDatabaseName("ix_shipments_delivery_step_id");
+
+                    b.HasIndex("OrderId")
+                        .HasDatabaseName("ix_shipments_order_id");
+
+                    b.HasIndex("NumberingPartyId", "SequenceYear", "SequenceMonth", "WorkRecordNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_shipments_numbering_party_id_sequence_year_sequence_month_w");
+
+                    b.ToTable("shipments", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_shipments_numbering", "numbering_party_id > 0 AND work_record_number > 0 AND sequence_year > 0 AND sequence_month BETWEEN 1 AND 12");
+
+                            t.HasCheckConstraint("ck_shipments_single_parent", "(order_id IS NOT NULL) <> (delivery_step_id IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.ShippingCarrier", b =>
                 {
                     b.Property<int>("Id")
@@ -1489,6 +1625,65 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("suppliers", (string)null);
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.Supply", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_id");
+
+                    b.Property<int>("SequenceMonth")
+                        .HasColumnType("integer")
+                        .HasColumnName("sequence_month");
+
+                    b.Property<int>("SequenceYear")
+                        .HasColumnType("integer")
+                        .HasColumnName("sequence_year");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("SupplierId")
+                        .HasColumnType("integer")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<long>("WorkRecordNumber")
+                        .HasColumnType("bigint")
+                        .HasColumnName("work_record_number");
+
+                    b.HasKey("Id")
+                        .HasName("pk_supplies");
+
+                    b.HasIndex("OrderId", "SupplierId")
+                        .HasDatabaseName("ix_supplies_order_id_supplier_id");
+
+                    b.HasIndex("SupplierId", "SequenceYear", "SequenceMonth", "WorkRecordNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_supplies_supplier_id_sequence_year_sequence_month_work_reco");
+
+                    b.ToTable("supplies", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_supplies_numbering", "work_record_number > 0 AND sequence_year > 0 AND sequence_month BETWEEN 1 AND 12");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -1543,6 +1738,54 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasDatabaseName("ix_users_role_id");
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.WorkRecordStatusHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("WorkRecordId")
+                        .HasColumnType("integer")
+                        .HasColumnName("work_record_id");
+
+                    b.Property<string>("WorkRecordType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("work_record_type");
+
+                    b.HasKey("Id")
+                        .HasName("pk_work_record_status_histories");
+
+                    b.HasIndex("WorkRecordType", "WorkRecordId", "Id")
+                        .HasDatabaseName("ix_work_record_status_histories_work_record_type_work_record_i");
+
+                    b.ToTable("work_record_status_histories", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_work_record_history_reason", "status NOT IN ('Failed','Cancelled') OR (reason IS NOT NULL AND length(trim(reason)) BETWEEN 1 AND 200)");
+
+                            t.HasCheckConstraint("ck_work_record_history_record_id", "work_record_id > 0");
+                        });
                 });
 
             modelBuilder.Entity("OrderHub.Infrastructure.Models.DocumentSequence", b =>
@@ -1899,6 +2142,32 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Order");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.DeliveryTrip", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.OrderDeliveryStep", "DeliveryStep")
+                        .WithMany("DeliveryTrips")
+                        .HasForeignKey("DeliveryStepId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_delivery_trips_order_delivery_steps_delivery_step_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Deliveryman", null)
+                        .WithMany()
+                        .HasForeignKey("NumberingPartyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_delivery_trips_deliverymen_numbering_party_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
+                        .WithMany("DeliveryTrips")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_delivery_trips_orders_order_id");
+
+                    b.Navigation("DeliveryStep");
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.Deliveryman", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.City", "City")
@@ -2231,6 +2500,32 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.Shipment", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.OrderDeliveryStep", "DeliveryStep")
+                        .WithMany("Shipments")
+                        .HasForeignKey("DeliveryStepId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_shipments_order_delivery_steps_delivery_step_id");
+
+                    b.HasOne("OrderHub.Domain.Models.ShippingCarrier", null)
+                        .WithMany()
+                        .HasForeignKey("NumberingPartyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_shipments_shipping_carriers_numbering_party_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
+                        .WithMany("Shipments")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_shipments_orders_order_id");
+
+                    b.Navigation("DeliveryStep");
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.ShippingCarrier", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.Address", "Address")
@@ -2364,6 +2659,27 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Phone");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.Supply", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_supplies_orders_order_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_supplies_suppliers_supplier_id");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Supplier");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.User", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.Role", "Role")
@@ -2433,11 +2749,22 @@ namespace OrderHub.Infrastructure.Migrations
                 {
                     b.Navigation("DeliverySteps");
 
+                    b.Navigation("DeliveryTrips");
+
                     b.Navigation("OrderItems");
+
+                    b.Navigation("Shipments");
 
                     b.Navigation("StatusHistory");
 
                     b.Navigation("StepHistory");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.OrderDeliveryStep", b =>
+                {
+                    b.Navigation("DeliveryTrips");
+
+                    b.Navigation("Shipments");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.OrderItem", b =>

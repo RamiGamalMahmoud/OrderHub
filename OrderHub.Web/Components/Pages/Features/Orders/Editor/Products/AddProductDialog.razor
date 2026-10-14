@@ -95,7 +95,7 @@
 
                 <MudItem xs="12" sm="4">
                     <MudNumericField T="decimal"
-                                     Label="سعر الوحدة"
+                                     Label="سعر الوحدة قبل الضريبة"
                                      @bind-Value="_unitPrice"
                                      Validation="@(new Func<decimal, string?>(value => value > 0 ? null : "يجب أن يكون السعر أكبر من صفر."))"
                                      Disabled="_isAdding"
@@ -122,6 +122,21 @@
                 </MudItem>
 
             </MudGrid>
+
+            <MudPaper Outlined="true" Class="pa-3 mt-2">
+                @if (CurrentPricing is { } pricing)
+                {
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.body2">قيمة المنتجات قبل الضريبة: @pricing.Subtotal.ToString("N2") ر.س</MudText>
+                        <MudText Typo="Typo.body2">الضريبة (@pricing.VatRate%): @pricing.VatAmount.ToString("N2") ر.س</MudText>
+                        <MudText Typo="Typo.subtitle2" Color="Color.Primary">الإجمالي شامل الضريبة: @pricing.Total.ToString("N2") ر.س</MudText>
+                    </MudStack>
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">أدخل سعر الوحدة والكمية لعرض الضريبة والإجمالي.</MudText>
+                }
+            </MudPaper>
 
             @if (_addError is not null)
             {

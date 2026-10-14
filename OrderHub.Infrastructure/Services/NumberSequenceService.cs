@@ -70,9 +70,10 @@ internal sealed class NumberSequenceService : INumberSequenceService
     }
 
 
-    public async Task<long> NextMonthlyAsync(
+    public async Task<MonthlyNumberAllocation> NextMonthlyAsync(
         NumberSequenceKind kind,
         int partyId,
+        DateTimeOffset atUtc,
         CancellationToken cancellationToken = default)
     {
         if (kind is not (
@@ -88,17 +89,17 @@ internal sealed class NumberSequenceService : INumberSequenceService
 
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(partyId);
 
-        var riyadhNow = TimeZoneInfo.ConvertTime(
-            DateTimeOffset.UtcNow,
-            _riyadhTimeZone);
+        var riyadhTime = TimeZoneInfo.ConvertTime(atUtc, _riyadhTimeZone);
 
-        return await IncrementAsync(
+        var number = await IncrementAsync(
             _dbContext,
             kind,
             partyId,
-            riyadhNow.Year,
-            riyadhNow.Month,
+            riyadhTime.Year,
+            riyadhTime.Month,
             cancellationToken);
+
+        return new MonthlyNumberAllocation(number, riyadhTime.Year, riyadhTime.Month);
     }
 
     private static async Task<long> IncrementAsync(

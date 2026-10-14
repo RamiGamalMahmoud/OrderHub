@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Routing;
 using MudBlazor;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
@@ -9,17 +10,47 @@ using Order = OrderHub.Application.Features.Orders.GetPage.OrderListItem;
 
 namespace OrderHub.Web.Components.Pages.Features.Orders.Index;
 
-public partial class Orders
+public partial class Orders : IDisposable
 {
     [Inject] private NavigationManager Navigation { get; set; } = null!;
     private bool _archivedOnly;
+
+    protected override void OnInitialized()
+    {
+        _archivedOnly = IsArchivedRoute(Navigation.Uri);
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
     protected override async Task OnParametersSetAsync()
     {
-        var archived = new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/').EndsWith("/archived", StringComparison.OrdinalIgnoreCase);
+        var archived = IsArchivedRoute(Navigation.Uri);
         if (_archivedOnly == archived) return;
         _archivedOnly = archived;
         if (_table is not null) await _table.ReloadServerData();
     }
+
+    private static bool IsArchivedRoute(string uri) =>
+        new Uri(uri).AbsolutePath.TrimEnd('/').EndsWith("/archived", StringComparison.OrdinalIgnoreCase);
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args)
+    {
+        var archived = IsArchivedRoute(args.Location);
+        if (_archivedOnly == archived) return;
+
+        _ = InvokeAsync(async () =>
+        {
+            _archivedOnly = archived;
+            StateHasChanged();
+            if (_table is not null)
+                await _table.ReloadServerData();
+        });
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+
     [Inject]
     private IRequestExecutor RequestExecutor { get; set; } = null!;
 

@@ -9,4 +9,7 @@ public record OrderDetailsLine(
         string ProductName,
         decimal UnitPrice,
         int Quantity,
+        decimal VatRate,
+        decimal Subtotal,
+        decimal VatAmount,
         decimal Total);

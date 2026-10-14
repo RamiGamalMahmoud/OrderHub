@@ -87,6 +87,32 @@
 
             </MudStack>
 
+            <MudPaper Outlined="true" Class="pa-3 mt-3">
+                <MudText Typo="Typo.subtitle2" Color="Color.Primary">إجمالي الطلب</MudText>
+                @if (CurrentPricing is { } pricing)
+                {
+                    <MudGrid Class="mt-1">
+                        <MudItem xs="12" sm="4">
+                            <MudText Typo="Typo.caption">قيمة المنتجات قبل الضريبة</MudText>
+                            <MudText Typo="Typo.body1">@pricing.Subtotal.ToString("N2") ر.س</MudText>
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudText Typo="Typo.caption">إجمالي الضريبة</MudText>
+                            <MudText Typo="Typo.body1">@pricing.TotalVat.ToString("N2") ر.س</MudText>
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudText Typo="Typo.caption">المطلوب شامل الضريبة</MudText>
+                            <MudText Typo="Typo.h6" Color="Color.Primary">@pricing.TotalAmount.ToString("N2") ر.س</MudText>
+                        </MudItem>
+                    </MudGrid>
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">أضف منتجًا صالحًا لعرض الإجمالي.</MudText>
+                }
+                <MudText Typo="Typo.caption" Color="Color.Secondary">سعر الوحدة قبل الضريبة، وتُضاف ضريبة كل منتج إلى إجمالي الطلب.</MudText>
+            </MudPaper>
+
             @* Step Content *@
             @if (_activeStep == OrderEditorStep.Products)
             {

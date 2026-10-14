@@ -4,6 +4,7 @@ using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Features.Products.Search;
 using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Common;
+using OrderHub.Domain.Services.Pricing;
 using System.Threading.Tasks;
 
 namespace OrderHub.Web.Components.Pages.Features.Orders.Editor.Products;
@@ -73,16 +74,11 @@ public partial class AddProductDialog : IDisposable
     // Calculations
     // =========================
 
-    private decimal SubTotal =>
-        _unitPrice * _quantity;
-
-
-    private decimal VatAmount =>
-        SubTotal * (_vatRate / 100m);
-
-
-    private decimal Total =>
-        SubTotal + VatAmount;
+    private PricingItemResult? CurrentPricing => _selectedProduct is null || _unitPrice <= 0 ||
+        _quantity <= 0 || _vatRate is < 0 or > 100
+        ? null
+        : PricingCalculator.CalculateItem(new PricingItem(
+            _selectedProduct.Id, _selectedProduct.Name, _quantity, _unitPrice, _vatRate));
 
 
     private bool CanAdd =>

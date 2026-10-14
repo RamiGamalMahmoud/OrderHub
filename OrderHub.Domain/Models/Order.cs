@@ -1,6 +1,7 @@
 ﻿using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.ValueObjects;
+using OrderHub.Domain.Services.Pricing;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,6 +11,9 @@ public partial class Order : ModelBase
 {
     private readonly List<OrderItem> _orderItems = [];
     private readonly List<OrderDeliveryStep> _deliverySteps = [];
+    private readonly List<Shipment> _shipments = [];
+    private readonly List<DeliveryTrip> _deliveryTrips = [];
+    private readonly List<Supply> _supplies = [];
     
     private Order()
     {
@@ -43,10 +47,24 @@ public partial class Order : ModelBase
     public int? PaymentMethodId { get; private set; }
     public PaymentMethod PaymentMethod { get; private set; }
 
-    public Money Total => new(_orderItems.Sum(i => i.SubTotal.Value));
+    public PricingResult Pricing => _orderItems.Count == 0
+        ? new PricingResult([], 0m, 0m, 0m)
+        : PricingCalculator.Calculate(_orderItems.Select(item => new PricingItem(
+            item.ProductId, item.ProductName, item.Quantity, item.UnitPrice.Value, item.VatRate)).ToList());
+
+    public Money Total => new(Pricing.TotalAmount);
 
     public IReadOnlyCollection<OrderItem> OrderItems => _orderItems.AsReadOnly();
     public IReadOnlyCollection<OrderDeliveryStep> DeliverySteps => _deliverySteps.AsReadOnly();
+    public IReadOnlyCollection<Shipment> Shipments => _shipments.AsReadOnly();
+    public IReadOnlyCollection<DeliveryTrip> DeliveryTrips => _deliveryTrips.AsReadOnly();
+    public IReadOnlyCollection<Supply> Supplies => _supplies.AsReadOnly();
+
+    private void StartDirectWorkRecord()
+    {
+        if (DeliveryMethod == Enums.DeliveryMethod.ShippingCompany) _shipments.Add(new Shipment(this, null));
+        else if (DeliveryMethod == Enums.DeliveryMethod.DeliveryMan) _deliveryTrips.Add(new DeliveryTrip(this, null));
+    }
 
     public void UpdateHeader(
         int clientId,
@@ -90,6 +108,7 @@ public partial class Order : ModelBase
         {
             result.Value.AttachTo(this);
             _orderItems.Add(result.Value);
+            EnsureSupplierSupplies();
         }
 
         return result;
@@ -99,12 +118,14 @@ public partial class Order : ModelBase
     {
         EnsureEditable();
         _orderItems.Remove(orderItem);
+        EnsureSupplierSupplies();
     }
 
     public void ClearOrderItems()
     {
         EnsureEditable();
         _orderItems.Clear();
+        EnsureSupplierSupplies();
     }
 
     public void AddDeliveryStep(OrderDeliveryStep deliveryStep)
@@ -161,6 +182,7 @@ public partial class Order : ModelBase
         foreach (var item in replacementItems) item.AttachTo(this);
         _orderItems.Clear();
         _orderItems.AddRange(replacementItems);
+        EnsureSupplierSupplies();
     }
 
     public void SynchronizeDeliverySteps(IReadOnlyCollection<(int? Id, OrderDeliveryStep Values)> steps)
@@ -203,5 +225,13 @@ public partial class Order : ModelBase
     private void EnsureEditable()
     {
         if (!CanEdit) throw new System.InvalidOperationException("بيانات الطلب مقفولة ولا تقبل التعديل.");
+    }
+
+    private void EnsureSupplierSupplies()
+    {
+        foreach (var supplierId in _orderItems.Where(item => item.SupplierId.HasValue)
+                     .Select(item => item.SupplierId.Value).Distinct())
+            if (!_supplies.Any(supply => supply.SupplierId == supplierId))
+                _supplies.Add(new Supply(this, supplierId));
     }
 }

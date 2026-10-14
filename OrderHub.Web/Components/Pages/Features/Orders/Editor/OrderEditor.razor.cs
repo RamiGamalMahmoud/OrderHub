@@ -11,6 +11,7 @@ using OrderHub.Application.Features.Orders;
 using OrderHub.Application.Features.Setup.Properties.Get;
 using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Enums;
+using OrderHub.Domain.Services.Pricing;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor.State;
 
 namespace OrderHub.Web.Components.Pages.Features.Orders.Editor;
@@ -126,6 +127,12 @@ public partial class OrderEditor : IDisposable
     private bool IsEdit => OrderId.HasValue;
 
     private bool CanShowDrafts => !IsEdit;
+
+    private PricingResult? CurrentPricing => _state.Items.Count == 0 || _state.Items.Any(item =>
+        item.Quantity <= 0 || item.UnitPrice <= 0 || item.VatRate is < 0 or > 100)
+        ? null
+        : PricingCalculator.Calculate(_state.Items.Select(item => new PricingItem(
+            item.ProductId, item.ProductName, item.Quantity, item.UnitPrice, item.VatRate)).ToList());
 
     protected override async Task OnParametersSetAsync()
     {

@@ -101,9 +101,18 @@ public partial class Order
             : OrderStatus == OrderStatus.DeliveryFailed ? OrderHistorySource.Retry : OrderHistorySource.ManualAction;
         Version++;
         if (target == OrderStatus.Cancelled)
+        {
             foreach (var step in _deliverySteps.Where(step => step.Status is not (DeliveryStatus.Completed or DeliveryStatus.Cancelled)))
                 RecordStep(step, DeliveryStatus.Cancelled, operation, reason, source);
+            foreach (var work in _shipments.Concat(_deliverySteps.SelectMany(step => step.Shipments)).Where(item => item.Status is not (WorkRecordStatus.Completed or WorkRecordStatus.Cancelled)))
+                if (work.Id > 0) work.TransitionTo(WorkRecordStatus.Cancelled, reason, operation.AtUtc);
+            foreach (var work in _deliveryTrips.Concat(_deliverySteps.SelectMany(step => step.DeliveryTrips)).Where(item => item.Status is not (WorkRecordStatus.Completed or WorkRecordStatus.Cancelled)))
+                if (work.Id > 0) work.TransitionTo(WorkRecordStatus.Cancelled, reason, operation.AtUtc);
+        }
         RecordOrder(target, operation, reason, source);
+        if (target is OrderStatus.OutForDelivery or OrderStatus.Shipped) StartDirectWorkRecord();
+        if (target == OrderStatus.DeliveryFailed) CloseDirectWorkRecord(WorkRecordStatus.Failed, reason, operation.AtUtc);
+        if (target == OrderStatus.Delivered) CloseDirectWorkRecord(WorkRecordStatus.Completed, null, operation.AtUtc);
         return Result.Success();
     }
 
@@ -134,6 +143,18 @@ public partial class Order
         var source = step.Status == DeliveryStatus.Failed ? OrderHistorySource.Retry : OrderHistorySource.ManualAction;
         Version++;
         RecordStep(step, target, operation, reason, source);
+        if (target == DeliveryStatus.InProgress)
+        {
+            if (step.DeliveryMethod == Enums.DeliveryMethod.ShippingCompany) step.StartShipment();
+            else if (step.DeliveryMethod == Enums.DeliveryMethod.DeliveryMan) step.StartDeliveryTrip();
+        }
+        else if (target is DeliveryStatus.Failed or DeliveryStatus.Completed or DeliveryStatus.Cancelled)
+            CloseStepWorkRecord(step, target switch
+            {
+                DeliveryStatus.Failed => WorkRecordStatus.Failed,
+                DeliveryStatus.Completed => WorkRecordStatus.Completed,
+                _ => WorkRecordStatus.Cancelled
+            }, reason, operation.AtUtc);
         if (_deliverySteps.Count > 0 && _deliverySteps.All(step => step.Status == DeliveryStatus.Completed))
             RecordOrder(OrderStatus.Delivered, operation, null, OrderHistorySource.LastStepCompleted);
         return Result.Success();
@@ -162,8 +183,30 @@ public partial class Order
         }
         Version++;
         foreach (var outcome in outcomes)
-            RecordStep(remaining.Single(step => step.Id == outcome.StepId), outcome.Status, operation, outcome.Reason, OrderHistorySource.DirectDelivery);
+        {
+            var step = remaining.Single(step => step.Id == outcome.StepId);
+            RecordStep(step, outcome.Status, operation, outcome.Reason, OrderHistorySource.DirectDelivery);
+            if (outcome.Status == DeliveryStatus.InProgress)
+            {
+                if (step.DeliveryMethod == Enums.DeliveryMethod.ShippingCompany) step.StartShipment();
+                else if (step.DeliveryMethod == Enums.DeliveryMethod.DeliveryMan) step.StartDeliveryTrip();
+            }
+            else if (outcome.Status is DeliveryStatus.Completed or DeliveryStatus.Failed or DeliveryStatus.Cancelled)
+            {
+                if (step.DeliveryMethod == Enums.DeliveryMethod.ShippingCompany && !step.Shipments.Any(record => record.Status == WorkRecordStatus.Pending))
+                    step.StartShipment();
+                else if (step.DeliveryMethod == Enums.DeliveryMethod.DeliveryMan && !step.DeliveryTrips.Any(record => record.Status == WorkRecordStatus.Pending))
+                    step.StartDeliveryTrip();
+                CloseStepWorkRecord(step, outcome.Status switch
+                {
+                    DeliveryStatus.Completed => WorkRecordStatus.Completed,
+                    DeliveryStatus.Failed => WorkRecordStatus.Failed,
+                    _ => WorkRecordStatus.Cancelled
+                }, outcome.Reason, operation.AtUtc);
+            }
+        }
         RecordOrder(OrderStatus.Delivered, operation, reason, OrderHistorySource.DirectDelivery);
+        CloseDirectWorkRecord(WorkRecordStatus.Completed, reason, operation.AtUtc);
         return Result.Success();
     }
 
@@ -203,6 +246,34 @@ public partial class Order
         _stepHistory.Add(new(step, step.Status, target, operation, reason, source, Version));
         step.RecordStatus(target);
         step.UpdateModificationDate(operation.AtUtc);
+    }
+
+    private void CloseDirectWorkRecord(WorkRecordStatus target, string reason, DateTime atUtc)
+    {
+        if (DeliveryMethod == Enums.DeliveryMethod.ShippingCompany)
+        {
+            var current = _shipments.LastOrDefault(record => record.Status == WorkRecordStatus.Pending);
+            if (current is not null) current.TransitionTo(target, reason, atUtc);
+        }
+        else
+        {
+            var current = _deliveryTrips.LastOrDefault(record => record.Status == WorkRecordStatus.Pending);
+            if (current is not null) current.TransitionTo(target, reason, atUtc);
+        }
+    }
+
+    private static void CloseStepWorkRecord(OrderDeliveryStep step, WorkRecordStatus target, string reason, DateTime atUtc)
+    {
+        if (step.DeliveryMethod == Enums.DeliveryMethod.ShippingCompany)
+        {
+            var current = step.Shipments.LastOrDefault(record => record.Status == WorkRecordStatus.Pending);
+            if (current is not null) current.TransitionTo(target, reason, atUtc);
+        }
+        else if (step.DeliveryMethod == Enums.DeliveryMethod.DeliveryMan)
+        {
+            var current = step.DeliveryTrips.LastOrDefault(record => record.Status == WorkRecordStatus.Pending);
+            if (current is not null) current.TransitionTo(target, reason, atUtc);
+        }
     }
 
     private static bool ValidStepHandler(OrderDeliveryStep step) => step.DeliveryMethod switch

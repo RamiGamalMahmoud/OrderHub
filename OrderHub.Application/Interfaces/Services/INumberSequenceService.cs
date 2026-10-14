@@ -1,4 +1,5 @@
 ﻿using OrderHub.Domain.Enums;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,8 +10,9 @@ public interface INumberSequenceService
         NumberSequenceKind kind,
         CancellationToken cancellationToken = default);
 
-    Task<long> NextMonthlyAsync(
+    Task<MonthlyNumberAllocation> NextMonthlyAsync(
         NumberSequenceKind kind,
         int partyId,
+        DateTimeOffset atUtc,
         CancellationToken cancellationToken = default);
 }

@@ -40,12 +40,19 @@ internal class OrderRepository : IOrderRepository
         return _dbContext.Orders
             .Include(order => order.OrderItems)
                 .ThenInclude(item => item.Properties)
+            .Include(order => order.Supplies)
             .Include(order => order.DeliverySteps)
             .SingleOrDefaultAsync(order => order.Id == orderId, cancellationToken);
     }
 
     public Task<Order> GetForLifecycleAsync(int orderId, CancellationToken cancellationToken = default) =>
-        _dbContext.Orders.Include(order => order.DeliverySteps).SingleOrDefaultAsync(order => order.Id == orderId, cancellationToken);
+        _dbContext.Orders
+            .Include(order => order.Shipments)
+            .Include(order => order.DeliveryTrips)
+            .Include(order => order.DeliverySteps).ThenInclude(step => step.Shipments)
+            .Include(order => order.DeliverySteps).ThenInclude(step => step.DeliveryTrips)
+            .AsSplitQuery()
+            .SingleOrDefaultAsync(order => order.Id == orderId, cancellationToken);
 
     public async Task PrepareDeliveryStepReorderingAsync(Order order, CancellationToken cancellationToken = default)
     {

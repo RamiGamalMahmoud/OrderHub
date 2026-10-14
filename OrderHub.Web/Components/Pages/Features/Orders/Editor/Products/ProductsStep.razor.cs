@@ -4,6 +4,7 @@ using MudBlazor;
 using OrderHub.Application.Features.Orders;
 using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Common;
+using OrderHub.Domain.Services.Pricing;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor.State;
 using static OrderHub.Web.Components.Pages.Features.Orders.Editor.Products.AddProductDialog;
 
@@ -16,6 +17,10 @@ public partial class ProductsStep : IDisposable
     private IDialogReference? _addDialog;
     private OrderItemEditorState? _editingItem;
     private bool _isEditorOpen;
+
+    private static PricingItemResult PricingOf(OrderItemEditorState item) =>
+        PricingCalculator.CalculateItem(new PricingItem(item.ProductId, item.ProductName,
+            item.Quantity, item.UnitPrice, item.VatRate));
 
     [Parameter]
     public Guid SessionId { get; set; }

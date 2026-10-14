@@ -1,6 +1,7 @@
 @attribute [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Read)]
 @using OrderHub.Application.Features.Orders.GetDetails
 @using OrderHub.Application.Features.Orders.Lifecycle
+@using OrderHub.Application.Features.Orders.GetSummaries
 @using OrderHub.Web.Components.Pages.Features.Orders.Workflow
 @using OrderHub.Application.Common.Extensions
 @page "/orders/{id:int}"
@@ -9,6 +10,7 @@
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
 @inject IRequestExecutor RequestExecuter
+@inject IDialogService DialogService
 
 <MudContainer MaxWidth="MaxWidth.Large">
     @if (_loading)
@@ -42,6 +44,9 @@
                     </MudText>
 
                     <MudSpacer />
+
+                    <MudButton StartIcon="@Icons.Material.Outlined.ReceiptLong" Variant="Variant.Outlined"
+                               OnClick="OpenSummariesAsync">ملخص الطلب</MudButton>
 
                     <span class="order-status @(_workflow is null ? "order-tone-neutral" : OrderWorkflowPresentation.StatusTone(_workflow.Status))">
                         @_order?.Header.OrderStatus
@@ -147,9 +152,11 @@
             <MudDataGrid Items="@_order?.Items" Hover Class="mt-4">
                 <Columns>
                     <PropertyColumn Property="x => x.ProductName" Title="المنتج" />
-                    <PropertyColumn Property="x => x.UnitPrice" Title="السعر" />
+                    <PropertyColumn Property="x => x.UnitPrice" Title="سعر الوحدة قبل الضريبة" />
                     <PropertyColumn Property="x => x.Quantity" Title="الكمية" />
-                    <PropertyColumn Property="x => x.Total" Title="الإجمالي" />
+                    <PropertyColumn Property="x => x.VatRate" Title="الضريبة %" />
+                    <PropertyColumn Property="x => x.VatAmount" Title="قيمة الضريبة" />
+                    <PropertyColumn Property="x => x.Total" Title="الإجمالي شامل الضريبة" />
                 </Columns>
             </MudDataGrid>
 
@@ -164,10 +171,21 @@
                          Color="Color.Primary">ملخص الفاتورة</MudText>
             </MudStack>
 
-            <MudStack Row Spacing="2">
-                <MudText Style="font-weight: 600" Color="Color.Primary">الإجمالي</MudText>
-                <MudSpacer />
-                <MudText Style="font-weight: 600" Color="Color.Primary">@($"{_order?.Payment.GrandTotal} ر.س")</MudText>
+            <MudStack Spacing="1" Class="mt-2">
+                <MudStack Row Spacing="2">
+                    <MudText>قيمة المنتجات قبل الضريبة</MudText><MudSpacer />
+                    <MudText>@($"{_order?.Payment.ProductsTotal:N2} ر.س")</MudText>
+                </MudStack>
+                <MudStack Row Spacing="2">
+                    <MudText>الضريبة</MudText><MudSpacer />
+                    <MudText>@($"{_order?.Payment.VatAmount:N2} ر.س")</MudText>
+                </MudStack>
+                <MudDivider Class="my-1" />
+                <MudStack Row Spacing="2">
+                    <MudText Style="font-weight: 600" Color="Color.Primary">الإجمالي شامل الضريبة</MudText>
+                    <MudSpacer />
+                    <MudText Style="font-weight: 600" Color="Color.Primary">@($"{_order?.Payment.GrandTotal:N2} ر.س")</MudText>
+                </MudStack>
             </MudStack>
 
         </MudPaper>
@@ -188,6 +206,7 @@
 
     private OrderDetails? _order;
     private OrderWorkflowState? _workflow;
+    private IReadOnlyList<OrderSummaryText> _summaries = [];
     private bool _loading;
     private string? _error;
     private int _loadedId, _generation;
@@ -208,15 +227,29 @@
         _error = null;
         _order = null;
         _workflow = null;
+        _summaries = [];
         try
         {
             var order = await RequestExecuter.ExecuteAsync(new GetOrderDetailsQuery(Id));
             var workflow = order is null ? null : await RequestExecuter.ExecuteAsync(new GetOrderWorkflowQuery(Id));
+            var summaryData = order is null ? null : await RequestExecuter.ExecuteAsync(new GetOrderSummariesQuery(Id));
             if (generation != _generation) return;
             _order = order;
             _workflow = workflow;
+            _summaries = summaryData is null ? [] : OrderSummaryTextBuilder.Build(summaryData);
         }
         catch (Exception) { if (generation == _generation) _error = "تعذر تحميل الطلب. حاول مرة أخرى."; }
         finally { if (generation == _generation) _loading = false; }
+    }
+
+    private async Task OpenSummariesAsync()
+    {
+        if (_summaries.Count == 0) return;
+        var parameters = new DialogParameters<OrderSummaryDialog>
+        {
+            { dialog => dialog.Summaries, _summaries }
+        };
+        await DialogService.ShowAsync<OrderSummaryDialog>("ملخص الطلب", parameters,
+            new DialogOptions { CloseButton = true, FullWidth = true, MaxWidth = MaxWidth.Medium });
     }
 }
