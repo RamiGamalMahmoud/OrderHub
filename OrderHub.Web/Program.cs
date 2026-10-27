@@ -4,12 +4,9 @@ using OrderHub.Application;
 using OrderHub.Infrastructure.DependencyInjection;
 using OrderHub.Infrastructure.Options;
 using OrderHub.Web.Components;
-using OrderHub.Web.Infrastructure;
 using OrderHub.Web.Infrastructure.Authorization;
 using OrderHub.Web.Services;
 using QuestPDF.Infrastructure;
-
-await MigrationRunner.RunAsync();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,11 +25,6 @@ builder.Services.AddWindowsService(options =>
 {
     options.ServiceName = "OrderHubWeb";
 });
-
-if (builder.Environment.IsProduction())
-{
-    ServerConfiguration.Add(builder.Configuration);
-}
 
 builder.Services.AddApplication();
 string connectionString =
