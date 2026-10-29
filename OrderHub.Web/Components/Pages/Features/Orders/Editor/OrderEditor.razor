@@ -24,163 +24,175 @@
 
     @if (_loadError is null && _state.CanEdit)
     {
-    <MudStack Spacing="3">
+        <MudStack Spacing="3">
 
-        @* Header *@
-        <MudStack Row
-                  AlignItems="AlignItems.Center"
-                  Justify="Justify.SpaceBetween">
-
-            <div>
-                <MudText Typo="Typo.h5">
-                    @_pageTitle
-                </MudText>
-
-                <MudText Typo="Typo.body2"
-                         Color="Color.Secondary">
-                    إضافة المنتجات وتحديد بيانات الطلب
-                </MudText>
-            </div>
-
-            <MudSpacer />
-
-            @if (CanShowDrafts)
-            {
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Primary"
-                           OnClick="ShowDrafts"
-                           StartIcon="@Icons.Material.Outlined.Description">
-                    المسودات
-                </MudButton>
-            }
-
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       Disabled="@(!CanSave)"
-                       OnClick="SaveAsync">
-                @(IsEdit ? "حفظ التعديلات" : "إنشاء الطلب")
-            </MudButton>
-
-        </MudStack>
-
-        @* Editor *@
-        <MudPaper Elevation="0"
-                  Class="pa-2">
-
-            @* Steps *@
+            @* Header *@
             <MudStack Row
-                      Spacing="2">
+                      AlignItems="AlignItems.Center"
+                      Justify="Justify.SpaceBetween">
 
-                <MudButton Variant="@GetStepVariant(OrderEditorStep.Products)"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Outlined.Inventory2"
-                           OnClick="@(() => SelectStep(OrderEditorStep.Products))">
-                    المنتجات
-                </MudButton>
+                <div>
+                    <MudText Typo="Typo.h5">
+                        @_pageTitle
+                    </MudText>
+                </div>
 
-                <MudButton Variant="@GetStepVariant(OrderEditorStep.Details)"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Outlined.ReceiptLong"
-                           OnClick="@(() => SelectStep(OrderEditorStep.Details))">
-                    تفاصيل الطلب
-                </MudButton>
+                <MudSpacer />
 
-            </MudStack>
-
-            <MudPaper Outlined="true" Class="pa-3 mt-3">
-                <MudText Typo="Typo.subtitle2" Color="Color.Primary">إجمالي الطلب</MudText>
-                @if (CurrentPricing is { } pricing)
+                @if (!IsEdit)
                 {
-                    <MudGrid Class="mt-1">
-                        <MudItem xs="12" sm="4">
-                            <MudText Typo="Typo.caption">قيمة المنتجات قبل الضريبة</MudText>
-                            <MudText Typo="Typo.body1">@pricing.Subtotal.ToString("N2") ر.س</MudText>
-                        </MudItem>
-                        <MudItem xs="12" sm="4">
-                            <MudText Typo="Typo.caption">إجمالي الضريبة</MudText>
-                            <MudText Typo="Typo.body1">@pricing.TotalVat.ToString("N2") ر.س</MudText>
-                        </MudItem>
-                        <MudItem xs="12" sm="4">
-                            <MudText Typo="Typo.caption">المطلوب شامل الضريبة</MudText>
-                            <MudText Typo="Typo.h6" Color="Color.Primary">@pricing.TotalAmount.ToString("N2") ر.س</MudText>
-                        </MudItem>
-                    </MudGrid>
-                }
-                else
-                {
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">أضف منتجًا صالحًا لعرض الإجمالي.</MudText>
-                }
-                <MudText Typo="Typo.caption" Color="Color.Secondary">سعر الوحدة قبل الضريبة، وتُضاف ضريبة كل منتج إلى إجمالي الطلب.</MudText>
-            </MudPaper>
-
-            @if (!IsEdit)
-            {
-                <PermissionView Feature="PermissionFeature.Documents" Level="PermissionLevel.Write">
-                    <MudPaper Outlined="true" Class="pa-3 mt-3">
-                        <MudText Typo="Typo.subtitle2" Color="Color.Primary">وثائق الطلب</MudText>
-                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2">
-                            تُنشأ من بيانات المسودة الحالية، ويمكن إصدار نسخة جديدة برقم جديد في كل مرة.
-                        </MudText>
+                    <PermissionView Feature="PermissionFeature.Documents" Level="PermissionLevel.Write">
                         <MudStack Row="true" Spacing="2">
-                            <MudButton Variant="Variant.Outlined" Disabled="@(!CanCreateDraftDocument)"
+                            <MudButton Size="Size.Small" Color="Color.Primary" Disabled="@(!CanCreateDraftDocument)"
                                        OnClick="CreateQuotationAsync" StartIcon="@Icons.Material.Outlined.RequestPage">
                                 إنشاء عرض سعر
                             </MudButton>
-                            <MudButton Variant="Variant.Outlined" Disabled="@(!CanCreateDraftDocument)"
+                            <MudButton Size="Size.Small" Color="Color.Primary" Disabled="@(!CanCreateDraftDocument)"
                                        OnClick="CreateProformaInvoiceAsync" StartIcon="@Icons.Material.Outlined.FactCheck">
                                 إنشاء فاتورة أولية
                             </MudButton>
                         </MudStack>
-                        @if (_createdDocumentNumber is not null && _createdDocumentType is { } documentType)
-                        {
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mt-2">
-                                <MudText Typo="Typo.body2">تم إنشاء @_createdDocumentNumber</MudText>
-                                <MudButton Href="@DocumentFileUrl(documentType, _createdDocumentNumber)" Target="_blank"
-                                           Size="Size.Small" StartIcon="@Icons.Material.Outlined.PictureAsPdf">
-                                    فتح PDF
-                                </MudButton>
-                            </MudStack>
-                        }
-                    </MudPaper>
-                </PermissionView>
-            }
+                    </PermissionView>
+                }
 
-            @* Step Content *@
-            @if (_activeStep == OrderEditorStep.Products)
-            {
-                <ProductsStep @key="_sessionId" SessionId="_sessionId" Items="_state.Items" ItemsChanged="OnEditorChanged" />
-            }
-            else if (_activeStep == OrderEditorStep.Details)
-            {
-                <DetailsStep @key="_sessionId" State="_state" DetailsChanged="OnEditorChanged" />
-            }
+                @if (CanShowDrafts)
+                {
+                    <MudButton Color="Color.Primary"
+                               OnClick="ShowDrafts"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Outlined.Description">
+                        المسودات
+                    </MudButton>
+                }
 
-        </MudPaper>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           Disabled="@(!CanSave)"
+                           OnClick="SaveAsync">
+                    @(IsEdit ? "حفظ التعديلات" : "إنشاء الطلب")
+                </MudButton>
 
-        @if (ValidationErrors.Count > 0)
-        {
-            <MudAlert Severity="Severity.Error"
-                      Variant="Variant.Outlined">
+            </MudStack>
 
-                <MudStack Spacing="1">
+            @* Editor *@
+            <MudPaper Elevation="0"
+                      Class="pa-2">
 
-                    <MudText Typo="Typo.subtitle2">
-                        يرجى استكمال البيانات التالية:
-                    </MudText>
+                @* Steps *@
+                <MudStack Row
+                          Spacing="2">
 
-                    @foreach (var error in ValidationErrors)
-                    {
-                        <MudText Typo="Typo.body2">
-                            • @error
-                        </MudText>
-                    }
+                    <MudButton Variant="@GetStepVariant(OrderEditorStep.Products)"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Outlined.Inventory2"
+                               OnClick="@(() => SelectStep(OrderEditorStep.Products))">
+                        المنتجات
+                    </MudButton>
+
+                    <MudButton Variant="@GetStepVariant(OrderEditorStep.Details)"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Outlined.ReceiptLong"
+                               OnClick="@(() => SelectStep(OrderEditorStep.Details))">
+                        تفاصيل الطلب
+                    </MudButton>
 
                 </MudStack>
 
-            </MudAlert>
-        }
+                @* Step Content *@
+                @if (_activeStep == OrderEditorStep.Products)
+                {
+                    <ProductsStep @key="_sessionId" SessionId="_sessionId" Items="_state.Items" ItemsChanged="OnEditorChanged" />
+                }
+                else if (_activeStep == OrderEditorStep.Details)
+                {
+                    <DetailsStep @key="_sessionId" State="_state" DetailsChanged="OnEditorChanged" />
+                }
 
-    </MudStack>
+                <MudPaper Outlined="true" Class="pa-3 mt-3">
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">إجمالي الطلب</MudText>
+                    @if (CurrentPricing is { } pricing)
+                    {
+                        <MudGrid Class="mt-1">
+                            <MudItem xs="12" sm="4">
+                                <MudText Typo="Typo.caption">قيمة المنتجات قبل الضريبة</MudText>
+                                <MudText Typo="Typo.body1">@pricing.Subtotal.ToString("N2") ر.س</MudText>
+                            </MudItem>
+                            <MudItem xs="12" sm="4">
+                                <MudText Typo="Typo.caption">إجمالي الضريبة</MudText>
+                                <MudText Typo="Typo.body1">@pricing.TotalVat.ToString("N2") ر.س</MudText>
+                            </MudItem>
+                            <MudItem xs="12" sm="4">
+                                <MudText Typo="Typo.caption">المطلوب شامل الضريبة</MudText>
+                                <MudText Typo="Typo.h6" Color="Color.Primary">@pricing.TotalAmount.ToString("N2") ر.س</MudText>
+                            </MudItem>
+                        </MudGrid>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">أضف منتجًا صالحًا لعرض الإجمالي.</MudText>
+                    }
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">سعر الوحدة قبل الضريبة، وتُضاف ضريبة كل منتج إلى إجمالي الطلب.</MudText>
+                </MudPaper>
+
+                @if (!IsEdit)
+                {
+                    <PermissionView Feature="PermissionFeature.Documents" Level="PermissionLevel.Write">
+                        <MudPaper Outlined="true" Class="pa-3 mt-3">
+                            <MudText Typo="Typo.subtitle2" Color="Color.Primary">وثائق الطلب</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2">
+                                تُنشأ من بيانات المسودة الحالية، ويمكن إصدار نسخة جديدة برقم جديد في كل مرة.
+                            </MudText>
+                            <MudStack Row="true" Spacing="2">
+                                <MudButton Variant="Variant.Outlined" Disabled="@(!CanCreateDraftDocument)"
+                                           OnClick="CreateQuotationAsync" StartIcon="@Icons.Material.Outlined.RequestPage">
+                                    إنشاء عرض سعر
+                                </MudButton>
+                                <MudButton Variant="Variant.Outlined" Disabled="@(!CanCreateDraftDocument)"
+                                           OnClick="CreateProformaInvoiceAsync" StartIcon="@Icons.Material.Outlined.FactCheck">
+                                    إنشاء فاتورة أولية
+                                </MudButton>
+                            </MudStack>
+                            @if (_createdDocumentNumber is not null && _createdDocumentType is { } documentType)
+                            {
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Class="mt-2">
+                                    <MudText Typo="Typo.body2">تم إنشاء @_createdDocumentNumber</MudText>
+                                    <MudButton Href="@DocumentFileUrl(documentType, _createdDocumentNumber)" Target="_blank"
+                                               Size="Size.Small" StartIcon="@Icons.Material.Outlined.PictureAsPdf">
+                                        فتح PDF
+                                    </MudButton>
+                                </MudStack>
+                            }
+                        </MudPaper>
+                    </PermissionView>
+                }
+
+            </MudPaper>
+
+            @if (ValidationErrors.Count > 0)
+            {
+                <MudAlert Severity="Severity.Error"
+                          Variant="Variant.Outlined">
+
+                    <MudStack Spacing="1">
+
+                        <MudText Typo="Typo.subtitle2">
+                            يرجى استكمال البيانات التالية:
+                        </MudText>
+
+                        @foreach (var error in ValidationErrors)
+                        {
+                            <MudText Typo="Typo.body2">
+                                • @error
+                            </MudText>
+                        }
+
+                    </MudStack>
+
+                </MudAlert>
+            }
+
+        </MudStack>
     }
 
 </MudContainer>
