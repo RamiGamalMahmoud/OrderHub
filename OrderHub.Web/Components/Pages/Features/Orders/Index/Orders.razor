@@ -153,6 +153,7 @@
         <MudTable T="OrderListItem"
                   @ref="_table"
                   ServerData="LoadOrdersAsync"
+                  RowsPerPage="@_pageSize"
                   Hover="true"
                   Striped="true">
 
@@ -200,11 +201,14 @@
                 <MudTd DataLabel="الحالة">
 
                     <span class="order-status @OrderWorkflowPresentation.StatusTone(context.OrderStatus)">@context.EnumItem.DisplayName</span>
-                    @if (context.IsArchived) { <span class="order-status order-tone-neutral">مؤرشف</span> }
+                    @if (context.IsArchived)
+                    {
+                        <span class="order-status order-tone-neutral">مؤرشف</span>
+                    }
 
                 </MudTd>
 
-                <MudTd DataLabel="التوصيل">@(context.DeliveryMethod.HasValue ? context.DeliveryMethod.Value.GetDescription() : "غير محددة")</MudTd>
+                <MudTd DataLabel="التوصيل">@(context.DeliveryMethod.HasValue? context.DeliveryMethod.Value.GetDescription() : "غير محددة")</MudTd>
 
                 <MudTd DataLabel="التاريخ">
                     <UserLocalTime Value="context.CreatedAt" />
@@ -222,11 +226,13 @@
 
                         @if (!context.IsArchived && context.OrderStatus == OrderStatus.Processing)
                         {
-                        <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write"><MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                       Class="order-action order-tone-processing"
-                                       Size="Size.Small"
-                                       Href=@($"/orders/{context.Id}/edit")
-                                       OnClick="@(() => SelectOrder(context))" /></PermissionView>
+                            <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Class="order-action order-tone-processing"
+                                               Size="Size.Small"
+                                               Href=@($"/orders/{context.Id}/edit")
+                                               OnClick="@(() => SelectOrder(context))" />
+                            </PermissionView>
                         }
 
                     </MudStack>
@@ -253,7 +259,21 @@
 
             <PagerContent>
 
-                <MudTablePager PageSizeOptions="@(new[] { 10, 20, 50, 100 })" />
+                <MudStack Row AlignItems="AlignItems.Baseline">
+
+                    <MudTablePager HidePagination
+                                   PageSizeOptions="@(new[] {5, 10, 20, 50, 100 })" />
+
+                    <MudText>
+                        الصفحة @(_pageIndex) من @TotalPages
+                    </MudText>
+
+                    <MudPagination Rectangular="true"
+                                   Variant="Variant.Text"
+                                   SelectedChanged="OnPageIndexChanged"
+                                   Selected="@_pageIndex"
+                                   Count="@TotalPages" />
+                </MudStack>
 
             </PagerContent>
 

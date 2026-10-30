@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using MudBlazor;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
+using OrderHub.Application.Features.Setup.PaymentMethods.Contracts;
 using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Enums;
-using OrderHub.Application.Features.Setup.PaymentMethods.Contracts;
 using Order = OrderHub.Application.Features.Orders.GetPage.OrderListItem;
 
 namespace OrderHub.Web.Components.Pages.Features.Orders.Index;
@@ -15,18 +16,32 @@ public partial class Orders : IDisposable
     [Inject] private NavigationManager Navigation { get; set; } = null!;
     private bool _archivedOnly;
 
+    private int _pageIndex = 1;
+    private int _pageSize = 10;
+
     protected override void OnInitialized()
     {
         _archivedOnly = IsArchivedRoute(Navigation.Uri);
+
         Navigation.LocationChanged += OnLocationChanged;
     }
+
+    private int TotalPages =>
+    _table?.GetFilteredItemsCount() is int count
+        ? (int)Math.Ceiling(count / (double)_table.RowsPerPage)
+        : 0;
 
     protected override async Task OnParametersSetAsync()
     {
         var archived = IsArchivedRoute(Navigation.Uri);
-        if (_archivedOnly == archived) return;
+
+        if (_archivedOnly == archived)
+            return;
+
         _archivedOnly = archived;
-        if (_table is not null) await _table.ReloadServerData();
+
+        if (_table is not null)
+            await _table.ReloadServerData();
     }
 
     private static bool IsArchivedRoute(string uri) =>
@@ -35,7 +50,8 @@ public partial class Orders : IDisposable
     private void OnLocationChanged(object? sender, LocationChangedEventArgs args)
     {
         var archived = IsArchivedRoute(args.Location);
-        if (_archivedOnly == archived) return;
+        if (_archivedOnly == archived)
+            return;
 
         _ = InvokeAsync(async () =>
         {
@@ -56,6 +72,9 @@ public partial class Orders : IDisposable
 
     [Inject]
     private OrderHub.Web.Services.PermissionAccess PermissionAccess { get; set; } = null!;
+
+    [SupplyParameterFromQuery(Name = "page")]
+    public int? Page { get; set; }
 
     private MudTable<Order>? _table;
 
@@ -131,7 +150,34 @@ public partial class Orders : IDisposable
     private async Task OnPaymentChanged(int? value)
     {
         _selectedPaymentMethodId = value;
-        if (_table is not null) await _table.ReloadServerData();
+        if (_table is not null)
+            await _table.ReloadServerData();
     }
     private IEnumerable<PaymentMethodListItem?> _paymentMethods = [];
+    private void OnPageIndexChanged(int args)
+    {
+        _pageIndex = args;
+
+        var uri = Navigation.GetUriWithQueryParameter(
+            "page",
+            _pageIndex == 1 ? null : _pageIndex.ToString());
+
+        Navigation.NavigateTo(uri, replace: true);
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_table is null)
+            return;
+
+        var targetPage = Math.Max(0, (Page ?? 1) - 1);
+
+        if (_table.CurrentPage != targetPage)
+        {
+            _table.NavigateTo(targetPage);
+            _pageIndex = targetPage + 1;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
 }

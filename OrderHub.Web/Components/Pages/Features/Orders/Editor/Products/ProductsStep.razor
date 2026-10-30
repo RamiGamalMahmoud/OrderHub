@@ -13,20 +13,19 @@
             </MudText>
         </div>
 
-        @if (Items.Count > 0)
-        {
-            <MudStack Row>
+        <MudStack Row>
 
-                <PermissionView Feature="PermissionFeature.Products">
-                    <MudButton
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Outlined.OpenInNew"
-                               Href="/orders/create"
-                               Target="_blank">
-                        إضافة منتج جديد
-                    </MudButton>
-                </PermissionView>
+            <PermissionView Feature="PermissionFeature.Products">
+                <MudButton Color="Color.Primary"
+                           StartIcon="@Icons.Material.Outlined.OpenInNew"
+                           Href="/products/create"
+                           Target="_blank">
+                    إضافة منتج جديد
+                </MudButton>
+            </PermissionView>
 
+            @if (Items.Count > 0)
+            {
                 <PermissionView Feature="PermissionFeature.Products">
                     <MudButton Variant="Variant.Outlined"
                                Color="Color.Primary"
@@ -36,8 +35,8 @@
                     </MudButton>
                 </PermissionView>
 
-            </MudStack>
-        }
+            }
+        </MudStack>
 
     </MudStack>
 
@@ -69,7 +68,7 @@
                                Color="Color.Primary"
                                StartIcon="@Icons.Material.Outlined.Add"
                                OnClick="AddProductAsync">
-                        إضافة منتج
+                        اختيار منتج
                     </MudButton>
                 </PermissionView>
 

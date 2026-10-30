@@ -4,6 +4,7 @@ using OrderHub.Application;
 using OrderHub.Infrastructure.DependencyInjection;
 using OrderHub.Infrastructure.Options;
 using OrderHub.Web.Components;
+using OrderHub.Web.Components.Pages.Features.Orders;
 using OrderHub.Web.Infrastructure.Authorization;
 using OrderHub.Web.Services;
 using QuestPDF.Infrastructure;
@@ -16,6 +17,8 @@ QuestPDF.Settings.UseSystemFonts = true;
 // =========================
 // Services
 // =========================
+
+builder.Services.AddScoped<OrdersListState>();
 
 builder.Services
     .AddRazorComponents()
