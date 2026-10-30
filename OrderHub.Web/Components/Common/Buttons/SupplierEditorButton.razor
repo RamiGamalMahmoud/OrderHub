@@ -1,0 +1,102 @@
+﻿@using MudBlazor
+@using OrderHub.Application.Authorization
+@using OrderHub.Web.Components.Pages.Features.Suppliers.Editor
+
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject ILogger<SupplierEditorButton> Logger
+
+<MudButton Variant="@Variant"
+           Color="@Color"
+           StartIcon="@StartIcon"
+           Disabled="@(IsBusy || Disabled)"
+           OnClick="OpenAsync">
+    @ButtonText
+</MudButton>
+
+@code {
+    [Parameter]
+    public int? SupplierId { get; set; }
+
+    [Parameter]
+    public Color Color { get; set; } = Color.Primary;
+
+    [Parameter]
+    public Variant Variant { get; set; } = Variant.Filled;
+
+    [Parameter]
+    public string? ButtonText { get; set; }
+
+    [Parameter]
+    public string StartIcon { get; set; } = Icons.Material.Filled.Add;
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public EventCallback OnSaved { get; set; }
+
+    private bool IsBusy;
+
+    private async Task OpenAsync()
+    {
+        if (IsBusy || Disabled)
+        {
+            return;
+        }
+
+        IsBusy = true;
+
+        try
+        {
+            DialogParameters<SupplierEditorDialog> parameters = new()
+            {
+                { dialog => dialog.SupplierId, SupplierId }
+            };
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = false,
+                CloseOnEscapeKey = false,
+                BackdropClick = false
+            };
+
+            string title = SupplierId.HasValue
+                ? "تعديل المورد"
+                : "إضافة مورد";
+
+            var dialog = await DialogService.ShowAsync<SupplierEditorDialog>(
+                title,
+                parameters,
+                options);
+
+            DialogResult? result = await dialog.Result;
+
+            if (result is { Canceled: false, Data: true })
+            {
+                await OnSaved.InvokeAsync();
+            }
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Snackbar.Add("ليس لديك صلاحية لتنفيذ هذا الإجراء.", Severity.Error);
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to open supplier editor for {SupplierId}",
+                SupplierId);
+
+            Snackbar.Add(
+                "تعذر فتح بيانات المورد. يرجى المحاولة مرة أخرى.",
+                Severity.Error);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+}

@@ -31,13 +31,9 @@
 
         @if (CanCreate)
         {
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       StartIcon="@Icons.Material.Filled.Add"
-                       Disabled="IsBusy"
-                       OnClick="OpenCreateDialogAsync">
-                إضافة مورد
-            </MudButton>
+            <SupplierEditorButton OnSaved="LoadAsync"
+                ButtonText="إضافة مورد"
+                                  Disabled="IsBusy" />
         }
     </MudStack>
 
@@ -136,11 +132,12 @@
                     <MudTd DataLabel="الإجراءات">
                         <MudStack Row
                                   Spacing="0">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                           Size="Size.Small"
-                                           Disabled="IsBusy"
-                                           aria-label="تعديل المورد"
-                                           OnClick="@(() => OpenEditDialogAsync(supplier))" />
+                            <SupplierEditorButton SupplierId="supplier.Id"
+                      Color="Color.Default"
+                      Variant="Variant.Text"
+                      StartIcon="@Icons.Material.Filled.Edit"
+                      Disabled="IsBusy"
+                      OnSaved="LoadAsync" />
 
                             <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
                                            Color="Color.Error"
@@ -237,70 +234,6 @@
         finally
         {
             _loading = false;
-        }
-    }
-
-    private Task OpenCreateDialogAsync() => OpenEditorAsync(null);
-
-    private Task OpenEditDialogAsync(SupplierListItem supplier) => OpenEditorAsync(supplier.Id);
-
-    private async Task OpenEditorAsync(int? supplierId)
-    {
-        if (IsBusy || !_canWrite)
-        {
-            return;
-        }
-
-        _dialogOpen = true;
-
-        try
-        {
-            DialogParameters<SupplierEditorDialog> parameters = new()
-            {
-                { dialog => dialog.SupplierId, supplierId }
-            };
-
-            DialogOptions options = new()
-            {
-                MaxWidth = MaxWidth.Small,
-                FullWidth = true,
-                CloseButton = false,
-                CloseOnEscapeKey = false,
-                BackdropClick = false
-            };
-
-            string title = supplierId.HasValue ? "تعديل المورد" : "إضافة مورد";
-
-            var dialog = await DialogService.ShowAsync<SupplierEditorDialog>(
-                title,
-                parameters,
-                options);
-
-            DialogResult? result = await dialog.Result;
-
-            if (result is { Canceled: false, Data: true })
-            {
-                await LoadAsync();
-            }
-        }
-        catch (AuthorizationDeniedException)
-        {
-            Navigation.NavigateTo("/access-denied");
-        }
-        catch (Exception exception)
-        {
-            Logger.LogError(
-                exception,
-                "Failed to open supplier editor for {SupplierId}",
-                supplierId);
-
-            Snackbar.Add(
-                "تعذر فتح بيانات المورد. يرجى المحاولة مرة أخرى.",
-                Severity.Error);
-        }
-        finally
-        {
-            _dialogOpen = false;
         }
     }
 

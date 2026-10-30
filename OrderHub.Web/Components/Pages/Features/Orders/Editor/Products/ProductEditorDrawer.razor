@@ -64,6 +64,8 @@
                         }
                     </MudSelect>
 
+                    <SupplierEditorButton Variant="Variant.Text" ButtonText="إضافة مورد" />
+
                     @if (_workingCopy.SupplierId.HasValue &&
                                     !_workingCopy.Suppliers.Any(s => s.Id == _workingCopy.SupplierId))
                     {
