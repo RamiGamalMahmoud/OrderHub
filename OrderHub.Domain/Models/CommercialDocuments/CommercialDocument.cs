@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using OrderHub.Domain.Enums;
 
 namespace OrderHub.Domain.Models.CommercialDocuments;
 
@@ -18,7 +19,11 @@ public abstract class CommercialDocument<TItem> : ModelBase where TItem : Commer
         string customerAddress,
         decimal subtotal,
         decimal totalVat,
-        decimal totalAmount)
+        decimal totalAmount,
+        decimal deliveryCost = 0m,
+        DiscountType discountType = DiscountType.FixedAmount,
+        decimal discountValue = 0m,
+        decimal discountAmount = 0m)
     {
         if (string.IsNullOrWhiteSpace(documentNumber))
             throw new ArgumentException("Document number is required.", nameof(documentNumber));
@@ -34,6 +39,10 @@ public abstract class CommercialDocument<TItem> : ModelBase where TItem : Commer
         Subtotal = subtotal;
         TotalVat = totalVat;
         TotalAmount = totalAmount;
+        DeliveryCost = deliveryCost;
+        DiscountType = discountType;
+        DiscountValue = discountValue;
+        DiscountAmount = discountAmount;
     }
 
     public string DocumentNumber { get; private set; }
@@ -50,6 +59,10 @@ public abstract class CommercialDocument<TItem> : ModelBase where TItem : Commer
     public decimal TotalVat { get; private set; }
 
     public decimal TotalAmount { get; private set; }
+    public decimal DeliveryCost { get; private set; }
+    public DiscountType DiscountType { get; private set; }
+    public decimal DiscountValue { get; private set; }
+    public decimal DiscountAmount { get; private set; }
 
     public IReadOnlyCollection<TItem> Items =>
         _items.AsReadOnly();

@@ -13,6 +13,7 @@ internal class DocumentSummaryComponent : IComponent
     private readonly decimal _discount;
     private readonly decimal _tax;
     private readonly decimal _total;
+    private readonly decimal _deliveryCost;
 
     public DocumentSummaryComponent(
         int itemCount,
@@ -20,7 +21,8 @@ internal class DocumentSummaryComponent : IComponent
         decimal subtotal,
         decimal discount,
         decimal tax,
-        decimal total)
+        decimal total,
+        decimal deliveryCost = 0m)
     {
         _itemCount = itemCount;
         _totalQuantity = totalQuantity;
@@ -28,6 +30,7 @@ internal class DocumentSummaryComponent : IComponent
         _discount = discount;
         _tax = tax;
         _total = total;
+        _deliveryCost = deliveryCost;
     }
 
     public void Compose(IContainer container)
@@ -77,13 +80,14 @@ internal class DocumentSummaryComponent : IComponent
                     "الإجمالي قبل الضريبة",
                     $"{_subtotal:N2}");
 
-                if (_discount > 0)
-                    ComposeSummaryRow(column, "الخصم", $"{_discount:N2}");
-
                 ComposeSummaryRow(
                     column,
                     "إجمالي الضريبة",
                     $"{_tax:N2}");
+
+                ComposeSummaryRow(column, "إجمالي المنتجات شامل الضريبة", $"{(_subtotal + _tax):N2}");
+                ComposeSummaryRow(column, "الخصم", $"-{_discount:N2}");
+                ComposeSummaryRow(column, "تكلفة التوصيل", $"+{_deliveryCost:N2}");
 
                 // --------------------------------------------------------
                 // Separator Line

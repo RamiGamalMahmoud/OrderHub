@@ -38,6 +38,11 @@ public partial class Order : ModelBase
 
     public OrderStatus OrderStatus { get; private set; }
 
+    public decimal DeliveryCost { get; private set; }
+    public DiscountType DiscountType { get; private set; } = DiscountType.FixedAmount;
+    public decimal DiscountValue { get; private set; }
+    public decimal DiscountAmount { get; private set; }
+
     public int? ShippingCarrierId { get; private set; }
     public ShippingCarrier ShippingCarrier { get; private set; }
 
@@ -52,7 +57,19 @@ public partial class Order : ModelBase
         : PricingCalculator.Calculate(_orderItems.Select(item => new PricingItem(
             item.ProductId, item.ProductName, item.Quantity, item.UnitPrice.Value, item.VatRate)).ToList());
 
-    public Money Total => new(Pricing.TotalAmount);
+    public Money Total => new(OrderFinancialCalculator.CalculateFinalTotal(Pricing.TotalAmount, DiscountAmount, DeliveryCost));
+
+    public Result SetFinancialAdjustments(decimal deliveryCost, DiscountType discountType, decimal discountValue)
+    {
+        if (!CanEdit) return Result.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
+        var calculated = OrderFinancialCalculator.Calculate(Pricing, deliveryCost, discountType, discountValue);
+        if (!calculated.IsSuccess) return Result.Failure(calculated.ErrorMessage);
+        DeliveryCost = deliveryCost;
+        DiscountType = discountType;
+        DiscountValue = discountValue;
+        DiscountAmount = calculated.Value.DiscountAmount;
+        return Result.Success();
+    }
 
     public IReadOnlyCollection<OrderItem> OrderItems => _orderItems.AsReadOnly();
     public IReadOnlyCollection<OrderDeliveryStep> DeliverySteps => _deliverySteps.AsReadOnly();
@@ -109,6 +126,7 @@ public partial class Order : ModelBase
             result.Value.AttachTo(this);
             _orderItems.Add(result.Value);
             EnsureSupplierSupplies();
+            RefreshDiscount();
         }
 
         return result;
@@ -117,8 +135,9 @@ public partial class Order : ModelBase
     public void RemoveOrderItem(OrderItem orderItem)
     {
         EnsureEditable();
-        _orderItems.Remove(orderItem);
+        _orderItems.RemoveAll(item => ReferenceEquals(item, orderItem));
         EnsureSupplierSupplies();
+        RefreshDiscount();
     }
 
     public void ClearOrderItems()
@@ -126,6 +145,7 @@ public partial class Order : ModelBase
         EnsureEditable();
         _orderItems.Clear();
         EnsureSupplierSupplies();
+        RefreshDiscount();
     }
 
     public void AddDeliveryStep(OrderDeliveryStep deliveryStep)
@@ -183,6 +203,7 @@ public partial class Order : ModelBase
         _orderItems.Clear();
         _orderItems.AddRange(replacementItems);
         EnsureSupplierSupplies();
+        RefreshDiscount();
     }
 
     public void SynchronizeDeliverySteps(IReadOnlyCollection<(int? Id, OrderDeliveryStep Values)> steps)
@@ -233,5 +254,12 @@ public partial class Order : ModelBase
                      .Select(item => item.SupplierId.Value).Distinct())
             if (!_supplies.Any(supply => supply.SupplierId == supplierId))
                 _supplies.Add(new Supply(this, supplierId));
+    }
+
+    internal void RefreshDiscount()
+    {
+        var subtotal = _orderItems.Sum(item => item.SubTotal.Value);
+        DiscountAmount = _orderItems.Count == 0 ? 0m : DiscountType == DiscountType.Percentage
+            ? subtotal * DiscountValue / 100m : DiscountValue;
     }
 }

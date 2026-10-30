@@ -1,5 +1,5 @@
 @attribute [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Read)]
-@using OrderHub.Application.Features.Orders.GetDetails
+@using OrderHub.Application.Features.Orders.GetDetails`r`n@using OrderHub.Domain.Enums
 @using OrderHub.Application.Features.Orders.Lifecycle
 @using OrderHub.Application.Features.Orders.GetSummaries
 @using OrderHub.Web.Components.Pages.Features.Orders.Workflow
@@ -180,6 +180,18 @@
                     <MudText>الضريبة</MudText><MudSpacer />
                     <MudText>@($"{_order?.Payment.VatAmount:N2} ر.س")</MudText>
                 </MudStack>
+                  <MudStack Row Spacing="2">
+                      <MudText>إجمالي المنتجات شامل الضريبة</MudText><MudSpacer />
+                      <MudText>@($"{_order?.Payment.ProductsTotalIncludingVat:N2} ر.س")</MudText>
+                  </MudStack>
+                  <MudStack Row Spacing="2">
+                      <MudText>الخصم (@(_order?.Payment.DiscountType == DiscountType.Percentage ? $"{_order.Payment.DiscountValue:N2}%" : $"{_order?.Payment.DiscountValue:N2} ر.س"))</MudText><MudSpacer />
+                      <MudText>-@($"{_order?.Payment.Discount:N2} ر.س")</MudText>
+                  </MudStack>
+                  <MudStack Row Spacing="2">
+                      <MudText>تكلفة التوصيل</MudText><MudSpacer />
+                      <MudText>+@($"{_order?.Payment.ShippingCost:N2} ر.س")</MudText>
+                  </MudStack>
                 <MudDivider Class="my-1" />
                 <MudStack Row Spacing="2">
                     <MudText Style="font-weight: 600" Color="Color.Primary">الإجمالي شامل الضريبة</MudText>

@@ -98,6 +98,9 @@ public static class CreateProformaInvoiceCommand
 
                 //    - Calculate pricing and item totals.
                 var documentPricing = CalculateDocument(draft.Data.Items);
+                var financials = OrderFinancialCalculator.Calculate(documentPricing, draft.Data.DeliveryCost,
+                    draft.Data.DiscountType, draft.Data.DiscountValue);
+                if (!financials.IsSuccess) throw new InvalidOperationException(financials.ErrorMessage);
 
                 //    - Create the domain document and add its items.
                 proformaInvoice = ProformaInvoice.Create(
@@ -108,8 +111,12 @@ public static class CreateProformaInvoiceCommand
                     client.Address,
                     documentPricing.Subtotal,
                     documentPricing.TotalVat,
-                    documentPricing.TotalAmount,
-                    draft.Id);
+                    financials.Value.FinalTotal,
+                    draft.Id,
+                    financials.Value.DeliveryCost,
+                    draft.Data.DiscountType,
+                    draft.Data.DiscountValue,
+                    financials.Value.DiscountAmount);
 
                 foreach (var item in documentPricing.Items)
                 {
@@ -184,7 +191,11 @@ public static class CreateProformaInvoiceCommand
                     item.Subtotal,
                     item.VatAmount,
                     item.Total))
-                .ToList());
+                .ToList(),
+                proformaInvoice.DeliveryCost,
+                proformaInvoice.DiscountType,
+                proformaInvoice.DiscountValue,
+                proformaInvoice.DiscountAmount);
 
             //    - Create the appropriate IPdfDocument through the factory.
             IPdfDocument document = _documentFactory.Create(proformaInvoicePdfData);

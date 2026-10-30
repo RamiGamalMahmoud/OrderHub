@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using OrderHub.Domain.Models.CommercialDocuments;
+using OrderHub.Domain.Enums;
 
 namespace OrderHub.Infrastructure.Configurations.CommercialDocuments;
 
@@ -48,6 +49,11 @@ internal abstract class CommercialDocumentConfiguration<TDocument, TItem>
         builder.Property(x => x.TotalAmount)
             .HasColumnType("numeric(18,2)")
             .IsRequired();
+
+        builder.Property(x => x.DeliveryCost).HasColumnType("numeric(18,2)").HasDefaultValue(0m).IsRequired();
+        builder.Property(x => x.DiscountType).HasColumnType("varchar(30)").HasConversion<string>().HasDefaultValue(DiscountType.FixedAmount).IsRequired();
+        builder.Property(x => x.DiscountValue).HasColumnType("numeric(18,2)").HasDefaultValue(0m).IsRequired();
+        builder.Property(x => x.DiscountAmount).HasColumnType("numeric(18,2)").HasDefaultValue(0m).IsRequired();
 
         builder.HasIndex(x => x.DocumentNumber)
             .IsUnique();

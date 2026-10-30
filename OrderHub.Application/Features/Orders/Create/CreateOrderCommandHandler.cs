@@ -181,6 +181,9 @@ internal class CreateOrderCommandHandler
             if (order.OrderItems.Count == 0)
                 return Result<int>.Failure("يجب إضافة منتج واحد على الأقل.");
 
+            var financials = order.SetFinancialAdjustments(input.DeliveryCost, input.DiscountType, input.DiscountValue);
+            if (!financials.IsSuccess) return Result<int>.Failure(financials.ErrorMessage);
+
             foreach (OrderInput.DeliveryStep step in
                 steps.OrderBy(step => step.StepOrder))
             {

@@ -16,4 +16,8 @@ public record OrderEditorData(
         OrderSource? OrderSource = null,
         int Version = 1,
         OrderStatus Status = OrderStatus.Processing,
-        bool IsArchived = false);
+        bool IsArchived = false,
+        decimal DeliveryCost = 0,
+        DiscountType DiscountType = DiscountType.FixedAmount,
+        decimal DiscountValue = 0,
+        decimal DiscountAmount = 0);

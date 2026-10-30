@@ -198,9 +198,10 @@ public class InvoiceTableComponent : IComponent
                     itemCount,
                     totalQuantity,
                     _invoice.Subtotal,
-                    0,
+                    _invoice.DiscountAmount,
                     _invoice.TotalVat,
-                    _invoice.TotalAmount));
+                    _invoice.TotalAmount,
+                    _invoice.DeliveryCost));
         });
     }
 }

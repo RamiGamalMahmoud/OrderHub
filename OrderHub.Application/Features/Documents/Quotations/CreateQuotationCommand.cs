@@ -1,4 +1,3 @@
-using OrderHub.Domain.Enums;
 using OrderHub.Application.Authorization;
 using MediatR;
 using OrderHub.Application.DTOs.Documents;
@@ -12,6 +11,7 @@ using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Application.Features.Setup.Clients.Contracts;
 using OrderHub.Domain.Models.CommercialDocuments;
 using OrderHub.Domain.Services.Pricing;
+using OrderHub.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -98,6 +98,9 @@ public static class CreateQuotationCommand
 
                 //    - Calculate pricing and item totals.
                 var documentPricing = CalculateDocument(draft.Data.Items);
+                var financials = OrderFinancialCalculator.Calculate(documentPricing, draft.Data.DeliveryCost,
+                    draft.Data.DiscountType, draft.Data.DiscountValue);
+                if (!financials.IsSuccess) throw new InvalidOperationException(financials.ErrorMessage);
 
                 //    - Create the domain document and add its items.
                 quotation = Quotation.Create(
@@ -108,9 +111,13 @@ public static class CreateQuotationCommand
                     client.Address,
                     documentPricing.Subtotal,
                     documentPricing.TotalVat,
-                    documentPricing.TotalAmount,
+                    financials.Value.FinalTotal,
                     currentDate.AddDays(30),
-                    draft.Id);
+                    draft.Id,
+                    financials.Value.DeliveryCost,
+                    draft.Data.DiscountType,
+                    draft.Data.DiscountValue,
+                    financials.Value.DiscountAmount);
 
                 foreach (var item in documentPricing.Items)
                 {
@@ -185,7 +192,11 @@ public static class CreateQuotationCommand
                     item.Subtotal,
                     item.VatAmount,
                     item.Total))
-                .ToList());
+                .ToList(),
+                quotation.DeliveryCost,
+                quotation.DiscountType,
+                quotation.DiscountValue,
+                quotation.DiscountAmount);
 
             //    - Create the appropriate IPdfDocument through the factory.
             IPdfDocument document = _documentFactory.Create(quotationPdfData);

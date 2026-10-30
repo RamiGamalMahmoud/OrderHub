@@ -25,6 +25,7 @@ public class OrderItem : ModelBase
         ProductName = productName;
         UnitPrice = new Money(unitPrice);
         Quantity = quantity;
+        Order?.RefreshDiscount();
         VatRate = vatRate;
         SupplierName = supplierName;
         SupplierId = supplierId;
@@ -105,6 +106,7 @@ public class OrderItem : ModelBase
             return Result.Failure("Quantity must be greater than zero.");
 
         Quantity = quantity;
+        Order?.RefreshDiscount();
 
         return Result.Success();
     }
@@ -117,6 +119,7 @@ public class OrderItem : ModelBase
             return Result.Failure("Quantity must be greater than zero.");
 
         Quantity += quantity;
+        Order?.RefreshDiscount();
 
         return Result.Success();
     }
@@ -129,6 +132,7 @@ public class OrderItem : ModelBase
             return Result.Failure("Quantity must be greater than zero.");
 
         Quantity -= quantity;
+        Order?.RefreshDiscount();
 
         return Result.Success();
     }
@@ -140,7 +144,17 @@ public class OrderItem : ModelBase
             return Result.Failure("Unit price must be greater than zero.");
 
         UnitPrice = new Money(unitPrice);
+        Order?.RefreshDiscount();
 
+        return Result.Success();
+    }
+
+    public Result ChangeVatRate(decimal vatRate)
+    {
+        if (Order is not null && !Order.CanEdit) return Result.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
+        if (vatRate < 0) return Result.Failure("VAT rate cannot be negative.");
+        VatRate = vatRate;
+        Order?.RefreshDiscount();
         return Result.Success();
     }
 

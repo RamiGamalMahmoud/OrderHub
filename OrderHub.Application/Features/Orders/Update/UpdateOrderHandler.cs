@@ -61,6 +61,8 @@ internal class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, Result<O
                 input.DeliveryMethod == DeliveryMethod.DeliveryMan ? input.DeliveryManId : null,
                 input.DeliveryMethod == DeliveryMethod.ShippingCompany ? input.ShippingCarrierId : null,
                 input.PaymentMethodId);
+            var financials = order.SetFinancialAdjustments(input.DeliveryCost, input.DiscountType, input.DiscountValue);
+            if (!financials.IsSuccess) return Result<OrderUpdateReceipt>.Failure(financials.ErrorMessage);
             order.TouchForEdit();
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             if (transactionActive)
@@ -117,6 +119,8 @@ internal class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, Result<O
         }
         if (replacement.OrderItems.Count == 0)
             return Result<Order>.Failure("يجب إضافة منتج واحد على الأقل.");
+        var financials = replacement.SetFinancialAdjustments(input.DeliveryCost, input.DiscountType, input.DiscountValue);
+        if (!financials.IsSuccess) return Result<Order>.Failure(financials.ErrorMessage);
         foreach (var step in steps.OrderBy(step => step.StepOrder))
         {
             replacement.AddDeliveryStep(new OrderDeliveryStep

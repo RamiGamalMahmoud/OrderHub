@@ -13,7 +13,14 @@ public record ProformaInvoicePdfData(
     decimal Subtotal,
     decimal TotalVat,
     decimal TotalAmount,
-    IReadOnlyCollection<ProformaInvoicePdfDataDataItem> Items);
+    IReadOnlyCollection<ProformaInvoicePdfDataDataItem> Items,
+    decimal DeliveryCost = 0m,
+    OrderHub.Domain.Enums.DiscountType DiscountType = OrderHub.Domain.Enums.DiscountType.FixedAmount,
+    decimal DiscountValue = 0m,
+    decimal DiscountAmount = 0m)
+{
+    public decimal ProductsTotalIncludingVat => Subtotal + TotalVat;
+}
 
 public record ProformaInvoicePdfDataDataItem(
     int ProductId,

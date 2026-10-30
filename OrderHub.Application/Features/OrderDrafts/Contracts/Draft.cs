@@ -19,7 +19,10 @@ public sealed record OrderDraftData(
     int? DeliverymanId,
     int? ShippingCarrierId,
     IReadOnlyList<OrderDraftItem> Items,
-    IReadOnlyList<OrderDraftDeliveryStep> DeliverySteps);
+    IReadOnlyList<OrderDraftDeliveryStep> DeliverySteps,
+    decimal DeliveryCost = 0,
+    OrderHub.Domain.Enums.DiscountType DiscountType = OrderHub.Domain.Enums.DiscountType.FixedAmount,
+    decimal DiscountValue = 0);
 
 public sealed record OrderDraftItem(
     int ProductId,

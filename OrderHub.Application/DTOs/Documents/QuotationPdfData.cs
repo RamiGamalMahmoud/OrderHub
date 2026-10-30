@@ -13,7 +13,14 @@ public record QuotationPdfData(
     decimal Subtotal,
     decimal TotalVat,
     decimal TotalAmount,
-    IReadOnlyCollection<QuotationPdfDataItem> Items);
+    IReadOnlyCollection<QuotationPdfDataItem> Items,
+    decimal DeliveryCost = 0m,
+    OrderHub.Domain.Enums.DiscountType DiscountType = OrderHub.Domain.Enums.DiscountType.FixedAmount,
+    decimal DiscountValue = 0m,
+    decimal DiscountAmount = 0m)
+{
+    public decimal ProductsTotalIncludingVat => Subtotal + TotalVat;
+}
 
 public record QuotationPdfDataItem(
     int ProductId,

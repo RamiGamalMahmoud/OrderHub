@@ -31,6 +31,10 @@ internal class OrderConfiguration : ModelConfigurationBase<Order>
 
         builder.Ignore(x => x.Total);
         builder.Ignore(x => x.Pricing);
+        builder.Property(x => x.DeliveryCost).HasColumnType("numeric(18,2)").HasDefaultValue(0m).IsRequired();
+        builder.Property(x => x.DiscountType).HasColumnType("varchar(30)").HasConversion<string>().HasDefaultValue(DiscountType.FixedAmount).IsRequired();
+        builder.Property(x => x.DiscountValue).HasColumnType("numeric(18,2)").HasDefaultValue(0m).IsRequired();
+        builder.Property(x => x.DiscountAmount).HasColumnType("numeric(18,2)").HasDefaultValue(0m).IsRequired();
 
         builder.Property(x => x.DeliveryMethod)
             .HasColumnType("varchar(30)")

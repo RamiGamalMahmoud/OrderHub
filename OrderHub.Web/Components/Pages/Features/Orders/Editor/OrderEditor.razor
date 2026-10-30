@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using OrderHub.Web.Components.Pages.Features.Orders.Editor.OrderDetails
 @using OrderHub.Web.Components.Pages.Features.Orders.Editor.Products
+@using OrderHub.Domain.Enums
 
 
 <PageTitle>@_pageTitle</PageTitle>
@@ -111,6 +112,20 @@
 
                 <MudPaper Outlined="true" Class="pa-3 mt-3">
                     <MudText Typo="Typo.subtitle2" Color="Color.Primary">إجمالي الطلب</MudText>
+                    <MudGrid Class="mt-2">
+                        <MudItem xs="12" sm="4">
+                            <MudNumericField T="decimal" Label="تكلفة التوصيل" Min="0" Immediate="true" Value="_state.DeliveryCost" ValueChanged="@(async value => { _state.DeliveryCost = value; await OnEditorChanged(); })" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudSelect T="DiscountType" Label="نوع الخصم" Value="_state.DiscountType" ValueChanged="@(async value => { _state.DiscountType = value; await OnEditorChanged(); })">
+                                <MudSelectItem Value="DiscountType.FixedAmount">مبلغ ثابت</MudSelectItem>
+                                <MudSelectItem Value="DiscountType.Percentage">نسبة مئوية</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudNumericField T="decimal?" Label="@(_state.DiscountType == DiscountType.Percentage ? "الخصم من المنتجات قبل الضريبة (%)" : "قيمة الخصم")" Min="0" Max="@(_state.DiscountType == DiscountType.Percentage ? 100 : (decimal?)null)" Immediate="true" Value="_state.DiscountValue" ValueChanged="@(async value => { _state.DiscountValue = value.GetValueOrDefault(); await OnEditorChanged(); })" />
+                        </MudItem>
+                    </MudGrid>
                     @if (CurrentPricing is { } pricing)
                     {
                         <MudGrid Class="mt-1">
@@ -123,9 +138,12 @@
                                 <MudText Typo="Typo.body1">@pricing.TotalVat.ToString("N2") ر.س</MudText>
                             </MudItem>
                             <MudItem xs="12" sm="4">
-                                <MudText Typo="Typo.caption">المطلوب شامل الضريبة</MudText>
-                                <MudText Typo="Typo.h6" Color="Color.Primary">@pricing.TotalAmount.ToString("N2") ر.س</MudText>
+                                <MudText Typo="Typo.caption">إجمالي المنتجات شامل الضريبة</MudText>
+                                <MudText Typo="Typo.body1">@pricing.TotalAmount.ToString("N2") ر.س</MudText>
                             </MudItem>
+                            <MudItem xs="12" sm="4"><MudText Typo="Typo.caption">الخصم</MudText><MudText Typo="Typo.body1">@EditorDiscountAmount(pricing).ToString("N2") ر.س</MudText></MudItem>
+                            <MudItem xs="12" sm="4"><MudText Typo="Typo.caption">تكلفة التوصيل</MudText><MudText Typo="Typo.body1">@_state.DeliveryCost.ToString("N2") ر.س</MudText></MudItem>
+                            <MudItem xs="12" sm="4"><MudText Typo="Typo.caption">الإجمالي النهائي</MudText><MudText Typo="Typo.h6" Color="Color.Primary">@EditorFinalTotal(pricing).ToString("N2") ر.س</MudText></MudItem>
                         </MudGrid>
                     }
                     else

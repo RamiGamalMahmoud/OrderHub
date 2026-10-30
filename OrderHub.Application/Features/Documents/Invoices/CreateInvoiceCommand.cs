@@ -101,8 +101,12 @@ public static class CreateInvoiceCommand
                     order.Client.Address.FullAddress,
                     invoicePricing.Subtotal,
                     invoicePricing.TotalVat,
-                    invoicePricing.TotalAmount,
-                    order.Id);
+                    order.Total.Value,
+                    order.Id,
+                    order.DeliveryCost,
+                    order.DiscountType,
+                    order.DiscountValue,
+                    order.DiscountAmount);
 
                 foreach (var item in itemsResult)
                 {
@@ -164,7 +168,11 @@ public static class CreateInvoiceCommand
                                 item.Subtotal,
                                 item.VatAmount,
                                 item.Total))
-                            .ToList()));
+                            .ToList(),
+                        createdInvoice.DeliveryCost,
+                        createdInvoice.DiscountType,
+                        createdInvoice.DiscountValue,
+                        createdInvoice.DiscountAmount));
 
             byte[] pdfBytes = document.Build();
 

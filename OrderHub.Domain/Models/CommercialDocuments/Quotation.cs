@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using OrderHub.Domain.Enums;
 
 namespace OrderHub.Domain.Models.CommercialDocuments;
 
@@ -14,7 +15,11 @@ public class Quotation : CommercialDocument<QuotationItem>
         decimal totalVat,
         decimal totalAmount,
         DateTime validUntil,
-        Guid sourceDraftReference)
+        Guid sourceDraftReference,
+        decimal deliveryCost,
+        DiscountType discountType,
+        decimal discountValue,
+        decimal discountAmount)
         : base(
             documentNumber,
             issueDate,
@@ -23,7 +28,7 @@ public class Quotation : CommercialDocument<QuotationItem>
             customerAddress,
             subtotal,
             totalVat,
-            totalAmount)
+            totalAmount, deliveryCost, discountType, discountValue, discountAmount)
     {
         if (validUntil < issueDate)
             throw new ArgumentException(
@@ -49,7 +54,11 @@ public class Quotation : CommercialDocument<QuotationItem>
         decimal totalVat,
         decimal totalAmount,
         DateTime validUntil,
-        Guid sourceDraftReference)
+        Guid sourceDraftReference,
+        decimal deliveryCost = 0m,
+        DiscountType discountType = DiscountType.FixedAmount,
+        decimal discountValue = 0m,
+        decimal discountAmount = 0m)
     {
         return new Quotation(
             documentNumber,
@@ -61,7 +70,7 @@ public class Quotation : CommercialDocument<QuotationItem>
             totalVat,
             totalAmount,
             validUntil,
-            sourceDraftReference);
+            sourceDraftReference, deliveryCost, discountType, discountValue, discountAmount);
     }
 
     public DateTime ValidUntil { get; private set; }

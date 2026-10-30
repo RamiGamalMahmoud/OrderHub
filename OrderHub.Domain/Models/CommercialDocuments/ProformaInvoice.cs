@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using OrderHub.Domain.Enums;
 
 namespace OrderHub.Domain.Models.CommercialDocuments;
 
@@ -13,7 +14,11 @@ public class ProformaInvoice : CommercialDocument<ProformaInvoiceItem>
         decimal subtotal,
         decimal totalVat,
         decimal totalAmount,
-        Guid sourceDraftReference)
+        Guid sourceDraftReference,
+        decimal deliveryCost,
+        DiscountType discountType,
+        decimal discountValue,
+        decimal discountAmount)
         : base(
             documentNumber,
             issueDate,
@@ -22,7 +27,7 @@ public class ProformaInvoice : CommercialDocument<ProformaInvoiceItem>
             customerAddress,
             subtotal,
             totalVat,
-            totalAmount)
+            totalAmount, deliveryCost, discountType, discountValue, discountAmount)
     {
         SourceDraftReference = sourceDraftReference;
     }
@@ -41,7 +46,11 @@ public class ProformaInvoice : CommercialDocument<ProformaInvoiceItem>
         decimal subtotal,
         decimal totalVat,
         decimal totalAmount,
-        Guid sourceDraftReference)
+        Guid sourceDraftReference,
+        decimal deliveryCost = 0m,
+        DiscountType discountType = DiscountType.FixedAmount,
+        decimal discountValue = 0m,
+        decimal discountAmount = 0m)
     {
         return new ProformaInvoice(
             documentNumber,
@@ -52,7 +61,7 @@ public class ProformaInvoice : CommercialDocument<ProformaInvoiceItem>
             subtotal,
             totalVat,
             totalAmount,
-            sourceDraftReference);
+            sourceDraftReference, deliveryCost, discountType, discountValue, discountAmount);
     }
 
     public Guid? SourceDraftReference { get; private set; }

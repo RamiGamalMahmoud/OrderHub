@@ -26,6 +26,10 @@ internal sealed partial class OrderReader
                 order.Version,
                 order.OrderStatus,
                 order.IsArchived,
+                order.DeliveryCost,
+                order.DiscountType,
+                order.DiscountValue,
+                order.DiscountAmount,
                 Items = order.OrderItems.Select(item => new
                 {
                     item.ProductId,
@@ -73,6 +77,7 @@ internal sealed partial class OrderReader
                     SelectedValue = item.SavedProperties.SingleOrDefault(saved => saved.PropertyId == definition.PropertyId)?.SelectedValue
                 }).Concat(item.SavedProperties.Where(saved => !item.CurrentProperties.Any(definition => definition.PropertyId == saved.PropertyId)))
                     .ToList(), item.VatRate)).ToList(),
-            snapshot.DeliverySteps, snapshot.OrderSource, snapshot.Version, snapshot.OrderStatus, snapshot.IsArchived);
+            snapshot.DeliverySteps, snapshot.OrderSource, snapshot.Version, snapshot.OrderStatus, snapshot.IsArchived,
+            snapshot.DeliveryCost, snapshot.DiscountType, snapshot.DiscountValue, snapshot.DiscountAmount);
     }
 }

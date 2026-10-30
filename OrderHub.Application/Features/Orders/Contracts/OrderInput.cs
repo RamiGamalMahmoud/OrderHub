@@ -13,7 +13,10 @@ public static class OrderInput
         int? ShippingCarrierId,
         IEnumerable<Item> OrderItems,
         IEnumerable<DeliveryStep> DeliverySteps,
-        int? PaymentMethodId);
+        int? PaymentMethodId,
+        decimal DeliveryCost = 0,
+        OrderHub.Domain.Enums.DiscountType DiscountType = OrderHub.Domain.Enums.DiscountType.FixedAmount,
+        decimal DiscountValue = 0);
 
     public record DeliveryStep(
         int StepOrder,

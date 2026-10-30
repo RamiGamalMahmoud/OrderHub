@@ -11,7 +11,7 @@ internal class DesignTimeAppDbContextFactrory
         DbContextOptionsBuilder<AppDbContext> optionsBuilder = new();
 
         optionsBuilder
-            .UseNpgsql("Host=localhost;Port=5432;Database=orderhub;Username=postgres;Password=12015")
+            .UseNpgsql("Host=localhost;Port=5432;Database=orderhub-dev;Username=postgres;Password=12015")
             .UseSnakeCaseNamingConvention();
 
         return new AppDbContext(optionsBuilder.Options);

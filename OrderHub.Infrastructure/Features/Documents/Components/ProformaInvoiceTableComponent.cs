@@ -193,9 +193,10 @@ internal class ProformaInvoiceTableComponent : IComponent
                     itemCount,
                     totalQuantity,
                     _data.Subtotal,
-                    0,
+                    _data.DiscountAmount,
                     _data.TotalVat,
-                    _data.TotalAmount));
+                    _data.TotalAmount,
+                    _data.DeliveryCost));
         });
     }
 }

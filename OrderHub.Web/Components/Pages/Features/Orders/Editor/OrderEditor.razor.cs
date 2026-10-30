@@ -96,7 +96,7 @@ public partial class OrderEditor : IDisposable
                 step.StepOrder,
                 step.Method,
                 step.HandlerId))
-            .ToList());
+            .ToList(), _state.DeliveryCost, _state.DiscountType, _state.DiscountValue);
         var draft = new SaveDraftCommand(_sessionId, orderDraftData);
         var write = PersistDraftAsync(lifecycle, draft);
         lifecycle.PendingWrites.Add(write);
@@ -144,6 +144,10 @@ public partial class OrderEditor : IDisposable
         ? null
         : PricingCalculator.Calculate(_state.Items.Select(item => new PricingItem(
             item.ProductId, item.ProductName, item.Quantity, item.UnitPrice, item.VatRate)).ToList());
+
+    private decimal EditorDiscountAmount(PricingResult pricing) => _state.DiscountType == DiscountType.Percentage
+        ? pricing.Subtotal * _state.DiscountValue / 100m : _state.DiscountValue;
+    private decimal EditorFinalTotal(PricingResult pricing) => pricing.TotalAmount - EditorDiscountAmount(pricing) + _state.DeliveryCost;
 
     private Task CreateQuotationAsync() => CreateDraftDocumentAsync(DocumentType.Quotation);
 
@@ -262,6 +266,9 @@ public partial class OrderEditor : IDisposable
             },
             OrderSource = order.OrderSource,
             PaymentMethodId = order.PaymentMethodId,
+            DeliveryCost = order.DeliveryCost,
+            DiscountType = order.DiscountType,
+            DiscountValue = order.DiscountValue,
         };
 
         var products = new Dictionary<int, OrderItemEditorData?>();
@@ -351,6 +358,9 @@ public partial class OrderEditor : IDisposable
             Version = order.Version,
             Status = order.Status,
             IsArchived = order.IsArchived,
+            DeliveryCost = order.DeliveryCost,
+            DiscountType = order.DiscountType,
+            DiscountValue = order.DiscountValue,
             ClientId = order.ClientId,
             OrderSource = order.OrderSource,
             PaymentMethodId = order.PaymentMothodId,
@@ -433,7 +443,7 @@ public partial class OrderEditor : IDisposable
                 ? steps.Select((step, index) => new OrderInput.DeliveryStep(
                     preserveStepOrder ? step.StepOrder : index + 1, step.Method, step.HandlerId!.Value, IsEdit ? step.Id : null)).ToList()
                 : new List<OrderInput.DeliveryStep>(),
-            _state.PaymentMethodId);
+            _state.PaymentMethodId, _state.DeliveryCost, _state.DiscountType, _state.DiscountValue);
     }
 
     private static string? ResolveSupplierName(OrderItemEditorState item, bool preservePersistedSnapshot)
@@ -466,6 +476,16 @@ public partial class OrderEditor : IDisposable
             }
         };
         var errors = GetValidationErrors(activeState).ToList();
+        if (state.DeliveryCost < 0) errors.Add("تكلفة التوصيل لا يمكن أن تكون سالبة.");
+        if (state.DiscountValue < 0) errors.Add("قيمة الخصم لا يمكن أن تكون سالبة.");
+        if (state.DiscountType == DiscountType.Percentage && state.DiscountValue > 100) errors.Add("نسبة الخصم يجب ألا تتجاوز 100%.");
+        if (state.Items.Count == 0 && state.DiscountValue > 0) errors.Add("لا يمكن تطبيق خصم دون منتجات.");
+        if (CurrentPricingFor(state) is { } pricing)
+        {
+            var amount = state.DiscountType == DiscountType.Percentage ? pricing.Subtotal * state.DiscountValue / 100m : state.DiscountValue;
+            if (state.DiscountType == DiscountType.FixedAmount && state.DiscountValue > pricing.Subtotal) errors.Add("الخصم لا يمكن أن يتجاوز إجمالي المنتجات قبل الضريبة.");
+            if (amount > pricing.Subtotal || pricing.TotalAmount - amount + state.DeliveryCost < 0) errors.Add("قيمة الخصم تؤدي إلى إجمالي غير صالح.");
+        }
         if (state.Delivery.Method.HasValue && !Enum.IsDefined(state.Delivery.Method.Value) ||
             state.OrderSource.HasValue && !Enum.IsDefined(state.OrderSource.Value))
             errors.Add("مصدر الطلب أو طريقة التوصيل غير صالح.");
@@ -479,6 +499,9 @@ public partial class OrderEditor : IDisposable
             errors.Add("طريقة تنفيذ خطوة التوصيل غير صالحة.");
         return errors;
     }
+
+    private static PricingResult? CurrentPricingFor(OrderEditorState state) => state.Items.Count == 0 || state.Items.Any(item => item.Quantity <= 0 || item.UnitPrice <= 0 || item.VatRate is < 0 or > 100)
+        ? null : PricingCalculator.Calculate(state.Items.Select(item => new PricingItem(item.ProductId, item.ProductName, item.Quantity, item.UnitPrice, item.VatRate)).ToList());
 
     private static IReadOnlyList<string> GetValidationErrors(OrderEditorState state)
     {

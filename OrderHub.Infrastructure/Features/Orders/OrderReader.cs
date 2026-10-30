@@ -42,7 +42,8 @@ internal sealed partial class OrderReader(AppDbContextFactory contextFactory) : 
             new OrderDetailsDelivery(order.DeliveryMethod.HasValue ? order.DeliveryMethod.Value.GetDescription() : "غير محددة",
                 order.Deliveryman?.Name.Value, order.ShippingCarrier?.Name.Value),
             lines,
-            new OrderDetailsPayment(order.PaymentMethod?.Description, pricing.Subtotal, pricing.TotalVat, 0, 0, pricing.TotalAmount));
+            new OrderDetailsPayment(order.PaymentMethod?.Description, pricing.Subtotal, pricing.TotalVat, order.DeliveryCost,
+                order.DiscountAmount, order.Total.Value, pricing.TotalAmount, order.DiscountType, order.DiscountValue));
     }
 
     public async Task<PagedResult<OrderListItem>> GetPageAsync(int pageNumber, int pageSize, string searchTerm, DateTime? fromDate, DateTime? toDate, int? paymentMethodId, OrderStatus? orderStatus, CancellationToken cancellationToken, bool archivedOnly = false)
@@ -62,7 +63,7 @@ internal sealed partial class OrderReader(AppDbContextFactory contextFactory) : 
                 order.Client.Name.Value,
                 order.Client.Phone.Number.FullNumber,
                 order.OrderItems.Count,
-                order.OrderItems.Sum(oi => oi.UnitPrice.Value * oi.Quantity + oi.UnitPrice.Value * oi.Quantity * oi.VatRate / 100m),
+                order.OrderItems.Sum(oi => oi.UnitPrice.Value * oi.Quantity + oi.UnitPrice.Value * oi.Quantity * oi.VatRate / 100m) - order.DiscountAmount + order.DeliveryCost,
                 order.OrderStatus,
 
                 new EnumItem<OrderStatus>(

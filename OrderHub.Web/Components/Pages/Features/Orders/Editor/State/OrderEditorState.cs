@@ -13,6 +13,9 @@ public sealed class OrderEditorState
     public string? ClientName { get; set; }
 
     public int? PaymentMethodId { get; set; }
+    public decimal DeliveryCost { get; set; }
+    public decimal DiscountValue { get; set; }
+    public DiscountType DiscountType { get; set; } = DiscountType.FixedAmount;
 
     public OrderSource? OrderSource { get; set; }
 

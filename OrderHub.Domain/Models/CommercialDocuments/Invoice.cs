@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using OrderHub.Domain.Enums;
 
 namespace OrderHub.Domain.Models.CommercialDocuments;
 
@@ -14,7 +15,11 @@ public class Invoice : CommercialDocument<InvoiceItem>
         decimal subtotal,
         decimal totalVat,
         decimal totalAmount,
-        int orderId)
+        int orderId,
+        decimal deliveryCost,
+        DiscountType discountType,
+        decimal discountValue,
+        decimal discountAmount)
         : base(
             documentNumber,
             issueDate,
@@ -23,7 +28,7 @@ public class Invoice : CommercialDocument<InvoiceItem>
             customerAddress,
             subtotal,
             totalVat,
-            totalAmount)
+            totalAmount, deliveryCost, discountType, discountValue, discountAmount)
     {
         OrderId = orderId;
     }
@@ -42,7 +47,11 @@ public class Invoice : CommercialDocument<InvoiceItem>
         decimal subtotal,
         decimal totalVat,
         decimal totalAmount,
-        int orderId)
+        int orderId,
+        decimal deliveryCost = 0m,
+        DiscountType discountType = DiscountType.FixedAmount,
+        decimal discountValue = 0m,
+        decimal discountAmount = 0m)
     {
         return new Invoice(
             documentNumber,
@@ -53,7 +62,7 @@ public class Invoice : CommercialDocument<InvoiceItem>
             subtotal,
             totalVat,
             totalAmount,
-            orderId);
+            orderId, deliveryCost, discountType, discountValue, discountAmount);
     }
 
     public int OrderId { get; private set; }
