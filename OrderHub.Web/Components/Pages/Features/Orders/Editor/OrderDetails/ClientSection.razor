@@ -18,6 +18,10 @@
                     اختر العميل المرتبط بالطلب
                 </MudText>
             </div>
+
+            <MudSpacer />
+
+            <ClientEditorButton Variant="Variant.Text" />
         </MudStack>
 
         <MudSelect T="int?"
@@ -33,7 +37,7 @@
             {
                 <MudSelectItem T="int?"
                                Value="@((int?)client.Id)">
-                    @client.Name — @client.PhoneNumber
+                    @client.Name
                 </MudSelectItem>
             }
 

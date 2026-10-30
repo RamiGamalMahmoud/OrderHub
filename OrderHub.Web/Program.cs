@@ -89,7 +89,7 @@ if (!app.Environment.IsDevelopment())
 
 //app.UseHttpsRedirection();
 
-app.UseStatusCodePagesWithRedirects("/not-found");
+app.UseStatusCodePagesWithReExecute("/not-found");
 
 app.UseRouting();
 

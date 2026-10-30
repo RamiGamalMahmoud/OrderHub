@@ -1,0 +1,95 @@
+﻿@using MudBlazor
+@using OrderHub.Web.Components.Pages.Features.Clients.Editor
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject ILogger<ClientEditorButton> Logger
+
+<MudButton Variant="@Variant"
+           Color="@Color"
+           StartIcon="@StartIcon"
+           FullWidth="@FullWidth"
+           Disabled="@IsBusy"
+           Size="@Size"
+           OnClick="OpenAsync">
+    @ButtonText
+</MudButton>
+
+@code {
+    [Parameter]
+    public Color Color { get; set; } = Color.Primary;
+
+    [Parameter]
+    public bool FullWidth { get; set; } = false;
+
+    [Parameter]
+    public Size Size { get; set; } = Size.Medium;
+
+    [Parameter]
+    public Variant Variant { get; set; } = Variant.Filled;
+
+    [Parameter]
+    public string ButtonText { get; set; } = "إضافة عميل";
+
+    [Parameter]
+    public string StartIcon { get; set; } = Icons.Material.Filled.PersonAdd;
+
+    [Parameter]
+    public int? ClientId { get; set; }
+
+    [Parameter]
+    public EventCallback OnSaved { get; set; }
+
+    private bool IsBusy;
+
+    private async Task OpenAsync()
+    {
+        if (IsBusy)
+            return;
+
+        IsBusy = true;
+
+        try
+        {
+            DialogParameters<ClientEditorDialog> parameters = new()
+            {
+                { dialog => dialog.ClientId, ClientId }
+            };
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = false,
+                CloseOnEscapeKey = false,
+                BackdropClick = false
+            };
+
+            var title = ClientId.HasValue
+                ? "تعديل العميل"
+                : "إضافة عميل";
+
+            var dialog = await DialogService.ShowAsync<ClientEditorDialog>(
+                title, parameters, options);
+
+            var result = await dialog.Result;
+
+            if (result is { Canceled: false, Data: true })
+                await OnSaved.InvokeAsync();
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to open client editor for {ClientId}",
+                ClientId);
+
+            Snackbar.Add(
+                "تعذر فتح بيانات العميل. يرجى المحاولة مرة أخرى.",
+                Severity.Error);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+}

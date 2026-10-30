@@ -31,13 +31,7 @@
 
         @if (CanCreate)
         {
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       StartIcon="@Icons.Material.Filled.Add"
-                       Disabled="IsBusy"
-                       OnClick="OpenCreateDialogAsync">
-                إضافة عميل
-            </MudButton>
+            <ClientEditorButton OnSaved="LoadAsync" />
         }
     </MudStack>
 
