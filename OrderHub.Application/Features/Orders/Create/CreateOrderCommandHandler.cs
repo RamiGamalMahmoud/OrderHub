@@ -159,6 +159,9 @@ internal class CreateOrderCommandHandler
             foreach (OrderInput.Item item in
                 request.Order.OrderItems ?? Enumerable.Empty<OrderInput.Item>())
             {
+                if (item.SupplierId is null)
+                    return Result<int>.Failure($"{item.ProductName}: يجب تحديد المورد.");
+
                 Result<OrderItem> result = order.AddOrderItem(
                     item.ProductId,
                     item.ProductName,

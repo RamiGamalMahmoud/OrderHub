@@ -53,7 +53,9 @@
                                Label="المورد"
                                @bind-Value="_workingCopy.SupplierId"
                                Clearable="true"
-                               Disabled="_saving">
+                               Disabled="_saving"
+                               Validation="@(new Func<int?, string?>(value =>
+                                     value.HasValue ? null : "يجب تحديد المورد."))">
 
                         @foreach (var supplier in _workingCopy.Suppliers)
                         {
@@ -71,6 +73,14 @@
                     {
                         <MudAlert Severity="Severity.Warning">
                             المورد المحدد لم يعد متاحاً. اختر مورداً متاحاً أو امسح الاختيار.
+                        </MudAlert>
+                    }
+                    else if (!_workingCopy.SupplierId.HasValue)
+                    {
+                        <MudAlert Severity="Severity.Error" role="alert">
+                            @(!_workingCopy.Suppliers.Any()
+                                ? "لا يوجد موردون لهذا المنتج. أضف مورداً للمنتج أولاً قبل إضافته إلى الطلب."
+                                : "يجب تحديد المورد.")
                         </MudAlert>
                     }
 
@@ -237,7 +247,7 @@
                 </MudButton>
 
                 <MudButton OnClick="SaveAsync"
-                           Disabled="_saving"
+                           Disabled="_saving || !_workingCopy.SupplierId.HasValue"
                            Color="Color.Primary"
                            Variant="Variant.Filled"
                            StartIcon="@(IsAdding

@@ -491,7 +491,11 @@ public partial class OrderEditor : IDisposable
             errors.Add("مصدر الطلب أو طريقة التوصيل غير صالح.");
         foreach (var item in state.Items)
         {
-            if (item.SupplierId.HasValue && !(preservePersistedSnapshot && item.SupplierId == item.PersistedSupplierId) &&
+            if (!item.SupplierId.HasValue)
+            {
+                errors.Add($"{item.ProductName}: يجب تحديد المورد.");
+            }
+            else if (!(preservePersistedSnapshot && item.SupplierId == item.PersistedSupplierId) &&
                 item.Suppliers.Count(supplier => supplier.Id == item.SupplierId) != 1)
                 errors.Add($"{item.ProductName}: المورد المحدد غير متاح.");
         }

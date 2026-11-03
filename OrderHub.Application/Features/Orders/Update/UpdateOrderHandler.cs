@@ -111,6 +111,8 @@ internal class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, Result<O
             return Result<Order>.Failure("معرفات خطوات التوصيل غير صالحة لهذا الطلب.");
         foreach (var item in input.OrderItems ?? Enumerable.Empty<OrderInput.Item>())
         {
+            if (item.SupplierId is null)
+                return Result<Order>.Failure($"{item.ProductName}: يجب تحديد المورد.");
             var result = replacement.AddOrderItem(item.ProductId, item.ProductName, item.UnitPrice, item.Quantity,
                 item.VatRate, item.SupplierName, item.SupplierId,
                 (item.Properties ?? Enumerable.Empty<OrderInput.Property>()).Select(property => new OrderItemPropertyData(property.PropertyId, property.Value)).ToList().AsReadOnly());

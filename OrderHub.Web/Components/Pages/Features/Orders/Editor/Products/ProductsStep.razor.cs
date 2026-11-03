@@ -230,6 +230,12 @@ public partial class ProductsStep : IDisposable
                 "تحقق من السعر والكمية والضريبة قبل الحفظ.");
         }
 
+        if (!working.SupplierId.HasValue)
+        {
+            return Result.Failure(
+                "يجب تحديد المورد للمنتج.");
+        }
+
         if (working.SupplierId.HasValue &&
             !original.Suppliers.Any(s => s.Id == working.SupplierId))
         {
