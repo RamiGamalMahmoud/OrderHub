@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using OrderHub.Application.Common;
+using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Features.Setup.Clients.Contracts;
 using OrderHub.Application.Features.Setup.Clients;
 using System.Linq;
@@ -16,4 +17,5 @@ public interface IClientReader
     Task<IEnumerable<ClientListItem>> GetClientsByNameAsync(string searchTerm, int take, CancellationToken cancellationToken);
     Task<ClientListItem> GetClientByIdAsync(int id, CancellationToken cancellationToken);
     Task<IEnumerable<ClientInfo>> GetClientsInfoAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<ClientLookup>> GetClientLookupsAsync(CancellationToken cancellationToken);
 }

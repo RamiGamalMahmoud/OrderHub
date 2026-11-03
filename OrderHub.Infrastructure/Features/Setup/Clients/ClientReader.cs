@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Common;
+using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Features.Setup.Clients.Contracts;
 using OrderHub.Application.Features.Setup.Clients;
 using OrderHub.Domain.Models;
@@ -119,5 +120,20 @@ internal sealed class ClientReader(AppDbContextFactory contextFactory) : IClient
             .ThenBy(c => c.Id)
             .Select(c => new ClientInfo(c.Id, c.Name.Value))
             .ToListAsync(cancellationToken: cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ClientLookup>> GetClientLookupsAsync(CancellationToken cancellationToken)
+    {
+        using AppDbContext appDbContext = contextFactory.CreateDbContext();
+
+        return await appDbContext.Clients.AsNoTracking()
+            .OrderBy(c => c.Name.Value)
+            .ThenBy(c => c.Id)
+            .Select(c => new ClientLookup(
+                c.Id,
+                c.Name.Value,
+                c.Phone.Number.FullNumber,
+                c.Address.FullAddress))
+            .ToListAsync(cancellationToken);
     }
 }
