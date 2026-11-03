@@ -24,24 +24,17 @@
             <ClientEditorButton Variant="Variant.Text" />
         </MudStack>
 
-        <MudSelect T="int?"
-                   Label="العميل"
-                   Value="ClientId"
-                   ValueChanged="OnClientChangedAsync"
-                   Clearable="true"
-                   Disabled="Disabled"
-                   Variant="Variant.Outlined"
-                   Margin="Margin.Dense">
-
-            @foreach (var client in Clients)
-            {
-                <MudSelectItem T="int?"
-                               Value="@((int?)client.Id)">
-                    @client.Name
-                </MudSelectItem>
-            }
-
-        </MudSelect>
+        <MudAutocomplete Variant="Variant.Outlined"
+                         Strict="false"
+                         ToStringFunc="@(x => x?.Name)"
+                         Clearable
+                         T="ClientLookup"
+                         ValueChanged="OnClientChangedAsync"
+                         Label="العميل"
+                         Value="_selectedClient"
+                         SearchFunc="Search"
+                         Margin="Margin.Dense"
+                         Text="@_selectedClient?.Name" />
 
     </MudStack>
 </MudPaper>
@@ -50,6 +43,8 @@
 {
     [Parameter]
     public int? ClientId { get; set; }
+
+    private ClientLookup? _selectedClient;
 
     [Parameter, EditorRequired]
     public IReadOnlyList<ClientLookup> Clients { get; set; } = [];
@@ -60,11 +55,27 @@
     [Parameter]
     public bool Disabled { get; set; }
 
-    private Task OnClientChangedAsync(int? value)
+    protected override void OnParametersSet()
     {
-        if (value == ClientId)
-            return Task.CompletedTask;
+        if (ClientId.HasValue)
+        {
+            _selectedClient = Clients.SingleOrDefault(x => x.Id == ClientId.Value);
+        }
+    }
 
-        return ClientIdChanged.InvokeAsync(value);
+    private void OnClientChangedAsync(ClientLookup client)
+    {
+        if (client is null || ClientId == client.Id)
+            return;
+
+        ClientIdChanged.InvokeAsync(client.Id);
+    }
+
+    private Task<IEnumerable<ClientLookup>> Search(string value, CancellationToken cts)
+    {
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult<IEnumerable<ClientLookup>>(Clients);
+
+        return Task.FromResult<IEnumerable<ClientLookup>>(Clients.Where(x => x.Name.Contains(value)));
     }
 }
