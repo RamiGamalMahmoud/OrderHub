@@ -298,8 +298,16 @@ public partial class ProductsStep : IDisposable
 
     private async Task RemoveItem(OrderItemEditorState item)
     {
+        var result = await DialogService.ShowMessageBoxAsync("حذف منتج", "هل تريد حذف هذا المنتج من قائمة المنتجات المضافة؟", yesText: "نعم", cancelText: "لا");
+
+        if (result is not true)
+            return;
+
         if (!_disposed && Items.Remove(item))
+        {
             await ItemsChanged.InvokeAsync();
+            Snackbar.Add("تم حذف المنتج من القائمة");
+        }
     }
 
     public void Dispose()
