@@ -1,4 +1,6 @@
 ﻿@using OrderHub.Application.Common.Lookups
+@using OrderHub.Application.Features.Setup.Clients
+@using OrderHub.Application.Interfaces
 
 <MudPaper Outlined="true" Class="pa-4">
     <MudStack Spacing="2">
@@ -21,7 +23,7 @@
 
             <MudSpacer />
 
-            <ClientEditorButton Variant="Variant.Text" />
+            <ClientEditorButton Variant="Variant.Text" OnSaved="OnClientCreated" />
         </MudStack>
 
         <MudAutocomplete Variant="Variant.Outlined"
@@ -41,6 +43,9 @@
 
 @code
 {
+    [Inject]
+    private IRequestExecutor? RequestExecutor { get; set; }
+
     [Parameter]
     public int? ClientId { get; set; }
 
@@ -77,5 +82,10 @@
             return Task.FromResult<IEnumerable<ClientLookup>>(Clients);
 
         return Task.FromResult<IEnumerable<ClientLookup>>(Clients.Where(x => x.Name.Contains(value)));
+    }
+
+    private async void OnClientCreated()
+    {
+        Clients = await RequestExecutor!.ExecuteAsync(new GetClientLookupsQuery());
     }
 }
