@@ -17,6 +17,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.12" />
     <PackageReference Include="MudBlazor" Version="9.11.0" />
     <PackageReference Include="QRCoder" Version="1.8.0" />
+    <PackageReference Include="TailwindBlazor" Version="0.2.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -34,6 +35,14 @@
     <Content Include="Resources\Images\almasajid.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="Resources\Images\documents-background.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+
+	<PropertyGroup>
+		<TailwindVersion>4.1.18</TailwindVersion>
+		<TailwindInputFile>Styles/app.css</TailwindInputFile>
+		<TailwindOutputFile>wwwroot/css/tailwind.css</TailwindOutputFile>
+		<TailwindEnabled>true</TailwindEnabled>
+		<TailwindMinify>false</TailwindMinify>
+	</PropertyGroup>
 
   <!-- Release archives use only base settings; server configuration is external. -->
   <ItemGroup Condition="'$(ReleasePackage)' == 'true'">

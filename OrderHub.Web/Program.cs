@@ -8,6 +8,7 @@ using OrderHub.Web.Components.Pages.Features.Orders;
 using OrderHub.Web.Infrastructure.Authorization;
 using OrderHub.Web.Services;
 using QuestPDF.Infrastructure;
+using TailwindBlazor;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,8 @@ QuestPDF.Settings.UseSystemFonts = true;
 // =========================
 // Services
 // =========================
+
+builder.UseTailwind();
 
 builder.Services.AddScoped<OrdersListState>();
 
