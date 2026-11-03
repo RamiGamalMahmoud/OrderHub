@@ -9,6 +9,7 @@ namespace OrderHub.Web.Components.Pages.Features.Orders.Editor.Products;
 
 public partial class AddProductDialog : IDisposable
 {
+    MudTextField<string>? _productSearchField;
     [Inject]
     private IRequestExecutor RequestExecutor { get; set; } = null!;
 
@@ -37,6 +38,14 @@ public partial class AddProductDialog : IDisposable
 
     private bool CanContinue =>
         !_isAdding && !_isSearching && _selectedProduct is not null;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await Task.Delay(100);
+
+        if (_productSearchField is not null)
+            await _productSearchField.FocusAsync();
+    }
 
     private async Task TextChanged(string value)
     {

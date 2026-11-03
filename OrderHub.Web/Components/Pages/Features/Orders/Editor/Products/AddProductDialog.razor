@@ -12,12 +12,14 @@
     <DialogContent>
         <div class="product-dialog-content">
             <MudTextField T="string"
+                          @ref="_productSearchField"
                           Value="@_searchTerm"
                           ValueChanged="TextChanged"
                           Placeholder="ابحث عن منتج..."
                           Variant="Variant.Outlined"
                           Margin="Margin.Dense"
                           Disabled="_isAdding"
+                          AutoFocus="true"
                           Adornment="Adornment.Start"
                           AdornmentIcon="@Icons.Material.Outlined.Search"
                           Immediate="true" />
