@@ -213,4 +213,12 @@
         </MudStack>
     }
 
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               FullWidth="true"
+               Disabled="@(!CanSave)"
+               OnClick="SaveAsync">
+        @(IsEdit ? "حفظ التعديلات" : "إنشاء الطلب")
+    </MudButton>
+
 </MudContainer>
