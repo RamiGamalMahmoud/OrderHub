@@ -187,9 +187,25 @@ public partial class ProductsStep : IDisposable
         if (_disposed || !Items.Contains(item))
             return;
 
+        // Already editing this item — don't reinitialize the drawer.
+        if (_isEditorOpen && ReferenceEquals(_editingItem, item) && !_isAddingItem)
+            return;
+
         _editingItem = item;
         _isAddingItem = false;
         _isEditorOpen = true;
+    }
+
+    private void OnGridRowClicked(OrderItemEditorState? item)
+    {
+        if (item is null)
+            return;
+
+        // Don't hijack the flow while the "add product" drawer is open.
+        if (_isEditorOpen && _isAddingItem)
+            return;
+
+        EditItem(item);
     }
 
     private Task OnEditorOpenChanged(bool open)

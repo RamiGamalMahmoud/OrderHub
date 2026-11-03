@@ -86,6 +86,7 @@
                      SelectedItem="@_selectedItem"
                      SelectOnRowClick="true"
                      SelectedItemChanged="OnSelectedItemChanged"
+                     RowClick="@(args => OnGridRowClicked(args.Item))"
                      Hover="true"
                      Striped="true"
                      ReadOnly="true">
@@ -110,14 +111,18 @@
 
                 <TemplateColumn Title="" Sortable="false">
                     <CellTemplate>
-                        <MudIconButton Icon="@Icons.Material.Outlined.Edit"
-                                       Size="Size.Small"
-                                       OnClick="@(() => EditItem(context.Item))" />
+                        <span style="display:inline-flex; gap:8px;"
+                              @onclick="@(() => { })"
+                              @onclick:stopPropagation="true">
+                            <MudIconButton Icon="@Icons.Material.Outlined.Edit"
+                                           Size="Size.Small"
+                                           OnClick="@(() => EditItem(context.Item))" />
 
-                        <MudIconButton Icon="@Icons.Material.Outlined.DeleteOutline"
-                                       Color="Color.Error"
-                                       Size="Size.Small"
-                                       OnClick="@(() => RemoveItem(context.Item))" />
+                            <MudIconButton Icon="@Icons.Material.Outlined.DeleteOutline"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           OnClick="@(() => RemoveItem(context.Item))" />
+                        </span>
                     </CellTemplate>
                 </TemplateColumn>
 
