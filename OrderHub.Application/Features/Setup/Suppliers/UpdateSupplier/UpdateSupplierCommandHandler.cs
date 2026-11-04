@@ -48,7 +48,7 @@ internal sealed class UpdateSupplierCommandHandler(
         var address = Address.Create(input.Street.Trim(), city).Value;
 
         supplier.UpdateName(input.Name);
-        supplier.UpdateBuisnessHours(input.OpenAt, input.CloseAt);
+        supplier.UpdateBusinessHours(input.OpenAt, input.CloseAt);
 
         if (supplier.Phone is null)
         {

@@ -33,8 +33,8 @@ public sealed class SupplierEditorState
 
     public CreateSupplierCommand CreateCommand() => new(new(
         Name,
-        TimeOnly.FromTimeSpan(OpenAt!.Value),
-        TimeOnly.FromTimeSpan(CloseAt!.Value),
+        ToNullableTimeOnly(OpenAt),
+        ToNullableTimeOnly(CloseAt),
         Street,
         CityId.GetValueOrDefault(),
         PhoneNumber,
@@ -43,12 +43,15 @@ public sealed class SupplierEditorState
     public UpdateSupplierCommand UpdateCommand(int supplierId) => new(new(
         supplierId,
         Name,
-        TimeOnly.FromTimeSpan(OpenAt!.Value),
-        TimeOnly.FromTimeSpan(CloseAt!.Value),
+        ToNullableTimeOnly(OpenAt),
+        ToNullableTimeOnly(CloseAt),
         Street,
         CityId.GetValueOrDefault(),
         PhoneNumber,
         CountryCode));
+
+    private static TimeOnly? ToNullableTimeOnly(TimeSpan? value) =>
+        value is null ? null : TimeOnly.FromTimeSpan(value.Value);
 
     public static string? ValidateName(string name)
     {
@@ -75,12 +78,8 @@ public sealed class SupplierEditorState
 
     public string? ValidateAdditional()
     {
-        if (OpenAt is null || CloseAt is null)
-        {
-            return "أدخل وقت الافتتاح والإغلاق.";
-        }
-
-        if (OpenAt > CloseAt)
+        // ساعات العمل اختيارية بالكامل؛ فقط يمنع تقديم وقت الإغلاق على وقت الافتتاح.
+        if (OpenAt is not null && OpenAt > CloseAt)
         {
             return "وقت الإغلاق يجب ألا يسبق وقت الافتتاح.";
         }

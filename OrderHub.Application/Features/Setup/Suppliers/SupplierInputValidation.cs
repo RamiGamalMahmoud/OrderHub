@@ -11,8 +11,8 @@ internal static class SupplierInputValidation
         string street,
         string number,
         string countryCode,
-        TimeOnly openAt,
-        TimeOnly closeAt)
+        TimeOnly? openAt,
+        TimeOnly? closeAt)
     {
         if (string.IsNullOrWhiteSpace(name) || name.Trim().Length < 2 || name.Trim().Length > 100)
         {
@@ -30,6 +30,7 @@ internal static class SupplierInputValidation
             return Result.Failure("أدخل رقم هاتف صحيحًا من 6 إلى 14 رقمًا ومفتاح دولة مثل +20 أو +966.");
         }
 
+        // ساعات العمل اختيارية بالكامل؛ فقط يمنع تقديم وقت الإغلاق على وقت الافتتاح.
         if (openAt > closeAt)
         {
             return Result.Failure("وقت الإغلاق يجب ألا يسبق وقت الافتتاح.");

@@ -55,12 +55,12 @@ internal class SupplierConfiguration
             navigationBuilder.Property(x => x.OpenAt)
                 .HasColumnName("open_at")
                 .HasColumnType("time")
-                .IsRequired();
+                .IsRequired(false);
 
             navigationBuilder.Property(x => x.CloseAt)
                 .HasColumnName("close_at")
                 .HasColumnType("time")
-                .IsRequired();
+                .IsRequired(false);
         });
 
         builder.Navigation(x => x.BusinessHours)

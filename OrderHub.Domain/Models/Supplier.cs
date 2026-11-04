@@ -11,15 +11,15 @@ public class Supplier : ModelBase
 
     public Supplier(
         string name,
-        TimeOnly openAt,
-        TimeOnly closeAt,
+        TimeOnly? openAt,
+        TimeOnly? closeAt,
         Address address,
         Phone phone)
     {
         UpdateName(name);
         UpdateAddress(address);
         UpdatePhone(phone);
-        UpdateBuisnessHours(openAt, closeAt);
+        UpdateBusinessHours(openAt, closeAt);
     }
 
     public Supplier(string name)
@@ -33,6 +33,7 @@ public class Supplier : ModelBase
 
     public Address Address { get; private set; }
 
+    // ساعات العمل اختيارية (قد تكون فارغة) مثل الخاصيتين Address وPhone.
     public BusinessHours BusinessHours { get; private set; }
 
     public void UpdatePhone(Phone phone)
@@ -56,8 +57,12 @@ public class Supplier : ModelBase
         }
     }
 
-    public void UpdateBuisnessHours(TimeOnly openAt, TimeOnly closeAt)
+    // ساعات العمل اختيارية بالكامل: الاثنان معًا
+    // أو أي من أحدهما أو لا شيء على الإطلاق.
+    public void UpdateBusinessHours(TimeOnly? openAt, TimeOnly? closeAt)
     {
-        BusinessHours = new BusinessHours(openAt, closeAt);
+        BusinessHours = openAt is null && closeAt is null
+            ? null
+            : new BusinessHours(openAt, closeAt);
     }
 }
