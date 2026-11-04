@@ -1,6 +1,8 @@
 using OrderHub.Domain.Common;
 using OrderHub.Domain.ValueObjects;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace OrderHub.Application.Features.Setup.Suppliers;
 
@@ -12,11 +14,19 @@ internal static class SupplierInputValidation
         string number,
         string countryCode,
         TimeOnly? openAt,
-        TimeOnly? closeAt)
+        TimeOnly? closeAt,
+        IEnumerable<int> productIds)
     {
         if (string.IsNullOrWhiteSpace(name) || name.Trim().Length < 2 || name.Trim().Length > 100)
         {
             return Result.Failure("اسم المورد يجب أن يتكون من 2 إلى 100 حرف.");
+        }
+
+        var ids = productIds?.ToArray() ?? [];
+
+        if (ids.Any(id => id <= 0) || ids.Distinct().Count() != ids.Length)
+        {
+            return Result.Failure("اختيار المنتجات غير صالح أو يحتوي على تكرار.");
         }
 
         if (string.IsNullOrWhiteSpace(street) || street.Trim().Length > 150)

@@ -158,6 +158,51 @@
                                            Disabled="_saving" />
                         </MudItem>
                     </MudGrid>
+
+                    <MudDivider />
+
+                    <MudText Typo="Typo.subtitle2">
+                        المنتجات المرتبطة (@_state.ProductIds.Count)
+                    </MudText>
+
+                    <MudTextField T="string"
+                                  @bind-Value="_productSearch"
+                                  Placeholder="ابحث عن منتج"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  Immediate="true"
+                                  Clearable="true"
+                                  Margin="Margin.Dense"
+                                  Disabled="_saving" />
+
+                    <MudGrid Spacing="1">
+                        @foreach (var product in VisibleProducts)
+                        {
+                            <MudItem xs="12">
+                                <MudCheckBox T="bool"
+                                             Value="@_state.ProductIds.Contains(product.Id)"
+                                             ValueChanged="@(value => SetProduct(product.Id, value))"
+                                             Label="@product.Name"
+                                             Dense="true"
+                                             Disabled="_saving || _state.IsProductLocked(product.Id)" />
+                            </MudItem>
+                        }
+                    </MudGrid>
+
+                    @if (_products.Count == 0)
+                    {
+                        <MudText Typo="Typo.body2">لا توجد منتجات متاحة.</MudText>
+                    }
+
+                    <MudText Typo="Typo.caption">اختيار المنتجات اختياري؛ تبقى المنتجات المحددة مرتبطة بالمورد.</MudText>
+
+                    @if (ProductPages > 1)
+                    {
+                        <MudPagination Count="ProductPages"
+                                       Selected="_productPage"
+                                       SelectedChanged="SetProductPage"
+                                       Disabled="_saving" />
+                    }
                 </MudStack>
             </MudForm>
         }
@@ -182,16 +227,43 @@
     [Parameter]
     public int? SupplierId { get; set; }
 
+    [Parameter]
+    public int? PreselectedProductId { get; set; }
+
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; } = null!;
 
     private SupplierEditorState _state = new();
     private MudForm? _form;
     private IReadOnlyList<CityInfo> _cities = [];
+    private IReadOnlyList<ProductInfo> _products = [];
+    private string? _productTerm;
+    private int _productPage = 1;
     private string? _loadError;
     private string? _saveError;
     private bool _loading = true;
     private bool _saving;
+
+    private string? _productSearch
+    {
+        get => _productTerm;
+        set
+        {
+            _productTerm = value;
+            _productPage = 1;
+        }
+    }
+
+    private IEnumerable<ProductInfo> MatchingProducts =>
+        _products.Where(product => Matches(product.Name, _productTerm));
+
+    private IEnumerable<ProductInfo> VisibleProducts =>
+        MatchingProducts.Skip((_productPage - 1) * 8).Take(8);
+
+    private int ProductPages => Math.Max(1, (MatchingProducts.Count() + 7) / 8);
+
+    private static bool Matches(string name, string? term) =>
+        string.IsNullOrWhiteSpace(term) || name.Contains(term.Trim(), StringComparison.OrdinalIgnoreCase);
 
     private string DialogTitle =>
         SupplierId.HasValue
@@ -221,7 +293,7 @@
         _loading = true;
         _loadError = null;
         _saveError = null;
-        _state = new SupplierEditorState();
+        _state = new SupplierEditorState(PreselectedProductId);
 
         try
         {
@@ -235,11 +307,14 @@
                     return;
                 }
 
-                _state = SupplierEditorState.FromRead(supplier);
+                _state = SupplierEditorState.FromRead(supplier, PreselectedProductId);
             }
 
             var cities = await RequestExecutor.ExecuteAsync(new GetSupplierEditorCitiesQuery());
             _cities = cities.OrderBy(city => city.Name).ThenBy(city => city.Id).ToList();
+
+            var products = await RequestExecutor.ExecuteAsync(new GetSupplierEditorProductsQuery());
+            _products = products.OrderBy(product => product.Name).ThenBy(product => product.Id).ToList();
         }
         catch (AuthorizationDeniedException)
         {
@@ -297,7 +372,7 @@
                 return;
             }
 
-            Result result;
+            Result<int> result;
 
             if (SupplierId is int supplierId)
             {
@@ -317,7 +392,7 @@
             }
 
             Snackbar.Add("تم حفظ المورد بنجاح.", Severity.Success);
-            MudDialog.Close(DialogResult.Ok(true));
+            MudDialog.Close(DialogResult.Ok(result.Value));
         }
         catch (AuthorizationDeniedException)
         {
@@ -338,4 +413,16 @@
             _saving = false;
         }
     }
+
+    private void SetProduct(int productId, bool selected)
+    {
+        if (_saving)
+        {
+            return;
+        }
+
+        _state.SetProduct(productId, selected);
+    }
+
+    private void SetProductPage(int page) => _productPage = page;
 }

@@ -1,5 +1,6 @@
 using OrderHub.Domain.Models;
 using System;
+using System.Collections.Generic;
 
 namespace OrderHub.Application.Features.Setup.Suppliers.Contracts;
 
@@ -11,4 +12,5 @@ public record SupplierUpdateInput(
         string Street,
         int CityId,
         string PhoneNumber,
-        string CountryCode);
+        string CountryCode,
+        IEnumerable<int> SelectedProductsIds);

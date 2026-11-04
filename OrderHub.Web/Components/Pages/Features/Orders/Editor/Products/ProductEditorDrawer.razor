@@ -1,7 +1,9 @@
 @using OrderHub.Web.Components.Pages.Features.Orders.Editor.State
+@using OrderHub.Application.Features.Orders.GetItemEditor
 @using OrderHub.Domain.Common
 @using OrderHub.Domain.Enums
 @using OrderHub.Domain.Services.Pricing
+@inject OrderHub.Application.Interfaces.IRequestExecutor RequestExecutor
 
 <MudDrawer Open="IsOpen"
            OpenChanged="OnOpenChanged"
@@ -64,7 +66,9 @@
                         }
                     </MudSelect>
 
-                    <SupplierEditorButton Variant="Variant.Text" ButtonText="إضافة مورد" />
+                    <SupplierEditorButton Variant="Variant.Text" ButtonText="إضافة مورد"
+                                          PreselectedProductId="_workingCopy.ProductId"
+                                          OnCreated="OnSupplierCreatedAsync" />
 
                     @if (_workingCopy.SupplierId.HasValue &&
                                     !_workingCopy.Suppliers.Any(s => s.Id == _workingCopy.SupplierId))
@@ -317,6 +321,43 @@
 
     private Task OnOpenChanged(bool open) =>
         open || _saving ? Task.CompletedTask : Cancel();
+
+    private async Task OnSupplierCreatedAsync(int supplierId)
+    {
+        if (_workingCopy is null || _original is null)
+            return;
+
+        // إعادة تحميل قائمة موردي المنتج بعد ربط المورد الجديد به.
+        try
+        {
+            var data = await RequestExecutor.ExecuteAsync(
+                new GetOrderItemEditorQuery(_original.ProductId));
+
+            if (data is null)
+                return;
+
+            var suppliers = data.Suppliers
+                .Select(supplier => new OrderItemSupplierEditorState(supplier.Id, supplier.Name))
+                .ToArray();
+
+            _original.Suppliers = suppliers;
+
+            if (_workingCopy is not null)
+            {
+                _workingCopy.Suppliers = suppliers;
+
+                // اختيار المورد الجديد تلقائيًا إذا رُبط بالمنتج.
+                if (suppliers.Any(supplier => supplier.Id == supplierId))
+                    _workingCopy.SupplierId = supplierId;
+            }
+
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception)
+        {
+            // لا نمنع العملية؛ يمكن للمستخدم إغلاق المحرر وإعادة فتحه لتحديث القائمة.
+        }
+    }
 
     private Task Cancel()
     {

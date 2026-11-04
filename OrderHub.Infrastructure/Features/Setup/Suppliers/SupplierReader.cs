@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Features.Setup.Suppliers.Contracts;
 using System;
 using System.Collections.Generic;
@@ -31,7 +32,7 @@ internal sealed class SupplierReader(AppDbContextFactory contextFactory) : ISupp
     {
         await using var context = contextFactory.CreateDbContext();
 
-        return await context.Suppliers.AsNoTracking()
+        var supplier = await context.Suppliers.AsNoTracking()
             .Where(supplier => supplier.Id == id)
             .Select(supplier => new SupplierEdit(
                 supplier.Id,
@@ -41,8 +42,25 @@ internal sealed class SupplierReader(AppDbContextFactory contextFactory) : ISupp
                 supplier.Address != null ? supplier.Address.Street : "",
                 supplier.Address != null ? supplier.Address.City.Id : 0,
                 supplier.Phone != null ? supplier.Phone.Number.NationalNumber : "",
-                supplier.Phone != null ? supplier.Phone.Number.CountryCode : ""))
+                supplier.Phone != null ? supplier.Phone.Number.CountryCode : "",
+                Array.Empty<int>()))
             .FirstOrDefaultAsync(cancellationToken);
+
+        if (supplier is null)
+        {
+            return null;
+        }
+
+        supplier = supplier with
+        {
+            SelectedProductsIds = await context.Products.AsNoTracking()
+                .Where(product => product.Suppliers.Any(supplier => supplier.Id == id))
+                .OrderBy(product => product.Id)
+                .Select(product => product.Id)
+                .ToListAsync(cancellationToken)
+        };
+
+        return supplier;
     }
 
     public async Task<IEnumerable<SupplierInfo>> GetSuppliersInfoAsync(CancellationToken cancellationToken)
@@ -51,6 +69,17 @@ internal sealed class SupplierReader(AppDbContextFactory contextFactory) : ISupp
 
         return await context.Suppliers.AsNoTracking()
             .Select(supplier => new SupplierInfo(supplier.Id, supplier.Name.Value))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<ProductInfo>> GetSupplierEditorProductsAsync(CancellationToken cancellationToken)
+    {
+        await using var context = contextFactory.CreateDbContext();
+
+        return await context.Products.AsNoTracking()
+            .OrderBy(product => product.Name.Value)
+            .ThenBy(product => product.Id)
+            .Select(product => new ProductInfo(product.Id, product.Name.Value))
             .ToListAsync(cancellationToken);
     }
 }

@@ -22,7 +22,8 @@ public sealed class OrderItemEditorState
 
     public string? MetadataRestorationError { get; init; }
 
-    public IReadOnlyList<OrderItemSupplierEditorState> Suppliers { get; init; } = [];
+    // قابلة للاستبدال حتى تتمكن أحداث إضافة مورد من تحديث القائمة.
+    public IReadOnlyList<OrderItemSupplierEditorState> Suppliers { get; set; } = [];
 
     public List<OrderItemPropertyEditorState> Properties { get; init; } = [];
 

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Features.Setup.Suppliers.Contracts;
 using OrderHub.Application.Features.Setup.Suppliers;
 using System.Linq;
@@ -12,4 +13,5 @@ public interface ISupplierReader
     Task<IEnumerable<SupplierListItem>> GetAllSuppliersAsync(CancellationToken cancellationToken);
     Task<SupplierEdit> GetSupplierForEditAsync(int id, CancellationToken cancellationToken);
     Task<IEnumerable<SupplierInfo>> GetSuppliersInfoAsync(CancellationToken cancellationToken);
+    Task<IEnumerable<ProductInfo>> GetSupplierEditorProductsAsync(CancellationToken cancellationToken);
 }

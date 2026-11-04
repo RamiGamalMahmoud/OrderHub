@@ -36,6 +36,12 @@
     [Parameter]
     public EventCallback OnSaved { get; set; }
 
+    [Parameter]
+    public EventCallback<int> OnCreated { get; set; }
+
+    [Parameter]
+    public int? PreselectedProductId { get; set; }
+
     private bool IsBusy;
 
     private async Task OpenAsync()
@@ -51,7 +57,8 @@
         {
             DialogParameters<SupplierEditorDialog> parameters = new()
             {
-                { dialog => dialog.SupplierId, SupplierId }
+                { dialog => dialog.SupplierId, SupplierId },
+                { dialog => dialog.PreselectedProductId, PreselectedProductId }
             };
 
             DialogOptions options = new()
@@ -74,9 +81,14 @@
 
             DialogResult? result = await dialog.Result;
 
-            if (result is { Canceled: false, Data: true })
+            if (result is { Canceled: false })
             {
                 await OnSaved.InvokeAsync();
+
+                if (result.Data is int supplierId)
+                {
+                    await OnCreated.InvokeAsync(supplierId);
+                }
             }
         }
         catch (AuthorizationDeniedException)

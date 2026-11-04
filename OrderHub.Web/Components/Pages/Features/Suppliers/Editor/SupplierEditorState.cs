@@ -6,6 +6,23 @@ namespace OrderHub.Web.Components.Pages.Features.Suppliers.Editor;
 
 public sealed class SupplierEditorState
 {
+    private readonly int? lockedProductId;
+
+    public SupplierEditorState() : this(null)
+    {
+    }
+
+    public SupplierEditorState(int? lockedProductId)
+    {
+        this.lockedProductId = lockedProductId;
+
+        // المنتج المفتاح منه المحرر يبقى مرتبطًا دائمًا بالمورد.
+        if (lockedProductId is int productId)
+        {
+            ProductIds.Add(productId);
+        }
+    }
+
     public string Name { get; set; } = string.Empty;
 
     public int? CityId { get; set; }
@@ -16,20 +33,50 @@ public sealed class SupplierEditorState
 
     public string CountryCode { get; set; } = string.Empty;
 
+    public HashSet<int> ProductIds { get; } = [];
+
     public TimeSpan? OpenAt { get; set; }
 
     public TimeSpan? CloseAt { get; set; }
 
-    public static SupplierEditorState FromRead(SupplierEdit supplier) => new()
+    public static SupplierEditorState FromRead(SupplierEdit supplier, int? lockedProductId = null)
     {
-        Name = supplier.Name,
-        CityId = supplier.CityId > 0 ? supplier.CityId : null,
-        Street = supplier.Street,
-        PhoneNumber = supplier.PhoneNumber,
-        CountryCode = supplier.CountryCode,
-        OpenAt = supplier.OpenAt?.ToTimeSpan(),
-        CloseAt = supplier.CloseAt?.ToTimeSpan()
-    };
+        var state = new SupplierEditorState(lockedProductId)
+        {
+            Name = supplier.Name,
+            CityId = supplier.CityId > 0 ? supplier.CityId : null,
+            Street = supplier.Street,
+            PhoneNumber = supplier.PhoneNumber,
+            CountryCode = supplier.CountryCode,
+            OpenAt = supplier.OpenAt?.ToTimeSpan(),
+            CloseAt = supplier.CloseAt?.ToTimeSpan()
+        };
+
+        state.ProductIds.UnionWith(supplier.SelectedProductsIds);
+
+        return state;
+    }
+
+    public bool IsProductLocked(int productId) => lockedProductId == productId;
+
+    public bool SetProduct(int productId, bool selected)
+    {
+        if (lockedProductId == productId)
+        {
+            return false;
+        }
+
+        if (selected)
+        {
+            ProductIds.Add(productId);
+        }
+        else
+        {
+            ProductIds.Remove(productId);
+        }
+
+        return true;
+    }
 
     public CreateSupplierCommand CreateCommand() => new(new(
         Name,
@@ -38,7 +85,8 @@ public sealed class SupplierEditorState
         Street,
         CityId.GetValueOrDefault(),
         PhoneNumber,
-        CountryCode));
+        CountryCode,
+        ProductIds.ToArray()));
 
     public UpdateSupplierCommand UpdateCommand(int supplierId) => new(new(
         supplierId,
@@ -48,7 +96,8 @@ public sealed class SupplierEditorState
         Street,
         CityId.GetValueOrDefault(),
         PhoneNumber,
-        CountryCode));
+        CountryCode,
+        ProductIds.ToArray()));
 
     private static TimeOnly? ToNullableTimeOnly(TimeSpan? value) =>
         value is null ? null : TimeOnly.FromTimeSpan(value.Value);

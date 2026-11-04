@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Domain.Models;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,6 +26,25 @@ internal sealed class SupplierRepository(AppDbContext context) : ISupplierReposi
 
     public async Task<Supplier> FindAsync(int id, CancellationToken cancellationToken) =>
         await context.Suppliers.FindAsync([id], cancellationToken);
+
+    public async Task<IReadOnlyList<Product>> GetProductsForUpdateAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken)
+    {
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        return await context.Products
+            .Include(product => product.Suppliers)
+            .Where(product => ids.Contains(product.Id))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Product>> GetConnectedProductsForUpdateAsync(int supplierId, CancellationToken cancellationToken) =>
+        await context.Products
+            .Include(product => product.Suppliers)
+            .Where(product => product.Suppliers.Any(supplier => supplier.Id == supplierId))
+            .ToListAsync(cancellationToken);
 
     public void Add(Supplier entity) => context.Suppliers.Add(entity);
 
