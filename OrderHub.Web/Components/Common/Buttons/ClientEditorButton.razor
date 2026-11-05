@@ -6,6 +6,7 @@
 
 <MudButton Variant="@Variant"
            Color="@Color"
+           Class="@Class"
            StartIcon="@StartIcon"
            FullWidth="@FullWidth"
            Disabled="@IsBusy"
@@ -26,6 +27,9 @@
 
     [Parameter]
     public Variant Variant { get; set; } = Variant.Filled;
+
+    [Parameter]
+    public string? Class { get; set; }
 
     [Parameter]
     public string ButtonText { get; set; } = "إضافة عميل";
