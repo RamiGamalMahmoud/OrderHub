@@ -2,8 +2,8 @@
 @using OrderHub.Web.Components.Layout
 
 <MudRTLProvider RightToLeft=true>
-    @* تفعيل خيارات الثيم الحديثة ودعم اللغة العربية *@
-    <MudThemeProvider Theme="_customTheme" DefaultScrollbar="true" />
+    @* تفعيل خيارات الثيم من مصدر واحد مشترك (OrderHubTheme) لدعم RTL والهوية البصرية الموحدة *@
+    <MudThemeProvider Theme="OrderHubTheme.Current" DefaultScrollbar="true" />
     <MudPopoverProvider />
     <MudDialogProvider />
     <MudSnackbarProvider />
@@ -75,26 +75,4 @@
     {
         _drawerOpen = !_drawerOpen;
     }
-
-    // إعداد الـ Theme ليدعم اتجاه اليمين لليسار (RTL) بشكل تلقائي وتخصيص الألوان الأساسية
-    private MudTheme _customTheme = new MudTheme()
-    {
-        Typography = new Typography
-        {
-            Default = new DefaultTypography
-            {
-                FontFamily = ["Tajawal", "sans-serif"]
-            }
-        },
-        PaletteLight = new PaletteLight()
-        {
-            Primary = "#2563EB",       // لون أزرق عصري (Tailwind Blue 600) بدلاً من البنفسجي
-            Secondary = "#64748B",     // لون رمادي هادئ للنصوص الثانوية والعناوين
-            Background = "#F8FAFC",    // خلفية ثلجية مريحة جداً للمحتوى (Slate 50)
-            Surface = "#FFFFFF",       // اللون الأبيض للبطاقات، القائمة والهيدر
-            AppbarBackground = "#FFFFFF",
-            AppbarText = "#0F172A",
-            DrawerBackground = "#FFFFFF"
-        }
-    };
 }
