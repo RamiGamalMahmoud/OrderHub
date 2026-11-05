@@ -300,7 +300,9 @@
                 var request = new CategoryUpdateInput(
                     id,
                     _state.Name,
-                    _state.ParentId);
+                    _state.ParentId,
+                    _state.Description,
+                    _state.Color);
 
                 result = await RequestExecutor.ExecuteAsync(
                     new UpdateCategoryCommand(request));
@@ -309,7 +311,9 @@
             {
                 var request = new CategoryCreateInput(
                     _state.Name,
-                    _state.ParentId);
+                    _state.ParentId,
+                    _state.Description,
+                    _state.Color);
 
                 result = await RequestExecutor.ExecuteAsync(
                     new CreateCategoryCommand(request));

@@ -35,7 +35,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-
                     b.Property<bool>("IsPrimary")
                         .HasColumnType("boolean")
                         .HasColumnName("is_primary");
@@ -72,9 +71,22 @@ namespace OrderHub.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasDefaultValue("Blue")
+                        .HasColumnName("color");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("description");
 
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("timestamp with time zone")
@@ -189,6 +201,31 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("varchar(50)")
                         .HasColumnName("customer_phone");
 
+                    b.Property<decimal>("DeliveryCost")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("delivery_cost");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("discount_amount");
+
+                    b.Property<string>("DiscountType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(30)")
+                        .HasDefaultValue("FixedAmount")
+                        .HasColumnName("discount_type");
+
+                    b.Property<decimal>("DiscountValue")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("discount_value");
+
                     b.Property<string>("DocumentNumber")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -218,11 +255,6 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Property<decimal>("TotalVat")
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("total_vat");
-
-                    b.Property<decimal>("DeliveryCost").HasColumnType("numeric(18,2)").HasDefaultValue(0m).HasColumnName("delivery_cost");
-                    b.Property<string>("DiscountType").IsRequired().HasColumnType("varchar(30)").HasDefaultValue("FixedAmount").HasColumnName("discount_type");
-                    b.Property<decimal>("DiscountValue").HasColumnType("numeric(18,2)").HasDefaultValue(0m).HasColumnName("discount_value");
-                    b.Property<decimal>("DiscountAmount").HasColumnType("numeric(18,2)").HasDefaultValue(0m).HasColumnName("discount_amount");
 
                     b.HasKey("Id")
                         .HasName("pk_invoices");
@@ -336,6 +368,31 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("varchar(50)")
                         .HasColumnName("customer_phone");
 
+                    b.Property<decimal>("DeliveryCost")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("delivery_cost");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("discount_amount");
+
+                    b.Property<string>("DiscountType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(30)")
+                        .HasDefaultValue("FixedAmount")
+                        .HasColumnName("discount_type");
+
+                    b.Property<decimal>("DiscountValue")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("discount_value");
+
                     b.Property<string>("DocumentNumber")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -369,11 +426,6 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Property<decimal>("TotalVat")
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("total_vat");
-
-                    b.Property<decimal>("DeliveryCost").HasColumnType("numeric(18,2)").HasDefaultValue(0m).HasColumnName("delivery_cost");
-                    b.Property<string>("DiscountType").IsRequired().HasColumnType("varchar(30)").HasDefaultValue("FixedAmount").HasColumnName("discount_type");
-                    b.Property<decimal>("DiscountValue").HasColumnType("numeric(18,2)").HasDefaultValue(0m).HasColumnName("discount_value");
-                    b.Property<decimal>("DiscountAmount").HasColumnType("numeric(18,2)").HasDefaultValue(0m).HasColumnName("discount_amount");
 
                     b.HasKey("Id")
                         .HasName("pk_proforma_invoices");
@@ -489,6 +541,31 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("varchar(50)")
                         .HasColumnName("customer_phone");
 
+                    b.Property<decimal>("DeliveryCost")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("delivery_cost");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("discount_amount");
+
+                    b.Property<string>("DiscountType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(30)")
+                        .HasDefaultValue("FixedAmount")
+                        .HasColumnName("discount_type");
+
+                    b.Property<decimal>("DiscountValue")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("discount_value");
+
                     b.Property<string>("DocumentNumber")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -522,11 +599,6 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Property<decimal>("TotalVat")
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("total_vat");
-
-                    b.Property<decimal>("DeliveryCost").HasColumnType("numeric(18,2)").HasDefaultValue(0m).HasColumnName("delivery_cost");
-                    b.Property<string>("DiscountType").IsRequired().HasColumnType("varchar(30)").HasDefaultValue("FixedAmount").HasColumnName("discount_type");
-                    b.Property<decimal>("DiscountValue").HasColumnType("numeric(18,2)").HasDefaultValue(0m).HasColumnName("discount_value");
-                    b.Property<decimal>("DiscountAmount").HasColumnType("numeric(18,2)").HasDefaultValue(0m).HasColumnName("discount_amount");
 
                     b.Property<DateTime>("ValidUntil")
                         .HasColumnType("timestamp with time zone")
@@ -831,10 +903,11 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("creation_request_id");
 
-                    b.Property<decimal>("DeliveryCost").HasColumnType("numeric(18,2)").HasDefaultValue(0m).HasColumnName("delivery_cost");
-                    b.Property<decimal>("DiscountAmount").HasColumnType("numeric(18,2)").HasDefaultValue(0m).HasColumnName("discount_amount");
-                    b.Property<string>("DiscountType").IsRequired().HasColumnType("varchar(30)").HasDefaultValue("FixedAmount").HasColumnName("discount_type");
-                    b.Property<decimal>("DiscountValue").HasColumnType("numeric(18,2)").HasDefaultValue(0m).HasColumnName("discount_value");
+                    b.Property<decimal>("DeliveryCost")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("delivery_cost");
 
                     b.Property<string>("DeliveryMethod")
                         .HasMaxLength(30)
@@ -844,6 +917,25 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Property<int?>("DeliverymanId")
                         .HasColumnType("integer")
                         .HasColumnName("deliveryman_id");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("discount_amount");
+
+                    b.Property<string>("DiscountType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(30)")
+                        .HasDefaultValue("FixedAmount")
+                        .HasColumnName("discount_type");
+
+                    b.Property<decimal>("DiscountValue")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("discount_value");
 
                     b.Property<bool>("IsArchived")
                         .HasColumnType("boolean")
@@ -2653,11 +2745,11 @@ namespace OrderHub.Infrastructure.Migrations
                                 .HasColumnType("integer")
                                 .HasColumnName("id");
 
-                            b1.Property<TimeOnly>("CloseAt")
+                            b1.Property<TimeOnly?>("CloseAt")
                                 .HasColumnType("time")
                                 .HasColumnName("close_at");
 
-                            b1.Property<TimeOnly>("OpenAt")
+                            b1.Property<TimeOnly?>("OpenAt")
                                 .HasColumnType("time")
                                 .HasColumnName("open_at");
 
@@ -2683,7 +2775,7 @@ namespace OrderHub.Infrastructure.Migrations
             modelBuilder.Entity("OrderHub.Domain.Models.Supply", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.Order", "Order")
-                        .WithMany()
+                        .WithMany("Supplies")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
@@ -2779,6 +2871,8 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("StatusHistory");
 
                     b.Navigation("StepHistory");
+
+                    b.Navigation("Supplies");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.OrderDeliveryStep", b =>

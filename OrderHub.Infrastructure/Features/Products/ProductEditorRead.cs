@@ -14,7 +14,13 @@ internal sealed partial class ProductReader
     {
         await using var context = contextFactory.CreateDbContext();
         var rows = await context.Categories.AsNoTracking()
-            .Select(category => new CategoryHierarchyRow(category.Id, category.Name.Value, category.ParentCategoryId, 0))
+            .Select(category => new CategoryHierarchyRow(
+                category.Id,
+                category.Name.Value,
+                category.ParentCategoryId,
+                0,
+                category.Description,
+                category.Color))
             .ToListAsync(cancellationToken);
         return new CategoryHierarchy(rows);
     }

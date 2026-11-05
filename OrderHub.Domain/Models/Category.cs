@@ -1,4 +1,5 @@
-﻿using OrderHub.Domain.ValueObjects;
+using OrderHub.Domain.ValueObjects;
+using OrderHub.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,13 +11,23 @@ public class Category : ModelBase
     private readonly List<Category> _subCategories = [];
     private Category() { }
 
-    public Category(string name, Category parentCategory = null)
+    public Category(
+        string name,
+        Category parentCategory = null,
+        string description = null,
+        CategoryColor color = CategoryColor.Blue)
     {
         UpdateName(name);
+        UpdateDescription(description);
+        UpdateColor(color);
         MoveTo(parentCategory);
     }
 
     public EntityName Name { get; private set; }
+
+    public string Description { get; private set; }
+
+    public CategoryColor Color { get; private set; } = CategoryColor.Blue;
 
     public Category ParentCategory { get; private set; }
 
@@ -32,6 +43,26 @@ public class Category : ModelBase
         Name = new EntityName(name?.Trim());
     }
 
+
+    public void UpdateDescription(string description)
+    {
+        string normalized = string.IsNullOrWhiteSpace(description)
+            ? null
+            : description.Trim();
+
+        if (normalized?.Length > 500)
+            throw new ArgumentException("Category description cannot exceed 500 characters.", nameof(description));
+
+        Description = normalized;
+    }
+
+    public void UpdateColor(CategoryColor color)
+    {
+        if (!Enum.IsDefined(color))
+            throw new ArgumentOutOfRangeException(nameof(color), "Category color is not supported.");
+
+        Color = color;
+    }
     public void MoveTo(Category parentCategory)
     {
         if (parentCategory != null && SameCategory(parentCategory, this))

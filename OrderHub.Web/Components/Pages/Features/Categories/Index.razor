@@ -12,38 +12,27 @@
 @inject IDialogService DialogService
 @inject ILogger<Index> Logger
 
-<PageTitle>الأقسام</PageTitle>
+<PageTitle>@CurrentHeading</PageTitle>
 
-<MudStack Spacing="3">
-
-    <MudStack Row
-              Wrap="Wrap.Wrap"
-              AlignItems="AlignItems.Center"
-              Justify="Justify.SpaceBetween">
-
-        <div>
-            <MudText Typo="Typo.h5">
-                الأقسام
-            </MudText>
-
-            <MudText Typo="Typo.body2"
-                     Color="Color.Secondary">
-                إدارة أقسام المنتجات
-            </MudText>
-        </div>
-
-        @if (CanCreate)
-        {
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       StartIcon="@Icons.Material.Filled.Add"
-                       Href="@CreateUrl"
-                       Disabled="_deleting">
-                @CreateButtonText
-            </MudButton>
-        }
-
-    </MudStack>
+<div class="space-y-5">
+    <PageScaffold Title="@CurrentHeading"
+                  Description="إدارة أقسام المنتجات"
+                  Crumbs="_scaffoldCrumbs">
+        <Actions>
+            @if (CanCreate)
+            {
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Large"
+                           Class="rounded-xl px-5 font-bold shadow-sm"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Href="@CreateUrl"
+                           Disabled="_deleting">
+                    @CreateButtonText
+                </MudButton>
+            }
+        </Actions>
+    </PageScaffold>
 
     @if (_loading)
     {
@@ -80,13 +69,10 @@
     }
     else if (_response is not null)
     {
-        <MudBreadcrumbs Items="_breadcrumbs"
-                        Class="pa-0" />
-
         @if (_response.Categories.Count == 0)
         {
             <MudPaper Outlined="true"
-                      Class="pa-4">
+                      Class="pa-6 rounded-2xl border-slate-200 bg-white">
 
                 <MudText Typo="Typo.body1">
                     @EmptyMessage
@@ -106,29 +92,21 @@
         }
         else
         {
-            <MudGrid Spacing="3">
-
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 @foreach (var category in _response.Categories)
                 {
-                    <MudItem @key="category.Id"
-                             xs="12"
-                             sm="6"
-                             md="4"
-                             lg="3">
-
+                    <div @key="category.Id" class="min-w-0">
                         <CategoryCard Category="category"
                                       CanWrite="_canWrite"
                                       Busy="_deleting"
                                       OnDelete="ConfirmDeleteAsync" />
-
-                    </MudItem>
+                    </div>
                 }
-
-            </MudGrid>
+            </div>
         }
     }
 
-</MudStack>
+</div>
 
 @code {
     [Parameter]
@@ -137,7 +115,7 @@
 
     private GetCategoriesResponse? _response;
 
-    private List<BreadcrumbItem> _breadcrumbs = [];
+    private IReadOnlyList<PageScaffold.CrumbItem> _scaffoldCrumbs = [];
 
     private bool _loading = true;
     private bool _canWrite;
@@ -152,6 +130,11 @@
         _canWrite &&
         !_loading &&
         _response?.ParentExists == true;
+
+    private string CurrentHeading =>
+        ParentId.HasValue && _response?.Path.LastOrDefault() is { } current
+            ? current.Name
+            : "الأقسام";
 
     private string CreateUrl =>
         ParentId.HasValue
@@ -200,7 +183,7 @@
 
             _response = response;
             _canWrite = canWrite;
-            _breadcrumbs = BuildBreadcrumbs(response, parentId);
+            _scaffoldCrumbs = BuildScaffoldCrumbs(response, parentId);
         }
         catch (AuthorizationDeniedException)
         {
@@ -228,26 +211,24 @@
     }
 
 
-    private static List<BreadcrumbItem> BuildBreadcrumbs(
+    private static IReadOnlyList<PageScaffold.CrumbItem> BuildScaffoldCrumbs(
         GetCategoriesResponse response,
         int? parentId)
     {
-        List<BreadcrumbItem> breadcrumbs =
-        [
-            new(
-                "الأقسام",
-                "/categories",
-                disabled: parentId is null)
-        ];
+        if (parentId is null)
+        {
+            return [new("الأقسام")];
+        }
 
-        breadcrumbs.AddRange(
-            response.Path.Select((segment, index) =>
-                new BreadcrumbItem(
-                    segment.Name,
-                    $"/categories/{segment.Id}",
-                    disabled: index == response.Path.Count - 1)));
+        List<PageScaffold.CrumbItem> crumbs = [new("الأقسام", "/categories")];
+        var ancestors = response.Path.Take(Math.Max(0, response.Path.Count - 1));
+        crumbs.AddRange(ancestors.Select(segment =>
+            new PageScaffold.CrumbItem(segment.Name, $"/categories/{segment.Id}")));
 
-        return breadcrumbs;
+        if (response.Path.Count > 0)
+            crumbs.Add(new PageScaffold.CrumbItem(response.Path[^1].Name));
+
+        return crumbs;
     }
 
 

@@ -1,10 +1,13 @@
 using OrderHub.Application.Features.Setup.Categories.Contracts;
+using OrderHub.Domain.Enums;
 
 namespace OrderHub.Web.Components.Pages.Features.Categories.Editor;
 
 public sealed class CategoryEditorState
 {
     public string Name { get; set; } = "";
+    public string? Description { get; set; }
+    public CategoryColor Color { get; set; } = CategoryColor.Blue;
     public int? ParentId { get; set; }
     public int? OriginalParentId { get; private set; }
     public string ReturnUrl => IndexUrl(OriginalParentId);
@@ -15,7 +18,11 @@ public sealed class CategoryEditorState
     public static CategoryEditorState Create(int? parentId) => new() { ParentId = parentId, OriginalParentId = parentId };
     public static CategoryEditorState Edit(CategoryEdit category) => new()
     {
-        Name = category.Name, ParentId = category.ParentId, OriginalParentId = category.ParentId
+        Name = category.Name,
+        Description = category.Description,
+        Color = category.Color,
+        ParentId = category.ParentId,
+        OriginalParentId = category.ParentId
     };
 
     public static IReadOnlyList<CategoryInfo> ParentOptions(IEnumerable<CategoryInfo> categories, int? categoryId)

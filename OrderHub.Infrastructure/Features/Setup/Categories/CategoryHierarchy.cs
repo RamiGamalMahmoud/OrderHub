@@ -41,7 +41,14 @@ internal sealed class CategoryHierarchy
             throw new InvalidOperationException("Category hierarchy contains a cycle.");
 
         return new(true, _children[parentId].OrderBy(row => row.Name).ThenBy(row => row.Id)
-            .Select(row => new CategoryIndexItem(row.Id, row.Name, _children[row.Id].Count(), totals[row.Id])).ToList(),
+            .Select(row => new CategoryIndexItem(
+                row.Id,
+                row.Name,
+                _children[row.Id].Count(),
+                totals[row.Id],
+                row.Description,
+                row.Color))
+            .ToList(),
             parentId.HasValue ? Path(parentId.Value) : []);
     }
 
@@ -64,6 +71,10 @@ internal sealed class CategoryHierarchy
 
     public IEnumerable<CategoryInfo> Options() => _rows.Values
         .Select(row => new CategoryInfo(row.Id, row.Name,
-            string.Join(" / ", Path(row.Id).Select(segment => segment.Name)), _children[row.Id].Any(), row.ParentId))
+            string.Join(" / ", Path(row.Id).Select(segment => segment.Name)),
+            _children[row.Id].Any(),
+            row.ParentId,
+            row.Description,
+            row.Color))
         .OrderBy(row => row.FullPath).ThenBy(row => row.Id).ToList();
 }

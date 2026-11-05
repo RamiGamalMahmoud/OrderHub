@@ -1,4 +1,5 @@
 using MediatR;
+using System;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using System.Linq;
@@ -20,6 +21,13 @@ internal sealed class CreateCategoryCommandHandler(ICategoryRepository repositor
         if (string.IsNullOrWhiteSpace(name) || name.Length < 2 || name.Length > 100)
             return Result.Failure("اسم القسم يجب أن يتكون من 2 إلى 100 حرف.");
 
+        string description = NormalizeDescription(request.CategoryCreateInput.Description);
+        if (description?.Length > 500)
+            return Result.Failure("وصف القسم لا يمكن أن يتجاوز 500 حرف.");
+
+        if (!Enum.IsDefined(request.CategoryCreateInput.Color))
+            return Result.Failure("لون القسم غير مدعوم.");
+
         Category parent = null;
         if (request.CategoryCreateInput.ParentId is int parentId)
         {
@@ -35,7 +43,7 @@ internal sealed class CreateCategoryCommandHandler(ICategoryRepository repositor
             return Result.Failure("هذا القسم موجود بالفعل.");
         }
 
-        Category category = new(name, parent);
+        Category category = new(name, parent, description, request.CategoryCreateInput.Color);
 
         repository.Add(category);
 
@@ -50,4 +58,7 @@ internal sealed class CreateCategoryCommandHandler(ICategoryRepository repositor
             return Result.Failure("تعذر حفظ القسم. يرجى المحاولة مرة أخرى.");
         }
     }
+
+    private static string NormalizeDescription(string description) =>
+        string.IsNullOrWhiteSpace(description) ? null : description.Trim();
 }

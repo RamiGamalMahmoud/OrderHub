@@ -14,7 +14,13 @@ internal sealed class CategoryReader(AppDbContextFactory contextFactory) : ICate
     {
         await using var context = contextFactory.CreateDbContext();
         var rows = await context.Categories.AsNoTracking()
-            .Select(c => new CategoryHierarchyRow(c.Id, c.Name.Value, c.ParentCategoryId, includeProductCounts ? c.Products.Count() : 0))
+            .Select(c => new CategoryHierarchyRow(
+                c.Id,
+                c.Name.Value,
+                c.ParentCategoryId,
+                includeProductCounts ? c.Products.Count() : 0,
+                c.Description,
+                c.Color))
             .ToListAsync(cancellationToken);
         return new CategoryHierarchy(rows);
     }
@@ -27,7 +33,7 @@ internal sealed class CategoryReader(AppDbContextFactory contextFactory) : ICate
         await using var context = contextFactory.CreateDbContext();
         return await context.Categories.AsNoTracking()
             .Where(c => c.Id == id)
-            .Select(c => new CategoryEdit(c.Id, c.Name.Value, c.ParentCategoryId))
+            .Select(c => new CategoryEdit(c.Id, c.Name.Value, c.ParentCategoryId, c.Description, c.Color))
             .FirstOrDefaultAsync(cancellationToken);
     }
 

@@ -193,6 +193,61 @@ h1:focus {
     width: 100%;
 }
 
+/* Category grid cards (redesign T4). Accent comes from the fixed domain palette. */
+.category-card {
+    overflow: hidden;
+    border-block-start: 4px solid var(--category-accent, #2563eb) !important;
+    border-radius: 16px !important;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.category-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgb(15 23 42 / 0.08);
+}
+
+.category-card-icon {
+    display: inline-flex;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--category-accent, #2563eb) 12%, white);
+    color: var(--category-accent, #2563eb);
+}
+
+.category-card-copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.category-card-counts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.category-count-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 9px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.category-count-chip .mud-icon-root {
+    width: 16px;
+    height: 16px;
+    color: var(--category-accent, #2563eb);
+}
+
     .checkbox-between .mud-checkbox {
         width: 100%;
         justify-content: space-between;

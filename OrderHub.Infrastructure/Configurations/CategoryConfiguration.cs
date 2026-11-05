@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 
 namespace OrderHub.Infrastructure.Configurations;
@@ -22,6 +23,20 @@ internal class CategoryConfiguration : ModelConfigurationBase<Category>
         });
 
         builder.Navigation(category => category.Name)
+            .IsRequired();
+
+        builder.Property(category => category.Description)
+            .HasColumnName("description")
+            .HasColumnType("varchar(500)")
+            .HasMaxLength(500)
+            .IsRequired(false);
+
+        builder.Property(category => category.Color)
+            .HasColumnName("color")
+            .HasConversion<string>()
+            .HasColumnType("varchar(20)")
+            .HasMaxLength(20)
+            .HasDefaultValue(CategoryColor.Blue)
             .IsRequired();
 
         builder.Property(category => category.ParentCategoryId)

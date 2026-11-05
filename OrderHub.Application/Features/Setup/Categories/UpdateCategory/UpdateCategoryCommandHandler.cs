@@ -1,4 +1,5 @@
 using MediatR;
+using System;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using System.Threading;
@@ -48,6 +49,13 @@ internal sealed class UpdateCategoryCommandHandler(ICategoryRepository repositor
         if (string.IsNullOrWhiteSpace(name) || name.Length < 2 || name.Length > 100)
             return Result.Failure("اسم القسم يجب أن يتكون من 2 إلى 100 حرف.");
 
+        string description = NormalizeDescription(request.CategoryUpdateInput.Description);
+        if (description?.Length > 500)
+            return Result.Failure("وصف القسم لا يمكن أن يتجاوز 500 حرف.");
+
+        if (!Enum.IsDefined(request.CategoryUpdateInput.Color))
+            return Result.Failure("لون القسم غير مدعوم.");
+
         Category parent = null;
         if (request.CategoryUpdateInput.ParentId is int parentId)
         {
@@ -65,6 +73,8 @@ internal sealed class UpdateCategoryCommandHandler(ICategoryRepository repositor
             return Result.Failure("هذا القسم موجود بالفعل.");
 
         category.UpdateName(name);
+        category.UpdateDescription(description);
+        category.UpdateColor(request.CategoryUpdateInput.Color);
         category.MoveTo(parent);
 
         try
@@ -78,4 +88,7 @@ internal sealed class UpdateCategoryCommandHandler(ICategoryRepository repositor
             return Result.Failure("تعذر حفظ التعديلات. يرجى المحاولة مرة أخرى.");
         }
     }
+
+    private static string NormalizeDescription(string description) =>
+        string.IsNullOrWhiteSpace(description) ? null : description.Trim();
 }
