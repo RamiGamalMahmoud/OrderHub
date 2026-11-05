@@ -8,9 +8,11 @@
 @inject NavigationManager Navigation
 @implements IDisposable
 
-@if (Variant == NavVariant.Dropdown)
+@if (Variant == NavVariant.Desktop)
 {
-    <div class="top-nav @Class">
+    @* حاسوب: صف من القوائم المنسدلة (مجموعة لكل قسم). القواعد عالمية في app.css
+       لأن محتوى القوائم يُرحّل إلى MudPopoverProvider خارج DOM المكوّن. *@
+    <div class="site-nav @Class">
         @foreach (var group in Groups)
         {
             if (GroupVisible(group))
@@ -20,8 +22,7 @@
                          Color="Color.Primary"
                          Variant="@MudBlazor.Variant.Text"
                          Dense="true"
-                         Class="@GetGroupClass(group)"
-                         PopoverClass="top-nav-popover">
+                         Class="@GetGroupClass(group)">
                     @foreach (var item in VisibleItems(group))
                     {
                         <MudMenuItem Href="@item.Href"
@@ -37,36 +38,49 @@
 }
 else
 {
-    <MudNavMenu Class="@DrawerContainerClass"
-                Bordered="false">
-        @foreach (var group in Groups)
+    @* هاتف: زر همبرغر يفتح قائمة واحدة مسطحة: عنوان المجموعة (غير فعّال) ثم عناصرها
+        مع فاصل بين المجموعات، وتلوين عناصر المجموعة النشطة (الصفحة الحالية داخلها). *@
+    <MudMenu StartIcon="@Icons.Material.Filled.Menu"
+             Color="Color.Primary"
+             Variant="@MudBlazor.Variant.Text"
+             Dense="true"
+             Class="@Class">
+        @{
+            var visibleGroups = Groups.Where(GroupVisible).ToList();
+        }
+        @for (var i = 0; i < visibleGroups.Count; i++)
         {
-            if (GroupVisible(group))
+            var group = visibleGroups[i];
+
+            if (i > 0)
             {
-                <MudNavGroup Title="@group.Title"
-                             Icon="@group.Icon"
-                             ExpandIcon="@Icons.Material.Filled.ExpandMore">
-                    @foreach (var item in VisibleItems(group))
-                    {
-                        <MudNavLink Href="@item.Href"
-                                    Icon="@item.Icon">
-                            @item.Label
-                        </MudNavLink>
-                    }
-                </MudNavGroup>
+                <MudDivider DividerType="DividerType.Inset" />
+            }
+
+            <div class="site-nav-section-label" role="presentation">@group.Title</div>
+
+            foreach (var item in VisibleItems(group))
+            {
+                <MudMenuItem Href="@item.Href"
+                             Icon="@item.Icon"
+                             IconColor="Color.Inherit"
+                             Class="@GetItemClass(group)">
+                    @item.Label
+                </MudMenuItem>
             }
         }
-    </MudNavMenu>
+        </MudMenu>
 }
 
-@code {
+@code
+{
     public enum NavVariant
     {
-        /// <summary>شريط تنقل أفقي بقوائم منسدلة (للحاسوب).</summary>
-        Dropdown,
+        /// <summary>شريط تنقل علوي: صف قوائم منسدلة (للحاسوب).</summary>
+        Desktop,
 
-        /// <summary>قائمة عمودية داخل درّج جانبي (للهاتف).</summary>
-        Drawer
+        /// <summary>زر همبرغر يفتح قائمة مسطحة (للهاتف).</summary>
+        Mobile
     }
 
     private sealed record NavItemModel(
@@ -83,13 +97,10 @@ else
         NavItemModel[] Items);
 
     [Parameter]
-    public NavVariant Variant { get; set; } = NavVariant.Drawer;
+    public NavVariant Variant { get; set; } = NavVariant.Desktop;
 
     [Parameter]
     public string? Class { get; set; }
-
-    private string DrawerContainerClass =>
-        string.Join(" ", "orderhub-nav", "custom-modern-nav", Class).Trim();
 
     /// <summary>مصدر واحد لعناصر التنقل؛ الترتيب من اليمين إلى اليسار في RTL.</summary>
     private static readonly NavGroupModel[] Groups =
@@ -184,8 +195,13 @@ else
             path.StartsWith(item.Href + "/", StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>حساب/كلاس قائمة مجموعة نشطة (يصدَر على نفسه قاعدة عالمية تصل زر المجموعة).</summary>
     private string GetGroupClass(NavGroupModel group) =>
-        IsGroupActive(group) ? "top-nav-group-active" : string.Empty;
+        IsGroupActive(group) ? "site-nav-active" : string.Empty;
+
+    /// <summary>كلاس عنصر حالة الهاتف: عنصر تابع لمجموعة نشطة يُلوَّن.</summary>
+    private string GetItemClass(NavGroupModel group) =>
+        IsGroupActive(group) ? "site-nav-active" : string.Empty;
 
     public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
 

@@ -132,3 +132,13 @@
 .mud-alert.outlined {
     font-weight: 500;
 }
+
+/* ============ 9. Layout shell (redesign T1) ============ */
+
+/* MainLayout (T1) provides its own Tailwind container (max-w-[1720px] + responsive
+   padding) inside MudMainContent; strip MudBlazor's default main-content padding
+   so the page body is not double-padded. */
+.mud-main-content {
+    padding: 0;
+    margin: 0;
+}

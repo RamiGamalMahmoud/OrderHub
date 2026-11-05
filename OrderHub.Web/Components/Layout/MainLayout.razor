@@ -1,5 +1,8 @@
 ﻿@inherits LayoutComponentBase
 @using OrderHub.Web.Components.Layout
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Globalization
+@using System.Security.Claims
 
 <MudRTLProvider RightToLeft=true>
     @* تفعيل خيارات الثيم من مصدر واحد مشترك (OrderHubTheme) لدعم RTL والهوية البصرية الموحدة *@
@@ -8,55 +11,92 @@
     <MudDialogProvider />
     <MudSnackbarProvider />
 
-    <MudLayout>
+    <MudLayout Class="min-h-dvh flex flex-col">
 
-        <!-- شريط علوي عصري: العنوان + القوائم المنسدلة (حاسوب) + الهامبرغر (هاتف) -->
-        <MudAppBar Elevation="0" Class="top-appbar border-bottom-subtle px-4" Color="Color.Surface">
+        <!-- شريط علوي ثابت: الشعار يمين (RTL) + قوائم الحاسوب بالمنتصف + بطاقة المستخدم يسار -->
+        <header class="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
+            <div class="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
 
-            <!-- زر فتح الدرّج يظهر على الشاشات الصغيرة فقط -->
-            <MudIconButton Icon="@Icons.Material.Filled.Menu"
-                           Color="Color.Default"
-                           Edge="Edge.Start"
-                           OnClick="ToggleDrawer"
-                           Class="me-2 d-sm-none align-self-center" />
+                <!-- هاتف: زر همبرغر يفتح قائمة تنقل مسطحة -->
+                <div class="md:hidden">
+                    <NavMenu Variant="NavMenu.NavVariant.Mobile" />
+                </div>
 
-            <!-- العنوان رابط إلى الصفحة الرئيسية -->
-            <MudLink Href="/"
-                     Underline="Underline.None"
-                     Typo="Typo.h5"
-                     Class="top-nav-brand font-weight-bold tracking-tight text-primary align-self-center">
-                OrderHub
-            </MudLink>
+                <!-- الشعار: مكعب أزرق + «OrderHub» بلونين، رابط إلى الرئيسية -->
+                <a href="/" class="flex items-center gap-3 shrink-0" aria-label="الصفحة الرئيسية">
+                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                             stroke-linejoin="round" stroke-linecap="round" class="w-5 h-5" aria-hidden="true">
+                            <path d="M12 2l9 5v10l-9 5-9-5V7l9-5z" />
+                            <path d="M12 22V12l9-5M12 12L3 7" />
+                        </svg>
+                    </span>
+                    <span class="text-lg font-black tracking-tight text-slate-900">Order<span class="text-brand-600">Hub</span></span>
+                </a>
 
-            <MudSpacer />
+                <!-- حاسوب: قوائم التنقل في منتصف الشريط -->
+                <div class="hidden md:flex flex-1 justify-center items-stretch min-w-0">
+                    <NavMenu Variant="NavMenu.NavVariant.Desktop" />
+                </div>
 
-            <!-- القوائم المنسدلة للحاسوب (بمنتصف الشريط) -->
-            <NavMenu Variant="NavMenu.NavVariant.Dropdown" Class="d-none d-sm-flex align-self-center" />
+                <!-- بطاقة المستخدم: حرفا الاسم + الاسم + الدور، وقائمة تسجيل الخروج -->
+                <div class="shrink-0 ms-auto md:ms-0">
+                    <MudMenu Dense="true"
+                             Class="site-user-menu">
+                        <ActivatorContent>
+                            <button type="button"
+                                    @onclick="@context.ToggleAsync"
+                                    class="flex items-center gap-2.5 rounded-full ps-1 pe-2.5 py-1 transition-colors hover:bg-slate-100"
+                                    aria-label="قائمة المستخدم">
+                                <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 border border-brand-200 text-sm font-bold text-brand-700">
+                                    @_initials
+                                </span>
+                                <span class="hidden sm:flex flex-col items-start leading-tight">
+                                    <span class="text-sm font-bold text-slate-800 whitespace-nowrap">@_displayName</span>
+                                    <span class="text-[11px] text-slate-500">@(_isAdmin ? "مدير النظام" : "مستخدم")</span>
+                                </span>
+                            </button>
+                        </ActivatorContent>
+                        <ChildContent>
+                            <div role="presentation"
+                                 class="px-4 py-2.5 border-b border-slate-100 mb-1">
+                                <div class="text-xs text-slate-500 mb-0.5">مسجّل الدخول باسم</div>
+                                <div class="text-sm font-bold text-slate-800">@_displayName</div>
+                            </div>
+                            <div role="presentation" class="p-1.5">
+                                <form method="post" action="/auth/logout">
+                                    <button type="submit"
+                                            class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-red-50 hover:border-red-200 hover:text-red-600">
+                                        تسجيل الخروج
+                                    </button>
+                                </form>
+                            </div>
+                        </ChildContent>
+                    </MudMenu>
+                </div>
 
-            <MudSpacer />
-
-            <form method="post" action="/auth/logout" class="d-flex align-items-center">
-                <MudButton ButtonType="ButtonType.Submit">
-                    تسجيل الخروج
-                </MudButton>
-            </form>
-        </MudAppBar>
-
-        <!-- درّج الملاحة للهاتف فقط (نفس العناصر) -->
-        <MudDrawer @bind-Open="_drawerOpen"
-                   Elevation="0"
-                   ClipMode="DrawerClipMode.Always"
-                   Variant="DrawerVariant.Responsive"
-                   Class="border-inline-subtle">
-            <NavMenu Variant="NavMenu.NavVariant.Drawer" />
-        </MudDrawer>
+            </div>
+        </header>
 
         <!-- منطقة المحتوى الرئيسية مع خلفية ناعمة مريحة للعين لتبرز بداخلها الـ Cards -->
-        <MudMainContent Class="main-content-bg">
-            <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-6 px-4 px-md-8">
+        <MudMainContent Class="flex-1 min-w-0">
+            <div class="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 @Body
-            </MudContainer>
+            </div>
         </MudMainContent>
+
+        <!-- تذييل الموقع -->
+        <footer class="border-t border-slate-200 bg-white py-4 text-xs text-slate-500">
+            <div class="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col-reverse sm:flex-row items-center justify-between gap-2">
+                <p>@(string.Format(CultureInfo.InvariantCulture, "نظام إدارة الطلبات — OrderHub © {0}", DateTime.Now.ToString("yyyy", CultureInfo.InvariantCulture)))</p>
+                <nav class="flex items-center gap-5" aria-label="روابط التذييل">
+                    @* placeholder: informational footer links *@
+                    <span>عن النظام</span>
+                    <span>دليل الاستخدام</span>
+                    <span>الدعم</span>
+                </nav>
+            </div>
+        </footer>
 
     </MudLayout>
 </MudRTLProvider>
@@ -69,10 +109,46 @@
 
 @code
 {
-    private bool _drawerOpen = false;
+    private string _displayName = "مستخدم";
+    private string _initials = "؟";
+    private bool _isAdmin;
+    private bool _identityResolved;
 
-    private void ToggleDrawer()
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    protected override async Task OnParametersSetAsync()
     {
-        _drawerOpen = !_drawerOpen;
+        if (_identityResolved || AuthenticationStateTask is null)
+        {
+            return;
+        }
+
+        var user = (await AuthenticationStateTask).User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            _displayName =
+                user.FindFirst("DisplayName")?.Value ??
+                user.Identity.Name ??
+                "مستخدم";
+            _initials = ComputeInitials(_displayName);
+            _isAdmin = user.IsInRole("Admin");
+        }
+
+        _identityResolved = true;
+    }
+
+    /// <summary>حرفا الاعتماد في دائرة الأفاتار: أول حرف من أول كلمتين.</summary>
+    private static string ComputeInitials(string displayName)
+    {
+        var letters = displayName
+            .Trim()
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2)
+            .Select(part => part[0])
+            .ToArray();
+
+        return letters.Length > 0 ? new string(letters) : "؟";
     }
 }

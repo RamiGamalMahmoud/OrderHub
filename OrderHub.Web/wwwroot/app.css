@@ -85,148 +85,73 @@ h1:focus {
     color: white;
 }
 
-/* ����� ���� ������� �������� ������� */
-.custom-modern-nav {
-    padding: 12px 16px !important;
-}
+/* =====================================================================
+   Nav shell (redesign T1): top-bar dropdown nav + mobile hamburger menu
+   + user card menu. NOTE: MudMenu popovers render into the global
+   MudPopoverProvider, so these rules must stay global (never inside
+   component-scoped isolation).
+   ===================================================================== */
 
-/* ����� ��� ��� ���� �������� */
-.nav-section-container {
+/* Desktop: row of nav-group dropdown triggers */
+.site-nav {
     display: flex;
-    flex-direction: column;
+    align-items: stretch;
     gap: 4px;
-}
-
-/* ����� ������ ������� ����� ����� ������ */
-.custom-modern-nav .nav-section-title {
-    font-size: 0.75rem !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.05rem;
-    color: var(--mud-palette-text-secondary);
-    opacity: 0.6;
-    padding: 12px 12px 6px 12px;
-    text-transform: uppercase;
-}
-
-/* ��� ���� ������� ������ ����� �� ����� ����� ���� */
-.custom-modern-nav .mud-nav-link,
-.custom-modern-nav .mud-nav-group-header {
-    border-radius: 8px !important;
-    margin: 2px 0 !important;
-    transition: all 0.2s ease-in-out !important;
-    color: var(--mud-palette-text-primary) !important;
-}
-
-    /* ����� ��� ����� ������ (Hover) */
-    .custom-modern-nav .mud-nav-link:hover,
-    .custom-modern-nav .mud-nav-group-header:hover {
-        background-color: rgba(var(--mud-palette-primary-rgb), 0.06) !important;
-        color: var(--mud-palette-primary) !important;
-    }
-
-    /* ����� ������ ����� ������ ���� ���� �������� */
-    .custom-modern-nav .mud-nav-link.active {
-        background-color: var(--mud-palette-primary) !important;
-        color: var(--mud-palette-primary-text) !important;
-        font-weight: 600 !important;
-    }
-
-        /* �������� ��� ����� ������� ������� ������ */
-        .custom-modern-nav .mud-nav-link.active .mud-nav-link-icon-default {
-            color: var(--mud-palette-primary-text) !important;
-        }
-
-/* ����� ������� ������� ���� ��������� �������� ����� ����� ���� */
-.custom-modern-nav .mud-nav-group .mud-nav-link {
-    padding-inline-start: 32px !important;
-    font-size: 0.875rem !important;
-    opacity: 0.85;
-}
-
-/* ����� ����� ���� ����� ����� */
-.custom-modern-nav .nav-divider {
-    margin: 12px 8px !important;
-    opacity: 0.4;
-}
-
-
-/* ����� ���� ������ ������ ������ */
-/* =========================================================
-   شريط التنقل العلوي: القوائم المنسدلة (وضع الحاسوب)
-   ملاحظة: محتوى القوائم المنسدلة يُرحّل إلى MudPopoverProvider
-   خارج DOM المكوّن، لذلك هذه القواعد CSS عالميًا (وليست
-   داخل CSS Isolation).
-   ========================================================= */
-
-/* الشريط يمدد أطفاله عموديًا حتى تصل الأزرار لارتفاع الشريط كاملًا */
-.top-appbar {
-    align-items: stretch;
-}
-
-/* صف أزرار المجموعات */
-.top-nav {
-    display: flex;
-    align-items: stretch;
-    gap: 6px;
     white-space: nowrap;
 }
 
-    /* زر المجموعة: ارتفاع كامل + خط أسود + بلا حواف مستديرة */
-    .top-nav .mud-menu-button-activator {
-        height: 100% !important;
-        min-height: 48px;
-        border-radius: 5px;
-        color: var(--mud-palette-text-primary) !important;
-        font-size: 0.95rem;
-        padding: 0 14px;
-        transition: background-color 0.15s ease;
-    }
-
-        /* hover على زر المجموعة، والحالة النشطة (الصفحة الحالية داخلها) */
-        .top-nav .mud-menu-button-activator:hover,
-        .top-nav .top-nav-group-active .mud-menu-button-activator {
-            background-color: var(--mud-palette-action-default-hover) !important;
-        }
-
-    .top-nav .top-nav-group-active .mud-menu-button-activator {
-        color: var(--mud-palette-primary) !important;
-        font-weight: 700;
-    }
-
-    /* أيقونات صغيرة: أزرار المجموعات وعناصر القوائم المنسدلة */
-    .top-nav .mud-menu-button-activator svg,
-    .top-nav-popover .mud-menu-item svg {
-        font-size: 18px !important;
-        width: 18px !important;
-        height: 18px !important;
-    }
-
-/* محتوى القائمة المنسدلة: هوامش داخلية + فراغات بين العناصر */
-.top-nav-popover .mud-menu-list-wrapper {
-    padding: 6px;
+/* Group button: full bar height, quiet by default, brand tone when its section is active */
+.site-nav .mud-menu-button-activator {
+    height: 100% !important;
+    min-height: 48px;
+    border-radius: 8px;
+    color: var(--mud-palette-text-primary) !important;
+    font-size: 0.95rem;
+    padding: 0 12px;
+    transition: background-color 0.15s ease;
 }
 
-.top-nav-popover .mud-menu-item {
-    margin: 4px 0;
-    border-radius: 10px;
-    padding-inline: 14px;
-    min-height: 40px;
-    color: var(--mud-palette-text-primary);
-    font-weight: 500;
+.site-nav .mud-menu-button-activator:hover {
+    background-color: var(--mud-palette-action-default-hover) !important;
 }
 
-    .top-nav-popover .mud-menu-item:hover {
-        background-color: var(--mud-palette-action-default-hover);
-    }
-
-.border-bottom-subtle {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+.site-nav .site-nav-active .mud-menu-button-activator {
+    color: var(--mud-palette-primary) !important;
+    font-weight: 700;
 }
 
-/* ����� ���� ������� ������� �������� ������ �� ��� RTL */
-.border-inline-subtle {
-    border-left: 1px solid rgba(0, 0, 0, 0.06) !important;
+/* Small icons on group buttons */
+.site-nav .mud-menu-button-activator svg {
+    font-size: 18px !important;
+    width: 18px !important;
+    height: 18px !important;
 }
+
+/* Mobile flattened menu: group labels + highlighted items of the active group */
+.site-nav-section-label {
+    padding: 10px 16px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--mud-palette-text-secondary);
+    cursor: default;
+}
+
+.mud-menu-item.site-nav-active {
+    background-color: var(--mud-palette-primary);
+    color: var(--mud-palette-primary-text);
+    font-weight: 700;
+}
+
+.mud-menu-item.site-nav-active:hover {
+    background-color: var(--mud-palette-primary);
+}
+
+/* User card: keep the activator wrapper smooth/flex */
+.site-user-menu .mud-menu-activator {
+    display: flex;
+}
+
 
 /* ����� ����� ��� ������ ����� ���� ������� ������ */
 .text-primary {
