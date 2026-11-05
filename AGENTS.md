@@ -22,7 +22,7 @@ Verified against the codebase and CI. Keep every line high-signal only — if th
 Non-obvious quirks:
 - Misspelled-but-real paths (do not "fix" casually; match them): `OrderHub.Infrastructure/Reopsitories/`, `DesignTimeAppDbContextFactrory.cs`, `Orders/OrderDetials.razor`, `Setup/CreateAdmin.razor.cs.cs`.
 - `OrderHub.Web/Resources/Images/*.png` are **required runtime assets** — CI's release audit fails without them.
-- `wwwroot/fonts/*.ttf` are intentionally excluded from `Content` in the csproj.
+- `wwwroot/fonts/Tajawal-Regular.ttf` is the **only runtime font** and must ship (its `Content Remove` line was removed from the csproj); `Cairo.ttf` remains intentionally excluded. **No runtime font fetching (no Google Fonts/CDN links) — the app runs locally/offline.**
 
 ## Architecture rules (follow exactly)
 
@@ -59,8 +59,9 @@ Dev run: `dotnet run --project OrderHub.Web` — needs `ConnectionStrings:Defaul
 ## Web / UI conventions
 
 - **Tailwind pipeline is wired, not npm**: csproj properties `TailwindInputFile=Styles/app.css` (currently only `@import "tailwindcss";`) → `TailwindOutputFile=wwwroot/css/tailwind.css`, and `builder.UseTailwind()` in `Program.cs`. Razor sources are scanned on build; put custom tokens in `Styles/app.css` `@theme`.
-- CSS link order in `Components/App.razor` matters: MudBlazor css → `app.css` → `css/order-workflow.css` → `OrderHub.Web.styles.css` → `css/tailwind.css` (last, wins specificity).
+- CSS link order in `Components/App.razor` matters (T-A1): MudBlazor css → `css/tailwind.css` → `app.css` → `css/mud-blazor-overrides.css` → `css/order-workflow.css` (temporary) → `OrderHub.Web.styles.css` (razor-scoped styles, wins last).
 - Only one JS file exists (`wwwroot/js/order-local-time.js`, covered by the Node test). **Do not add JavaScript** — Blazor/MudBlazor can express everything the UI needs.
+- **App font is local Tajawal only** (`wwwroot/fonts/Tajawal-Regular.ttf`, declared in `wwwroot/app.css` + MudTheme `FontFamily` arrays + Tailwind `--font-sans` in `Styles/app.css`). **Never introduce runtime font fetching** (no Google Fonts, no CDN `link`/`@import` of fonts) — the app runs locally/offline.
 - **MudMenu/MudPopover content renders into the global `MudPopoverProvider`** (both providers are set up in `MainLayout`) → any styling of menus/popovers must be **global CSS**, never component-scoped isolation.
 - `MainLayout.razor` and `StandaloneLayout.razor` each carry a **duplicated inline `MudTheme`** (`Tajawal` font + blue-600 palette) — keep them in sync when touching either, or merge deliberately.
 - `NavMenu.razor` is the single source of nav items (permission-filtered groups; Dropdown + Drawer variants).
@@ -71,7 +72,7 @@ Dev run: `dotnet run --project OrderHub.Web` — needs `ConnectionStrings:Defaul
 
 ## House rules for agents
 
-1. **Do not commit unless explicitly asked.** The working tree may carry uncommitted user work — never discard, stash, or `checkout --` files you did not author.
+1. **Do not commit unless explicitly asked.** When committing (or asked to commit), commit messages **must always start with a Conventional Commits prefix — `feat:`, `fix:`, `refactor:`, `chore:`, `test:`, `perf:`, or `docs:` — optionally with a scope**, e.g. `feat(orders): add delivery costs`. No plain/unprefixed messages. The working tree may carry uncommitted user work — never discard, stash, or `checkout --` files you did not author.
 2. Match the dominant style of each file (CQRS files separated by blank lines; verbose multiline formatting; explicit `>` attribute-tag style on big MudBlazor components).
 3. Ongoing redesign plan/task registry lives **outside the repo** at `C:\Users\ramig\.opencode\plan\orderhub-redesign-tasks.md` — update it when executing; do not open plan-mode changes inside the repo.
 4. Backend extension touchpoints in order: entity validation → Application handler/contracts → Infrastructure configuration + migration → UI contract usage. Keep `InternalsVisibleTo("OrderHub.Tests")` intact.
