@@ -1,118 +1,78 @@
 # AGENTS.md — Guide for AI Agents working on OrderHub
 
-Instructions for coding agents (Claude Code, OpenCode, Copilot, …) working in this repository. Read this before making changes.
+Verified against the codebase and CI. Keep every line high-signal only — if the repo already explains it, leave it out.
 
----
+## What this project is
 
-## 1. What this project is
+**OrderHub** — ASP.NET Core **Blazor** (Interactive Server, .NET 9) ERP app for orders, products, clients, suppliers, delivery workflows, commercial documents, users, and role-based permissions.
 
-**OrderHub** — an ASP.NET Core **Blazor** (Interactive Server, .NET 9) ERP app for managing orders, products, clients, suppliers, delivery workflows, commercial documents, users, and role-based permissions.
+- UI language **Arabic**, layout **RTL** (`<html lang="ar" dir="rtl">`) — all user-facing strings are Arabic, and layouts mirror with logical properties (`ps/pe/ms/me`), not `left/right`.
+- Stack pinned by `global.json` (SDK 9.0.100): MudBlazor 9.11.0, MediatR 14.2, EF Core + **PostgreSQL**, QuestPDF (Community license), FluentValidation, **Tailwind CSS v4 via the `TailwindBlazor` 0.2.0 NuGet package** (no npm pipeline).
 
-- UI language is **Arabic**, layout is **RTL** (`<html lang="ar" dir="rtl">`) — all user-facing strings are Arabic.
-- Stack: .NET 9 (pinned by `global.json`), MudBlazor 9.11.0, MediatR 14.2, EF Core + **PostgreSQL**, QuestPDF (Community license), FluentValidation, Tailwind CSS v4 (via the `TailwindBlazor` MSBuild package).
-
-## 2. Repository layout (5 projects in `OrderHub.sln`)
+## Repo layout (`OrderHub.sln`, 5 projects)
 
 | Project | Role |
 |---|---|
-| `OrderHub.Domain` | Entities, value objects (`EntityName`, `Money`…), enums, lifecycle rules, pricing (`PricingCalculator`). No external dependencies. |
-| `OrderHub.Application` | CQRS Commands/Queries (MediatR) under `Features/`, DTOs, interfaces, authorization abstractions. References Domain only. |
-| `OrderHub.Infrastructure` | EF Core `AppDbContext`, entity `Configurations/`, `Migrations/` (PostgreSQL), repositories (note the misspelled folder `Reopsitories/`), document generation, file storage, `DependencyInjection/` registration. |
-| `OrderHub.Web` | Host: `Program.cs`, Razor components, cookie auth (`/login`), permission authorization, static assets. |
-| `OrderHub.Tests` | xUnit tests (Application/Domain/Infrastructure/Web). SQLite for isolated tests; PostgreSQL tests are opt-in via env vars. Also `Web/order-local-time.test.mjs` (Node). |
+| `OrderHub.Domain` | Entities, value objects (`EntityName`, `Money`), enums, lifecycle rules, pricing (`PricingCalculator`). No external dependencies. |
+| `OrderHub.Application` | CQRS Commands/Queries (MediatR) under `Features/<Area>/<UseCase>` with `Contracts/` records. References Domain only. |
+| `OrderHub.Infrastructure` | EF Core `AppDbContext`, `Configurations/`, `Migrations/`, repositories, QuestPDF document generation, file storage, `DependencyInjection/`. |
+| `OrderHub.Web` | Host: `Program.cs`, Razor components (28 routes), cookie auth, permission authorization, `Controllers/Files/*` PDF endpoints, static assets. |
+| `OrderHub.Tests` | xUnit; SQLite for all tests. Also `Web/order-local-time.test.mjs` (Node). |
 
-### Application feature folders (CQRS)
+Non-obvious quirks:
+- Misspelled-but-real paths (do not "fix" casually; match them): `OrderHub.Infrastructure/Reopsitories/`, `DesignTimeAppDbContextFactrory.cs`, `Orders/OrderDetials.razor`, `Setup/CreateAdmin.razor.cs.cs`.
+- `OrderHub.Web/Resources/Images/*.png` are **required runtime assets** — CI's release audit fails without them.
+- `wwwroot/fonts/*.ttf` are intentionally excluded from `Content` in the csproj.
 
-`Features/Administration`, `Authentication`, `Documents`, `OrderDrafts`, `Orders` (Create/Update/GetPage/Lifecycle/Archive/…), `Products`, `Setup` (Cities, Suppliers, ShippingCarriers, Properties, PaymentMethods, Roles…).
+## Architecture rules (follow exactly)
 
-Each feature is typically:
+1. **Vertical slice CQRS**: everything goes through MediatR. Components inject `IRequestExecutor` and call `await RequestExecutor.ExecuteAsync(new SomeQuery(...))` — never call repositories from pages.
+2. **Result pattern**: handlers return `Result`/`Result<T>` (`OrderHub.Domain.Common.Result`) with `IsSuccess` + `ErrorMessage` + `ErrorCode` (`"Conflict"` = optimistic-concurrency version conflict). Do not throw for expected failures.
+3. **Domain entities**: private setters, private parameterless ctor + `internal` ctor, factory/behavior methods with validation. DTO mapping happens in Application/Infrastructure — never expose entities to the UI.
+4. **EF configurations** live in `OrderHub.Infrastructure/Configurations/*Configuration.cs`; migrations go to `OrderHub.Infrastructure/Migrations`, applied via the standard `dotnet ef` workflow (design-time factory: `DesignTimeAppDbContextFactrory.cs`). **There is no `--migrate` flag on the Web app.** Naming pattern: descending timestamps like `20261030000000_Name.cs`.
+5. **Authorization**: page-level `[PermissionAuthorize(PermissionFeature.X, PermissionLevel.Read|Write)]` (+ `[Authorize(Roles = "Admin")]` in Administration). Row-level checks via `PermissionAccess.IsAllowedAsync(...)`. `AuthorizationDeniedException` → middleware redirects to `/access-denied`. `PermissionFeature` enum is the backing model for the roles editor matrix.
+6. **History/audit**: order lifecycle owns `OrderStatusHistory`/`DeliveryStepStatusHistory` rows; the workflow page renders them via `GetOrderHistoryQuery` (paged 5/page). Legacy migration entries carry `Source == OrderHistorySource.LegacyMigration` — keep their disclaimer text.
 
-```
-Features/<Area>/<UseCase>/
-  ├── <UseCase>Command.cs or <UseCase>Query.cs   (MediatR IRequest)
-  ├── Contracts/  (input/output records)
-  └── <UseCase>Handler.cs
-```
-
-## 3. Architecture rules (follow exactly)
-
-1. **Vertical slice CQRS**: everything goes through MediatR (`IRequestExecutor` wraps `IMediator`). Components inject `IRequestExecutor` and call `await RequestExecutor.ExecuteAsync(new SomeQuery(...))` — never call repositories from pages.
-2. **Result pattern**: handlers return `Result` / `Result<T>` (`OrderHub.Domain.Common.Result`) with `IsSuccess` + `ErrorMessage` + `ErrorCode` (`"Conflict"` is used for optimistic-concurrency/version conflicts). Do not throw for expected failures.
-3. **Domain entities**: private setters, private parameterless ctor + `internal` ctor, factory/behavior methods with validation (see any existing entity, e.g. `Category`, `RolePermission`, `Order.Lifecycle.cs`). DTO mapping happens in Application/Infrastructure, never expose entities directly.
-4. **EF configurations** live in `OrderHub.Infrastructure/Configurations/*Configuration.cs`, often based on `ModelConfigurationBase<T>`; register/mapping via `AppDbContext`. Migrations go to `OrderHub.Infrastructure/Migrations` (timestamps descending naming like `20261030000000_Name.cs`).
-5. **Authorization**: page-level `[PermissionAuthorize(PermissionFeature.X, PermissionLevel.Read|Write)]` (+ `[Authorize(Roles = "Admin")]` in Administration). Row-level checks via injected `PermissionAccess.IsAllowedAsync(...)`. `AuthorizationDeniedException` → components navigate to `/access-denied`. `PermissionFeature` enum is the **backing model for the 14 features in the Roles editor** — adding an enum value automatically appears in the roles matrix.
-6. **Data flow types**: `record` contracts (e.g. `CityListItem(int Id, string Name)`). Keep contracts minimal; the UI decides presentation.
-7. **History/audit**: order lifecycle owns `OrderStatusHistory` / `DeliveryStepStatusHistory` rows; workflow page renders them from `GetOrderHistoryQuery` (paged, 5/page). Legacy migration entries carry `Source == OrderHistorySource.LegacyMigration` and must keep their disclaimer text.
-
-## 4. Build / run / test
+## Build / test (exact commands, from repo root)
 
 ```powershell
-# from repo root
-dotnet restore OrderHub.sln
-dotnet build OrderHub.sln --configuration Release
-dotnet test  OrderHub.sln --configuration Release
-node OrderHub.Tests/Web/order-local-time.test.mjs   # only test needing Node
-dotnet run --project OrderHub.Web                   # needs ConnectionStrings:DefaultConnection + ApplicationData:RootPath (user-secrets/env)
+dotnet restore OrderHub.sln                                   # required first; CI chain depends on it
+dotnet build OrderHub.sln --configuration Release             # restore → build order matters
+dotnet test  OrderHub.sln --configuration Release --no-build # CI uses --no-build after Release build
+node OrderHub.Tests/Web/order-local-time.test.mjs            # only test needing Node (CI pins Node 24)
 ```
 
-- PostgreSQL integration tests are **opt-in** env vars (`ORDERHUB_CATEGORY_TEST_POSTGRES`, `ORDERHUB_PROPERTY_TEST_POSTGRES`, `ORDERHUB_ORDER_SYNC_TEST_POSTGRES`, `ORDERHUB_LIFECYCLE_TEST_POSTGRES`); otherwise they skip. Release rehearsal via `ORDERHUB_REHEARSAL_SOURCE`.
-- Migrations are applied with the standard `dotnet ef` workflow using the design-time factory in Infrastructure. The Web `--migrate` flag is a placeholder and does **not** apply migrations. Production migrations follow `docs/order-lifecycle-release-runbook.md`.
-- Publishing: `dotnet publish OrderHub.Web/OrderHub.Web.csproj -c Release -o ./publish`. Runs as Windows service `OrderHubWeb`; Production config comes from external `%ProgramData%/OrderHub/Config/appsettings.Server.json`.
+Dev run: `dotnet run --project OrderHub.Web` — needs `ConnectionStrings:DefaultConnection` + `ApplicationData:RootPath` (user-secrets or env; it throws at startup if missing). First run goes through `/setup/admin`.
 
-### Known dev-environment gotchas
+### Testing model (no PostgreSQL opt-in)
 
-- **VS debug sessions lock DLLs** → builds may fail with `MSB3021/MSB3027` copy errors. Stop the debug session or build a non-locked project.
-- OneDrive-synced workspace: occasional transient file locks; retry.
-- Documentation of history is in `CHANGELOG.md` (historical notes) and `docs/`.
+- All DB tests are **SQLite in-memory** (`SqliteConnection("Data Source=:memory:")` + `EnsureCreated`) with `UseSnakeCaseNamingConvention()`. Any new EF column must therefore survive snake_case + SQLite FK constraints — keep test options identical to existing tests.
+- There are **no** env-var-gated integration tests in the repo (the `README.md` mention of a `docs/` folder is stale — it does not exist).
 
-## 5. Web / UI conventions
+## Config & release (verified from `.github/workflows/web-release.yml`)
 
-### Tailwind CSS v4 — already wired
+- Production releases are created **only** by pushing an unused canonical `vX.Y.Z` tag pointing at **the latest commit of `master`** — CI refuses anything else, then restore→build→test (Postgres/rehearsal intentionally disabled in CI) → Node test → **self-contained `win-x64` publish** with `-p:Version=X.Y.Z` → zip + sha256 → draft→publish GitHub release. **Agents must not push tags.**
+- CI forbids in the package: `appsettings.*.json` other than base, `secrets`, `launchSettings.json`, source files. Base `appsettings.json` must contain **only `Logging` and `AllowedHosts`** — production config comes from external `%ProgramData%/OrderHub/Config/appsettings.Server.json`. Never add connection strings/secrets to source config.
+- Runs as Windows service `OrderHubWeb` (registered via `AddWindowsService` in `Program.cs`). Health probe: anonymous `/health`.
+- `/setup/admin` exists but is a **non-functional WIP stub**: its `CreateAdminAsync` body is commented out (no command wired; fake `Task.Delay(3000)`), and there is no "no users exist" gating server-side. Its code-behind is the odd filename `CreateAdmin.razor.cs.cs` (double `.cs`) — edit *that* file, it compiles as the partial.
 
-- The pipeline is the **`TailwindBlazor` NuGet package (0.2.0)** with MSBuild properties in `OrderHub.Web.csproj`, **not** a standalone npm setup:
-  - `TailwindInputFile = Styles/app.css` (contains only `@import "tailwindcss";` today)
-  - `TailwindOutputFile = wwwroot/css/tailwind.css`
-  - `TailwindVersion = 4.1.18`, `TailwindEnabled = true`
-- It scans Razor sources automatically on build. **Add custom utility tokens/`@theme` config in `Styles/app.css`.**
-- CSS order in `Components/App.razor`: MudBlazor css → `app.css` → `css/order-workflow.css` → `OrderHub.Web.styles.css` → `css/tailwind.css`. Fonts load from Google Fonts (Roboto today; the redesign plan switches to Cairo + IBM Plex Sans Arabic).
-- Only one tiny JS file exists (`wwwroot/js/order-local-time.js` for browser-local time rendering). **Avoid adding JavaScript; prefer Blazor (C#)** and MudBlazor components.
+## Web / UI conventions
 
-### Blazor UI patterns (established)
+- **Tailwind pipeline is wired, not npm**: csproj properties `TailwindInputFile=Styles/app.css` (currently only `@import "tailwindcss";`) → `TailwindOutputFile=wwwroot/css/tailwind.css`, and `builder.UseTailwind()` in `Program.cs`. Razor sources are scanned on build; put custom tokens in `Styles/app.css` `@theme`.
+- CSS link order in `Components/App.razor` matters: MudBlazor css → `app.css` → `css/order-workflow.css` → `OrderHub.Web.styles.css` → `css/tailwind.css` (last, wins specificity).
+- Only one JS file exists (`wwwroot/js/order-local-time.js`, covered by the Node test). **Do not add JavaScript** — Blazor/MudBlazor can express everything the UI needs.
+- **MudMenu/MudPopover content renders into the global `MudPopoverProvider`** (both providers are set up in `MainLayout`) → any styling of menus/popovers must be **global CSS**, never component-scoped isolation.
+- `MainLayout.razor` and `StandaloneLayout.razor` each carry a **duplicated inline `MudTheme`** (`Tajawal` font + blue-600 palette) — keep them in sync when touching either, or merge deliberately.
+- `NavMenu.razor` is the single source of nav items (permission-filtered groups; Dropdown + Drawer variants).
+- Status tones are centralized: `OrderWorkflowPresentation.StatusTone(...)` → `order-tone-*` classes styled in `wwwroot/css/order-workflow.css` (also used on Orders list rows and details page).
+- **Numbers always `CultureInfo.InvariantCulture`** so digits stay Latin under Arabic culture (e.g. `value.ToString("N2", CultureInfo.InvariantCulture)`).
+- Established page patterns: list pages load via `GetAll*Query` with in-memory search + `MudTable`/`MudDataGrid`, permission-gated actions; editors are `*EditorDialog.razor` (MudDialog) driven by `*EditorState.cs` validation + `MudForm`; the order editor is a multi-step page under `Editor/`.
+- MudBlazor 9.11 gotchas: `MudDataGrid` `CurrentPage` is **0-based** and its setter triggers a server reload (`NavigateTo(Page)` takes a `Page` object); guard every async button with busy flags — hover/loading races double-fire.
 
-- **Editor dialogs + editor state**: list pages open `*EditorDialog.razor` (MudDialog) driven by `*EditorState.cs` (e.g. `CityEditorState`, `RoleEditorState`, `OrderEditorState` with `State/OrderItemEditorState.cs`). Validation in the state class + `MudForm`.
-- **List pages**: load once via a `GetAll*Query`, in-memory search/filter, `MudTable`/`MudDataGrid` with permission-gated actions (`_canWrite`). Server paging example: `Orders.razor.cs` + `OrdersListState`.
-- Order editor is a multi-step page (`Editor/OrderEditor.razor(.cs)` + `Steps`, `Products`, `State/…`).
-- **Workflow page** `/orders/{id}/workflow`: stage strip, per-step cards with allowed-status buttons, history panels (`OrderWorkflow.razor` + `Workflow/*`). Status tones are centralized in `OrderWorkflowPresentation.StatusTone(...)` returning `order-tone-*` classes styled in `wwwroot/css/order-workflow.css` (also used on Orders list rows).
-- Local time is displayed through the `UserLocalTime` component (`Workflow/UserLocalTime.razor`), not `DateTime.ToString`.
-
-### MudBlazor gotchas (v9.11)
-
-- `MudMenu` popovers render into the global `MudPopoverProvider` → their styles must be **global CSS**, not component-scoped.
-- `MudDataGrid`: `CurrentPage` setter triggers a server reload; `CurrentPageChanged` is **0-based**; `NavigateTo(Page)` takes a `Page` object.
-- `MudTextField` supports live `Counter`/`MaxLength`; `MudRadioGroup` binds enums directly (used for permission levels).
-- Bump `WaitAndRetry` style loading-hover races: busy flags (`_busy`) must guard every async button.
-
-### Formatting & numbers (UI law)
-
-- Display numeric text with **`CultureInfo.InvariantCulture`** (Latin digits 0-9 even under Arabic culture), e.g. `value.ToString("N2", CultureInfo.InvariantCulture)`.
-- Layout is RTL; Tailwind logical values (`ms-*/me-*/ps-*/pe-*` or `pr-*/pl-*` explicitly) matter — prefer Tailwind utilities over bespoke CSS.
-
-## 6. House rules for agents
+## House rules for agents
 
 1. **Do not commit unless explicitly asked.** The working tree may carry uncommitted user work — never discard, stash, or `checkout --` files you did not author.
-2. Keep changes **consistent with surrounding code style** (spaces between CQRS files, verbose multiline formatting, explicit `>` tags on MudBlazor attributes in one-arg-per-line style for big components). Match the dominant style of each file.
-3. Plans/tasks files for ongoing redesign work live **outside the repo** at `C:\Users\ramig\.opencode\plan\orderhub-redesign-tasks.md` (14 closed templates + task checklist). Update it when executing; do not open plan-mode changes inside the repo.
-4. Code review touchpoints when extending backend: entity validation → Application handler/contracts → Infrastructure configuration + migration → GraphQL/API exposure → UI contract usage. Keep `InternalsVisibleTo OrderHub.Tests` contracts intact.
-5. Secrets/credentials never in source; config via user-secrets/env/external `appsettings.Server.json`.
-6. Release flow: production releases are created **only** by unused `X.Y.Z` tags on `master` (`docs/web-releases.md`). Agents must not push tags.
-
-## 7. Quick pointers
-
-| Need | Look at |
-|---|---|
-| Permission system | `Domain/Enums/Permission*`, `Web/Infrastructure/Authorization/*`, `Roles/` pages |
-| Orders lifecycle | `Domain/Models/Order.Lifecycle.cs`, `Application/Features/Orders/Lifecycle`, `Web/.../Orders/Workflow/*` |
-| Documents (quotations/proforma/invoices) | `Domain/Models/CommercialDocuments/*`, `Application/Features/Documents`, `Web/.../Features/Documents`, `Controllers/Files/*` |
-| Pricing/VAT | `Domain/Services/Pricing/*`, `Tests/OrderPricingTests.cs` |
-| EF schema | `Infrastructure/AppDbContext`, `Configurations/`, `Migrations/` |
-| Auth/cookies | `Web/Controllers/Auth.cs`, `Web/Services/*Identity*` |
+2. Match the dominant style of each file (CQRS files separated by blank lines; verbose multiline formatting; explicit `>` attribute-tag style on big MudBlazor components).
+3. Ongoing redesign plan/task registry lives **outside the repo** at `C:\Users\ramig\.opencode\plan\orderhub-redesign-tasks.md` — update it when executing; do not open plan-mode changes inside the repo.
+4. Backend extension touchpoints in order: entity validation → Application handler/contracts → Infrastructure configuration + migration → UI contract usage. Keep `InternalsVisibleTo("OrderHub.Tests")` intact.
+5. Secrets never in source (see Config section).
