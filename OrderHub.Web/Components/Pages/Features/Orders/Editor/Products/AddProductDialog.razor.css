@@ -1,23 +1,32 @@
-﻿.product-dialog-content {
-    height: 70vh;
+.product-dialog-content {
+    height: min(70vh, 680px);
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto;
-    gap: 12px;
+    gap: 16px;
 }
 
 .product-list-container {
-    border-radius: .5rem;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 1rem;
+    background: var(--mud-palette-surface);
     min-height: 0;
     overflow-y: auto;
+    padding: 8px;
 }
 
 ::deep .list-item {
     background-color: var(--mud-palette-background-gray);
-    border: solid .5px;
-    border-color: lightgray;
-    border-radius: .5rem
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: .75rem;
+    margin-block: 6px;
+    transition: border-color .15s ease, background-color .15s ease;
+}
+
+::deep .list-item:hover {
+    border-color: var(--mud-palette-primary);
 }
 
 ::deep .list-item.mud-selected-item {
-    border: solid 1px var(--mud-palette-primary);
+    border: 1px solid var(--mud-palette-primary);
+    background-color: var(--mud-palette-primary-hover);
 }

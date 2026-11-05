@@ -9,15 +9,13 @@
 @inject IRequestExecutor RequestExecutor
 @inject ILogger<DetailsStep> Logger
 
-<MudStack Spacing="4">
+<MudStack Spacing="4" Class="pt-2">
 
-    <div>
-        <MudText Typo="Typo.h6">
-            تفاصيل الطلب
+    <div class="flex flex-col gap-1 border-b border-slate-100 pb-4">
+        <MudText Typo="Typo.h6" Class="font-bold">
+            بيانات الطلب
         </MudText>
-
-        <MudText Typo="Typo.body2"
-                 Color="Color.Secondary">
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
             بيانات العميل والدفع ومصدر الطلب وطريقة التوصيل
         </MudText>
     </div>

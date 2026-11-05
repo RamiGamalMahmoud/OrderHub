@@ -13,7 +13,7 @@
 
 <OrderDrafts @bind-IsOpen="_isDraftsOpen" />
 
-<MudContainer MaxWidth="MaxWidth.Large">
+<div class="mx-auto w-full max-w-6xl space-y-5">
     @if (_loadError is not null)
     {
         <MudAlert Severity="Severity.Error">@_loadError</MudAlert>
@@ -25,80 +25,78 @@
 
     @if (_loadError is null && _state.CanEdit)
     {
-        <MudStack Spacing="3">
+        <MudStack Spacing="4">
 
-            @* Header *@
-            <MudStack Row
-                      AlignItems="AlignItems.Center"
-                      Justify="Justify.SpaceBetween">
-
-                <div>
-                    <MudText Typo="Typo.h5">
-                        @_pageTitle
-                    </MudText>
-                </div>
-
-                <MudSpacer />
-
-                @if (!IsEdit)
-                {
-                    <PermissionView Feature="PermissionFeature.Documents" Level="PermissionLevel.Write">
-                        <MudStack Row="true" Spacing="2">
-                            <MudButton Size="Size.Small" Color="Color.Primary" Disabled="@(!CanCreateDraftDocument)"
-                                       OnClick="CreateQuotationAsync" StartIcon="@Icons.Material.Outlined.RequestPage">
+            <PageScaffold Title="@_pageTitle" Crumbs="_crumbs">
+                <Actions>
+                    @if (!IsEdit)
+                    {
+                        <PermissionView Feature="PermissionFeature.Documents" Level="PermissionLevel.Write">
+                            <MudButton Size="Size.Small"
+                                       Color="Color.Primary"
+                                       Disabled="@(!CanCreateDraftDocument)"
+                                       OnClick="CreateQuotationAsync"
+                                       StartIcon="@Icons.Material.Outlined.RequestPage">
                                 إنشاء عرض سعر
                             </MudButton>
-                            <MudButton Size="Size.Small" Color="Color.Primary" Disabled="@(!CanCreateDraftDocument)"
-                                       OnClick="CreateProformaInvoiceAsync" StartIcon="@Icons.Material.Outlined.FactCheck">
+                            <MudButton Size="Size.Small"
+                                       Color="Color.Primary"
+                                       Disabled="@(!CanCreateDraftDocument)"
+                                       OnClick="CreateProformaInvoiceAsync"
+                                       StartIcon="@Icons.Material.Outlined.FactCheck">
                                 إنشاء فاتورة أولية
                             </MudButton>
-                        </MudStack>
-                    </PermissionView>
-                }
+                        </PermissionView>
+                    }
 
-                @if (CanShowDrafts)
-                {
-                    <MudButton Color="Color.Primary"
-                               OnClick="ShowDrafts"
+                    @if (CanShowDrafts)
+                    {
+                        <MudButton Color="Color.Primary"
+                                   Variant="Variant.Outlined"
+                                   OnClick="ShowDrafts"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Outlined.Description">
+                            المسودات
+                        </MudButton>
+                    }
+
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Primary"
                                Size="Size.Small"
-                               StartIcon="@Icons.Material.Outlined.Description">
-                        المسودات
+                               Disabled="@(!CanSave)"
+                               OnClick="SaveAsync">
+                        حفظ
                     </MudButton>
-                }
-
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Primary"
-                           Size="Size.Small"
-                           Disabled="@(!CanSave)"
-                           OnClick="SaveAsync">
-                    @(IsEdit ? "حفظ التعديلات" : "إنشاء الطلب")
-                </MudButton>
-
-            </MudStack>
+                </Actions>
+            </PageScaffold>
 
             @* Editor *@
             <MudPaper Elevation="0"
-                      Class="pa-2">
+                      Class="pa-4 rounded-2xl">
 
                 @* Steps *@
-                <MudStack Row
-                          Spacing="2">
-
+                <div class="mb-5 flex w-fit max-w-full flex-wrap items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1">
                     <MudButton Variant="@GetStepVariant(OrderEditorStep.Products)"
                                Color="Color.Primary"
+                               Class="rounded-full px-4 font-semibold"
                                StartIcon="@Icons.Material.Outlined.Inventory2"
                                OnClick="@(() => SelectStep(OrderEditorStep.Products))">
-                        المنتجات
+                        <span class="inline-flex items-center gap-2">
+                            المنتجات
+                            <span class="inline-flex min-w-6 items-center justify-center rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold">
+                                @_state.Items.Count
+                            </span>
+                        </span>
                     </MudButton>
 
                     <MudButton Variant="@GetStepVariant(OrderEditorStep.Details)"
                                Color="Color.Primary"
+                               Class="rounded-full px-4 font-semibold"
                                StartIcon="@Icons.Material.Outlined.ReceiptLong"
                                OnClick="@(() => SelectStep(OrderEditorStep.Details))">
                         تفاصيل الطلب
                     </MudButton>
-
-                </MudStack>
+                </div>
 
                 @* Step Content *@
                 @if (_activeStep == OrderEditorStep.Products)
@@ -110,8 +108,8 @@
                     <DetailsStep @key="_sessionId" State="_state" DetailsChanged="OnEditorChanged" />
                 }
 
-                <MudPaper Outlined="true" Class="pa-3 mt-3">
-                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">إجمالي الطلب</MudText>
+                <MudPaper Outlined="true" Class="pa-4 mt-5 rounded-2xl border-slate-200">
+                    <MudText Typo="Typo.subtitle1" Color="Color.Primary">إجمالي الطلب</MudText>
                     <MudGrid Class="mt-2">
                         <MudItem xs="12" sm="4">
                             <MudNumericField T="decimal" Label="تكلفة التوصيل" Min="0" Immediate="true" Value="_state.DeliveryCost" ValueChanged="@(async value => { _state.DeliveryCost = value; await OnEditorChanged(); })" />
@@ -156,7 +154,7 @@
                 @if (!IsEdit)
                 {
                     <PermissionView Feature="PermissionFeature.Documents" Level="PermissionLevel.Write">
-                        <MudPaper Outlined="true" Class="pa-3 mt-3">
+                        <MudPaper Outlined="true" Class="pa-4 mt-4 rounded-2xl border-slate-200">
                             <MudText Typo="Typo.subtitle2" Color="Color.Primary">وثائق الطلب</MudText>
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2">
                                 تُنشأ من بيانات المسودة الحالية، ويمكن إصدار نسخة جديدة برقم جديد في كل مرة.
@@ -213,12 +211,14 @@
         </MudStack>
     }
 
-    <MudButton Variant="Variant.Filled"
+            <MudButton Variant="Variant.Filled"
                Color="Color.Primary"
                FullWidth="true"
+               Size="Size.Large"
+               Class="rounded-xl font-bold shadow-sm"
                Disabled="@(!CanSave)"
                OnClick="SaveAsync">
         @(IsEdit ? "حفظ التعديلات" : "إنشاء الطلب")
     </MudButton>
 
-</MudContainer>
+</div>

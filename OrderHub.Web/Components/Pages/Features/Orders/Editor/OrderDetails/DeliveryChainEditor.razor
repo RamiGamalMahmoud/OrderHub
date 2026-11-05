@@ -6,10 +6,11 @@
 
     <MudStack Row
               AlignItems="AlignItems.Center"
-              Justify="Justify.SpaceBetween">
+              Justify="Justify.SpaceBetween"
+              Class="flex-wrap gap-y-2">
 
         <div>
-            <MudText Typo="Typo.subtitle2">
+            <MudText Typo="Typo.subtitle2" Class="font-bold">
                 سلسلة التوصيل
             </MudText>
 
@@ -20,6 +21,7 @@
         </div>
 
         <MudButton Variant="Variant.Outlined"
+                   Class="rounded-xl font-semibold"
                    StartIcon="@Icons.Material.Outlined.Add"
                    Disabled="Disabled"
                    OnClick="AddStepAsync">

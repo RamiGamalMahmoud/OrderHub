@@ -15,12 +15,12 @@
 
     @if (_workingCopy is not null)
     {
-        <MudStack Spacing="3">
+        <MudStack Spacing="3" Class="h-full">
             <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
                 <MudIcon Icon="@Icons.Material.Outlined.Inventory2"
                          Color="Color.Primary" />
 
-                <MudText Typo="Typo.h6">
+                <MudText Typo="Typo.h6" Class="font-bold">
                     @if (IsAdding)
                     {
                         <text>إضافة منتج إلى الطلب</text>
@@ -110,9 +110,9 @@
 
                 @if (CurrentPricing is { } pricing)
                     {
-                        <MudPaper Outlined="true" Class="pa-3">
+            <MudPaper Outlined="true" Class="pa-4 rounded-2xl border-slate-200 bg-slate-50">
                             <MudStack Spacing="2">
-                                <MudText Typo="Typo.subtitle2">
+                                <MudText Typo="Typo.subtitle2" Class="font-bold">
                                     ملخص السعر
                                 </MudText>
 
@@ -234,8 +234,9 @@
                 </MudAlert>
             }
 
-            <MudStack Row Justify="Justify.FlexEnd" Spacing="2">
+            <MudStack Row Justify="Justify.FlexEnd" Spacing="2" Class="mt-auto flex-wrap border-t border-slate-100 pt-4">
                 <MudButton OnClick="Cancel"
+                           Class="rounded-xl font-semibold"
                            Disabled="_saving">
                     إلغاء
                 </MudButton>
@@ -244,6 +245,7 @@
                            Disabled="_saving"
                            Color="Color.Primary"
                            Variant="Variant.Filled"
+                           Class="rounded-xl px-5 font-bold"
                            StartIcon="@(IsAdding
                                                           ? Icons.Material.Outlined.Add
                                                       : Icons.Material.Outlined.Save)">

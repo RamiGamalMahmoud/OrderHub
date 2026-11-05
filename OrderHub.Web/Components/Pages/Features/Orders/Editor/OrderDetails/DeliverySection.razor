@@ -2,7 +2,7 @@
 @using OrderHub.Domain.Enums
 @using OrderHub.Web.Components.Pages.Features.Orders.Editor.State
 
-<MudPaper Outlined="true" Class="pa-4">
+<MudPaper Outlined="true" Class="pa-4 rounded-2xl border-slate-200">
     <MudStack Spacing="3">
 
         <MudStack Row
@@ -14,7 +14,7 @@
                      Color="Color.Primary" />
 
             <div>
-                <MudText Typo="Typo.subtitle1">
+                <MudText Typo="Typo.subtitle1" Class="font-bold">
                     التوصيل
                 </MudText>
 
@@ -27,6 +27,7 @@
         </MudStack>
 
         <MudToggleGroup T="DeliveryMethod?"
+                        Class="flex flex-wrap gap-2 border-0"
                         Value="Delivery.Method"
                         FixedContent
                         CheckMark
@@ -38,6 +39,7 @@
             {
                 <MudToggleItem T="DeliveryMethod?"
                                Value="@((DeliveryMethod?)method.Value)"
+                               Class="rounded-xl"
                                Text="@method.DisplayName" />
             }
 

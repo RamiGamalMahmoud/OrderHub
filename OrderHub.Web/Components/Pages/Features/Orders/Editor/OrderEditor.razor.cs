@@ -15,11 +15,17 @@ using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Services.Pricing;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor.State;
+using OrderHub.Web.Components.Common;
 
 namespace OrderHub.Web.Components.Pages.Features.Orders.Editor;
 
 public partial class OrderEditor : IDisposable
 {
+    private static readonly PageScaffold.CrumbItem[] _crumbs =
+    [
+        new("الطلبات", "/orders")
+    ];
+
     private bool _isDraftsOpen;
     private bool _isSavingUpdate;
     private bool _isCreatingDocument;

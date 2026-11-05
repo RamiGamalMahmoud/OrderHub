@@ -1,7 +1,7 @@
 ﻿@using OrderHub.Application.Common.Lookups
 @using OrderHub.Domain.Enums
 
-<MudPaper Outlined="true" Class="pa-4">
+<MudPaper Outlined="true" Class="pa-4 rounded-2xl border-slate-200">
     <MudStack Spacing="2">
 
         <MudStack Row
@@ -13,7 +13,7 @@
                      Color="Color.Primary" />
 
             <div>
-                <MudText Typo="Typo.subtitle1">
+                <MudText Typo="Typo.subtitle1" Class="font-bold">
                     مصدر الطلب
                 </MudText>
 
@@ -26,6 +26,7 @@
         </MudStack>
 
         <MudToggleGroup T="OrderSource?"
+                        Class="flex flex-wrap gap-2 border-0"
                         CheckMark
                         FixedContent
                         Value="OrderSource"
@@ -37,6 +38,7 @@
             {
                 <MudToggleItem T="OrderSource?"
                                Value="@((OrderSource?)source.Value)"
+                               Class="rounded-xl"
                                Text="@source.DisplayName" />
             }
 

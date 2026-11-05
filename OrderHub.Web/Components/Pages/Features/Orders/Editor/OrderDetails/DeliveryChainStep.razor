@@ -2,7 +2,7 @@
 @using OrderHub.Domain.Enums
 @using OrderHub.Web.Components.Pages.Features.Orders.Editor.State
 
-<MudPaper Outlined="true" Class="pa-3">
+<MudPaper Outlined="true" Class="pa-4 rounded-2xl border-slate-200 bg-slate-50">
 
     <MudStack Spacing="3">
 
@@ -16,12 +16,13 @@
                       Spacing="2">
 
                 <MudAvatar Size="Size.Small"
-                           Color="Color.Primary">
+                           Color="Color.Primary"
+                           Class="font-bold">
                     @Step.StepOrder
                 </MudAvatar>
 
                 <div>
-                    <MudText Typo="Typo.subtitle2">
+                    <MudText Typo="Typo.subtitle2" Class="font-bold">
                         خطوة @Step.StepOrder
                     </MudText>
 
@@ -62,6 +63,7 @@
 
         @* Step type *@
         <MudToggleGroup T="DeliveryMethod"
+                        Class="flex flex-wrap gap-2 border-0"
                         CheckMark
                         FixedContent
                         Value="Step.Method"
@@ -72,10 +74,12 @@
 
             <MudToggleItem T="DeliveryMethod"
                            Value="DeliveryMethod.DeliveryMan"
+                           Class="rounded-xl"
                            Text="مندوب" />
 
             <MudToggleItem T="DeliveryMethod"
                            Value="DeliveryMethod.ShippingCompany"
+                           Class="rounded-xl"
                            Text="شركة شحن" />
 
         </MudToggleGroup>
