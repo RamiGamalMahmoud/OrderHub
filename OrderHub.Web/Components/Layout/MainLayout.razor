@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@using OrderHub.Web.Components.Layout
 
 <MudRTLProvider RightToLeft=true>
     @* تفعيل خيارات الثيم الحديثة ودعم اللغة العربية *@
@@ -9,36 +10,45 @@
 
     <MudLayout>
 
-        <!-- شريط علوي عصري بخلفية بيضاء (أو داكنة حسب الثيم) وفواصل رقيقة جداً -->
-        <MudAppBar Elevation="0" Class="border-bottom-subtle px-4" Color="Color.Surface">
+        <!-- شريط علوي عصري: العنوان + القوائم المنسدلة (حاسوب) + الهامبرغر (هاتف) -->
+        <MudAppBar Elevation="0" Class="top-appbar border-bottom-subtle px-4" Color="Color.Surface">
 
+            <!-- زر فتح الدرّج يظهر على الشاشات الصغيرة فقط -->
             <MudIconButton Icon="@Icons.Material.Filled.Menu"
                            Color="Color.Default"
                            Edge="Edge.Start"
                            OnClick="ToggleDrawer"
-                           Class="me-2" />
+                           Class="me-2 d-sm-none align-self-center" />
 
-            <MudText Typo="Typo.h6" Class="font-weight-bold tracking-tight text-primary">
+            <!-- العنوان رابط إلى الصفحة الرئيسية -->
+            <MudLink Href="/"
+                     Underline="Underline.None"
+                     Typo="Typo.h5"
+                     Class="top-nav-brand font-weight-bold tracking-tight text-primary align-self-center">
                 OrderHub
-            </MudText>
+            </MudLink>
 
             <MudSpacer />
 
-            @* هنا يمكنك إضافة أيقونة الملف الشخصي أو الإشعارات لاحقاً *@
-            <form method="post" action="/auth/logout">
+            <!-- القوائم المنسدلة للحاسوب (بمنتصف الشريط) -->
+            <NavMenu Variant="NavMenu.NavVariant.Dropdown" Class="d-none d-sm-flex align-self-center" />
+
+            <MudSpacer />
+
+            <form method="post" action="/auth/logout" class="d-flex align-items-center">
                 <MudButton ButtonType="ButtonType.Submit">
                     تسجيل الخروج
                 </MudButton>
             </form>
         </MudAppBar>
 
-        <!-- قائمة جانبية مسطحة ممتدة بالكامل بخط فاصل جانبي بدلاً من الظلال التقليدية -->
+        <!-- درّج الملاحة للهاتف فقط (نفس العناصر) -->
         <MudDrawer @bind-Open="_drawerOpen"
                    Elevation="0"
                    ClipMode="DrawerClipMode.Always"
                    Variant="DrawerVariant.Responsive"
                    Class="border-inline-subtle">
-            <NavMenu />
+            <NavMenu Variant="NavMenu.NavVariant.Drawer" />
         </MudDrawer>
 
         <!-- منطقة المحتوى الرئيسية مع خلفية ناعمة مريحة للعين لتبرز بداخلها الـ Cards -->
@@ -59,7 +69,12 @@
 
 @code
 {
-    private bool _drawerOpen = true;
+    private bool _drawerOpen = false;
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
 
     // إعداد الـ Theme ليدعم اتجاه اليمين لليسار (RTL) بشكل تلقائي وتخصيص الألوان الأساسية
     private MudTheme _customTheme = new MudTheme()
@@ -82,9 +97,4 @@
             DrawerBackground = "#FFFFFF"
         }
     };
-
-    private void ToggleDrawer()
-    {
-        _drawerOpen = !_drawerOpen;
-    }
 }

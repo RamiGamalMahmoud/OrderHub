@@ -43,19 +43,19 @@ h1:focus {
     color: white;
 }
 
-/* ÊÍÓíä åíßá ÇáŞÇÆãÉ ÇáÌÇäÈíÉ ÈÇáßÇãá */
+/* ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 .custom-modern-nav {
     padding: 12px 16px !important;
 }
 
-/* ÍÇæíÉ áßá ŞÓã áÖÈØ ÇáãÓÇİÇÊ */
+/* ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 .nav-section-container {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-/* ÊäÓíŞ ÚäÇæíä ÇáÃŞÓÇã áÊÕÈÍ ÎİíİÉ æÃäíŞÉ */
+/* ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 .custom-modern-nav .nav-section-title {
     font-size: 0.75rem !important;
     font-weight: 700 !important;
@@ -66,7 +66,7 @@ h1:focus {
     text-transform: uppercase;
 }
 
-/* ÌÚá ÍæÇİ ÇáÑæÇÈØ ÏÇÆÑíÉ äÇÚãÉ ãÚ ÊÃËíÑ ÊÍæíã ÚÕÑí */
+/* ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ */
 .custom-modern-nav .mud-nav-link,
 .custom-modern-nav .mud-nav-group-header {
     border-radius: 8px !important;
@@ -75,50 +75,118 @@ h1:focus {
     color: var(--mud-palette-text-primary) !important;
 }
 
-    /* ÊÃËíÑ ÚäÏ ÊãÑíÑ ÇáİÃÑÉ (Hover) */
+    /* ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (Hover) */
     .custom-modern-nav .mud-nav-link:hover,
     .custom-modern-nav .mud-nav-group-header:hover {
         background-color: rgba(var(--mud-palette-primary-rgb), 0.06) !important;
         color: var(--mud-palette-primary) !important;
     }
 
-    /* ÊãííÒ ÇáÑÇÈØ ÇáäÔØ ÍÇáíÇğ ÈÔßá ÈÇÑÒ æÇÍÊÑÇİí */
+    /* ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
     .custom-modern-nav .mud-nav-link.active {
         background-color: var(--mud-palette-primary) !important;
         color: var(--mud-palette-primary-text) !important;
         font-weight: 600 !important;
     }
 
-        /* ÇáãÍÇİÙÉ Úáì ÃáæÇä ÃíŞæäÇÊ ÇáÑæÇÈØ ÇáäÔØÉ */
+        /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
         .custom-modern-nav .mud-nav-link.active .mud-nav-link-icon-default {
             color: var(--mud-palette-primary-text) !important;
         }
 
-/* ÊäÓíŞ ÇáÑæÇÈØ ÇáİÑÚíÉ ÏÇÎá ÇáãÌãæÚÇÊ áÅÚØÇÆåÇ ÅÒÇÍÉ ÈÕÑíÉ ĞßíÉ */
+/* ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ */
 .custom-modern-nav .mud-nav-group .mud-nav-link {
     padding-inline-start: 32px !important;
     font-size: 0.875rem !important;
     opacity: 0.85;
 }
 
-/* İæÇÕá ÑŞíŞÉ æÛíÑ ãÒÚÌÉ ááÚíä */
+/* ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ */
 .custom-modern-nav .nav-divider {
     margin: 12px 8px !important;
     opacity: 0.4;
 }
 
 
-/* ÊäÓíŞ ÇáÎØ ÇáÓİáí ááåíÏÑ ÇáÚáæí */
+/* ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
+/* =========================================================
+   Ø´Ø±ÙŠØ· Ø§Ù„ØªÙ†Ù‚Ù„ Ø§Ù„Ø¹Ù„ÙˆÙŠ: Ø§Ù„Ù‚ÙˆØ§Ø¦Ù… Ø§Ù„Ù…Ù†Ø³Ø¯Ù„Ø© (ÙˆØ¶Ø¹ Ø§Ù„Ø­Ø§Ø³ÙˆØ¨)
+   Ù…Ù„Ø§Ø­Ø¸Ø©: Ù…Ø­ØªÙˆÙ‰ Ø§Ù„Ù‚ÙˆØ§Ø¦Ù… Ø§Ù„Ù…Ù†Ø³Ø¯Ù„Ø© ÙŠÙØ±Ø­Ù‘Ù„ Ø¥Ù„Ù‰ MudPopoverProvider
+   Ø®Ø§Ø±Ø¬ DOM Ø§Ù„Ù…ÙƒÙˆÙ‘Ù†ØŒ Ù„Ø°Ù„Ùƒ Ù‡Ø°Ù‡ Ø§Ù„Ù‚ÙˆØ§Ø¹Ø¯ CSS Ø¹Ø§Ù„Ù…ÙŠÙ‹Ø§ (ÙˆÙ„ÙŠØ³Øª
+   Ø¯Ø§Ø®Ù„ CSS Isolation).
+   ========================================================= */
+
+/* Ø§Ù„Ø´Ø±ÙŠØ· ÙŠÙ…Ø¯Ø¯ Ø£Ø·ÙØ§Ù„Ù‡ Ø¹Ù…ÙˆØ¯ÙŠÙ‹Ø§ Ø­ØªÙ‰ ØªØµÙ„ Ø§Ù„Ø£Ø²Ø±Ø§Ø± Ù„Ø§Ø±ØªÙØ§Ø¹ Ø§Ù„Ø´Ø±ÙŠØ· ÙƒØ§Ù…Ù„Ù‹Ø§ */
+.top-appbar {
+    align-items: stretch;
+}
+
+/* ØµÙ Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø§Øª */
+.top-nav {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+    /* Ø²Ø± Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø©: Ø§Ø±ØªÙØ§Ø¹ ÙƒØ§Ù…Ù„ + Ø®Ø· Ø£Ø³ÙˆØ¯ + Ø¨Ù„Ø§ Ø­ÙˆØ§Ù Ù…Ø³ØªØ¯ÙŠØ±Ø© */
+    .top-nav .mud-menu-button-activator {
+        height: 100% !important;
+        min-height: 48px;
+        border-radius: 5px;
+        color: var(--mud-palette-text-primary) !important;
+        font-size: 0.95rem;
+        padding: 0 14px;
+        transition: background-color 0.15s ease;
+    }
+
+        /* hover Ø¹Ù„Ù‰ Ø²Ø± Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø©ØŒ ÙˆØ§Ù„Ø­Ø§Ù„Ø© Ø§Ù„Ù†Ø´Ø·Ø© (Ø§Ù„ØµÙØ­Ø© Ø§Ù„Ø­Ø§Ù„ÙŠØ© Ø¯Ø§Ø®Ù„Ù‡Ø§) */
+        .top-nav .mud-menu-button-activator:hover,
+        .top-nav .top-nav-group-active .mud-menu-button-activator {
+            background-color: var(--mud-palette-action-default-hover) !important;
+        }
+
+    .top-nav .top-nav-group-active .mud-menu-button-activator {
+        color: var(--mud-palette-primary) !important;
+        font-weight: 700;
+    }
+
+    /* Ø£ÙŠÙ‚ÙˆÙ†Ø§Øª ØµØºÙŠØ±Ø©: Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø§Øª ÙˆØ¹Ù†Ø§ØµØ± Ø§Ù„Ù‚ÙˆØ§Ø¦Ù… Ø§Ù„Ù…Ù†Ø³Ø¯Ù„Ø© */
+    .top-nav .mud-menu-button-activator svg,
+    .top-nav-popover .mud-menu-item svg {
+        font-size: 18px !important;
+        width: 18px !important;
+        height: 18px !important;
+    }
+
+/* Ù…Ø­ØªÙˆÙ‰ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ù…Ù†Ø³Ø¯Ù„Ø©: Ù‡ÙˆØ§Ù…Ø´ Ø¯Ø§Ø®Ù„ÙŠØ© + ÙØ±Ø§ØºØ§Øª Ø¨ÙŠÙ† Ø§Ù„Ø¹Ù†Ø§ØµØ± */
+.top-nav-popover .mud-menu-list-wrapper {
+    padding: 6px;
+}
+
+.top-nav-popover .mud-menu-item {
+    margin: 4px 0;
+    border-radius: 10px;
+    padding-inline: 14px;
+    min-height: 40px;
+    color: var(--mud-palette-text-primary);
+    font-weight: 500;
+}
+
+    .top-nav-popover .mud-menu-item:hover {
+        background-color: var(--mud-palette-action-default-hover);
+    }
+
 .border-bottom-subtle {
     border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
 }
 
-/* ÊäÓíŞ ÇáÎØ ÇáÌÇäÈí ááŞÇÆãÉ ÇáÌÇäÈíÉ íÊãÇÔì ãÚ ÇáÜ RTL */
+/* ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ RTL */
 .border-inline-subtle {
     border-left: 1px solid rgba(0, 0, 0, 0.06) !important;
 }
 
-/* ÊäÓíŞ ÅÖÇİí áäÕ ÇááæÌæ áíÚØí ØÇÈÚ ÇÍÊÑÇİí æãæÏÑä */
+/* ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 .text-primary {
     color: var(--mud-palette-primary) !important;
 }
@@ -131,13 +199,13 @@ h1:focus {
     letter-spacing: -0.025em;
 }
 
-/* ÎáİíÉ ãäØŞÉ ÇáÚãá áÊÈÏæ ÇáÃÌÒÇÁ ÇáãäÈËŞÉ æÇáÜ Cards ßÃäåÇ ØÈŞÇÊ ÚáæíÉ İæŞåÇ */
+/* ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Cards ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ */
 .main-content-bg {
     background-color: var(--mud-palette-background) !important;
     min-height: 100vh;
 }
 
-/* ÊÍÓíä ÇáãÙåÑ ÇáÌãÇáí áÔÑíØ ÎØÃ ÈáíÒÇÑ ÇáÃÓİá */
+/* ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 #blazor-error-ui {
     background: #FEF2F2 !important;
     color: #991B1B !important;
@@ -218,3 +286,17 @@ h1:focus {
         min-height: auto;
     }
 }
+
+.mud-input.mud-input-outlined .mud-input-outlined-border {
+    border-radius: 10px;
+}
+
+.checkbox-between {
+    width: 100%;
+}
+
+    .checkbox-between .mud-checkbox {
+        width: 100%;
+        justify-content: space-between;
+        flex-direction: row-reverse;
+    }

@@ -1,183 +1,200 @@
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
-<MudNavMenu Class="orderhub-nav custom-modern-nav"
-            Bordered="false">
+@using Microsoft.AspNetCore.Components.Routing
+@using OrderHub.Domain.Enums
+@using System.Collections.Generic
+@using System.Linq
+@inject OrderHub.Web.Services.PermissionAccess PermissionAccess
+@inject NavigationManager Navigation
+@implements IDisposable
 
-    <!-- عام -->
-    <div class="nav-section-container">
-        <MudText Typo="Typo.caption"
-                 Class="nav-section-title">
-            عام
-        </MudText>
-
-        <MudNavLink Href="/"
-                    Match="NavLinkMatch.All"
-                    Icon="@Icons.Material.Filled.SpaceDashboard">
-            الرئيسية
-        </MudNavLink>
-
-        <PermissionView Feature="PermissionFeature.Orders">
-            <MudNavLink Href="/orders"
-                        Icon="@Icons.Material.Filled.ShoppingBag">
-                الطلبات
-            </MudNavLink>
-        </PermissionView>
+@if (Variant == NavVariant.Dropdown)
+{
+    <div class="top-nav @Class">
+        @foreach (var group in Groups)
+        {
+            if (GroupVisible(group))
+            {
+                <MudMenu Label="@group.Title"
+                         StartIcon="@group.Icon"
+                         Color="Color.Primary"
+                         Variant="@MudBlazor.Variant.Text"
+                         Dense="true"
+                         Class="@GetGroupClass(group)"
+                         PopoverClass="top-nav-popover">
+                    @foreach (var item in VisibleItems(group))
+                    {
+                        <MudMenuItem Href="@item.Href"
+                                     Icon="@item.Icon"
+                                     IconColor="Color.Inherit">
+                            @item.Label
+                        </MudMenuItem>
+                    }
+                </MudMenu>
+            }
+        }
     </div>
+}
+else
+{
+    <MudNavMenu Class="@DrawerContainerClass"
+                Bordered="false">
+        @foreach (var group in Groups)
+        {
+            if (GroupVisible(group))
+            {
+                <MudNavGroup Title="@group.Title"
+                             Icon="@group.Icon"
+                             ExpandIcon="@Icons.Material.Filled.ExpandMore">
+                    @foreach (var item in VisibleItems(group))
+                    {
+                        <MudNavLink Href="@item.Href"
+                                    Icon="@item.Icon">
+                            @item.Label
+                        </MudNavLink>
+                    }
+                </MudNavGroup>
+            }
+        }
+    </MudNavMenu>
+}
 
-    <MudDivider Class="nav-divider" />
+@code {
+    public enum NavVariant
+    {
+        /// <summary>شريط تنقل أفقي بقوائم منسدلة (للحاسوب).</summary>
+        Dropdown,
 
-    <!-- إدارة الأعمال -->
-    <div class="nav-section-container">
-        <MudText Typo="Typo.caption"
-                 Class="nav-section-title">
-            إدارة الأعمال
-        </MudText>
+        /// <summary>قائمة عمودية داخل درّج جانبي (للهاتف).</summary>
+        Drawer
+    }
 
-        <!-- المنتجات -->
-        <MudNavGroup Title="المنتجات"
-                     Icon="@Icons.Material.Filled.Inventory2"
-                     ExpandIcon="@Icons.Material.Filled.ExpandMore">
+    private sealed record NavItemModel(
+        string Label,
+        string Href,
+        string Icon,
+        PermissionFeature Feature,
+        PermissionLevel Level = PermissionLevel.Read,
+        bool AdminOnly = false);
 
-            <PermissionView Feature="PermissionFeature.Products">
-                <MudNavLink Href="/products"
-                            Icon="@Icons.Material.Outlined.Layers">
-                    المنتجات
-                </MudNavLink>
-            </PermissionView>
+    private sealed record NavGroupModel(
+        string Title,
+        string Icon,
+        NavItemModel[] Items);
 
-            <PermissionView Feature="PermissionFeature.Categories">
-                <MudNavLink Href="/categories"
-                            Icon="@Icons.Material.Outlined.Category">
-                    الأقسام
-                </MudNavLink>
-            </PermissionView>
+    [Parameter]
+    public NavVariant Variant { get; set; } = NavVariant.Drawer;
 
-            <PermissionView Feature="PermissionFeature.Properties">
-                <MudNavLink Href="/properties"
-                            Icon="@Icons.Material.Outlined.Tune">
-                    خصائص المنتجات
-                </MudNavLink>
-            </PermissionView>
+    [Parameter]
+    public string? Class { get; set; }
 
-        </MudNavGroup>
+    private string DrawerContainerClass =>
+        string.Join(" ", "orderhub-nav", "custom-modern-nav", Class).Trim();
 
-        <!-- جهات التعامل -->
-        <MudNavGroup Title="جهات التعامل"
-                     Icon="@Icons.Material.Filled.Groups"
-                     ExpandIcon="@Icons.Material.Filled.ExpandMore">
+    /// <summary>مصدر واحد لعناصر التنقل؛ الترتيب من اليمين إلى اليسار في RTL.</summary>
+    private static readonly NavGroupModel[] Groups =
+    [
+        new("الطلبات", Icons.Material.Filled.ShoppingBag,
+        [
+            new("الطلبات", "/orders", Icons.Material.Outlined.ShoppingBag, PermissionFeature.Orders),
+            new("إنشاء طلب", "/orders/create", Icons.Material.Filled.Add, PermissionFeature.Orders, PermissionLevel.Write)
+        ]),
+        new("المنتجات", Icons.Material.Filled.Inventory2,
+        [
+            new("المنتجات", "/products", Icons.Material.Outlined.Layers, PermissionFeature.Products),
+            new("الأقسام", "/categories", Icons.Material.Outlined.Category, PermissionFeature.Categories),
+            new("خصائص المنتجات", "/properties", Icons.Material.Outlined.Tune, PermissionFeature.Properties)
+        ]),
+        new("جهات التعامل", Icons.Material.Filled.Groups,
+        [
+            new("العملاء", "/clients", Icons.Material.Outlined.Person, PermissionFeature.Clients),
+            new("الموردون", "/suppliers", Icons.Material.Outlined.Storefront, PermissionFeature.Suppliers),
+            new("المناديب", "/deliverymen", Icons.Material.Outlined.Moped, PermissionFeature.Deliverymen),
+            new("شركات الشحن", "/shipping-carriers", Icons.Material.Outlined.LocalShipping, PermissionFeature.ShippingCarriers)
+        ]),
+        new("المستندات والوثائق", Icons.Material.Filled.Description,
+        [
+            new("الفواتير", "/invoices", Icons.Material.Outlined.ReceiptLong, PermissionFeature.Documents),
+            new("عروض الأسعار", "/quotations", Icons.Material.Outlined.RequestPage, PermissionFeature.Documents),
+            new("الفواتير الأولية", "/proforma-invoices", Icons.Material.Outlined.FactCheck, PermissionFeature.Documents)
+        ]),
+        new("الإدارة", Icons.Material.Filled.AdminPanelSettings,
+        [
+            new("المدن", "/cities", Icons.Material.Outlined.LocationOn, PermissionFeature.Cities),
+            new("المستخدمون", "/admin/users", Icons.Material.Outlined.PeopleOutline, PermissionFeature.Users, AdminOnly: true),
+            new("الصلاحيات", "/admin/roles", Icons.Material.Outlined.GppGood, PermissionFeature.Users, AdminOnly: true)
+        ])
+    ];
 
-            <PermissionView Feature="PermissionFeature.Clients">
-                <MudNavLink Href="/clients"
-                            Icon="@Icons.Material.Outlined.Person">
-                    العملاء
-                </MudNavLink>
-            </PermissionView>
+    private readonly HashSet<(PermissionFeature Feature, PermissionLevel Level)> _allowedPermissions = [];
+    private bool _permissionsEvaluated;
+    private bool _isAdmin;
 
-            <PermissionView Feature="PermissionFeature.Suppliers">
-                <MudNavLink Href="/suppliers"
-                            Icon="@Icons.Material.Outlined.Storefront">
-                    الموردون
-                </MudNavLink>
-            </PermissionView>
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
 
-            <PermissionView Feature="PermissionFeature.Deliverymen">
-                <MudNavLink Href="/deliverymen"
-                            Icon="@Icons.Material.Outlined.Moped">
-                    المناديب
-                </MudNavLink>
-            </PermissionView>
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_permissionsEvaluated)
+        {
+            return;
+        }
 
-            <PermissionView Feature="PermissionFeature.ShippingCarriers">
-                <MudNavLink Href="/shipping-carriers"
-                            Icon="@Icons.Material.Outlined.LocalShipping">
-                    شركات الشحن
-                </MudNavLink>
-            </PermissionView>
+        var combinations = Groups
+            .SelectMany(group => group.Items)
+            .Select(item => (item.Feature, item.Level))
+            .Distinct();
 
-        </MudNavGroup>
+        foreach (var (feature, level) in combinations)
+        {
+            if (await PermissionAccess.IsAllowedAsync(feature, level))
+            {
+                _allowedPermissions.Add((feature, level));
+            }
+        }
 
-        <!-- المستندات -->
-        <MudNavGroup Title="المستندات والوثائق"
-                     Icon="@Icons.Material.Filled.Description"
-                     ExpandIcon="@Icons.Material.Filled.ExpandMore">
+        if (AuthenticationStateTask is not null)
+        {
+            var user = (await AuthenticationStateTask).User;
+            _isAdmin = user?.IsInRole("Admin") ?? false;
+        }
 
-            <PermissionView Feature="PermissionFeature.Documents">
-                <MudNavLink Href="/invoices"
-                            Icon="@Icons.Material.Outlined.ReceiptLong">
-                    الفواتير
-                </MudNavLink>
-            </PermissionView>
+        _permissionsEvaluated = true;
+    }
 
-            <PermissionView Feature="PermissionFeature.Documents">
-                <MudNavLink Href="/quotations"
-                            Icon="@Icons.Material.Outlined.RequestPage">
-                    عروض الأسعار
-                </MudNavLink>
-            </PermissionView>
+    private bool GroupVisible(NavGroupModel group) => VisibleItems(group).Any();
 
-            <PermissionView Feature="PermissionFeature.Documents">
-                <MudNavLink Href="/proforma-invoices"
-                            Icon="@Icons.Material.Outlined.FactCheck">
-                    الفواتير الأولية
-                </MudNavLink>
-            </PermissionView>
+    private IEnumerable<NavItemModel> VisibleItems(NavGroupModel group) =>
+        group.Items.Where(item =>
+            (!item.AdminOnly || _isAdmin) &&
+            _allowedPermissions.Contains((item.Feature, item.Level)));
 
-        </MudNavGroup>
-    </div>
+    /// <summary>هل مجموعة القائمة تحتوي الصفحة الحالية؟ لتلوين زر المجموعة في الشريط العلوي.</summary>
+    private bool IsGroupActive(NavGroupModel group)
+    {
+        var path = new Uri(Navigation.Uri).AbsolutePath;
 
-    <MudDivider Class="nav-divider" />
+        if (path == "/")
+        {
+            return false;
+        }
 
-    <!-- التواصل -->
-    <div class="nav-section-container">
-        <MudText Typo="Typo.caption"
-                 Class="nav-section-title">
-            التواصل
-        </MudText>
+        return group.Items.Any(item =>
+            path.Equals(item.Href, StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith(item.Href + "/", StringComparison.OrdinalIgnoreCase));
+    }
 
-        <MudNavLink Href="/messages"
-                    Icon="@Icons.Material.Filled.Forum">
-            الرسائل
-        </MudNavLink>
-    </div>
+    private string GetGroupClass(NavGroupModel group) =>
+        IsGroupActive(group) ? "top-nav-group-active" : string.Empty;
 
-    <MudDivider Class="nav-divider" />
+    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
 
-    <!-- النظام -->
-    <div class="nav-section-container">
-        <MudText Typo="Typo.caption"
-                 Class="nav-section-title">
-            النظام
-        </MudText>
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Navigation.LocationChanged += OnLocationChanged;
+    }
 
-        <MudNavGroup Title="الإدارة"
-                     Icon="@Icons.Material.Filled.AdminPanelSettings"
-                     ExpandIcon="@Icons.Material.Filled.ExpandMore">
-
-            <PermissionView Feature="PermissionFeature.Cities">
-                <MudNavLink Href="/cities"
-                            Icon="@Icons.Material.Outlined.LocationOn">
-                    المدن
-                </MudNavLink>
-            </PermissionView>
-
-            <PermissionView Feature="PermissionFeature.Users">
-                <AuthorizeView Roles="Admin">
-                    <MudNavLink Href="/admin/users"
-                                Icon="@Icons.Material.Outlined.PeopleOutline">
-                        المستخدمون
-                    </MudNavLink>
-                </AuthorizeView>
-            </PermissionView>
-
-            <PermissionView Feature="PermissionFeature.Users">
-                <AuthorizeView Roles="Admin">
-                    <MudNavLink Href="/admin/roles"
-                                Icon="@Icons.Material.Outlined.GppGood">
-                        الصلاحيات
-                    </MudNavLink>
-                </AuthorizeView>
-            </PermissionView>
-
-        </MudNavGroup>
-    </div>
-
-</MudNavMenu>
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args) =>
+        InvokeAsync(StateHasChanged);
+}

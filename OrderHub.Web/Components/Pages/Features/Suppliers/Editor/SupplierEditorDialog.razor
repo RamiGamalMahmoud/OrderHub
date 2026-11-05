@@ -37,7 +37,7 @@
         else
         {
             <MudForm @ref="_form">
-                <MudStack Spacing="3"
+                <MudStack Spacing="2"
                           Class="pa-1">
                     @if (_saveError is not null)
                     {
@@ -131,8 +131,6 @@
                         </MudItem>
                     </MudGrid>
 
-                    <MudDivider />
-
                     <MudText Typo="Typo.subtitle2">
                         مواعيد العمل
                     </MudText>
@@ -159,8 +157,6 @@
                         </MudItem>
                     </MudGrid>
 
-                    <MudDivider />
-
                     <MudText Typo="Typo.subtitle2">
                         المنتجات المرتبطة (@_state.ProductIds.Count)
                     </MudText>
@@ -168,6 +164,7 @@
                     <MudTextField T="string"
                                   @bind-Value="_productSearch"
                                   Placeholder="ابحث عن منتج"
+                                  Variant="Variant.Outlined"
                                   Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Search"
                                   Immediate="true"
@@ -181,6 +178,8 @@
                             <MudItem xs="12">
                                 <MudCheckBox T="bool"
                                              Value="@_state.ProductIds.Contains(product.Id)"
+                                             Class="checkbox-between"
+                                             Size="Size.Small"
                                              ValueChanged="@(value => SetProduct(product.Id, value))"
                                              Label="@product.Name"
                                              Dense="true"
@@ -199,10 +198,12 @@
                     @if (ProductPages > 1)
                     {
                         <MudPagination Count="ProductPages"
+                                       Rectangular="true"
                                        Selected="_productPage"
                                        SelectedChanged="SetProductPage"
                                        Disabled="_saving" />
                     }
+
                 </MudStack>
             </MudForm>
         }

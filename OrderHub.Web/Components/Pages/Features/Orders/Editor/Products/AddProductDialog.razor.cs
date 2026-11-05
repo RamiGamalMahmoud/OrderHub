@@ -41,7 +41,7 @@ public partial class AddProductDialog : IDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await Task.Delay(100);
+        await Task.Delay(200);
 
         if (_productSearchField is not null)
             await _productSearchField.FocusAsync();

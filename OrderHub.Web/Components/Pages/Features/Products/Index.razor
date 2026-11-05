@@ -11,107 +11,111 @@
 
 <PageTitle>المنتجات</PageTitle>
 
-<MudStack Spacing="3">
-    <MudStack Row
-              Wrap="Wrap.Wrap"
-              Justify="Justify.SpaceBetween"
-              AlignItems="AlignItems.Center">
-        <div>
-            <MudText Typo="Typo.h5">المنتجات</MudText>
-            <MudText Typo="Typo.body2"
-                     Color="Color.Secondary">إدارة المنتجات والأقسام والموردين والخصائص</MudText>
-        </div>
-        @if (_canWrite)
+<MudContainer>
+
+    <MudStack Spacing="3">
+        <MudStack Row
+                  Wrap="Wrap.Wrap"
+                  Justify="Justify.SpaceBetween"
+                  AlignItems="AlignItems.Center">
+            <div>
+                <MudText Typo="Typo.h5">المنتجات</MudText>
+                <MudText Typo="Typo.body2"
+                         Color="Color.Secondary">إدارة المنتجات والأقسام والموردين والخصائص</MudText>
+            </div>
+            @if (_canWrite)
+            {
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="Create"
+                           Disabled="IsBusy">
+                    إضافة منتج
+                </MudButton>
+            }
+        </MudStack>
+        <MudTextField T="string"
+                      Value="_search"
+                      ValueChanged="SearchChangedAsync"
+                      Placeholder="ابحث بالاسم أو الكود أو القسم أو المورد"
+                      aria-label="البحث عن منتج"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Clearable="true"
+                      Immediate="true"
+                      Disabled="_deleting" />
+        @if (_error is not null)
         {
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       StartIcon="@Icons.Material.Filled.Add"
-                       OnClick="Create"
-                       Disabled="IsBusy">
-                إضافة منتج
-            </MudButton>
+            <MudAlert Severity="Severity.Error">@_error</MudAlert>
+            <MudButton OnClick="LoadAsync" Disabled="_deleting">إعادة المحاولة</MudButton>
         }
+        <MudTable T="ProductIndexItem"
+                  @ref="_table"
+                  ServerData="LoadServerDataAsync"
+                  @bind-RowsPerPage="_rowsPerPage"
+                  Hover="true"
+                  Outlined="true"
+                  Elevation="0"
+                  Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>المنتج</MudTh>
+                <MudTh>الكود</MudTh>
+                <MudTh>القسم</MudTh>
+                <MudTh>السعر</MudTh>
+                <MudTh>الموردون</MudTh>
+                <MudTh>الخصائص</MudTh>
+                @if (_canWrite)
+                {
+                    <MudTh>الإجراءات</MudTh>
+                }
+            </HeaderContent>
+            <RowTemplate Context="product">
+                <MudTd DataLabel="المنتج"
+                       Style="overflow-wrap:anywhere">@product.Name</MudTd>
+                <MudTd DataLabel="الكود">@product.Code</MudTd>
+                <MudTd DataLabel="القسم"
+                       Style="overflow-wrap:anywhere">@product.CategoryName</MudTd>
+                <MudTd DataLabel="السعر">@product.Price.ToString("0.00")</MudTd>
+                <MudTd DataLabel="الموردون">@product.SuppliersCount</MudTd>
+                <MudTd DataLabel="الخصائص">@product.PropertiesCount</MudTd>
+                @if (_canWrite)
+                {
+                    <MudTd DataLabel="الإجراءات">
+                        <MudStack Row
+                                  Spacing="0">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           aria-label="تعديل المنتج"
+                                           Size="Size.Small"
+                                           OnClick="@(() => Edit(product.Id))"
+                                           Disabled="IsBusy" />
+                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                           Color="Color.Error"
+                                           aria-label="حذف المنتج"
+                                           Size="Size.Small"
+                                           OnClick="@(() => DeleteAsync(product))"
+                                           Disabled="IsBusy" />
+                        </MudStack>
+                    </MudTd>
+                }
+            </RowTemplate>
+            <LoadingContent>
+                <MudText>جاري تحميل المنتجات...</MudText>
+            </LoadingContent>
+            <NoRecordsContent>
+                <MudText>@EmptyText</MudText>
+            </NoRecordsContent>
+            <PagerContent>
+                <MudTablePager PageSizeOptions="@(new[] { 10, 20, 50 })"
+                               RowsPerPageString="عدد العناصر"
+                               InfoFormat="@RangeFormat" />
+            </PagerContent>
+        </MudTable>
     </MudStack>
-    <MudTextField T="string"
-                  Value="_search"
-                  ValueChanged="SearchChangedAsync"
-                  Placeholder="ابحث بالاسم أو الكود أو القسم أو المورد"
-                  aria-label="البحث عن منتج"
-                  Adornment="Adornment.Start"
-                  AdornmentIcon="@Icons.Material.Filled.Search"
-                  Variant="Variant.Outlined"
-                  Margin="Margin.Dense"
-                  Clearable="true"
-                  Immediate="true"
-                  Disabled="_deleting" />
-    @if (_error is not null)
-    {
-        <MudAlert Severity="Severity.Error">@_error</MudAlert>
-        <MudButton OnClick="LoadAsync" Disabled="_deleting">إعادة المحاولة</MudButton>
-    }
-    <MudTable T="ProductIndexItem"
-              @ref="_table"
-              ServerData="LoadServerDataAsync"
-              @bind-RowsPerPage="_rowsPerPage"
-              Dense="true"
-              Hover="true"
-              Outlined="true"
-              Elevation="0"
-              Breakpoint="Breakpoint.Sm">
-        <HeaderContent>
-            <MudTh>المنتج</MudTh>
-            <MudTh>الكود</MudTh>
-            <MudTh>القسم</MudTh>
-            <MudTh>السعر</MudTh>
-            <MudTh>الموردون</MudTh>
-            <MudTh>الخصائص</MudTh>
-            @if (_canWrite)
-            {
-                <MudTh>الإجراءات</MudTh>
-            }
-        </HeaderContent>
-        <RowTemplate Context="product">
-            <MudTd DataLabel="المنتج"
-                   Style="overflow-wrap:anywhere">@product.Name</MudTd>
-            <MudTd DataLabel="الكود">@product.Code</MudTd>
-            <MudTd DataLabel="القسم"
-                   Style="overflow-wrap:anywhere">@product.CategoryName</MudTd>
-            <MudTd DataLabel="السعر">@product.Price.ToString("0.00")</MudTd>
-            <MudTd DataLabel="الموردون">@product.SuppliersCount</MudTd>
-            <MudTd DataLabel="الخصائص">@product.PropertiesCount</MudTd>
-            @if (_canWrite)
-            {
-                <MudTd DataLabel="الإجراءات">
-                    <MudStack Row
-                              Spacing="0">
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                       aria-label="تعديل المنتج"
-                                       Size="Size.Small"
-                                       OnClick="@(() => Edit(product.Id))"
-                                       Disabled="IsBusy" />
-                        <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
-                                       Color="Color.Error"
-                                       aria-label="حذف المنتج"
-                                       Size="Size.Small"
-                                       OnClick="@(() => DeleteAsync(product))"
-                                       Disabled="IsBusy" />
-                    </MudStack>
-                </MudTd>
-            }
-        </RowTemplate>
-        <LoadingContent>
-            <MudText>جاري تحميل المنتجات...</MudText>
-        </LoadingContent>
-        <NoRecordsContent>
-            <MudText>@EmptyText</MudText>
-        </NoRecordsContent>
-        <PagerContent>
-            <MudTablePager PageSizeOptions="@(new[] { 10, 20, 50 })"
-                           RowsPerPageString="عدد العناصر"
-                           InfoFormat="@RangeFormat" />
-        </PagerContent>
-    </MudTable>
-</MudStack>
+
+</MudContainer>
+
 
 @code {
     private MudTable<ProductIndexItem>? _table;

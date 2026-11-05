@@ -4,6 +4,14 @@
     flex-direction: column;
 }
 
+/* علامة العنوان في الشريط العلوي (رابط إلى الرئيسية) */
+.top-nav-brand {
+    font-size: 1.625rem;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+}
+
 main {
     flex: 1;
 }
