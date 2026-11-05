@@ -1,3 +1,6 @@
+/* Fonts are LOCAL ONLY (owner decision): Tajawal from wwwroot/fonts/Tajawal-Regular.ttf.
+   No runtime font fetching is allowed — the app runs locally. */
+
 @font-face {
     font-family: 'Tajawal';
     src: url('/fonts/Tajawal-Regular.ttf') format('truetype');
@@ -5,16 +8,9 @@
     font-style: normal;
 }
 
-@font-face {
-    font-family: 'Cairo';
-    src: url('/fonts/Cairo.ttf') format('truetype');
-    font-weight: 500;
-    font-style: normal;
-}
-
 html,
 body {
-    font-family: 'Tajawal', 'Cairo', 'Roboto', sans-serif;
+    font-family: 'Tajawal', sans-serif;
 }
 
 h1:focus {
@@ -285,10 +281,6 @@ h1:focus {
     .dashboard-bottom-card {
         min-height: auto;
     }
-}
-
-.mud-input.mud-input-outlined .mud-input-outlined-border {
-    border-radius: 10px;
 }
 
 .checkbox-between {

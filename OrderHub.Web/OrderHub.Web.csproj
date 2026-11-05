@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <Content Remove="wwwroot\fonts\Cairo.ttf" />
-    <Content Remove="wwwroot\fonts\Tajawal-Regular.ttf" />
   </ItemGroup>
 
   <ItemGroup>

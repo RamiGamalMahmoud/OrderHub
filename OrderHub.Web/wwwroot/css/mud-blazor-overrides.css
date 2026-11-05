@@ -1,0 +1,134 @@
+/*
+ * OrderHub — MudBlazor overrides (shared design-system styling).
+ * Task T-A2 (registry: C:\Users\ramig\.opencode\plan\orderhub-redesign-tasks.md).
+ *
+ * House rules:
+ *  - MudBlazor is styled ONLY where it provides functionality; this file restyles it
+ *    to the unified design language.
+ *  - Menu/popover content renders into the global MudPopoverProvider — every popover
+ *    rule in this file is global by necessity, never razor-scoped.
+ *  - All colors reference MudBlazor palette vars (`--mud-palette-*`) so T-A3's
+ *    programmatic theme stays the single source of truth; brand tokens in
+ *    Styles/app.css (@theme) drive the plain-HTML + Tailwind parts.
+ *  - Radii: inputs/buttons 8px · popovers 12px · dialogs 16px · shadows xs/sm.
+ *  - Zero JavaScript; numeric values always Latin digits upstream.
+ * =========================================================
+ */
+
+/* ============ 1. Inputs (MudTextField / MudSelect / outlined) ============ */
+
+.mud-input.mud-input-outlined .mud-input-outlined-border {
+    border-radius: 8px;
+    border-width: 1px;
+}
+
+.mud-field.mud-input-outlined .mud-field-outline { border-radius: 8px; }
+
+/* Focus caret/text tone kept from MudBlazor default (primary color). */
+
+.mud-input-inputform {
+    font-family: var(--font-sans, 'Tajawal', sans-serif);
+}
+
+/* Helper text stays compact under RTL labels */
+.mud-input-helper-text {
+    font-size: 0.75rem;
+}
+
+/* ============ 2. Buttons ============ */
+
+.mud-button-root {
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.mud-button-root .mud-icon-size-small + span {
+    font-weight: 700;
+}
+
+/* Text/flat buttons: template hover = soft gray tint (blue-50 style is applied by tone classes in page scope) */
+.mud-button-root:active {
+    transform: scale(0.98);
+    transition: transform 80ms ease;
+}
+
+/* Outlined buttons: 1px slate border on white (template idiom) */
+.mud-button-outlined .semi-transparent { border-width: 1px; }
+
+/* ============ 3. Menu popovers (global — MudPopoverProvider) ============ */
+
+.mud-popover {
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.mud-menu-list-wrapper {
+    padding: 6px;
+}
+
+.mud-menu-item {
+    border-radius: 8px;
+    padding-inline: 12px;
+    min-height: 40px;
+    font-weight: 500;
+    color: var(--mud-palette-text-primary);
+}
+
+.mud-menu-item:hover {
+    background-color: var(--mud-palette-action-default-hover);
+}
+
+/* ============ 4. Select lists (popover content) ============ */
+
+.mud-list-item {
+    border-radius: 8px;
+    min-height: 40px;
+}
+
+.mud-list-item:hover {
+    background-color: var(--mud-palette-action-default-hover);
+}
+
+/* ============ 5. Dialogs ============ */
+
+.mud-dialog {
+    border-radius: 16px;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.mud-dialog-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--mud-palette-text-primary);
+}
+
+.mud-dialog-actions {
+    padding-top: 4px;
+}
+
+/* ============ 6. Table pager (until unified TableFooter in T-A4 tasks) ============ */
+
+.mud-table-pagination {
+    padding-top: 10px;
+}
+
+.mud-table-pagination .mud-button-root {
+    border-radius: 8px;
+}
+
+/* ============ 7. Radio ============ */
+
+.mud-radio {
+    font-weight: 500;
+}
+
+/* ============ 8. Alert ============ */
+
+.mud-alert {
+    border-radius: 12px;
+}
+
+.mud-alert.outlined {
+    font-weight: 500;
+}
