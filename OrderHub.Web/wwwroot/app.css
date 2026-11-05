@@ -1,10 +1,56 @@
-/* Fonts are LOCAL ONLY (owner decision): Tajawal from wwwroot/fonts/Tajawal-Regular.ttf.
-   No runtime font fetching is allowed — the app runs locally. */
+/* Fonts are LOCAL ONLY (owner decision): Tajawal multi-weight set downloaded from the
+   official google/fonts upstream (github.com/google/fonts, OFL) into wwwroot/fonts.
+   No runtime font fetching is allowed — the app runs locally.
+   Present faces: 200 ExtraLight · 300 Light · 400 Regular · 500 Medium ·
+                  700 Bold · 800 ExtraBold · 900 Black.
+   CSS in-between requests map to the nearest real face (600 → Bold-file, 100 → ExtraLight-file). */
+
+@font-face {
+    font-family: 'Tajawal';
+    src: url('/fonts/Tajawal-ExtraLight.ttf') format('truetype');
+    font-weight: 200;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Tajawal';
+    src: url('/fonts/Tajawal-Light.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+}
 
 @font-face {
     font-family: 'Tajawal';
     src: url('/fonts/Tajawal-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Tajawal';
+    src: url('/fonts/Tajawal-Medium.ttf') format('truetype');
     font-weight: 500;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Tajawal';
+    src: url('/fonts/Tajawal-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Tajawal';
+    src: url('/fonts/Tajawal-ExtraBold.ttf') format('truetype');
+    font-weight: 800;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Tajawal';
+    src: url('/fonts/Tajawal-Black.ttf') format('truetype');
+    font-weight: 900;
     font-style: normal;
 }
 
