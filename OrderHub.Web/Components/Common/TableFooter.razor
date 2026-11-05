@@ -1,0 +1,152 @@
+@namespace OrderHub.Web.Components.Common
+@using System.Globalization
+
+@* Unified table footer (redesign task T-A4 — registry decision §8):
+   right side (RTL): «عرض A–B من إجمالي C عنصر» + rows-per-page 10/25/50;
+   left side: square nav buttons (first/prev/numbers/next/last), current = brand-50.
+   All numbers rendered with CultureInfo.InvariantCulture (Latin digits). No JavaScript.
+   Notes: CurrentPage is 1-BASED (call sites convert from MudDataGrid's 0-based CurrentPage);
+   both bindings are two-way, designed for @bind-CurrentPage / @bind-RowsPerPage. *@
+
+<div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3">
+    <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+        <span class="font-medium">@SummaryText</span>
+        <label class="flex items-center gap-2">
+            <span class="hidden sm:inline">عدد الصفوف</span>
+            <select value="@RowsPerPage.ToString(CultureInfo.InvariantCulture)"
+                    @onchange="OnRowsPerPageChanged"
+                    aria-label="عدد الصفوف لكل صفحة"
+                    class="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700 focus:border-brand-500 focus:outline-none">
+                <option value="10">@DozenText</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+            </select>
+        </label>
+    </div>
+
+    <div class="flex items-center gap-1.5">
+        <button type="button"
+                class="@(NavButtonClass(disabled: SafeCurrentPage == 1))"
+                disabled="@(SafeCurrentPage == 1)"
+                @onclick="() => GoToAsync(1)"
+                aria-label="أول صفحة">
+            <MudIcon Icon="@Icons.Material.Filled.KeyboardDoubleArrowRight" Class="w-4 h-4" />
+        </button>
+        <button type="button"
+                class="@(NavButtonClass(disabled: SafeCurrentPage == 1))"
+                disabled="@(SafeCurrentPage == 1)"
+                @onclick="() => GoToAsync(SafeCurrentPage - 1)"
+                aria-label="الصفحة السابقة">
+            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Class="w-4 h-4" />
+        </button>
+
+        @foreach (var page in VisiblePages)
+        {
+            var captured = page;
+            <button type="button"
+                    class="@(NavButtonClass(isActive: page == SafeCurrentPage, disabled: false))"
+                    @onclick="() => GoToAsync(captured)"
+                    aria-current="@(page == SafeCurrentPage ? "page" : null)">
+                @(page.ToString(CultureInfo.InvariantCulture))
+            </button>
+        }
+
+        <button type="button"
+                class="@(NavButtonClass(disabled: SafeCurrentPage >= TotalPages))"
+                disabled="@(SafeCurrentPage >= TotalPages)"
+                @onclick="() => GoToAsync(SafeCurrentPage + 1)"
+                aria-label="الصفحة التالية">
+            <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Class="w-4 h-4" />
+        </button>
+        <button type="button"
+                class="@(NavButtonClass(disabled: SafeCurrentPage >= TotalPages))"
+                disabled="@(SafeCurrentPage >= TotalPages)"
+                @onclick="() => GoToAsync(TotalPages)"
+                aria-label="آخر صفحة">
+            <MudIcon Icon="@Icons.Material.Filled.KeyboardDoubleArrowLeft" Class="w-4 h-4" />
+        </button>
+    </div>
+</div>
+
+@code
+{
+    /// <summary>Total rows across all pages.</summary>
+    [Parameter]
+    public int TotalItems { get; set; }
+
+    /// <summary>1-based current page (two-way).</summary>
+    [Parameter]
+    public int CurrentPage { get; set; } = 1;
+
+    [Parameter]
+    public EventCallback<int> CurrentPageChanged { get; set; }
+
+    /// <summary>Rows per page, 10/25/50 only (two-way).</summary>
+    [Parameter]
+    public int RowsPerPage { get; set; } = 10;
+
+    [Parameter]
+    public EventCallback<int> RowsPerPageChanged { get; set; }
+
+    private int TotalPages =>
+        RowsPerPage > 0 ? (int)Math.Ceiling(TotalItems / (double)RowsPerPage) : 1;
+
+    private int SafeCurrentPage => Math.Clamp(CurrentPage, 1, Math.Max(1, TotalPages));
+
+    private int StartItem => TotalItems == 0 ? 0 : (SafeCurrentPage - 1) * RowsPerPage + 1;
+
+    private int EndItem => Math.Min(TotalItems, SafeCurrentPage * RowsPerPage);
+
+    private string SummaryText =>
+        string.Format(CultureInfo.InvariantCulture, "عرض {0}–{1} من إجمالي {2} عنصر", StartItem, EndItem, TotalItems);
+
+    private string DozenText => 10.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>Square nav button; window of up to 5 pages centered on the current one.</summary>
+    private IEnumerable<int> VisiblePages
+    {
+        get
+        {
+            if (TotalPages <= 5)
+            {
+                for (var page = 1; page <= TotalPages; page++)
+                {
+                    yield return page;
+                }
+
+                yield break;
+            }
+
+            var end = Math.Min(TotalPages, SafeCurrentPage + 2);
+            var start = Math.Max(1, end - 4);
+            end = Math.Min(TotalPages, start + 4);
+            for (var page = start; page <= end; page++)
+            {
+                yield return page;
+            }
+        }
+    }
+
+    private string NavButtonClass(bool isActive = false, bool disabled = false)
+    {
+        var tone = isActive
+            ? "border-brand-200 bg-brand-50 text-brand-700"
+            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900";
+        var state = disabled ? " opacity-40 cursor-not-allowed" : "";
+        return $"inline-flex h-8 w-8 items-center justify-center rounded-lg border text-xs font-bold transition-colors {tone}{state}";
+    }
+
+    private Task GoToAsync(int page) => CurrentPageChanged.InvokeAsync(Math.Clamp(page, 1, TotalPages));
+
+    private async Task OnRowsPerPageChanged(ChangeEventArgs e)
+    {
+        if (!int.TryParse(e.Value?.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var pageSize)
+            || pageSize == RowsPerPage)
+        {
+            return;
+        }
+
+        await RowsPerPageChanged.InvokeAsync(pageSize);
+        await CurrentPageChanged.InvokeAsync(1);
+    }
+}

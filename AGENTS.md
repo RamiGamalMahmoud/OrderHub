@@ -68,6 +68,7 @@ Dev run: `dotnet run --project OrderHub.Web` — needs `ConnectionStrings:Defaul
 - Status tones are centralized: `OrderWorkflowPresentation.StatusTone(...)` → `order-tone-*` classes styled in `wwwroot/css/order-workflow.css` (also used on Orders list rows and details page).
 - **Numbers always `CultureInfo.InvariantCulture`** so digits stay Latin under Arabic culture (e.g. `value.ToString("N2", CultureInfo.InvariantCulture)`).
 - Established page patterns: list pages load via `GetAll*Query` with in-memory search + `MudTable`/`MudDataGrid`, permission-gated actions; editors are `*EditorDialog.razor` (MudDialog) driven by `*EditorState.cs` validation + `MudForm`; the order editor is a multi-step page under `Editor/`.
+- **Shared scaffold components (redesign)**: `Components/Common/PageScaffold.razor` (`Title` required, `Crumbs` of `CrumbItem(Label, Href?)` — no Href = current page, `Count?` badge, `Actions` fragment) and `Components/Common/TableFooter.razor` (`TotalItems` + **1-based** `@bind-CurrentPage` + `@bind-RowsPerPage` 10/25/50). Every restyled page must use both; `TableFooter.CurrentPage` is 1-based — convert from MudDataGrid's 0-based at the call site. New Razor gotcha: `@page` must never be written as member access (`@page.X` — reserved directive).
 - MudBlazor 9.11 gotchas: `MudDataGrid` `CurrentPage` is **0-based** and its setter triggers a server reload (`NavigateTo(Page)` takes a `Page` object); guard every async button with busy flags — hover/loading races double-fire.
 
 ## House rules for agents
