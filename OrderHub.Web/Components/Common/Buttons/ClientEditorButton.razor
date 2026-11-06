@@ -6,7 +6,7 @@
 
 <MudButton Variant="@Variant"
            Color="@Color"
-           Class="@Class"
+           Class="@ResolvedClass"
            StartIcon="@StartIcon"
            FullWidth="@FullWidth"
            Disabled="@IsBusy"
@@ -44,6 +44,9 @@
     public EventCallback OnSaved { get; set; }
 
     private bool IsBusy;
+
+    private string? ResolvedClass =>
+        string.IsNullOrWhiteSpace(Class) ? "rounded-lg font-bold" : Class;
 
     private async Task OpenAsync()
     {

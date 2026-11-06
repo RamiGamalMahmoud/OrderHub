@@ -23,6 +23,7 @@
     --color-amber-50: oklch(98.7% 0.022 95.277);
     --color-amber-100: oklch(96.2% 0.059 95.617);
     --color-amber-200: oklch(92.4% 0.12 95.746);
+    --color-amber-300: oklch(87.9% 0.169 91.605);
     --color-amber-400: oklch(82.8% 0.189 84.429);
     --color-amber-500: oklch(76.9% 0.188 70.08);
     --color-amber-600: oklch(66.6% 0.179 58.318);
@@ -883,6 +884,9 @@
 .max-w-\[26rem\] {
   max-width: 26rem;
 }
+.max-w-\[32rem\] {
+  max-width: 32rem;
+}
 .max-w-\[36rem\] {
   max-width: 36rem;
 }
@@ -1261,6 +1265,9 @@
 }
 .border-amber-200 {
   border-color: var(--color-amber-200);
+}
+.border-amber-300 {
+  border-color: var(--color-amber-300);
 }
 .border-black {
   border-color: var(--color-black);
@@ -2567,9 +2574,19 @@
     grid-column: span 3 / span 3;
   }
 }
+.sm\:col-span-4 {
+  @media (width >= 40rem) {
+    grid-column: span 4 / span 4;
+  }
+}
 .sm\:col-span-6 {
   @media (width >= 40rem) {
     grid-column: span 6 / span 6;
+  }
+}
+.sm\:col-span-8 {
+  @media (width >= 40rem) {
+    grid-column: span 8 / span 8;
   }
 }
 .sm\:col-span-12 {

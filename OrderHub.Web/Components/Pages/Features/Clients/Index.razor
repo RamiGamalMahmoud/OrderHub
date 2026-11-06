@@ -13,161 +13,185 @@
 
 <PageTitle>العملاء</PageTitle>
 
-<MudStack Spacing="3">
-    <MudStack Row
-              Wrap="Wrap.Wrap"
-              AlignItems="AlignItems.Center"
-              Justify="Justify.SpaceBetween">
-        <div>
-            <MudText Typo="Typo.h5">
-                العملاء
-            </MudText>
+<div class="space-y-5">
+    <PageScaffold Title="العملاء"
+                  Description="إدارة بيانات العملاء ووسائل التواصل"
+                  Crumbs="_scaffoldCrumbs"
+                  Count="@BadgeCount">
+        <Actions>
+            @if (CanCreate)
+            {
+                <ClientEditorButton Size="Size.Large"
+                                    Class="rounded-xl px-5 font-bold shadow-sm"
+                                    OnSaved="LoadAsync" />
+            }
+        </Actions>
+    </PageScaffold>
 
-            <MudText Typo="Typo.body2"
-                     Color="Color.Secondary">
-                إدارة بيانات العملاء ووسائل التواصل
-            </MudText>
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        @* ============================================================
+           Toolbar: search + refresh
+           ============================================================ *@
+        <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 px-4 py-3">
+            <MudTextField T="string"
+                          Value="_searchTerm"
+                          ValueChanged="SearchChangedAsync"
+                          Placeholder="ابحث بالاسم أو الهاتف أو العنوان"
+                          aria-label="البحث عن عميل"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Margin="Margin.Dense"
+                          Immediate="true"
+                          Clearable="true"
+                          Disabled="IsBusy"
+                          Class="w-full sm:max-w-xs" />
+
+            <div class="flex-1"></div>
+
+            <MudTooltip Text="تحديث القائمة">
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                               OnClick="RefreshAsync"
+                               aria-label="تحديث القائمة"
+                               Disabled="IsBusy"
+                               Class="rounded-lg text-slate-500" />
+            </MudTooltip>
         </div>
 
-        @if (CanCreate)
+        @if (_loading)
         {
-            <ClientEditorButton OnSaved="LoadAsync" />
+            <MudProgressLinear Indeterminate="true"
+                               Color="Color.Primary"
+                               aria-label="تحميل العملاء" />
         }
-    </MudStack>
 
-    @if (_loading)
-    {
-        <MudProgressLinear Indeterminate="true"
-                           Color="Color.Primary" />
+        @if (_error is not null)
+        {
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-red-100 bg-red-50 px-4 py-3">
+                <p class="text-sm font-bold text-red-800">@_error</p>
+                <button type="button"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled="@(_loading || _deleting)"
+                        @onclick="LoadAsync">
+                    <MudIcon Icon="@Icons.Material.Filled.Refresh" Class="text-[14px]" />
+                    إعادة المحاولة
+                </button>
+            </div>
+        }
 
-        <MudText Typo="Typo.body2">
-            جاري تحميل العملاء...
-        </MudText>
-    }
-    else if (_error is not null)
-    {
-        <MudAlert Severity="Severity.Error"
-                  Dense="true">
-            @_error
-        </MudAlert>
-
-        <MudButton Variant="Variant.Outlined"
-                   OnClick="LoadAsync">
-            إعادة المحاولة
-        </MudButton>
-    }
-    else if (_clients.Count == 0)
-    {
-        <MudPaper Outlined="true"
-                  Class="pa-4">
-            <MudText Typo="Typo.body1">
-                لم تتم إضافة عملاء بعد.
-            </MudText>
-        </MudPaper>
-    }
-    else
-    {
+        @* ============================================================
+           Clients table
+           ============================================================ *@
         <MudTable T="ClientListItem"
-                  Items="FilteredClients"
+                  @ref="_table"
+                  ServerData="LoadServerDataAsync"
+                  RowsPerPage="@_pageSize"
+                  Dense="true"
                   Hover="true"
-                  Outlined="true"
                   Elevation="0"
+                  Square="true"
                   Breakpoint="Breakpoint.Sm">
-            <ToolBarContent>
-                <MudTextField T="string"
-                              @bind-Value="_searchTerm"
-                              Placeholder="ابحث عن عميل..."
-                              aria-label="البحث عن عميل"
-                              Adornment="Adornment.Start"
-                              AdornmentIcon="@Icons.Material.Filled.Search"
-                              Variant="Variant.Outlined"
-                              Margin="Margin.Dense"
-                              Immediate="true"
-                              Clearable="true"
-                              Style="max-width:320px" />
-            </ToolBarContent>
-
             <HeaderContent>
-                <MudTh>
-                    اسم العميل
-                </MudTh>
-
-                <MudTh>
-                    الهاتف
-                </MudTh>
-
-                <MudTh>
-                    العنوان
-                </MudTh>
-
+                <MudTh Class="text-xs font-bold text-slate-500">العميل</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">الهاتف</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">العنوان</MudTh>
                 @if (_canWrite)
                 {
-                    <MudTh>
-                        الإجراءات
+                    <MudTh Class="w-24 text-xs font-bold text-slate-500">
+                        <span class="sr-only">الإجراءات</span>
                     </MudTh>
                 }
             </HeaderContent>
 
             <RowTemplate Context="client">
-                <MudTd DataLabel="اسم العميل"
-                       Style="overflow-wrap:anywhere">
-                    @client.Name
+                <MudTd DataLabel="العميل" Style="overflow-wrap:anywhere">
+                    <div class="flex items-center gap-2.5">
+                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-black text-brand-600">
+                            @FirstLetter(client.Name)
+                        </span>
+                        <span class="text-sm font-bold text-slate-900">@client.Name</span>
+                    </div>
                 </MudTd>
 
-                <MudTd DataLabel="الهاتف"
-                       Style="overflow-wrap:anywhere">
-                    @ContactText(client.PhoneNumber)
+                <MudTd DataLabel="الهاتف">
+                    @if (string.IsNullOrWhiteSpace(client.PhoneNumber))
+                    {
+                        <span class="text-sm text-slate-400">—</span>
+                    }
+                    else
+                    {
+                        <span class="tabular-nums text-sm font-semibold text-slate-700" dir="ltr">@client.PhoneNumber</span>
+                    }
                 </MudTd>
 
                 <MudTd DataLabel="العنوان"
-                       Style="overflow-wrap:anywhere">
-                    @ContactText(client.Address)
-                </MudTd>
+                       Class="text-sm text-slate-700"
+                       Style="overflow-wrap:anywhere">@ContactText(client.Address)</MudTd>
 
                 @if (_canWrite)
                 {
                     <MudTd DataLabel="الإجراءات">
-                        <MudStack Row
-                                  Spacing="0">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                           Size="Size.Small"
-                                           Disabled="IsBusy"
-                                           aria-label="تعديل العميل"
-                                           OnClick="@(() => OpenEditDialogAsync(client))" />
+                        <div class="flex items-center justify-end gap-1.5">
+                            <MudTooltip Text="تعديل العميل">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Size="Size.Small"
+                                               Class="rounded-lg text-brand-600 shadow-none hover:bg-brand-50"
+                                               aria-label="تعديل العميل"
+                                               OnClick="@(() => OpenEditDialogAsync(client))"
+                                               Disabled="IsBusy" />
+                            </MudTooltip>
 
-                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
-                                           Color="Color.Error"
-                                           Size="Size.Small"
-                                           Disabled="IsBusy"
-                                           aria-label="حذف العميل"
-                                           OnClick="@(() => ConfirmDeleteAsync(client))" />
-                        </MudStack>
+                            <MudTooltip Text="حذف العميل">
+                                <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                               Color="Color.Error"
+                                               Size="Size.Small"
+                                               Class="rounded-lg shadow-none"
+                                               aria-label="حذف العميل"
+                                               OnClick="@(() => ConfirmDeleteAsync(client))"
+                                               Disabled="IsBusy" />
+                            </MudTooltip>
+                        </div>
                     </MudTd>
                 }
             </RowTemplate>
 
             <NoRecordsContent>
-                <MudText Typo="Typo.body2">
-                    لا يوجد عملاء يطابقون البحث.
-                </MudText>
+                <div class="py-8 text-center">
+                    <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+                        <MudIcon Icon="@Icons.Material.Filled.People" aria-hidden="true" />
+                    </span>
+                    <p class="text-base font-bold text-slate-900">@EmptyTitle</p>
+                    <p class="mt-1 text-sm text-slate-500">@EmptyHint</p>
+                </div>
             </NoRecordsContent>
 
+            <LoadingContent>
+                <div class="flex flex-col items-center gap-2 py-8">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                    <p class="text-sm text-slate-500">جاري تحميل العملاء...</p>
+                </div>
+            </LoadingContent>
+
             <PagerContent>
-                @if (_clients.Count > 10)
-                {
-                    <MudTablePager PageSizeOptions="@(new[] { 10, 25, 50 })"
-                                   RowsPerPageString="عملاء لكل صفحة"
-                                   InfoFormat="{first_item}-{last_item} من {all_items}" />
-                }
+                <TableFooter TotalItems="@TotalCount"
+                             CurrentPage="_pageIndex"
+                             CurrentPageChanged="OnFooterPageChanged"
+                             RowsPerPage="_pageSize"
+                             RowsPerPageChanged="OnFooterRowsPerPageChanged" />
             </PagerContent>
         </MudTable>
-    }
-</MudStack>
+    </section>
+</div>
 
 @code {
+    private static readonly PageScaffold.CrumbItem[] _scaffoldCrumbs = [new("العملاء")];
+
+    private MudTable<ClientListItem>? _table;
     private IReadOnlyList<ClientListItem> _clients = [];
     private string? _searchTerm;
     private string? _error;
+    private int _pageIndex = 1;
+    private int _pageSize = 10;
     private bool _loading = true;
     private bool _canWrite;
     private bool _dialogOpen;
@@ -179,13 +203,13 @@
     private bool IsBusy =>
         _loading || _dialogOpen || _deleting;
 
-    private IEnumerable<ClientListItem> FilteredClients
+    private List<ClientListItem> FilteredClients
     {
         get
         {
             if (string.IsNullOrWhiteSpace(_searchTerm))
             {
-                return _clients;
+                return _clients.ToList();
             }
 
             string searchTerm = _searchTerm.Trim();
@@ -194,8 +218,52 @@
                 client.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
                 (client.PhoneNumber?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true) ||
                 (client.Address?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true) ||
-                (client.Location?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true));
+                (client.Location?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true)).ToList();
         }
+    }
+
+    private int TotalCount => FilteredClients.Count;
+    private int? BadgeCount => _loading && _clients.Count == 0 ? null : TotalCount;
+
+    private string EmptyTitle
+    {
+        get
+        {
+            if (_loading)
+            {
+                return "جاري تحميل العملاء...";
+            }
+            if (_error is not null)
+            {
+                return "تعذر تحميل العملاء.";
+            }
+            return string.IsNullOrWhiteSpace(_searchTerm) ? "لم تتم إضافة عملاء بعد." : "لا توجد نتائج مطابقة";
+        }
+    }
+
+    private string EmptyHint
+    {
+        get
+        {
+            if (_loading)
+            {
+                return "يتم جلب بيانات العملاء من الخادم.";
+            }
+            if (_error is not null)
+            {
+                return "حدّث القائمة أو حاول مرة أخرى.";
+            }
+            return string.IsNullOrWhiteSpace(_searchTerm)
+                ? "أضف عميلًا جديدًا ليظهر في القائمة."
+                : "جرّب تعديل عبارة البحث للحصول على نتائج.";
+        }
+    }
+
+    private static string FirstLetter(string name)
+    {
+        string trimmed = name.Trim();
+
+        return trimmed.Length == 0 ? "—" : trimmed[..1];
     }
 
     private static string ContactText(string? value) =>
@@ -218,6 +286,11 @@
 
             _clients = clients.ToList();
             _canWrite = canWrite;
+
+            if (_table is not null)
+            {
+                await _table.ReloadServerData();
+            }
         }
         catch (AuthorizationDeniedException)
         {
@@ -234,7 +307,60 @@
         }
     }
 
-    private Task OpenCreateDialogAsync() => OpenEditorAsync(null);
+    private Task<TableData<ClientListItem>> LoadServerDataAsync(TableState state, CancellationToken cancellationToken)
+    {
+        var filtered = FilteredClients;
+        int lastPage = Math.Max(1, (int)Math.Ceiling(filtered.Count / (double)_pageSize));
+        _pageIndex = Math.Clamp(_pageIndex, 1, lastPage);
+
+        return Task.FromResult(new TableData<ClientListItem>
+        {
+            Items = filtered.Skip((_pageIndex - 1) * _pageSize).Take(_pageSize).ToList(),
+            TotalItems = filtered.Count
+        });
+    }
+
+    private async Task SearchChangedAsync(string? value)
+    {
+        _searchTerm = value;
+        _pageIndex = 1;
+
+        if (_table is not null)
+        {
+            await _table.ReloadServerData();
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task OnFooterPageChanged(int page)
+    {
+        _pageIndex = Math.Max(1, page);
+
+        if (_table is not null)
+        {
+            await _table.ReloadServerData();
+        }
+    }
+
+    private async Task OnFooterRowsPerPageChanged(int rowsPerPage)
+    {
+        _pageSize = rowsPerPage;
+        _pageIndex = 1;
+
+        if (_table is not null)
+        {
+            await _table.ReloadServerData();
+        }
+    }
 
     private Task OpenEditDialogAsync(ClientListItem client) => OpenEditorAsync(client.Id);
 
