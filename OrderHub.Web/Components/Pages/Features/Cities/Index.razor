@@ -24,7 +24,7 @@
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
                            Size="Size.Large"
-                           Class="rounded-xl px-5 font-bold shadow-sm"
+                           Class="oh-btn oh-btn--primary"
                            StartIcon="@Icons.Material.Filled.Add"
                            Disabled="IsBusy"
                            OnClick="OpenCreateDialogAsync">
@@ -52,7 +52,7 @@
 
             <MudButton Variant="Variant.Outlined"
                        Color="Color.Primary"
-                       Class="mt-3"
+                       Class="oh-btn oh-btn--secondary oh-btn--sm mt-3"
                        OnClick="LoadAsync">
                 إعادة المحاولة
             </MudButton>
@@ -91,7 +91,7 @@
                                Disabled="IsBusy"
                                aria-label="تحديث القائمة"
                                OnClick="LoadAsync"
-                               Class="rounded-lg" />
+                               Class="oh-btn oh-btn--icon oh-btn--secondary oh-btn--sm" />
             </div>
 
             <MudTable T="CityListItem"
@@ -129,19 +129,21 @@
                     @if (_canWrite)
                     {
                         <MudTd DataLabel="الإجراءات">
-                            <div class="flex items-center">
+                            <div class="flex items-center gap-1">
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                                Size="Size.Small"
                                                Disabled="IsBusy"
                                                aria-label="تعديل المدينة"
-                                               OnClick="@(() => OpenEditDialogAsync(city))" />
+                                               OnClick="@(() => OpenEditDialogAsync(city))"
+                                               Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
 
                                 <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
                                                Color="Color.Error"
                                                Size="Size.Small"
                                                Disabled="IsBusy"
                                                aria-label="حذف المدينة"
-                                               OnClick="@(() => ConfirmDeleteAsync(city))" />
+                                               OnClick="@(() => ConfirmDeleteAsync(city))"
+                                               Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost oh-btn--danger" />
                             </div>
                         </MudTd>
                     }

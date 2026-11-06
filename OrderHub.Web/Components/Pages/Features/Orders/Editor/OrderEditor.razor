@@ -34,6 +34,7 @@
                         <PermissionView Feature="PermissionFeature.Documents" Level="PermissionLevel.Write">
                             <MudButton Size="Size.Small"
                                        Color="Color.Primary"
+                                       Class="oh-btn oh-btn--secondary oh-btn--sm"
                                        Disabled="@(!CanCreateDraftDocument)"
                                        OnClick="CreateQuotationAsync"
                                        StartIcon="@Icons.Material.Outlined.RequestPage">
@@ -41,6 +42,7 @@
                             </MudButton>
                             <MudButton Size="Size.Small"
                                        Color="Color.Primary"
+                                       Class="oh-btn oh-btn--secondary oh-btn--sm"
                                        Disabled="@(!CanCreateDraftDocument)"
                                        OnClick="CreateProformaInvoiceAsync"
                                        StartIcon="@Icons.Material.Outlined.FactCheck">
@@ -53,6 +55,7 @@
                     {
                         <MudButton Color="Color.Primary"
                                    Variant="Variant.Outlined"
+                                   Class="oh-btn oh-btn--secondary oh-btn--sm"
                                    OnClick="ShowDrafts"
                                    Size="Size.Small"
                                    StartIcon="@Icons.Material.Outlined.Description">
@@ -62,6 +65,7 @@
 
                     <MudButton Variant="Variant.Text"
                                Color="Color.Primary"
+                               Class="oh-btn oh-btn--secondary oh-btn--sm"
                                Size="Size.Small"
                                Disabled="@(!CanSave)"
                                OnClick="SaveAsync">
@@ -161,10 +165,12 @@
                             </MudText>
                             <MudStack Row="true" Spacing="2">
                                 <MudButton Variant="Variant.Outlined" Disabled="@(!CanCreateDraftDocument)"
+                                           Class="oh-btn oh-btn--secondary oh-btn--sm"
                                            OnClick="CreateQuotationAsync" StartIcon="@Icons.Material.Outlined.RequestPage">
                                     إنشاء عرض سعر
                                 </MudButton>
                                 <MudButton Variant="Variant.Outlined" Disabled="@(!CanCreateDraftDocument)"
+                                           Class="oh-btn oh-btn--secondary oh-btn--sm"
                                            OnClick="CreateProformaInvoiceAsync" StartIcon="@Icons.Material.Outlined.FactCheck">
                                     إنشاء فاتورة أولية
                                 </MudButton>
@@ -174,7 +180,8 @@
                                 <MudStack Row="true" AlignItems="AlignItems.Center" Class="mt-2">
                                     <MudText Typo="Typo.body2">تم إنشاء @_createdDocumentNumber</MudText>
                                     <MudButton Href="@DocumentFileUrl(documentType, _createdDocumentNumber)" Target="_blank"
-                                               Size="Size.Small" StartIcon="@Icons.Material.Outlined.PictureAsPdf">
+                                               Size="Size.Small" StartIcon="@Icons.Material.Outlined.PictureAsPdf"
+                                               Class="oh-btn oh-btn--secondary oh-btn--sm">
                                         فتح PDF
                                     </MudButton>
                                 </MudStack>
@@ -215,7 +222,7 @@
                Color="Color.Primary"
                FullWidth="true"
                Size="Size.Large"
-               Class="rounded-xl font-bold shadow-sm"
+               Class="oh-btn oh-btn--primary"
                Disabled="@(!CanSave)"
                OnClick="SaveAsync">
         @(IsEdit ? "حفظ التعديلات" : "إنشاء الطلب")

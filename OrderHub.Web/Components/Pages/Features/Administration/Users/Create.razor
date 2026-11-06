@@ -189,7 +189,7 @@
                                        StartIcon="@Icons.Material.Filled.ManageAccounts"
                                        Disabled="@(_saving || _creatingRole)"
                                        OnClick="CreateRoleAsync"
-                                       Class="mt-2 rounded-lg text-xs font-bold">
+                                       Class="oh-btn oh-btn--secondary oh-btn--sm mt-2">
                                 إنشاء دور جديد…
                             </MudButton>
 
@@ -264,7 +264,7 @@
                                    Color="Color.Default"
                                    Disabled="_saving"
                                    OnClick="GoBack"
-                                   Class="rounded-xl text-slate-600">
+                                   Class="oh-btn oh-btn--secondary">
                             إلغاء
                         </MudButton>
 
@@ -273,7 +273,7 @@
                                    StartIcon="@Icons.Material.Filled.Add"
                                    Disabled="_saving"
                                    OnClick="@(() => SaveAsync(true))"
-                                   Class="rounded-xl px-5 font-bold">
+                                   Class="oh-btn oh-btn--secondary">
                             حفظ وإضافة مستخدم آخر
                         </MudButton>
 
@@ -282,7 +282,7 @@
                                    StartIcon="@Icons.Material.Filled.PersonAdd"
                                    Disabled="_saving"
                                    OnClick="@(() => SaveAsync(false))"
-                                   Class="rounded-xl px-5 font-bold shadow-sm">
+                                   Class="oh-btn oh-btn--primary">
 
                             @if (_saving)
                             {

@@ -1,10 +1,19 @@
 <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write">
     <MudButton Color="Color.Primary"
-    Variant="Variant.Filled"
+               Variant="Variant.Filled"
                StartIcon="@Icons.Material.Filled.Add"
                Size="Size.Small"
                IconSize="Size.Small"
+               Class="@ResolvedClass"
                Href="/orders/create">
         طلب جديد
     </MudButton>
 </PermissionView>
+
+@code {
+    [Parameter]
+    public string? Class { get; set; }
+
+    private string ResolvedClass =>
+        string.IsNullOrWhiteSpace(Class) ? "oh-btn oh-btn--primary oh-btn--sm" : Class;
+}

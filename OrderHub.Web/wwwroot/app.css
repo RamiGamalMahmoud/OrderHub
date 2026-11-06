@@ -172,23 +172,6 @@ h1:focus {
     min-height: 100vh;
 }
 
-/* ����� ������ ������� ����� ��� ������ ������ */
-#blazor-error-ui {
-    background: #FEF2F2 !important;
-    color: #991B1B !important;
-    border-top: 2px solid #EF4444 !important;
-    font-family: sans-serif;
-    padding: 0.75rem 1.5rem !important;
-    direction: rtl;
-}
-
-    #blazor-error-ui a {
-        color: #B91C1C !important;
-        text-decoration: underline !important;
-        margin: 0 5px;
-    }
-
-
 .checkbox-between {
     width: 100%;
 }
@@ -485,41 +468,6 @@ h1:focus {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-}
-
-.category-editor-save-button {
-    min-height: 2.625rem;
-    padding: 0.5rem 1.25rem !important;
-    border-radius: 0.75rem !important;
-    background: #2563eb !important;
-    box-shadow: 0 4px 10px rgb(59 130 246 / 0.25) !important;
-    color: #fff !important;
-    font-size: 0.875rem;
-    font-weight: 800;
-}
-
-.category-editor-save-button:hover {
-    background: #1d4ed8 !important;
-}
-
-.category-editor-cancel-button,
-.category-editor-secondary-button {
-    min-height: 2.625rem;
-    padding: 0.5rem 1rem !important;
-    border-radius: 0.75rem !important;
-    font-size: 0.875rem;
-    font-weight: 700;
-}
-
-.category-editor-cancel-button {
-    border: 1px solid #cbd5e1 !important;
-    background: #fff !important;
-    color: #475569 !important;
-}
-
-.category-editor-secondary-button {
-    border-color: #bfdbfe !important;
-    color: #1d4ed8 !important;
 }
 
 @media (max-width: 640px) {

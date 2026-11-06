@@ -127,14 +127,10 @@
         }
     }
 
-    private string NavButtonClass(bool isActive = false, bool disabled = false)
-    {
-        var tone = isActive
-            ? "border-brand-200 bg-brand-50 text-brand-700"
-            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900";
-        var state = disabled ? " opacity-40 cursor-not-allowed" : "";
-        return $"inline-flex h-8 w-8 items-center justify-center rounded-lg border text-xs font-bold transition-colors {tone}{state}";
-    }
+    private static string NavButtonClass(bool isActive = false, bool disabled = false) =>
+        disabled
+            ? "oh-btn oh-btn--icon oh-btn--sm"
+            : $"oh-btn oh-btn--icon oh-btn--sm{(isActive ? " oh-btn--active" : "")}";
 
     private Task GoToAsync(int page) => CurrentPageChanged.InvokeAsync(Math.Clamp(page, 1, TotalPages));
 

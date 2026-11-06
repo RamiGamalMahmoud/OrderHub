@@ -40,7 +40,7 @@
                            Disabled="_saving"
                            OnClick="Cancel"
                            aria-label="إغلاق النافذة"
-                           Class="shrink-0 rounded-xl text-slate-400" />
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
         </header>
     </TitleContent>
 
@@ -60,7 +60,7 @@
                 <MudAlert Severity="Severity.Error" Dense="true">
                     @_loadError
                 </MudAlert>
-                <MudButton Variant="Variant.Text" OnClick="LoadAsync">
+                <MudButton Variant="Variant.Text" OnClick="LoadAsync" Class="oh-btn oh-btn--secondary oh-btn--sm">
                     إعادة المحاولة
                 </MudButton>
             </div>
@@ -272,7 +272,7 @@
                                OnClick="SaveAsync"
                                Disabled="_saving"
                                StartIcon="@Icons.Material.Filled.Save"
-                               Class="category-editor-save-button">
+                               Class="oh-btn oh-btn--primary">
                         @SaveButtonText
                     </MudButton>
                 }
@@ -282,14 +282,14 @@
                                Color="Color.Primary"
                                OnClick="SaveAndAddAnotherAsync"
                                Disabled="_saving"
-                               Class="category-editor-secondary-button">
+                               Class="oh-btn oh-btn--secondary">
                         حفظ وإضافة قسم آخر
                     </MudButton>
                 }
                 <MudButton Variant="Variant.Text"
                            OnClick="Cancel"
                            Disabled="_saving"
-                           Class="category-editor-cancel-button">
+                           Class="oh-btn oh-btn--secondary">
                     إلغاء
                 </MudButton>
             </div>

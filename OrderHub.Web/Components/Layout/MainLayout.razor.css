@@ -86,21 +86,38 @@ main {
 
 #blazor-error-ui {
     color-scheme: light only;
-    background: lightyellow;
+    background: #fff1f2;
+    border-top: 1px solid #fecdd3;
     bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 -8px 24px rgb(15 23 42 / 0.08);
     box-sizing: border-box;
+    color: #9f1239;
+    direction: rtl;
     display: none;
+    font-family: "Tajawal", system-ui, sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
     left: 0;
-    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    padding: 0.75rem 1.5rem;
     position: fixed;
     width: 100%;
     z-index: 1000;
 }
 
+    #blazor-error-ui .reload {
+        color: #be123c;
+        font-weight: 700;
+        margin-inline-start: 0.5rem;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
     #blazor-error-ui .dismiss {
+        color: #be123c;
         cursor: pointer;
+        left: 1.5rem;
+        line-height: 1;
         position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
+        top: 50%;
+        transform: translateY(-50%);
     }

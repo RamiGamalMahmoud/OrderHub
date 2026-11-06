@@ -2,6 +2,23 @@
 
 <PageTitle>دخول غير مصرح</PageTitle>
 
-<MudAlert Severity="Severity.Error">
-    غير مصرح لك بتنفيذ هذه العملية.
-</MudAlert>
+<div class="flex min-h-[60vh] items-center justify-center px-4 py-10">
+    <section class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-rose-100 bg-rose-50 text-rose-600">
+            <MudIcon Icon="@Icons.Material.Filled.Lock" Class="h-7 w-7" />
+        </span>
+
+        <h1 class="mt-4 text-xl font-extrabold text-slate-900">غير مصرح لك بالوصول</h1>
+        <p class="mt-2 text-sm leading-6 text-slate-600">
+            لا تملك الصلاحية المطلوبة لتنفيذ هذه العملية. تواصل مع مدير النظام إذا كنت تعتقد أن ذلك خطأ.
+        </p>
+
+        <MudButton Href="/"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Class="oh-btn oh-btn--primary mt-6"
+                   StartIcon="@Icons.Material.Filled.Home">
+            العودة للرئيسية
+        </MudButton>
+    </section>
+</div>

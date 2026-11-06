@@ -25,7 +25,7 @@
             <MudButton Href="@(_archivedOnly ? "/orders" : "/orders/archived")"
                        Variant="Variant.Text"
                        StartIcon="@(_archivedOnly ? Icons.Material.Filled.ListAlt : Icons.Material.Filled.Inventory2)"
-                       Class="rounded-xl font-bold">
+                       Class="oh-btn oh-btn--secondary oh-btn--sm">
                 @(_archivedOnly ? "الطلبات الحالية" : "سجل المؤرشف")
             </MudButton>
         </Actions>
@@ -72,20 +72,22 @@
                        Variant="Variant.Text"
                        Size="Size.Small"
                        StartIcon="@Icons.Material.Outlined.Description"
-                       Class="rounded-lg font-bold">
+                       Class="oh-btn oh-btn--secondary oh-btn--sm">
                 الطلبات المعلقة
             </MudButton>
 
             @if (!_archivedOnly)
             {
-                <CreateOrderButton />
+                <CreateOrderButton
+
+                Class="oh-btn oh-btn--primary oh-btn--sm" />
             }
 
             <MudTooltip Text="تحديث القائمة">
                 <MudIconButton Icon="@Icons.Material.Filled.Refresh"
                                OnClick="RefreshAsync"
                                aria-label="تحديث القائمة"
-                               Class="rounded-lg text-slate-500" />
+                               Class="oh-btn oh-btn--icon oh-btn--secondary oh-btn--sm" />
             </MudTooltip>
         </div>
 
@@ -189,7 +191,7 @@
                     <div class="flex items-center gap-1.5">
                         <MudTooltip Text="تفاصيل الطلب">
                             <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                           Class="@($"rounded-lg shadow-none {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
+                                           Class="@($"oh-btn oh-btn--icon oh-btn--sm {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
                                            Size="Size.Small"
                                            Href="@($"/orders/{context.Id}")"
                                            aria-label="تفاصيل الطلب" />
@@ -197,7 +199,7 @@
 
                         <MudTooltip Text="دورة الطلب">
                             <MudIconButton Icon="@Icons.Material.Filled.Timeline"
-                                           Class="@($"rounded-lg shadow-none {OrderWorkflowPresentation.Action("delivery")}")"
+                                           Class="@($"oh-btn oh-btn--icon oh-btn--sm {OrderWorkflowPresentation.Action("delivery")}")"
                                            Size="Size.Small"
                                            Href="@($"/orders/{context.Id}/workflow")"
                                            aria-label="دورة الطلب" />
@@ -208,7 +210,7 @@
                             <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write">
                                 <MudTooltip Text="تعديل الطلب">
                                     <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                                   Class="@($"rounded-lg shadow-none {OrderWorkflowPresentation.Action("processing")}")"
+                                                   Class="@($"oh-btn oh-btn--icon oh-btn--sm {OrderWorkflowPresentation.Action("processing")}")"
                                                    Size="Size.Small"
                                                    Href="@($"/orders/{context.Id}/edit")"
                                                    aria-label="تعديل الطلب" />

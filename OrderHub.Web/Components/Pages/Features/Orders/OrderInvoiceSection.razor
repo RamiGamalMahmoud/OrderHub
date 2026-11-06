@@ -8,7 +8,7 @@
 @inject PermissionAccess Permissions
 @inject ILogger<OrderInvoiceSection> Logger
 
-<section class="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm" aria-label="بيانات الفاتورة الإلكترونية">
+<section class="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-label="بيانات الفاتورة الإلكترونية">
     <div>
         <div class="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <h3 class="flex items-center gap-2 text-sm font-bold text-slate-900">
@@ -35,7 +35,7 @@
             <div class="space-y-3">
                 <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-800">@_error</div>
                 <button type="button"
-                        class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-60"
+                        class="oh-btn oh-btn--secondary w-full"
                         disabled="@_busy"
                         @onclick="LoadAsync">إعادة المحاولة</button>
             </div>
@@ -86,14 +86,14 @@
             <div class="flex flex-col gap-2">
                 <a href="@InvoiceFileUrl"
                    target="_blank"
-                   class="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-slate-800">
+                   class="oh-btn oh-btn--secondary w-full">
                     <MudIcon Icon="@Icons.Material.Outlined.Download" Class="text-[16px]" />
                     <span>تنزيل الفاتورة الضريبية (PDF)</span>
                 </a>
                 @if (_canWrite)
                 {
                     <button type="button"
-                            class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            class="oh-btn oh-btn--secondary w-full"
                             disabled="@_busy"
                             @onclick="CreateOrRegenerateAsync">
                         @(_busy ? "جارٍ التوليد..." : "إعادة توليد الفاتورة")
@@ -104,7 +104,7 @@
         else if (!_loading && _error is null && _canWrite)
         {
             <button type="button"
-                    class="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    class="oh-btn oh-btn--primary w-full"
                     disabled="@_busy"
                     @onclick="CreateOrRegenerateAsync">
                 <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Class="text-[16px]" />

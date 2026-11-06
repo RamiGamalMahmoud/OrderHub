@@ -1,16 +1,34 @@
 ﻿@using OrderHub.Application.Features.Products.Contracts
 
-<MudDialog Class="product-selection-dialog">
+<MudDialog Class="flex max-h-[92vh] w-full max-w-[36rem] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-xl"
+           TitleClass="p-0"
+           ContentClass="p-0"
+           ActionsClass="p-0"
+           Gutters="false">
     <TitleContent>
-        <MudStack Row AlignItems="AlignItems.Center" Spacing="2" Class="px-1 py-1">
-            <MudIcon Icon="@Icons.Material.Outlined.AddShoppingCart"
-                     Color="Color.Primary" />
-            <MudText Typo="Typo.h6" Class="font-bold">إضافة منتج</MudText>
-        </MudStack>
+        <header class="flex items-center justify-between gap-3 border-b border-slate-100 p-5">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600">
+                    <MudIcon Icon="@Icons.Material.Outlined.AddShoppingCart" Size="Size.Small" />
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-bold leading-tight text-slate-900">إضافة منتج</h2>
+                    <p class="mt-1 text-xs font-medium text-slate-500">ابحث عن المنتج وحدده لإضافته إلى الطلب</p>
+                </div>
+            </div>
+
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Size="Size.Small"
+                           Color="Color.Default"
+                           Disabled="_isAdding"
+                           OnClick="Cancel"
+                           aria-label="إغلاق النافذة"
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+        </header>
     </TitleContent>
 
     <DialogContent>
-        <div class="product-dialog-content">
+        <div class="product-dialog-content p-5">
             <MudTextField T="string"
                           @ref="_productSearchField"
                           Value="@_searchTerm"
@@ -30,7 +48,8 @@
                     <MudAlert Severity="Severity.Error" role="alert">
                         @_searchError
                         <MudButton OnClick="@(() => TextChanged(_searchTerm ?? string.Empty))"
-                                   Disabled="_isAdding">
+                                   Disabled="_isAdding"
+                                   Class="oh-btn oh-btn--secondary oh-btn--sm mt-2">
                             إعادة المحاولة
                         </MudButton>
                     </MudAlert>
@@ -110,19 +129,19 @@
     </DialogContent>
 
     <DialogActions>
-        <div class="flex w-full flex-wrap justify-end gap-2 border-t border-slate-100 pa-4">
-            <MudButton OnClick="Cancel" Disabled="_isAdding">
+        <footer class="flex w-full flex-wrap items-center justify-end gap-2 border-t border-slate-100 bg-white p-4">
+            <MudButton OnClick="Cancel" Disabled="_isAdding" Class="oh-btn oh-btn--secondary">
                 إلغاء
             </MudButton>
 
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
-                       Class="rounded-xl px-5 font-bold"
+                       Class="oh-btn oh-btn--primary"
                        StartIcon="@Icons.Material.Outlined.ArrowForward"
                        Disabled="@(!CanContinue)"
                        OnClick="ContinueAsync">
                 متابعة
             </MudButton>
-        </div>
+        </footer>
     </DialogActions>
 </MudDialog>

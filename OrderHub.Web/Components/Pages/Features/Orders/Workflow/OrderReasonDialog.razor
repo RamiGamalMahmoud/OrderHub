@@ -23,7 +23,7 @@
                            Disabled="_submitting"
                            OnClick="Cancel"
                            aria-label="إغلاق النافذة"
-                           Class="shrink-0 rounded-xl text-slate-400" />
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
         </header>
     </TitleContent>
 
@@ -51,8 +51,8 @@
 
     <DialogActions>
         <footer class="flex items-center justify-end gap-2 border-t border-slate-100 bg-white p-4">
-            <MudButton OnClick="Cancel" Disabled="_submitting" Variant="Variant.Text" Class="rounded-xl text-slate-600">رجوع دون تغيير</MudButton>
-            <MudButton Class="@($"rounded-xl shadow-none font-bold {OrderWorkflowPresentation.Action(ConfirmTone)}")"
+            <MudButton OnClick="Cancel" Disabled="_submitting" Variant="Variant.Text" Class="oh-btn oh-btn--secondary">رجوع دون تغيير</MudButton>
+            <MudButton Class="@($"oh-btn {OrderWorkflowPresentation.Action(ConfirmTone)}")"
                        OnClick="ConfirmAsync"
                        Disabled="_submitting">@(_submitting ? "جاري الحفظ…" : ConfirmLabel)</MudButton>
         </footer>

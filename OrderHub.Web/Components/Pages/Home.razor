@@ -11,7 +11,7 @@
                   Crumbs="_crumbs">
         <Actions>
             <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write">
-                <MudButton Class="min-h-11 rounded-lg px-4 font-bold shadow-sm"
+                <MudButton Class="oh-btn oh-btn--primary"
                            Size="Size.Small"
                            Variant="Variant.Filled"
                            Color="Color.Primary"
@@ -21,7 +21,7 @@
                 </MudButton>
             </PermissionView>
             <PermissionView Feature="PermissionFeature.Products" Level="PermissionLevel.Write">
-                <MudButton Class="min-h-11 rounded-lg px-4 font-bold shadow-sm"
+                <MudButton Class="oh-btn oh-btn--secondary"
                            Size="Size.Small"
                            Variant="Variant.Filled"
                            Color="Color.Primary"
@@ -32,8 +32,9 @@
             </PermissionView>
             <PermissionView Feature="PermissionFeature.Clients" Level="PermissionLevel.Write">
                 <ClientEditorButton Size="Size.Small"
-                                    Color="Color.Primary"
-                                    Class="min-h-11 rounded-lg px-4 font-bold shadow-sm" />
+                                    Variant="Variant.Outlined"
+                                    Color="Color.Default"
+                                    Class="oh-btn oh-btn--secondary" />
             </PermissionView>
         </Actions>
     </PageScaffold>
@@ -110,7 +111,7 @@
                     </p>
                 </div>
                 <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Read">
-                    <MudButton Class="mt-auto rounded-xl px-4 font-bold"
+                    <MudButton Class="oh-btn oh-btn--secondary"
                                Variant="Variant.Outlined"
                                Color="Color.Primary"
                                EndIcon="@Icons.Material.Filled.ArrowBack"

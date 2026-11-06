@@ -45,8 +45,12 @@
 
     private bool IsBusy;
 
-    private string? ResolvedClass =>
-        string.IsNullOrWhiteSpace(Class) ? "rounded-lg font-bold" : Class;
+    private string ResolvedClass =>
+        !string.IsNullOrWhiteSpace(Class)
+            ? Class
+            : Variant == Variant.Text
+                ? "oh-btn oh-btn--ghost oh-btn--sm"
+                : "oh-btn oh-btn--primary";
 
     private async Task OpenAsync()
     {

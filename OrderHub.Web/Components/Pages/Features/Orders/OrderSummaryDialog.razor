@@ -24,7 +24,7 @@
                            Color="Color.Default"
                            OnClick="Cancel"
                            aria-label="إغلاق النافذة"
-                           Class="shrink-0 rounded-xl text-slate-400" />
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
         </header>
     </TitleContent>
 
@@ -81,16 +81,16 @@
 
     <DialogActions>
         <footer class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 bg-white p-4">
-            <MudButton OnClick="Cancel" Variant="Variant.Text" Class="rounded-lg font-bold text-slate-600">إغلاق</MudButton>
+            <MudButton OnClick="Cancel" Variant="Variant.Text" Class="oh-btn oh-btn--secondary">إغلاق</MudButton>
             <MudButton StartIcon="@Icons.Material.Outlined.QrCode2" OnClick="ShowQrCode"
                        Disabled="_selectedRecord is null" Variant="Variant.Outlined"
-                       Class="rounded-lg font-bold">QR Code</MudButton>
+                       Class="oh-btn oh-btn--secondary">QR Code</MudButton>
             <MudButton StartIcon="@Icons.Material.Outlined.Share" OnClick="ShareAsync"
                        Disabled="_selectedRecord is null" Variant="Variant.Outlined"
-                       Class="rounded-lg font-bold">مشاركة</MudButton>
+                       Class="oh-btn oh-btn--secondary">مشاركة</MudButton>
             <MudButton StartIcon="@Icons.Material.Outlined.ContentCopy" OnClick="CopyAsync"
                        Disabled="_selectedRecord is null" Color="Color.Primary" Variant="Variant.Filled"
-                       Class="rounded-lg font-bold">نسخ</MudButton>
+                       Class="oh-btn oh-btn--primary">نسخ</MudButton>
         </footer>
     </DialogActions>
 </MudDialog>

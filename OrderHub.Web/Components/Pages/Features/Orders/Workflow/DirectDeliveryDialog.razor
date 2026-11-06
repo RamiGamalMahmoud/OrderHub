@@ -26,7 +26,7 @@
                            Disabled="_submitting"
                            OnClick="Cancel"
                            aria-label="إغلاق النافذة"
-                           Class="shrink-0 rounded-xl text-slate-400" />
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
         </header>
     </TitleContent>
 
@@ -45,7 +45,7 @@
             }
 
             <button type="button"
-                    class="@($"rounded-lg px-3 py-1.5 text-xs font-bold {OrderWorkflowPresentation.Action("completed")}")"
+                    class="@($"oh-btn oh-btn--sm {OrderWorkflowPresentation.Action("completed")}")"
                     disabled="@_submitting"
                     @onclick="CompleteRemaining">اختيار إكمال جميع الخطوات المتبقية</button>
 
@@ -113,9 +113,9 @@
 
     <DialogActions>
         <footer class="flex items-center justify-end gap-2 border-t border-slate-100 bg-white p-4">
-            <MudButton Disabled="_submitting" OnClick="Cancel" Variant="Variant.Text" Class="rounded-xl text-slate-600">رجوع دون تغيير</MudButton>
+            <MudButton Disabled="_submitting" OnClick="Cancel" Variant="Variant.Text" Class="oh-btn oh-btn--secondary">رجوع دون تغيير</MudButton>
             <MudButton Disabled="_submitting"
-                       Class="@($"rounded-xl shadow-none font-bold {OrderWorkflowPresentation.Action("completed")}")"
+                       Class="@($"oh-btn {OrderWorkflowPresentation.Action("completed")}")"
                        OnClick="ConfirmAsync">@(_submitting ? "جاري تسجيل التسليم…" : "تأكيد تسليم الطلب بهذه النتائج")</MudButton>
         </footer>
     </DialogActions>

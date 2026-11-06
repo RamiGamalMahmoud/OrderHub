@@ -29,7 +29,7 @@
                            Disabled="_saving"
                            OnClick="Cancel"
                            aria-label="إغلاق النافذة"
-                           Class="shrink-0 rounded-xl text-slate-400" />
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
         </header>
     </TitleContent>
 
@@ -51,7 +51,7 @@
                 </div>
 
                 <button type="button"
-                        class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-700 transition-colors hover:bg-red-100"
+                        class="oh-btn oh-btn--danger oh-btn--sm"
                         @onclick="LoadAsync">
                     <MudIcon Icon="@Icons.Material.Filled.Refresh" Class="text-[14px]" />
                     إعادة المحاولة
@@ -76,7 +76,7 @@
                                 لا توجد مدن متاحة. يرجى إضافة مدينة أولًا ثم إعادة المحاولة.
                             </p>
                             <button type="button"
-                                    class="rounded-md border border-amber-300 bg-white px-2.5 py-1 text-xs font-bold text-amber-800 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    class="oh-btn oh-btn--secondary oh-btn--sm"
                                     disabled="@_saving"
                                     @onclick="LoadAsync">
                                 إعادة المحاولة
@@ -170,14 +170,14 @@
 
             <div class="flex items-center gap-2">
                 <button type="button"
-                        class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        class="oh-btn oh-btn--secondary"
                         disabled="@_saving"
                         @onclick="Cancel">
                     إلغاء
                 </button>
 
                 <button type="button"
-                        class="flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-5 py-2 text-xs font-bold text-white shadow-sm shadow-brand-500/25 transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        class="oh-btn oh-btn--primary"
                         disabled="@SaveDisabled"
                         aria-busy="@_saving"
                         @onclick="SaveAsync">

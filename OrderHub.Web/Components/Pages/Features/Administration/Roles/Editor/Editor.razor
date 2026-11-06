@@ -65,7 +65,7 @@
             <MudButton Variant="Variant.Outlined"
                        Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.ArrowForward"
-                       Class="mt-4 rounded-xl font-bold"
+                       Class="oh-btn oh-btn--secondary mt-4"
                        OnClick="GoBack">
                 العودة إلى الأدوار
             </MudButton>
@@ -243,7 +243,7 @@
                         <MudButton Variant="Variant.Text"
                                    Color="Color.Default"
                                    Disabled="_saving"
-                                   Class="rounded-xl text-slate-600"
+                                   Class="oh-btn oh-btn--secondary"
                                    StartIcon="@Icons.Material.Filled.ArrowForward"
                                    OnClick="GoBack">
                             إلغاء والعودة
@@ -253,7 +253,7 @@
                                    Color="Color.Primary"
                                    StartIcon="@Icons.Material.Filled.Save"
                                    Disabled="_saving"
-                                   Class="rounded-xl px-5 font-bold shadow-sm"
+                                   Class="oh-btn oh-btn--primary"
                                    OnClick="SaveAsync">
 
                             @if (_saving)

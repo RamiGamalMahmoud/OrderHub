@@ -8,7 +8,7 @@
 
 <MudButton Variant="@Variant"
            Color="@Color"
-           Class="@Class"
+           Class="@ResolvedClass"
            StartIcon="@StartIcon"
            Disabled="@(IsBusy || Disabled)"
            Size="@Size"
@@ -51,6 +51,13 @@
     public int? PreselectedProductId { get; set; }
 
     private bool IsBusy;
+
+    private string ResolvedClass =>
+        !string.IsNullOrWhiteSpace(Class)
+            ? Class
+            : Variant == Variant.Text
+                ? "oh-btn oh-btn--ghost oh-btn--sm"
+                : "oh-btn oh-btn--primary";
 
     private async Task OpenAsync()
     {

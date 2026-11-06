@@ -24,7 +24,7 @@
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
                            Size="Size.Large"
-                           Class="rounded-xl px-5 font-bold shadow-sm"
+                           Class="oh-btn oh-btn--primary"
                            StartIcon="@Icons.Material.Filled.Add"
                            Disabled="IsBusy"
                            OnClick="Create">
@@ -60,7 +60,7 @@
                                OnClick="RefreshAsync"
                                aria-label="تحديث القائمة"
                                Disabled="IsBusy"
-                               Class="rounded-lg text-slate-500" />
+                               Class="oh-btn oh-btn--icon oh-btn--secondary oh-btn--sm" />
             </MudTooltip>
         </div>
 
@@ -70,7 +70,7 @@
                 <p class="text-sm font-bold text-red-800">@_error</p>
                 <MudButton Variant="Variant.Outlined"
                            Size="Size.Small"
-                           Class="rounded-lg font-bold"
+                           Class="oh-btn oh-btn--secondary oh-btn--sm"
                            OnClick="RefreshAsync"
                            Disabled="IsBusy">
                     إعادة المحاولة
@@ -149,7 +149,7 @@
                             <MudTooltip Text="تعديل المنتج">
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                                Size="Size.Small"
-                                               Class="rounded-lg text-brand-600 shadow-none hover:bg-brand-50"
+                                               Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost"
                                                aria-label="تعديل المنتج"
                                                OnClick="@(() => Edit(product.Id))"
                                                Disabled="IsBusy" />
@@ -159,7 +159,7 @@
                                 <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
                                                Color="Color.Error"
                                                Size="Size.Small"
-                                               Class="rounded-lg shadow-none"
+                                               Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost oh-btn--danger"
                                                aria-label="حذف المنتج"
                                                OnClick="@(() => DeleteAsync(product))"
                                                Disabled="IsBusy" />

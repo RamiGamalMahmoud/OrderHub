@@ -99,21 +99,13 @@
         }
     }
 
-    private string PageClass(bool isActive)
-    {
-        var size = Compact ? "h-7 w-7 text-[11px]" : "h-8 w-8";
-        return isActive
-            ? $"flex items-center justify-center rounded-lg bg-sky-600 font-bold text-white shadow-xs {size}"
-            : $"flex items-center justify-center rounded-lg font-semibold text-slate-600 transition-colors hover:bg-slate-100 {size}";
-    }
+    private string PageClass(bool isActive) =>
+        isActive
+            ? "oh-btn oh-btn--icon oh-btn--sm oh-btn--active"
+            : "oh-btn oh-btn--icon oh-btn--sm";
 
-    private string ArrowClass(bool disabled)
-    {
-        var padding = Compact ? "p-1.5" : "p-2";
-        return disabled
-            ? $"cursor-not-allowed rounded-lg text-slate-300 {padding}"
-            : $"rounded-lg text-slate-600 transition-colors hover:bg-slate-100 {padding}";
-    }
+    private string ArrowClass(bool disabled) =>
+        "oh-btn oh-btn--icon oh-btn--sm";
 
     private Task GoToAsync(int page) =>
         CurrentPageChanged.InvokeAsync(Math.Clamp(page, 1, Math.Max(1, TotalPages)));

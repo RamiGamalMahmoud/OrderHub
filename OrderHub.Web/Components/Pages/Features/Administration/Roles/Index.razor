@@ -26,7 +26,7 @@
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
                        Size="Size.Large"
-                       Class="rounded-xl px-5 font-bold shadow-sm"
+                       Class="oh-btn oh-btn--primary"
                        StartIcon="@Icons.Material.Filled.Add"
                        Disabled="IsBusy"
                        OnClick="CreateRole">
@@ -61,7 +61,7 @@
                                OnClick="RefreshAsync"
                                aria-label="تحديث القائمة"
                                Disabled="IsBusy"
-                               Class="rounded-lg text-slate-500" />
+                               Class="oh-btn oh-btn--icon oh-btn--secondary oh-btn--sm" />
             </MudTooltip>
         </div>
 
@@ -77,7 +77,7 @@
             <div class="flex flex-wrap items-center justify-between gap-3 border-b border-red-100 bg-red-50 px-4 py-3">
                 <p class="text-sm font-bold text-red-800">@_error</p>
                 <button type="button"
-                        class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        class="oh-btn oh-btn--secondary oh-btn--sm"
                         disabled="@(_loading || _deleting)"
                         @onclick="LoadAsync">
                     <MudIcon Icon="@Icons.Material.Filled.Refresh" Class="text-[14px]" />
@@ -134,7 +134,7 @@
                         <MudTooltip Text="تعديل الدور">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                            Size="Size.Small"
-                                           Class="rounded-lg text-brand-600 shadow-none hover:bg-brand-50"
+                                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost"
                                            aria-label="تعديل الدور"
                                            OnClick="@(() => EditRole(role.Id))"
                                            Disabled="IsBusy" />
@@ -144,7 +144,7 @@
                             <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
                                            Color="Color.Error"
                                            Size="Size.Small"
-                                           Class="rounded-lg shadow-none"
+                                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost oh-btn--danger"
                                            aria-label="حذف الدور"
                                            OnClick="@(() => ConfirmDeleteAsync(role))"
                                            Disabled="IsBusy" />
@@ -163,7 +163,7 @@
                     @if (string.IsNullOrWhiteSpace(_searchTerm) && _error is null)
                     {
                         <button type="button"
-                                class="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-brand-500/25 transition-colors hover:bg-brand-700"
+                                class="oh-btn oh-btn--secondary oh-btn--sm mt-4"
                                 @onclick="CreateRole">
                             <MudIcon Icon="@Icons.Material.Filled.Add" Class="text-[14px]" />
                             إضافة دور

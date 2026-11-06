@@ -42,20 +42,23 @@
                                Size="Size.Small"
                                Disabled="@(Disabled || !CanMoveUp)"
                                OnClick="MoveUp"
-                               aria-label="نقل الخطوة لأعلى" />
+                               aria-label="نقل الخطوة لأعلى"
+                               Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
 
                 <MudIconButton Icon="@Icons.Material.Outlined.ArrowDownward"
                                Size="Size.Small"
                                Disabled="@(Disabled || !CanMoveDown)"
                                OnClick="MoveDown"
-                               aria-label="نقل الخطوة لأسفل" />
+                               aria-label="نقل الخطوة لأسفل"
+                               Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
 
                 <MudIconButton Icon="@Icons.Material.Outlined.DeleteOutline"
                                Size="Size.Small"
                                Color="Color.Error"
                                Disabled="Disabled"
                                OnClick="Remove"
-                               aria-label="حذف الخطوة" />
+                               aria-label="حذف الخطوة"
+                               Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost oh-btn--danger" />
 
             </MudStack>
 

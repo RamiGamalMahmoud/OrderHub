@@ -25,7 +25,7 @@
                                       Variant="Variant.Filled"
                                       Color="Color.Primary"
                                       Size="Size.Large"
-                                      Class="rounded-xl px-5 font-bold shadow-sm"
+                                      Class="oh-btn oh-btn--primary"
                                       Disabled="IsBusy"
                                       OnSaved="LoadAsync" />
             }
@@ -51,7 +51,7 @@
 
             <MudButton Variant="Variant.Outlined"
                        Color="Color.Primary"
-                       Class="mt-3"
+                       Class="oh-btn oh-btn--secondary oh-btn--sm mt-3"
                        OnClick="LoadAsync">
                 إعادة المحاولة
             </MudButton>
@@ -91,7 +91,7 @@
                                Disabled="IsBusy"
                                aria-label="تحديث القائمة"
                                OnClick="LoadAsync"
-                               Class="rounded-lg" />
+                               Class="oh-btn oh-btn--icon oh-btn--secondary oh-btn--sm" />
             </div>
 
             <MudTable T="SupplierListItem"
@@ -146,12 +146,13 @@
                     @if (_canWrite)
                     {
                         <MudTd DataLabel="الإجراءات">
-                            <div class="flex items-center">
+                            <div class="flex items-center gap-1">
                                 <SupplierEditorButton SupplierId="supplier.Id"
                                                       Variant="Variant.Text"
                                                       Color="Color.Default"
                                                       StartIcon="@Icons.Material.Filled.Edit"
                                                       Disabled="IsBusy"
+                                                      Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost"
                                                       OnSaved="LoadAsync" />
 
                                 <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
@@ -159,7 +160,8 @@
                                                Color="Color.Error"
                                                Disabled="IsBusy"
                                                aria-label="حذف المورد"
-                                               OnClick="@(() => ConfirmDeleteAsync(supplier))" />
+                                               OnClick="@(() => ConfirmDeleteAsync(supplier))"
+                                               Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost oh-btn--danger" />
                             </div>
                         </MudTd>
                     }

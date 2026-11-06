@@ -18,13 +18,15 @@
                                        Size="Size.Small"
                                        OnClick="EditAsync"
                                        Disabled="Busy"
-                                       aria-label="تعديل القسم" />
+                                       aria-label="تعديل القسم"
+                                       Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
                         <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
                                        Size="Size.Small"
                                        Color="Color.Error"
                                        Disabled="Busy"
                                        OnClick="DeleteAsync"
-                                       aria-label="حذف القسم" />
+                                       aria-label="حذف القسم"
+                                       Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost oh-btn--danger" />
                     </MudStack>
                 }
             </MudStack>
@@ -62,7 +64,7 @@
         <MudButton Variant="Variant.Text"
                    Color="Color.Primary"
                    Size="Size.Small"
-                   Class="rounded-lg font-semibold"
+                   Class="oh-btn oh-btn--secondary oh-btn--sm"
                    Disabled="@(!Category.HasChildren || Busy)"
                    Href="@SubCategoriesUrl"
                    EndIcon="@Icons.Material.Filled.ArrowBack">

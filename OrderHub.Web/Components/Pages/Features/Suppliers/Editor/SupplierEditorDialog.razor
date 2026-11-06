@@ -29,7 +29,7 @@
                            Disabled="_saving"
                            OnClick="Cancel"
                            aria-label="إغلاق النافذة"
-                           Class="shrink-0 rounded-xl text-slate-400" />
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
         </header>
     </TitleContent>
 
@@ -53,7 +53,8 @@
 
                 <MudButton Variant="Variant.Outlined"
                            Color="Color.Primary"
-                           OnClick="LoadAsync">
+                           OnClick="LoadAsync"
+                           Class="oh-btn oh-btn--secondary oh-btn--sm">
                     إعادة المحاولة
                 </MudButton>
             </div>
@@ -105,7 +106,8 @@
                                 <MudButton Variant="Variant.Outlined"
                                            Color="Color.Primary"
                                            OnClick="LoadAsync"
-                                           Disabled="_saving">
+                                           Disabled="_saving"
+                                           Class="oh-btn oh-btn--secondary oh-btn--sm">
                                     إعادة المحاولة
                                 </MudButton>
                             }
@@ -275,7 +277,7 @@
                 <MudButton Disabled="_saving"
                            OnClick="Cancel"
                            Variant="Variant.Text"
-                           Class="rounded-xl text-slate-600">
+                           Class="oh-btn oh-btn--secondary">
                     إلغاء
                 </MudButton>
 
@@ -284,7 +286,7 @@
                            Disabled="SaveDisabled"
                            OnClick="SaveAsync"
                            StartIcon="@Icons.Material.Filled.Save"
-                           Class="rounded-xl px-5 font-bold">
+                           Class="oh-btn oh-btn--primary">
                     @SaveButtonText
                 </MudButton>
             </div>

@@ -18,7 +18,7 @@
         @if (!_opened)
         {
             <button type="button"
-                    class="@($"ms-auto rounded-lg px-3 py-1.5 text-xs font-bold {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
+                    class="@($"oh-btn oh-btn--sm ms-auto {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
                     @onclick="OpenAsync">عرض السجل</button>
         }
     </header>
@@ -34,7 +34,7 @@
             {
                 <p class="text-xs font-bold text-red-700">@_error</p>
                 <button type="button"
-                        class="@($"mt-2 rounded-lg px-3 py-1.5 text-xs font-bold {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
+                        class="@($"oh-btn oh-btn--sm mt-2 {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
                         @onclick="ReloadAsync">إعادة المحاولة</button>
             }
             else if (_data is not null)
@@ -91,14 +91,14 @@
 
                     <div class="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
                         <button type="button"
-                                class="@($"rounded-lg px-3 py-1.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50 {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
+                                class="@($"oh-btn oh-btn--sm {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
                                 disabled="@(_loading || !_data.HasPreviousPage)"
                                 @onclick="PreviousAsync">السابق</button>
                         <span class="text-[11px] font-bold text-slate-600">
                             الصفحة @_data.PageNumber.ToString(CultureInfo.InvariantCulture) من @Math.Max(1, _data.TotalPages).ToString(CultureInfo.InvariantCulture)
                         </span>
                         <button type="button"
-                                class="@($"rounded-lg px-3 py-1.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50 {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
+                                class="@($"oh-btn oh-btn--sm {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
                                 disabled="@(_loading || !_data.HasNextPage)"
                                 @onclick="NextAsync">التالي</button>
                     </div>

@@ -24,7 +24,7 @@
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
                            Size="Size.Large"
-                           Class="rounded-xl px-5 font-bold shadow-sm"
+                           Class="oh-btn oh-btn--primary"
                            StartIcon="@Icons.Material.Filled.Add"
                            OnClick="OpenCreateDialogAsync"
                            Disabled="_deleting || _dialogOpen">
@@ -51,7 +51,8 @@
         </MudAlert>
 
         <MudButton Variant="Variant.Outlined"
-                   OnClick="LoadAsync">
+                   OnClick="LoadAsync"
+                   Class="oh-btn oh-btn--secondary oh-btn--sm">
             إعادة المحاولة
         </MudButton>
     }
@@ -63,7 +64,8 @@
         </MudAlert>
 
         <MudButton Href="/categories"
-                   StartIcon="@Icons.Material.Filled.ArrowForward">
+                   StartIcon="@Icons.Material.Filled.ArrowForward"
+                   Class="oh-btn oh-btn--secondary oh-btn--sm">
             الرجوع للأقسام
         </MudButton>
     }
@@ -82,7 +84,7 @@
                 {
                     <MudButton Color="Color.Primary"
                                StartIcon="@Icons.Material.Filled.Add"
-                               Class="mt-2"
+                               Class="oh-btn oh-btn--secondary oh-btn--sm mt-2"
                                OnClick="OpenCreateDialogAsync"
                                Disabled="_deleting || _dialogOpen">
                         @CreateButtonText

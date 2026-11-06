@@ -36,7 +36,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 shadow-sm">
             <p class="text-sm font-bold text-red-800">@_loadError</p>
             <button type="button"
-                    class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    class="oh-btn oh-btn--secondary oh-btn--sm"
                     disabled="@_saving"
                     @onclick="LoadAsync">
                 <MudIcon Icon="@Icons.Material.Filled.Refresh" Class="text-[14px]" />
@@ -53,7 +53,7 @@
             <p class="text-base font-bold text-slate-900">المستخدم غير موجود.</p>
             <p class="text-sm text-slate-500">قد يكون الحساب قد حُذف أو أن الرابط غير صحيح.</p>
             <button type="button"
-                    class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-100"
+                    class="oh-btn oh-btn--secondary oh-btn--sm"
                     @onclick="GoBack">
                 <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Class="text-[14px]" />
                 العودة إلى المستخدمين
@@ -253,7 +253,7 @@
                                    Color="Color.Default"
                                    Disabled="_saving"
                                    OnClick="GoBack"
-                                   Class="rounded-xl text-slate-600">
+                                   Class="oh-btn oh-btn--secondary">
                             إلغاء
                         </MudButton>
 
@@ -262,7 +262,7 @@
                                    StartIcon="@Icons.Material.Filled.Save"
                                    Disabled="_saving"
                                    OnClick="SaveAsync"
-                                   Class="rounded-xl px-5 font-bold shadow-sm">
+                                   Class="oh-btn oh-btn--primary">
 
                             @if (_saving)
                             {

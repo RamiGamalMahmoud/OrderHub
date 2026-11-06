@@ -134,8 +134,8 @@ else
         <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write">
             <button type="button"
                     class="@(Compact
-                               ? "inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-sky-600 px-2 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
-                               : "inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-sky-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-sky-700 disabled:opacity-50")"
+                               ? "oh-btn oh-btn--sm flex-1 bg-sky-600 text-[11px] font-bold text-white hover:bg-sky-700"
+                               : "oh-btn oh-btn--sm flex-1 bg-sky-600 text-white hover:bg-sky-700")"
                     disabled="@Busy"
                     @onclick="() => OnContinue.InvokeAsync(Summary.Id)">
                 <span>متابعة</span>
@@ -144,8 +144,8 @@ else
             </button>
             <button type="button"
                     class="@(Compact
-                               ? "inline-flex items-center justify-center gap-1 rounded-lg bg-rose-50 px-2 py-1.5 text-[11px] font-bold text-rose-600 transition-colors hover:bg-rose-100 disabled:opacity-50"
-                               : "inline-flex items-center justify-center gap-1 rounded-lg bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 transition-colors hover:bg-rose-100 disabled:opacity-50")"
+                               ? "oh-btn oh-btn--sm bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100"
+                               : "oh-btn oh-btn--sm bg-rose-50 text-rose-600 hover:bg-rose-100")"
                     disabled="@Busy"
                     @onclick="() => OnDelete.InvokeAsync(Summary.Id)">
                 <MudIcon Icon="@Icons.Material.Filled.Delete"

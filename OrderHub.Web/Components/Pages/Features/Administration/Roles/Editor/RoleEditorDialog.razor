@@ -35,7 +35,7 @@
                            Disabled="_saving"
                            OnClick="Cancel"
                            aria-label="إغلاق النافذة"
-                           Class="shrink-0 rounded-xl text-slate-400" />
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
         </header>
     </TitleContent>
 
@@ -139,7 +139,7 @@
                 <MudButton Disabled="_saving"
                            OnClick="Cancel"
                            Variant="Variant.Text"
-                           Class="rounded-xl text-slate-600">
+                           Class="oh-btn oh-btn--secondary">
                     إلغاء
                 </MudButton>
 
@@ -148,7 +148,7 @@
                            Disabled="@(!ReadyToSave)"
                            OnClick="SaveAsync"
                            StartIcon="@Icons.Material.Filled.Save"
-                           Class="rounded-xl px-5 font-bold">
+                           Class="oh-btn oh-btn--primary">
                     @SaveButtonText
                 </MudButton>
             </div>
