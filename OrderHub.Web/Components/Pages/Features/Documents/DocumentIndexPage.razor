@@ -3,89 +3,363 @@
 @using OrderHub.Application.Common
 @using OrderHub.Application.Interfaces
 @using Microsoft.AspNetCore.Authorization
+@using System.Globalization
 @attribute [PermissionAuthorize(PermissionFeature.Documents, PermissionLevel.Read)]
 @inject IRequestExecutor RequestExecutor
 
 <PageTitle>@Title</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large">
-    <MudStack Spacing="3">
-        <div>
-            <MudText Typo="Typo.h5">@Title</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">الوثائق المنشأة، بما فيها الوثائق المرتبطة بمسودات لم تتحول إلى طلب بعد.</MudText>
+<div class="space-y-5">
+    <PageScaffold Title="@Title"
+                  Description="الوثائق المنشأة، بما فيها الوثائق المرتبطة بمسودات لم تتحول إلى طلب بعد"
+                  Crumbs="ScaffoldCrumbs">
+        <Actions>
+            <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                           Variant="Variant.Text"
+                           Color="Color.Primary"
+                           Class="rounded-lg"
+                           Disabled="_countsLoading"
+                           aria-label="تحديث القائمة"
+                           OnClick="RefreshAsync" />
+        </Actions>
+    </PageScaffold>
+
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+            <MudTextField T="string"
+                          Value="_searchTerm"
+                          ValueChanged="OnSearchChangedAsync"
+                          Placeholder="بحث برقم الوثيقة أو العميل أو الطلب"
+                          aria-label="البحث في الوثائق"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Immediate="true"
+                          Clearable="true"
+                          class="w-full max-w-sm" />
         </div>
 
-        <MudTextField T="string" Value="_searchTerm" ValueChanged="OnSearchChangedAsync"
-                      Label="بحث برقم الوثيقة أو العميل أو الطلب" Variant="Variant.Outlined"
-                      Margin="Margin.Dense" Immediate="true" Adornment="Adornment.Start"
-                      AdornmentIcon="@Icons.Material.Filled.Search" />
+        <MudTable T="DocumentListItem"
+                  @ref="_table"
+                  ServerData="LoadPageAsync"
+                  Dense="true"
+                  Hover="true"
+                  Elevation="0"
+                  Square="true"
+                  Breakpoint="Breakpoint.Sm">
 
-        <MudTable T="DocumentListItem" @ref="_table" ServerData="LoadPageAsync" Hover="true" Striped="true">
             <HeaderContent>
-                <MudTh>رقم الوثيقة</MudTh>
-                <MudTh>العميل</MudTh>
-                <MudTh>الطلب المرتبط</MudTh>
-                <MudTh>تاريخ الإصدار</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">
+                    رقم الوثيقة
+                </MudTh>
+
+                <MudTh Class="text-xs font-bold text-slate-500">
+                    العميل
+                </MudTh>
+
+                <MudTh Class="text-xs font-bold text-slate-500">
+                    الطلب المرتبط
+                </MudTh>
+
+                <MudTh Class="text-xs font-bold text-slate-500">
+                    تاريخ الإصدار
+                </MudTh>
+
                 @if (Type == DocumentType.Quotation)
                 {
-                    <MudTh>صالحة حتى</MudTh>
+                    <MudTh Class="text-xs font-bold text-slate-500">
+                        صالحة حتى
+                    </MudTh>
                 }
-                <MudTh>الضريبة</MudTh>
-                <MudTh>الإجمالي شامل الضريبة</MudTh>
-                <MudTh></MudTh>
+
+                <MudTh Class="text-xs font-bold text-slate-500">
+                    الضريبة
+                </MudTh>
+
+                <MudTh Class="text-xs font-bold text-slate-500">
+                    الإجمالي شامل الضريبة
+                </MudTh>
+
+                <MudTh Class="w-28 text-xs font-bold text-slate-500">
+                    <span class="sr-only">فتح PDF</span>
+                </MudTh>
             </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="رقم الوثيقة">@context.DocumentNumber</MudTd>
-                <MudTd DataLabel="العميل">@context.CustomerName</MudTd>
+
+            <RowTemplate Context="document">
+                <MudTd DataLabel="رقم الوثيقة"
+                       Class="text-sm font-black text-slate-900">
+                    <span class="font-mono tabular-nums" style="direction:ltr">
+                        @document.DocumentNumber
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="العميل"
+                       Class="text-sm text-slate-700"
+                       Style="overflow-wrap:anywhere">
+                    @document.CustomerName
+                </MudTd>
+
                 <MudTd DataLabel="الطلب المرتبط">
-                    @if (context.OrderId is int orderId && context.OrderNumber is not null)
+                    @if (document.OrderId is int orderId && document.OrderNumber is not null)
                     {
-                        <MudLink Href="@($"/orders/{orderId}")">@context.OrderNumber</MudLink>
+                        <span class="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
+                            <MudLink Href="@($"/orders/{orderId}")"
+                                     Class="text-blue-700">
+                                <span class="font-mono tabular-nums">@document.OrderNumber</span>
+                            </MudLink>
+                        </span>
                     }
                     else
                     {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">لم يتحول الطلب من المسودة بعد</MudText>
+                        <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500">
+                            لم يتحول الطلب من المسودة بعد
+                        </span>
                     }
                 </MudTd>
-                <MudTd DataLabel="تاريخ الإصدار">@context.IssueDate.ToLocalTime().ToString("dd/MM/yyyy")</MudTd>
+
+                <MudTd DataLabel="تاريخ الإصدار"
+                       Class="text-sm text-slate-700">
+                    <span class="tabular-nums" style="direction:ltr">
+                        @document.IssueDate.ToLocalTime().ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
+                    </span>
+                </MudTd>
+
                 @if (Type == DocumentType.Quotation)
                 {
-                    <MudTd DataLabel="صالحة حتى">@context.ValidUntil?.ToLocalTime().ToString("dd/MM/yyyy")</MudTd>
+                    <MudTd DataLabel="صالحة حتى"
+                           Class="text-sm text-slate-700">
+                        @if (document.ValidUntil is DateTime validUntil)
+                        {
+                            <span class="tabular-nums" style="direction:ltr">
+                                @validUntil.ToLocalTime().ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-slate-400">—</span>
+                        }
+                    </MudTd>
                 }
-                <MudTd DataLabel="الضريبة">@context.TotalVat.ToString("N2") ر.س</MudTd>
-                <MudTd DataLabel="الإجمالي شامل الضريبة">@context.TotalAmount.ToString("N2") ر.س</MudTd>
-                <MudTd>
-                    <MudButton Href="@DocumentFileUrl(context.Type, context.DocumentNumber)" Target="_blank"
-                               Size="Size.Small" Variant="Variant.Outlined"
-                               StartIcon="@Icons.Material.Outlined.PictureAsPdf">فتح PDF</MudButton>
+
+                <MudTd DataLabel="الضريبة"
+                       Class="text-sm text-slate-700">
+                    <span class="tabular-nums">@FmtMoney(document.TotalVat)</span>
+                    <span class="text-slate-500">ر.س</span>
+                </MudTd>
+
+                <MudTd DataLabel="الإجمالي شامل الضريبة"
+                       Class="text-sm font-black text-slate-900">
+                    <span class="tabular-nums">@FmtMoney(document.TotalAmount)</span>
+                    <span class="font-bold text-slate-500">ر.س</span>
+                </MudTd>
+
+                <MudTd DataLabel="فتح PDF">
+                    <MudButton Href="@DocumentFileUrl(document.Type, document.DocumentNumber)"
+                               Target="_blank"
+                               Size="Size.Small"
+                               Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Outlined.PictureAsPdf"
+                               class="rounded-lg font-bold">
+                        فتح PDF
+                    </MudButton>
                 </MudTd>
             </RowTemplate>
-            <NoRecordsContent><MudText Class="pa-4">لا توجد وثائق</MudText></NoRecordsContent>
-            <LoadingContent><MudText Class="pa-4">جاري تحميل الوثائق...</MudText></LoadingContent>
-            <PagerContent><MudTablePager PageSizeOptions="@(new[] { 10, 20, 50 })" /></PagerContent>
-        </MudTable>
-    </MudStack>
-</MudContainer>
 
-@code {
-    [Parameter, EditorRequired] public DocumentType Type { get; set; }
-    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+            <NoRecordsContent>
+                <div class="py-8 text-center">
+                    <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+                        <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" aria-hidden="true" />
+                    </span>
+                    <p class="text-base font-bold text-slate-900">
+                        @if (HasSearch)
+                        {
+                            @:لا توجد وثائق تطابق البحث.
+                        }
+                        else
+                        {
+                            @:لا توجد وثائق.
+                        }
+                    </p>
+                    <p class="mt-1 text-sm text-slate-500">
+                        تُنشأ الوثائق تلقائيًا من مراحل العمل على الطلبات.
+                    </p>
+                </div>
+            </NoRecordsContent>
+
+            <LoadingContent>
+                <div class="flex flex-col items-center gap-2 py-8">
+                    <MudProgressCircular Indeterminate="true"
+                                         Color="Color.Primary" />
+                    <p class="text-sm text-slate-500">جاري تحميل الوثائق...</p>
+                </div>
+            </LoadingContent>
+
+            <PagerContent>
+                <TableFooter TotalItems="_totalItems"
+                             CurrentPage="@FooterCurrentPage"
+                             CurrentPageChanged="OnFooterPageChanged"
+                             RowsPerPage="@_rowsPerPage"
+                             RowsPerPageChanged="OnFooterRowsPerPageChanged" />
+            </PagerContent>
+
+        </MudTable>
+    </section>
+</div>
+
+@code
+{
+    [Parameter, EditorRequired]
+    public DocumentType Type { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
 
     private MudTable<DocumentListItem>? _table;
     private string? _searchTerm;
+    private int _totalItems;
+    private bool _countsLoading;
+
+    /// <summary>أعداد حقيقية لكل نوع وثيقة، تُحمَّل من استعلام الصفحة الأول (عنصر واحد).</summary>
+    private readonly Dictionary<DocumentType, int> _counts = new();
+
+    private int _currentPage;
+    private int _rowsPerPage = 10;
+
+    /// <summary>مجدد TableFooter (1-based) مقابل CurrentPage (0-based) في MudTable.</summary>
+    private int FooterCurrentPage => _currentPage + 1;
+
+    private bool HasSearch =>
+        !string.IsNullOrWhiteSpace(_searchTerm);
+
+    private sealed record DocumentTab(DocumentType Type, string Label, string Href, string Icon);
+
+    private static readonly DocumentTab[] Tabs =
+    [
+        new(DocumentType.Quotation, "عروض الأسعار", "/quotations", Icons.Material.Filled.Pool),
+        new(DocumentType.ProformaInvoice, "الفواتير الأولية", "/proforma-invoices", Icons.Material.Filled.ShoppingCartCheckout),
+        new(DocumentType.Invoice, "الفواتير", "/invoices", Icons.Material.Filled.ReceiptLong)
+    ];
+
+    private PageScaffold.CrumbItem[] ScaffoldCrumbs =>
+    [
+        new("الوثائق"),
+        new(Title)
+    ];
+
+    private static string FmtCount(int value) =>
+        value.ToString("N0", CultureInfo.InvariantCulture);
+
+    private static string FmtMoney(decimal value) =>
+        value.ToString("N2", CultureInfo.InvariantCulture);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCountsAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        await LoadCountsAsync();
+
+        if (_table is not null)
+        {
+            await _table.ReloadServerData();
+        }
+    }
+
+    private async Task LoadCountsAsync()
+    {
+        if (_countsLoading)
+        {
+            return;
+        }
+
+        _countsLoading = true;
+
+        try
+        {
+            foreach (DocumentType documentType in new[] { DocumentType.Quotation, DocumentType.ProformaInvoice, DocumentType.Invoice })
+            {
+                // طلب صفحة من عنصر واحد فقط؛ TotalCount هو العدد الحقيقي للوثائق.
+                PagedResult<DocumentListItem> probe = await RequestExecutor.ExecuteAsync(
+                    new GetDocumentsPageQuery(documentType, PageNumber: 1, PageSize: 1));
+
+                _counts[documentType] = probe.TotalCount;
+            }
+        }
+        catch
+        {
+            // نُبقي العدادات السابقة ظاهرة عند فشل التحديث.
+        }
+        finally
+        {
+            _countsLoading = false;
+        }
+    }
 
     private async Task<TableData<DocumentListItem>> LoadPageAsync(TableState state, CancellationToken cancellationToken)
     {
         var page = await RequestExecutor.ExecuteAsync(new GetDocumentsPageQuery(
             Type, state.Page + 1, state.PageSize, _searchTerm), cancellationToken);
+
+        _totalItems = page.TotalCount;
+
         return new TableData<DocumentListItem> { Items = page.Items, TotalItems = page.TotalCount };
     }
 
     private async Task OnSearchChangedAsync(string? value)
     {
         _searchTerm = value;
-        if (_table is not null)
+
+        if (_table is null)
+        {
+            return;
+        }
+
+        if (_currentPage != 0)
+        {
+            _currentPage = 0;
+            _table.NavigateTo(0);
+        }
+        else
+        {
             await _table.ReloadServerData();
+        }
+    }
+
+    private Task OnFooterPageChanged(int page)
+    {
+        int targetPage = page - 1;
+
+        if (targetPage == _currentPage)
+        {
+            return Task.CompletedTask;
+        }
+
+        _currentPage = targetPage;
+
+        // NavigateTo is void in MudBlazor 9.11 and triggers the server reload itself.
+        _table?.NavigateTo(_currentPage);
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnFooterRowsPerPageChanged(int rowsPerPage)
+    {
+        if (rowsPerPage == _rowsPerPage)
+        {
+            return Task.CompletedTask;
+        }
+
+        _rowsPerPage = rowsPerPage;
+        _currentPage = 0;
+
+        // SetRowsPerPage is void in MudBlazor 9.11: it resets the page and triggers the server reload itself.
+        _table?.SetRowsPerPage(rowsPerPage);
+
+        return Task.CompletedTask;
     }
 
     private static string DocumentFileUrl(DocumentType type, string number)
