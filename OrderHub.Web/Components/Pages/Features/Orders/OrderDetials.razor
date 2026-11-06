@@ -1,237 +1,493 @@
-@attribute [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Read)]
-@using OrderHub.Application.Features.Orders.GetDetails`r`n@using OrderHub.Domain.Enums
-@using OrderHub.Application.Features.Orders.Lifecycle
-@using OrderHub.Application.Features.Orders.GetSummaries
-@using OrderHub.Web.Components.Pages.Features.Orders.Workflow
-@using OrderHub.Application.Common.Extensions
 @page "/orders/{id:int}"
-
-@using OrderHub.Application.Interfaces;
+@attribute [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Read)]
+@using System.Globalization
+@using OrderHub.Application.Features.Orders.GetDetails
+@using OrderHub.Application.Features.Orders.GetSummaries
+@using OrderHub.Application.Features.Orders.Lifecycle
+@using OrderHub.Application.Common.Extensions
+@using OrderHub.Application.Interfaces
+@using OrderHub.Web.Components.Pages.Features.Orders.Workflow
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
-@inject IRequestExecutor RequestExecuter
+@inject IRequestExecutor RequestExecutor
 @inject IDialogService DialogService
+@inject PermissionAccess Permissions
+@inject ILogger<OrderDetials> Logger
 
-<MudContainer MaxWidth="MaxWidth.Large">
+<PageTitle>تفاصيل الطلب</PageTitle>
+
+<div class="space-y-6">
     @if (_loading)
     {
-        <MudProgressLinear Indeterminate="true" aria-label="تحميل الطلب" />
+        <div class="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" aria-label="تحميل الطلب" />
+            <p class="mt-2 text-sm text-slate-500">جاري تحميل بيانات الطلب...</p>
+        </div>
     }
     else if (_error is not null)
     {
-        <MudAlert Severity="Severity.Error">@_error</MudAlert>
-        <MudButton OnClick="LoadAsync">إعادة المحاولة</MudButton>
+        <div class="rounded-xl border border-red-200 bg-red-50 p-5 shadow-sm">
+            <p class="text-sm font-bold text-red-800">@_error</p>
+            <button type="button"
+                    class="@($"mt-3 rounded-lg px-4 py-2 text-sm font-semibold {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
+                    @onclick="RefreshAsync">إعادة المحاولة</button>
+        </div>
     }
     else if (_order is null)
     {
-        <MudAlert Severity="Severity.Info">الطلب غير موجود.</MudAlert>
+        <div class="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <p class="text-sm font-bold text-slate-700">الطلب غير موجود.</p>
+            <a href="/orders" class="mt-3 inline-flex rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">العودة إلى الطلبات</a>
+        </div>
     }
     else
     {
+        @* ============================================================
+           Breadcrumb + top actions (order-details.html)
+           ============================================================ *@
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <nav class="flex items-center gap-2 text-xs font-medium text-slate-500" aria-label="مسار التنقل">
+                <a class="transition-colors hover:text-slate-800" href="/">الرئيسية</a>
+                <span>/</span>
+                <a class="transition-colors hover:text-slate-800" href="/orders">الطلبات</a>
+                <span>/</span>
+                <span class="font-semibold text-brand-600">تفاصيل الطلب @_order.Header.OrderNumber</span>
+            </nav>
 
-    <MudStack Spacing="3">
+            <div class="flex flex-wrap items-center gap-2.5">
+                <button type="button"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled="@(_summaries.Count == 0)"
+                        @onclick="OpenSummariesAsync">
+                    <MudIcon Icon="@Icons.Material.Outlined.Print" Class="text-[16px] text-slate-500" />
+                    <span>ملخص الطلب</span>
+                </button>
 
-        @*Header*@
-        <MudPaper Elevation="0" Class="pa-4">
+                <button type="button"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-blue-500/30 transition-all hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        aria-busy="@_loading"
+                        disabled="@_loading"
+                        @onclick="RefreshAsync">
+                    <MudIcon Icon="@Icons.Material.Outlined.Refresh"
+                             Class="@(_loading ? "animate-spin text-[16px]" : "text-[16px]")" />
+                    <span>@(_loading ? "جارٍ التحديث..." : "تحديث الطلب")</span>
+                </button>
 
-            <MudStack Spacing="2">
+                <MudMenu AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft">
+                    <ActivatorContent>
+                        <button type="button"
+                                class="rounded-lg border border-slate-300 bg-white p-2 text-slate-500 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-800"
+                                title="خيارات أخرى"
+                                aria-label="خيارات أخرى"
+                                @onclick="@context.ToggleAsync">
+                            <MudIcon Icon="@Icons.Material.Filled.MoreVert" Class="text-[16px]" />
+                        </button>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <MudMenuItem OnClick="OrderNumberClicked">نسخ رقم الطلب</MudMenuItem>
+                        <MudMenuItem Href="@($"/orders/{Id}/workflow")">فتح دورة الطلب</MudMenuItem>
+                        <MudMenuItem OnClick="OpenSummariesAsync" Disabled="_summaries.Count == 0">ملخص الطلب</MudMenuItem>
+                    </ChildContent>
+                </MudMenu>
+            </div>
+        </div>
 
-
-                <MudStack Row
-                          AlignItems="AlignItems.Center">
-                    <MudText Typo="Typo.h6">
-                        تفاصيل الطلب
-                    </MudText>
-
-                    <MudSpacer />
-
-                    <MudButton StartIcon="@Icons.Material.Outlined.ReceiptLong" Variant="Variant.Outlined"
-                               OnClick="OpenSummariesAsync">ملخص الطلب</MudButton>
-
-                    <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(_workflow is null ? OrderWorkflowPresentation.Neutral : OrderWorkflowPresentation.StatusTone(_workflow.Status))}")">
-                        @_order?.Header.OrderStatus
+        @* ============================================================
+           Header banner
+           ============================================================ *@
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                <div class="flex flex-wrap items-center gap-3.5">
+                    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">تفاصيل الطلب</h1>
+                    <span class="inline-flex items-center rounded-md border border-slate-200 bg-slate-100 px-2.5 py-1 font-mono text-xs font-bold text-slate-700" dir="ltr">
+                        #@_order.Header.OrderNumber
                     </span>
+                    <span class="@($"inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold {OrderWorkflowPresentation.Tag(StatusTone)}")">
+                        <span class="@($"h-2 w-2 animate-pulse rounded-full {OrderWorkflowPresentation.Dot(StatusTone)}")"></span>
+                        @StatusLabel
+                    </span>
+                    @if (_workflow?.IsArchived == true)
+                    {
+                        <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">مؤرشف — للقراءة فقط</span>
+                    }
+                </div>
+                <div class="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                    <MudIcon Icon="@Icons.Material.Outlined.Schedule" Class="text-[16px] text-slate-400" />
+                    <span>تاريخ الإنشاء: <UserLocalTime Value="_order.Header.CreatedAt" /></span>
+                </div>
+            </div>
+        </div>
 
-                </MudStack>
+        @* ============================================================
+           Quick KPIs
+           ============================================================ *@
+        <section aria-label="مؤشرات الطلب السريعة">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <span class="text-xs font-medium text-slate-500">رقم الطلب المرجعي</span>
+                    <div class="mt-2 flex items-center justify-between gap-2">
+                        <span class="font-mono text-lg font-bold text-slate-900" dir="ltr">@_order.Header.OrderNumber</span>
+                        <button type="button"
+                                class="rounded p-1 text-slate-400 transition-colors hover:bg-slate-50 hover:text-brand-600"
+                                title="نسخ رقم الطلب"
+                                aria-label="نسخ رقم الطلب"
+                                @onclick="OrderNumberClicked">
+                            <MudIcon Icon="@Icons.Material.Outlined.ContentCopy" Class="text-[16px]" />
+                        </button>
+                    </div>
+                </div>
 
-                <MudStack Row Spacing="2">
+                <div class="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <span class="text-xs font-medium text-slate-500">تاريخ الطلب</span>
+                    <div class="mt-2">
+                        <span class="text-sm font-bold text-slate-800"><UserLocalTime Value="_order.Header.CreatedAt" /></span>
+                    </div>
+                </div>
 
-                    <MudText Typo="Typo.body2"
-                             Color="Color.Secondary">
-                        رقم الطلب:
-                    </MudText>
+                <div class="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <span class="text-xs font-medium text-slate-500">عدد المنتجات</span>
+                    <div class="mt-2 flex items-baseline gap-1">
+                        <span class="text-xl font-extrabold text-slate-900">@_items.Count.ToString(CultureInfo.InvariantCulture)</span>
+                        <span class="text-xs font-medium text-slate-500">عناصر إجمالية</span>
+                    </div>
+                </div>
 
-                    <MudText Typo="Typo.body2"
-                             @onclick="OrderNumberClicked"
-                             style="cursor: pointer">
-                        @_order?.Header.OrderNumber
-                    </MudText>
+                <div class="flex flex-col justify-between rounded-xl border border-brand-100 bg-brand-50/20 p-4 shadow-sm">
+                    <span class="text-xs font-medium text-slate-500">الإجمالي شامل الضريبة</span>
+                    <div class="mt-2 flex items-baseline gap-1.5 text-brand-600">
+                        <span class="font-mono text-xl font-extrabold" dir="ltr">@Money(_order.Payment.GrandTotal)</span>
+                        <span class="text-xs font-bold text-slate-600">ر.س</span>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-                </MudStack>
+        @* ============================================================
+           Customer + delivery
+           ============================================================ *@
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <section class="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div>
+                    <div class="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
+                        <div class="flex items-center gap-2.5">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                                <MudIcon Icon="@Icons.Material.Outlined.PersonOutline" Class="text-[18px]" />
+                            </div>
+                            <h2 class="text-base font-bold text-slate-900">بيانات العميل</h2>
+                        </div>
+                    </div>
 
-            </MudStack>
-        </MudPaper>
+                    <div class="space-y-4">
+                        <div class="flex items-start justify-between gap-4 py-1">
+                            <div class="flex shrink-0 items-center gap-2 text-xs text-slate-500">
+                                <MudIcon Icon="@Icons.Material.Outlined.Person" Class="text-[16px]" />
+                                <span>الاسم</span>
+                            </div>
+                            <span class="text-left text-sm font-bold text-slate-900">@_order.Client.Name</span>
+                        </div>
+                        <div class="flex items-start justify-between gap-4 py-1">
+                            <div class="flex shrink-0 items-center gap-2 text-xs text-slate-500">
+                                <MudIcon Icon="@Icons.Material.Outlined.Phone" Class="text-[16px]" />
+                                <span>الهاتف</span>
+                            </div>
+                            <span class="text-left font-mono text-sm font-bold text-slate-800" dir="ltr">@_order.Client.PhoneNumber</span>
+                        </div>
+                        <div class="flex items-start justify-between gap-4 py-1">
+                            <div class="flex shrink-0 items-center gap-2 text-xs text-slate-500">
+                                <MudIcon Icon="@Icons.Material.Outlined.LocationOn" Class="text-[16px]" />
+                                <span>العنوان</span>
+                            </div>
+                            <span class="text-left text-sm font-medium text-slate-800">@_order.Client.Address</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-        @*Customer Informatino*@
-        <MudPaper Elevation="0" Class="pa-4">
+            <section class="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div>
+                    <div class="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                        <div class="flex items-center gap-2.5">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                                <MudIcon Icon="@Icons.Material.Outlined.LocalShipping" Class="text-[18px]" />
+                            </div>
+                            <h2 class="text-base font-bold text-slate-900">بيانات التوصيل وسلسلة الإمداد</h2>
+                        </div>
+                        <span class="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">@DeliveryMethodLabel</span>
+                    </div>
 
-            <MudStack>
+                    <div class="mb-5 grid grid-cols-2 gap-4 text-xs">
+                        <div class="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+                            <span class="mb-1 block text-slate-500">جهة التنفيذ</span>
+                            <span class="font-bold text-slate-800">@HandlerLabel</span>
+                        </div>
+                        <div class="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+                            <span class="mb-1 block text-slate-500">آخر تحديث تشغيلي</span>
+                            <span class="font-bold text-slate-800">
+                                @if (_workflow is not null)
+                                {
+                                    <UserLocalTime Value="_workflow.LastChangedAtUtc" />
+                                }
+                                else
+                                {
+                                    <span>غير متاح</span>
+                                }
+                            </span>
+                        </div>
+                    </div>
 
-                <MudStack Row Spacing="2">
+                    @if (_workflow is not null)
+                    {
+                        @if (_workflow.Status == OrderStatus.Cancelled)
+                        {
+                            <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">تم إلغاء الطلب؛ لا توجد مراحل تنفيذ نشطة.</div>
+                        }
+                        else
+                        {
+                            <div class="space-y-2">
+                                <span class="mb-2 block text-xs font-bold text-slate-500">مراحل سير الطلب</span>
+                                <div class="grid grid-cols-3 gap-2">
+                                    @for (var index = 0; index < _stages.Length; index++)
+                                    {
+                                        var stage = _stages[index];
+                                        <div class="@($"rounded-lg p-3 text-center transition-all {StageTileClass(index)}")">
+                                            <span class="@($"mb-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold {StageBadgeClass(index)}")">
+                                                @((index + 1).ToString(CultureInfo.InvariantCulture))
+                                            </span>
+                                            <p class="text-xs font-bold text-slate-900">@stage.GetDescription()</p>
+                                            <span class="@($"mt-1 inline-block text-[10px] {StageCaptionClass(index)}")">@StageCaption(index)</span>
+                                        </div>
+                                    }
+                                </div>
+                                @if (_workflow.IsLegacy)
+                                {
+                                    <p class="text-xs font-medium text-amber-700">آخر حالة ناتجة عن ترحيل بيانات قديمة؛ التوقيت لا يثبت وقت التنفيذ الفعلي.</p>
+                                }
+                                @if (_workflow.Method == DeliveryMethod.DeliveryChain)
+                                {
+                                    <p class="text-xs text-slate-600">
+                                        @_workflow.Steps.Count(step => step.Status == DeliveryStatus.Completed) من @_workflow.Steps.Count خطوات مكتملة
+                                    </p>
+                                    @if (_workflow.Steps.Any(step => step.Status == DeliveryStatus.Failed))
+                                    {
+                                        <div class="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-bold text-orange-800">توجد خطوة متعذر تنفيذها؛ راجع دورة الطلب.</div>
+                                    }
+                                }
+                                @if (_workflow.Status == OrderStatus.DeliveryFailed)
+                                {
+                                    <div class="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-bold text-orange-800">سبب التعذر: @_workflow.LatestReason</div>
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-xs text-slate-500">بيانات دورة الطلب غير متاحة لهذا الطلب.</p>
+                    }
+                </div>
 
-                    <MudIcon Icon="@Icons.Material.Outlined.PersonOutline"
-                             Color="Color.Primary" />
-
-                    <MudText Color="Color.Primary" Typo="Typo.subtitle1">
-                        بيانات العميل
-                    </MudText>
-
-                </MudStack>
-
-                <MudStack Row Spacing="2">
-                    <MudIcon Icon="@Icons.Material.Outlined.Person" Size="Size.Small" />
-                    <MudText Typo="Typo.subtitle2">@_order?.Client.Name</MudText>
-                </MudStack>
-
-                <MudStack Row Spacing="2">
-                    <MudIcon Icon="@Icons.Material.Outlined.Phone" Size="Size.Small" />
-                    <MudText Typo="Typo.body2" Style="direction: ltr">@_order?.Client.PhoneNumber</MudText>
-                </MudStack>
-
-                <MudStack Row>
-                    <MudIcon Icon="@Icons.Material.Outlined.LocationOn" />
-                    <MudText Typo="Typo.body2">@_order?.Client.Address</MudText>
-                </MudStack>
-
-            </MudStack>
-
-        </MudPaper>
-
-        @*Delivery Information*@
-        <MudPaper Elevation="0" Class="pa-4">
-
-            <MudStack Row Spacing="2">
-                <MudIcon Icon="@Icons.Material.Filled.DeliveryDining" />
-                <MudText Typo="Typo.subtitle1"
-                         Color="Color.Primary">التوصيل</MudText>
-            </MudStack>
-
-            <MudChip T="string" Color="Color.Primary" Variant="Variant.Text">@_order?.Delivery.DeliveryMethod</MudChip>
-            @if (_workflow is not null)
-            {
-                <MudText>@_workflow.HandlerName</MudText>
-                <OrderStageStrip State="_workflow" />
-                <MudText Typo="Typo.caption">آخر حدث تشغيلي: <UserLocalTime Value="_workflow.LastChangedAtUtc" /></MudText>
-                @if (_workflow.IsLegacy) { <MudText Typo="Typo.caption">سجل ترحيل بيانات قديمة؛ التوقيت لا يثبت وقت التنفيذ الفعلي.</MudText> }
-                @if (_workflow.Method == DeliveryMethod.DeliveryChain)
+                @if (_workflow is not null)
                 {
-                    <MudText Typo="Typo.body2">@_workflow.Steps.Count(step => step.Status == DeliveryStatus.Completed) من @_workflow.Steps.Count خطوات مكتملة</MudText>
-                    @if (_workflow.Steps.Any(step => step.Status == DeliveryStatus.Failed))
-                    { <MudAlert Severity="Severity.Warning">توجد خطوة متعذر تنفيذها؛ راجع دورة الطلب.</MudAlert> }
+                    <div class="mt-6 border-t border-slate-100 pt-3">
+                        <a href="@($"/orders/{Id}/workflow")"
+                           class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition-all hover:border-brand-500 hover:bg-brand-50/50 hover:text-brand-600">
+                            <MudIcon Icon="@Icons.Material.Filled.Timeline" Class="text-[16px] text-brand-500" />
+                            <span>@WorkflowButtonLabel</span>
+                        </a>
+                    </div>
                 }
-                @if (_workflow.Status == OrderStatus.DeliveryFailed)
-                { <MudAlert Severity="Severity.Warning">سبب التعذر: @_workflow.LatestReason</MudAlert> }
-                @if (_workflow.IsArchived) { <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(OrderWorkflowPresentation.Neutral)}")">مؤرشف — للقراءة فقط</span> }
-                <MudButton Href="@($"/orders/{Id}/workflow")" Class="@($"rounded-lg shadow-none {OrderWorkflowPresentation.Action("delivery")}")">
-                    @(_workflow.IsArchived || _workflow.Status is OrderStatus.Delivered or OrderStatus.Cancelled ? "عرض دورة الطلب والسجل" : "متابعة دورة الطلب")
-                </MudButton>
+            </section>
+        </div>
+
+        @* ============================================================
+           Items
+           ============================================================ *@
+        <section aria-label="محتويات وعناصر الطلب" class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-5">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                        <MudIcon Icon="@Icons.Material.Outlined.Inventory2" Class="text-[18px]" />
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">محتويات الطلب</h2>
+                        <p class="text-xs text-slate-500">قائمة الأصناف والكميات والأسعار المحتسبة</p>
+                    </div>
+                </div>
+                <span class="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                    @_items.Count.ToString(CultureInfo.InvariantCulture) عناصر مسجلة
+                </span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-right text-xs">
+                    <thead class="border-b border-slate-200 bg-slate-50/80 font-bold uppercase tracking-wider text-slate-600">
+                        <tr>
+                            <th class="w-12 px-4 py-3 text-center" scope="col">#</th>
+                            <th class="min-w-[220px] px-4 py-3" scope="col">المنتج / الصنف</th>
+                            <th class="px-4 py-3 text-center" scope="col">سعر الوحدة (ر.س)</th>
+                            <th class="px-4 py-3 text-center" scope="col">الكمية</th>
+                            <th class="px-4 py-3 text-center" scope="col">الضريبة %</th>
+                            <th class="px-4 py-3 text-center" scope="col">قيمة الضريبة (ر.س)</th>
+                            <th class="px-4 py-3 text-center" scope="col">الإجمالي شامل الضريبة (ر.س)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-700">
+                        @if (_items.Count == 0)
+                        {
+                            <tr>
+                                <td class="px-4 py-8 text-center text-sm text-slate-500" colspan="7">لا توجد منتجات في هذا الطلب.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @for (var index = 0; index < _items.Count; index++)
+                            {
+                                var item = _items[index];
+                                <tr class="transition-colors hover:bg-slate-50/70">
+                                    <td class="px-4 py-3.5 text-center font-mono text-slate-400">@((index + 1).ToString(CultureInfo.InvariantCulture))</td>
+                                    <td class="px-4 py-3.5">
+                                        <div class="font-bold text-slate-900">@item.ProductName</div>
+                                    </td>
+                                    <td class="px-4 py-3.5 text-center font-mono font-medium" dir="ltr">@Money(item.UnitPrice)</td>
+                                    <td class="px-4 py-3.5 text-center">
+                                        <span class="inline-block rounded-full bg-slate-100 px-2.5 py-0.5 font-bold text-slate-800">@item.Quantity.ToString(CultureInfo.InvariantCulture)</span>
+                                    </td>
+                                    <td class="px-4 py-3.5 text-center font-mono" dir="ltr">@item.VatRate.ToString("N2", CultureInfo.InvariantCulture)%</td>
+                                    <td class="px-4 py-3.5 text-center font-mono text-slate-600" dir="ltr">@Money(item.VatAmount)</td>
+                                    <td class="px-4 py-3.5 text-center font-mono font-bold text-slate-900" dir="ltr">@Money(item.Total)</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        @* ============================================================
+           Linked invoice (narrow) + financial totals (wide)
+           ============================================================ *@
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            @if (_canReadDocuments)
+            {
+                <OrderInvoiceSection OrderId="Id" PaymentMethod="@_order.Payment.PaymentMethod" />
             }
 
-        </MudPaper>
+            <section aria-label="الملخص المالي النهائي"
+                     class="@($"rounded-xl border border-slate-200 bg-white p-6 shadow-sm {(_canReadDocuments ? "lg:col-span-2" : "lg:col-span-3")}")">
+                <h3 class="mb-4 flex items-center justify-between border-b border-slate-100 pb-3 text-sm font-bold text-slate-900">
+                    <span>الحسابات والإجماليات المالية</span>
+                    <span class="text-xs font-normal text-slate-500">العملة: ريال سعودي (SAR)</span>
+                </h3>
 
-        @*Order Items*@
-        <MudPaper Elevation="0" Class="pa-4">
+                <div class="grid grid-cols-1 gap-x-8 gap-y-3 text-xs sm:grid-cols-2">
+                    <div class="flex items-center justify-between border-b border-slate-100 py-1.5">
+                        <span class="text-slate-500">قيمة المنتجات (قبل الضريبة):</span>
+                        <span class="font-mono font-bold text-slate-800">@Money(_order.Payment.ProductsTotal) ر.س</span>
+                    </div>
+                    <div class="flex items-center justify-between border-b border-slate-100 py-1.5">
+                        <span class="text-slate-500">ضريبة القيمة المضافة:</span>
+                        <span class="font-mono font-bold text-slate-800">@Money(_order.Payment.VatAmount) ر.س</span>
+                    </div>
+                    <div class="flex items-center justify-between border-b border-slate-100 py-1.5">
+                        <span class="text-slate-500">إجمالي المنتجات شامل الضريبة:</span>
+                        <span class="font-mono font-bold text-slate-800">@Money(_order.Payment.ProductsTotalIncludingVat) ر.س</span>
+                    </div>
+                    <div class="flex items-center justify-between border-b border-slate-100 py-1.5">
+                        <span class="text-slate-500">رسوم التجهيز / الشحن:</span>
+                        <span class="font-mono font-bold text-slate-800">+ @Money(_order.Payment.ShippingCost) ر.س</span>
+                    </div>
+                    <div class="flex items-center justify-between border-b border-slate-100 py-1.5">
+                        <span class="text-slate-500">الخصم التجاري المطبق:</span>
+                        <span class="font-mono font-bold text-emerald-600">- @Money(_order.Payment.Discount) ر.س</span>
+                    </div>
+                    <div class="flex items-center justify-between border-b border-slate-100 py-1.5">
+                        <span class="text-slate-500">تفاصيل الخصم:</span>
+                        <span class="font-bold text-slate-800">@DiscountLabel</span>
+                    </div>
+                </div>
 
-            <MudStack Row Spacing="2">
-                <MudIcon Icon="@Icons.Material.Outlined.Inventory2" Color="Color.Primary" />
-                <MudText Typo="Typo.subtitle1"
-                         Color="Color.Primary">محتويات الطلب</MudText>
-                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@_order?.Items.ToList().Count()</MudChip>
-            </MudStack>
-
-            <MudDataGrid Items="@_order?.Items" Hover Class="mt-4">
-                <Columns>
-                    <PropertyColumn Property="x => x.ProductName" Title="المنتج" />
-                    <PropertyColumn Property="x => x.UnitPrice" Title="سعر الوحدة قبل الضريبة" />
-                    <PropertyColumn Property="x => x.Quantity" Title="الكمية" />
-                    <PropertyColumn Property="x => x.VatRate" Title="الضريبة %" />
-                    <PropertyColumn Property="x => x.VatAmount" Title="قيمة الضريبة" />
-                    <PropertyColumn Property="x => x.Total" Title="الإجمالي شامل الضريبة" />
-                </Columns>
-            </MudDataGrid>
-
-        </MudPaper>
-
-        @*Invoice Summary*@
-        <MudPaper Elevation="0" Class="pa-4">
-
-            <MudStack Row Spacing="2">
-                <MudIcon Icon="@Icons.Material.Filled.LocalAtm" Color="Color.Primary" />
-                <MudText Typo="Typo.subtitle1"
-                         Color="Color.Primary">ملخص الفاتورة</MudText>
-            </MudStack>
-
-            <MudStack Spacing="1" Class="mt-2">
-                <MudStack Row Spacing="2">
-                    <MudText>قيمة المنتجات قبل الضريبة</MudText><MudSpacer />
-                    <MudText>@($"{_order?.Payment.ProductsTotal:N2} ر.س")</MudText>
-                </MudStack>
-                <MudStack Row Spacing="2">
-                    <MudText>الضريبة</MudText><MudSpacer />
-                    <MudText>@($"{_order?.Payment.VatAmount:N2} ر.س")</MudText>
-                </MudStack>
-                  <MudStack Row Spacing="2">
-                      <MudText>إجمالي المنتجات شامل الضريبة</MudText><MudSpacer />
-                      <MudText>@($"{_order?.Payment.ProductsTotalIncludingVat:N2} ر.س")</MudText>
-                  </MudStack>
-                  <MudStack Row Spacing="2">
-                      <MudText>الخصم (@(_order?.Payment.DiscountType == DiscountType.Percentage ? $"{_order.Payment.DiscountValue:N2}%" : $"{_order?.Payment.DiscountValue:N2} ر.س"))</MudText><MudSpacer />
-                      <MudText>-@($"{_order?.Payment.Discount:N2} ر.س")</MudText>
-                  </MudStack>
-                  <MudStack Row Spacing="2">
-                      <MudText>تكلفة التوصيل</MudText><MudSpacer />
-                      <MudText>+@($"{_order?.Payment.ShippingCost:N2} ر.س")</MudText>
-                  </MudStack>
-                <MudDivider Class="my-1" />
-                <MudStack Row Spacing="2">
-                    <MudText Style="font-weight: 600" Color="Color.Primary">الإجمالي شامل الضريبة</MudText>
-                    <MudSpacer />
-                    <MudText Style="font-weight: 600" Color="Color.Primary">@($"{_order?.Payment.GrandTotal:N2} ر.س")</MudText>
-                </MudStack>
-            </MudStack>
-
-        </MudPaper>
-
-        <PermissionView Feature="PermissionFeature.Documents" Level="PermissionLevel.Read">
-            <OrderInvoiceSection OrderId="Id" />
-        </PermissionView>
-
-        @*Orders Button*@
-        <MudButton Class="@($"rounded-lg shadow-none {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")" Style="align-self: end;" Size="Size.Small" Href="/orders">الطلبات</MudButton>
-
-
-    </MudStack>
+                <div class="mt-6 flex items-center justify-between gap-3 rounded-xl border border-brand-100 bg-brand-50 p-4">
+                    <div>
+                        <span class="block text-xs font-bold text-brand-700">الإجمالي النهائي المستحق للمطالبة</span>
+                        <span class="text-[11px] text-slate-500">شامل ضريبة القيمة المضافة والشحن والخصومات</span>
+                    </div>
+                    <div class="shrink-0 text-left font-mono">
+                        <span class="text-2xl font-black text-brand-600" dir="ltr">@Money(_order.Payment.GrandTotal)</span>
+                        <span class="mr-1 text-xs font-bold text-brand-700">ر.س</span>
+                    </div>
+                </div>
+            </section>
+        </div>
     }
+</div>
 
-</MudContainer>
-
-@code
-{
-    [Parameter]
-    public int Id { get; set; }
+@code {
+    [Parameter] public int Id { get; set; }
 
     private OrderDetails? _order;
     private OrderWorkflowState? _workflow;
+    private IReadOnlyList<OrderDetailsLine> _items = [];
     private IReadOnlyList<OrderSummaryText> _summaries = [];
+    private OrderStatus[] _stages = [];
+    private bool _canReadDocuments;
     private bool _loading;
     private string? _error;
     private int _loadedId, _generation;
 
-    private async Task OrderNumberClicked()
-    {
-        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _order?.Header.OrderNumber);
-        Snackbar.Add($"تم نسخ رقم الطلب : {_order?.Header.OrderNumber}");
-    }
+    private string StatusTone => _workflow is null ? OrderWorkflowPresentation.Neutral : OrderWorkflowPresentation.StatusTone(_workflow.Status);
+    private string StatusLabel => _workflow?.Status.GetDescription() ?? _order?.Header.OrderStatus ?? "غير محددة";
+    private string DeliveryMethodLabel => _workflow?.Method is { } method ? method.GetDescription() : _order?.Delivery.DeliveryMethod ?? "غير محددة";
+    private string HandlerLabel =>
+        !string.IsNullOrWhiteSpace(_workflow?.HandlerName) ? _workflow!.HandlerName! :
+        !string.IsNullOrWhiteSpace(_order?.Delivery.DeliverymanName) ? _order!.Delivery.DeliverymanName :
+        !string.IsNullOrWhiteSpace(_order?.Delivery.ShippingCarrierName) ? _order!.Delivery.ShippingCarrierName! :
+        "غير محددة";
+    private string DiscountLabel => _order!.Payment.DiscountType == DiscountType.Percentage
+        ? $"{_order.Payment.DiscountValue.ToString("N2", CultureInfo.InvariantCulture)}%"
+        : $"{Money(_order.Payment.DiscountValue)} ر.س";
+    private string WorkflowButtonLabel => _workflow is not null && (_workflow.IsArchived || _workflow.Status is OrderStatus.Delivered or OrderStatus.Cancelled)
+        ? "عرض دورة الطلب والسجل التفصيلي"
+        : "متابعة دورة الطلب وسلسلة التوصيل التفصيلية";
+
+    private int CurrentStageIndex => _workflow is null || _stages.Length == 0
+        ? 0
+        : Math.Min(_stages.Length - 1, _workflow.Status == OrderStatus.Processing ? 0 : _workflow.Status == OrderStatus.Delivered ? 2 : 1);
+
+    private string StageTileClass(int index) => index == CurrentStageIndex
+        ? $"border-2 shadow-sm {OrderWorkflowPresentation.Surface(StageTone(index))}"
+        : index < CurrentStageIndex
+            ? "border border-emerald-200 bg-emerald-50/60"
+            : "border border-slate-200 bg-slate-50 opacity-75";
+
+    private string StageBadgeClass(int index) => index == CurrentStageIndex
+        ? $"{OrderWorkflowPresentation.Dot(StageTone(index))} text-white"
+        : index < CurrentStageIndex
+            ? "bg-emerald-500 text-white"
+            : "bg-slate-300 text-slate-700";
+
+    private string StageCaptionClass(int index) => index == CurrentStageIndex
+        ? "rounded bg-white/70 px-1.5 py-0.5 font-medium text-slate-600"
+        : index < CurrentStageIndex
+            ? "font-medium text-emerald-700"
+            : "font-medium text-slate-400";
+
+    private string StageTone(int index) => index == CurrentStageIndex && _workflow is not null
+        ? OrderWorkflowPresentation.StatusTone(_workflow.Status)
+        : index < CurrentStageIndex
+            ? "completed"
+            : OrderWorkflowPresentation.Neutral;
+
+    private string StageCaption(int index) => index < CurrentStageIndex
+        ? "مرحلة مكتملة"
+        : index > CurrentStageIndex
+            ? "لم تبدأ"
+            : _workflow?.Status switch
+            {
+                OrderStatus.Delivered => "اكتملت دورة الطلب",
+                OrderStatus.DeliveryFailed => "تحتاج مراجعة",
+                _ => "المرحلة الحالية"
+            };
+
+    private static string Money(decimal value) => value.ToString("N2", CultureInfo.InvariantCulture);
 
     protected override Task OnParametersSetAsync() => _loadedId == Id ? Task.CompletedTask : LoadAsync();
 
@@ -243,19 +499,58 @@
         _error = null;
         _order = null;
         _workflow = null;
+        _items = [];
         _summaries = [];
+        _stages = [];
+        _canReadDocuments = false;
         try
         {
-            var order = await RequestExecuter.ExecuteAsync(new GetOrderDetailsQuery(Id));
-            var workflow = order is null ? null : await RequestExecuter.ExecuteAsync(new GetOrderWorkflowQuery(Id));
-            var summaryData = order is null ? null : await RequestExecuter.ExecuteAsync(new GetOrderSummariesQuery(Id));
+            var order = await RequestExecutor.ExecuteAsync(new GetOrderDetailsQuery(Id));
+            OrderWorkflowState? workflow = null;
+            OrderSummaryData? summaryData = null;
+            if (order is not null)
+            {
+                workflow = await RequestExecutor.ExecuteAsync(new GetOrderWorkflowQuery(Id));
+                summaryData = await RequestExecutor.ExecuteAsync(new GetOrderSummariesQuery(Id));
+            }
+            var canReadDocuments = await Permissions.IsAllowedAsync(PermissionFeature.Documents, PermissionLevel.Read);
             if (generation != _generation) return;
             _order = order;
             _workflow = workflow;
+            _items = order?.Items.ToList() ?? [];
             _summaries = summaryData is null ? [] : OrderSummaryTextBuilder.Build(summaryData);
+            _stages = workflow is null ? [] : OrderWorkflowPresentation.Stages(workflow.Method);
+            _canReadDocuments = canReadDocuments;
         }
-        catch (Exception) { if (generation == _generation) _error = "تعذر تحميل الطلب. حاول مرة أخرى."; }
-        finally { if (generation == _generation) _loading = false; }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load order details {OrderId}.", Id);
+            if (generation == _generation) _error = "تعذر تحميل الطلب. حاول مرة أخرى.";
+        }
+        finally
+        {
+            if (generation == _generation) _loading = false;
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (_loading) return;
+        await LoadAsync();
+    }
+
+    private async Task OrderNumberClicked()
+    {
+        if (_order is null) return;
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _order.Header.OrderNumber);
+            Snackbar.Add($"تم نسخ رقم الطلب: {_order.Header.OrderNumber}", Severity.Success);
+        }
+        catch (JSException)
+        {
+            Snackbar.Add("تعذر نسخ رقم الطلب من هذا المتصفح.", Severity.Warning);
+        }
     }
 
     private async Task OpenSummariesAsync()
@@ -266,6 +561,6 @@
             { dialog => dialog.Summaries, _summaries }
         };
         await DialogService.ShowAsync<OrderSummaryDialog>("ملخص الطلب", parameters,
-            new DialogOptions { CloseButton = true, FullWidth = true, MaxWidth = MaxWidth.Medium });
+            new DialogOptions { CloseButton = false, FullWidth = true, MaxWidth = MaxWidth.Medium });
     }
 }

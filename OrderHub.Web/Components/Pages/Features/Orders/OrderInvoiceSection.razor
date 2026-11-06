@@ -1,63 +1,128 @@
+@using System.Globalization
 @using OrderHub.Application.Features.Documents.GetDocuments
 @using OrderHub.Application.Features.Documents.Invoices
 @using OrderHub.Application.Interfaces
 @using OrderHub.Domain.Enums
+@using OrderHub.Web.Components.Pages.Features.Orders.Workflow
 @inject IRequestExecutor RequestExecutor
+@inject PermissionAccess Permissions
 @inject ILogger<OrderInvoiceSection> Logger
 
-<MudPaper Elevation="0" Class="pa-4">
-    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-        <MudIcon Icon="@Icons.Material.Outlined.ReceiptLong" Color="Color.Primary" />
-        <MudText Typo="Typo.subtitle1" Color="Color.Primary">فاتورة الطلب</MudText>
-        <MudSpacer />
+<section class="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm" aria-label="بيانات الفاتورة الإلكترونية">
+    <div>
+        <div class="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <h3 class="flex items-center gap-2 text-sm font-bold text-slate-900">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Class="text-[16px] text-emerald-600" />
+                <span>الفاتورة الضريبية المرتبطة</span>
+            </h3>
+            @if (_invoice is not null)
+            {
+                <span class="rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-mono text-[11px] font-bold text-emerald-700" dir="ltr">
+                    @_invoice.DocumentNumber
+                </span>
+            }
+        </div>
+
+        @if (_loading)
+        {
+            <div class="py-3">
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" aria-label="تحميل الفاتورة" />
+                <p class="mt-2 text-xs text-slate-500">جاري تحميل بيانات الفاتورة...</p>
+            </div>
+        }
+        else if (_error is not null)
+        {
+            <div class="space-y-3">
+                <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-800">@_error</div>
+                <button type="button"
+                        class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-60"
+                        disabled="@_busy"
+                        @onclick="LoadAsync">إعادة المحاولة</button>
+            </div>
+        }
+        else if (_invoice is null)
+        {
+            <div class="flex flex-1 items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                    <MudIcon Icon="@Icons.Material.Outlined.ReceiptLong" Size="Size.Small" />
+                </span>
+                <div class="min-w-0">
+                    <p class="text-sm font-bold text-slate-700">لم تصدر فاتورة لهذا الطلب بعد.</p>
+                    <p class="mt-1 text-xs leading-5 text-slate-500">أنشئ الفاتورة لإتاحة ملف PDF للطباعة أو المشاركة.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="space-y-3 text-xs">
+                <div class="flex items-center justify-between text-slate-600">
+                    <span>حالة الفوترة:</span>
+                    <span class="flex items-center gap-1 font-bold text-emerald-600">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                        صادرة
+                    </span>
+                </div>
+                <div class="flex items-center justify-between text-slate-600">
+                    <span>تاريخ الإصدار:</span>
+                    <span class="font-bold text-slate-800"><UserLocalTime Value="_invoice.IssueDate" /></span>
+                </div>
+                <div class="flex items-center justify-between text-slate-600">
+                    <span>طريقة الدفع:</span>
+                    <span class="font-bold text-slate-800">@(string.IsNullOrWhiteSpace(PaymentMethod) ? "غير محددة" : PaymentMethod)</span>
+                </div>
+                <div class="flex items-center justify-between text-slate-600">
+                    <span>قيمة الفاتورة:</span>
+                    <span class="font-mono font-bold text-slate-800">@_invoice.TotalAmount.ToString("N2", CultureInfo.InvariantCulture) ر.س</span>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (_invoice is not null || (!_loading && _error is null && _canWrite))
+    {
+        <div class="mt-6 border-t border-slate-100 pt-3">
         @if (_invoice is not null)
         {
-            <MudChip T="string" Color="Color.Success" Variant="Variant.Outlined">@_invoice.DocumentNumber</MudChip>
+            <div class="flex flex-col gap-2">
+                <a href="@InvoiceFileUrl"
+                   target="_blank"
+                   class="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-slate-800">
+                    <MudIcon Icon="@Icons.Material.Outlined.Download" Class="text-[16px]" />
+                    <span>تنزيل الفاتورة الضريبية (PDF)</span>
+                </a>
+                @if (_canWrite)
+                {
+                    <button type="button"
+                            class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            disabled="@_busy"
+                            @onclick="CreateOrRegenerateAsync">
+                        @(_busy ? "جارٍ التوليد..." : "إعادة توليد الفاتورة")
+                    </button>
+                }
+            </div>
         }
-    </MudStack>
-
-    @if (_loading)
-    {
-        <MudProgressLinear Indeterminate="true" Class="mt-2" aria-label="تحميل الفاتورة" />
+        else if (!_loading && _error is null && _canWrite)
+        {
+            <button type="button"
+                    class="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled="@_busy"
+                    @onclick="CreateOrRegenerateAsync">
+                <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Class="text-[16px]" />
+                <span>@(_busy ? "جارٍ الإنشاء..." : "إصدار الفاتورة")</span>
+            </button>
+        }
+    </div>
     }
-    else if (_error is not null)
-    {
-        <MudAlert Severity="Severity.Error" Class="mt-2">@_error</MudAlert>
-        <MudButton OnClick="LoadAsync" Disabled="_busy">إعادة المحاولة</MudButton>
-    }
-    else if (_invoice is null)
-    {
-        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="my-2">لم تصدر فاتورة لهذا الطلب بعد.</MudText>
-        <PermissionView Feature="PermissionFeature.Documents" Level="PermissionLevel.Write">
-            <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="_busy"
-                       OnClick="CreateOrRegenerateAsync" StartIcon="@Icons.Material.Filled.ReceiptLong">
-                إنشاء الفاتورة
-            </MudButton>
-        </PermissionView>
-    }
-    else
-    {
-        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-2">
-            <MudText Typo="Typo.body2">الإجمالي شامل الضريبة: @_invoice.TotalAmount.ToString("N2") ر.س</MudText>
-            <MudButton Href="@InvoiceFileUrl" Target="_blank" Size="Size.Small"
-                       Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.PictureAsPdf">
-                فتح PDF
-            </MudButton>
-            <PermissionView Feature="PermissionFeature.Documents" Level="PermissionLevel.Write">
-                <MudButton Size="Size.Small" Disabled="_busy" OnClick="CreateOrRegenerateAsync">
-                    إعادة توليد PDF
-                </MudButton>
-            </PermissionView>
-        </MudStack>
-    }
-</MudPaper>
+</section>
 
 @code {
     [Parameter] public int OrderId { get; set; }
+    [Parameter] public string? PaymentMethod { get; set; }
 
     private DocumentListItem? _invoice;
     private bool _loading;
     private bool _busy;
+    private bool _canWrite;
     private string? _error;
     private int _loadedOrderId;
     private string? InvoiceFileUrl => _invoice is null
@@ -73,11 +138,14 @@
         _loadedOrderId = OrderId;
         _loading = true;
         _error = null;
+        _canWrite = false;
         try
         {
             var page = await RequestExecutor.ExecuteAsync(new GetDocumentsPageQuery(
                 DocumentType.Invoice, PageSize: 1, OrderId: OrderId));
+            var canWrite = await Permissions.IsAllowedAsync(PermissionFeature.Documents, PermissionLevel.Write);
             _invoice = page.Items.FirstOrDefault();
+            _canWrite = canWrite;
         }
         catch (Exception exception)
         {
