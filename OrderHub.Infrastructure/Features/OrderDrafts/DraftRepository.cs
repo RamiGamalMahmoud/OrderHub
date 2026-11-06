@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -33,5 +34,15 @@ internal sealed class DraftRepository(AppDbContext context) : IDraftRepository
             record => record.Id == id && record.UserId == userId, cancellationToken);
         if (draft is not null)
             context.DraftRecords.Remove(draft);
+    }
+
+    public async Task<int> StageDeleteBeforeAsync(int userId, DateTime cutoffUtc, CancellationToken cancellationToken = default)
+    {
+        var drafts = await context.DraftRecords
+            .Where(record => record.UserId == userId && record.LastModified < cutoffUtc)
+            .ToListAsync(cancellationToken);
+
+        context.DraftRecords.RemoveRange(drafts);
+        return drafts.Count;
     }
 }

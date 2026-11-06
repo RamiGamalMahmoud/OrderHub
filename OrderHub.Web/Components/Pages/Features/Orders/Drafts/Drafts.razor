@@ -1,0 +1,236 @@
+@page "/orders/drafts"
+@attribute [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Read)]
+@using System.Globalization
+@using OrderHub.Application.Features.OrderDrafts.Contracts
+@using OrderHub.Application.Features.OrderDrafts.List
+@using OrderHub.Web.Components.Pages.Features.Orders.Drafts
+
+<PageTitle>الطلبات المعلقة والمسودات</PageTitle>
+
+<div class="mx-auto w-full max-w-7xl space-y-6">
+    @* Header *@
+    <section class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div class="space-y-1">
+            <nav aria-label="مسار التصفح" class="flex items-center gap-2 text-xs font-medium text-slate-500">
+                <a class="flex items-center gap-1 transition-colors hover:text-slate-800" href="/">
+                    <MudIcon Icon="@Icons.Material.Filled.Home" Class="text-[16px]" />
+                    <span>الرئيسية</span>
+                </a>
+                <span class="text-slate-400">/</span>
+                <a class="transition-colors hover:text-slate-800" href="/orders">الطلبات</a>
+                <span class="text-slate-400">/</span>
+                <span class="font-semibold text-sky-700">الطلبات المعلقة والمسودات</span>
+            </nav>
+
+            <div class="flex items-center gap-3 pt-1">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-600 shadow-xs">
+                    <MudIcon Icon="@Icons.Material.Filled.Description" Class="text-2xl" />
+                </div>
+                <div>
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <h1 class="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">الطلبات المعلقة والمسودات</h1>
+                        <span class="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-bold text-sky-800">
+                            @((_stats?.TotalCount ?? 0).ToString(CultureInfo.InvariantCulture)) مسودة غير مكتملة
+                        </span>
+                    </div>
+                    <p class="mt-0.5 text-xs text-slate-500">
+                        طلبات لم يتم إكمالها بعد؛ اضغط متابعة لإكمال الطلب أو حذف لإزالة المسودة من النظام.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
+            <button type="button"
+                    class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs transition-colors hover:bg-slate-100"
+                    aria-busy="@_busy"
+                    @onclick="RefreshAsync">
+                <MudIcon Icon="@Icons.Material.Filled.Refresh"
+                         Class="@(_busy ? "animate-spin text-[18px] text-sky-600" : "text-[18px] text-slate-500")" />
+                <span>@(_busy ? "جارٍ التحديث..." : "تحديث القائمة")</span>
+            </button>
+            <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write">
+                <button type="button"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 px-3.5 py-2 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-100 disabled:opacity-50"
+                        disabled="@_busy"
+                        @onclick="DeleteOldAsync">
+                    <MudIcon Icon="@Icons.Material.Filled.DeleteSweep" Class="text-[18px]" />
+                    <span>حذف المسودات القديمة</span>
+                </button>
+                <a class="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-sky-700"
+                   href="/orders/create">
+                    <MudIcon Icon="@Icons.Material.Filled.AddCircle" Class="text-[18px]" />
+                    <span>إنشاء طلب جديد</span>
+                </a>
+            </PermissionView>
+        </div>
+    </section>
+
+    @* KPI overview *@
+    <section class="grid grid-cols-2 gap-4 md:grid-cols-4" aria-label="ملخص المسودات">
+        <div class="flex items-center justify-between rounded-xl bg-white p-4 shadow-xs">
+            <div>
+                <p class="text-[11px] font-medium text-slate-500">إجمالي المسودات</p>
+                <p class="mt-0.5 text-xl font-black text-slate-900">
+                    @((_stats?.TotalCount ?? 0).ToString(CultureInfo.InvariantCulture))
+                    <span class="text-xs font-normal text-slate-500">مسودات</span>
+                </p>
+            </div>
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+                <MudIcon Icon="@Icons.Material.Filled.Inventory2" Class="text-[20px]" />
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between rounded-xl bg-white p-4 shadow-xs">
+            <div>
+                <p class="text-[11px] font-medium text-slate-500">نشطة حديثاً (24 س)</p>
+                <p class="mt-0.5 text-xl font-black text-amber-700">
+                    @((_stats?.ActiveLast24Hours ?? 0).ToString(CultureInfo.InvariantCulture))
+                    <span class="text-xs font-normal text-slate-500">مسودات</span>
+                </p>
+            </div>
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                <MudIcon Icon="@Icons.Material.Filled.Schedule" Class="text-[20px]" />
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between rounded-xl bg-white p-4 shadow-xs">
+            <div>
+                <p class="text-[11px] font-medium text-slate-500">مسودات فارغة (0 سلع)</p>
+                <p class="mt-0.5 text-xl font-black text-slate-700">
+                    @((_stats?.EmptyCount ?? 0).ToString(CultureInfo.InvariantCulture))
+                    <span class="text-xs font-normal text-slate-500">مسودة</span>
+                </p>
+            </div>
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                <MudIcon Icon="@Icons.Material.Filled.RemoveShoppingCart" Class="text-[20px]" />
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between rounded-xl bg-white p-4 shadow-xs">
+            <div>
+                <p class="text-[11px] font-medium text-slate-500">أقدم مسودة معلقة</p>
+                <p class="mt-1 text-sm font-black text-rose-700">@OldestAgeLabel</p>
+            </div>
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+                <MudIcon Icon="@Icons.Material.Filled.HistoryToggleOff" Class="text-[20px]" />
+            </div>
+        </div>
+    </section>
+
+    @* Search & filters *@
+    <section class="rounded-xl bg-white p-4 shadow-xs">
+        <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+            <div class="relative flex-1">
+                <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+                    <MudIcon Icon="@Icons.Material.Filled.Search" Class="text-[20px]" />
+                </span>
+                <input id="drafts-search"
+                       type="text"
+                       aria-label="البحث في المسودات"
+                       placeholder="بحث باسم العميل أو رقم المسودة (#A1B2C3D4)..."
+                       class="w-full rounded-lg bg-slate-50 py-2 pl-4 pr-10 text-xs placeholder:text-slate-400 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                       @bind="_searchTerm"
+                       @bind:event="oninput"
+                       @bind:after="OnSearchChanged" />
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+                <div class="flex items-center gap-1.5 rounded-lg bg-slate-50 px-3 py-1.5 text-xs">
+                    <MudIcon Icon="@Icons.Material.Filled.FilterAlt" Class="text-[16px] text-slate-500" />
+                    <span class="font-medium text-slate-500">العمر:</span>
+                    <select class="cursor-pointer bg-transparent font-semibold text-slate-800 focus:outline-none"
+                            aria-label="تصفية حسب عمر المسودة"
+                            value="@_ageFilter"
+                            @onchange="OnAgeChanged">
+                        @foreach (var option in _ageOptions)
+                        {
+                            <option value="@option.Value">@option.Label</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-1.5 rounded-lg bg-slate-50 px-3 py-1.5 text-xs">
+                    <MudIcon Icon="@Icons.Material.Filled.ShoppingBag" Class="text-[16px] text-slate-500" />
+                    <span class="font-medium text-slate-500">الأصناف:</span>
+                    <select class="cursor-pointer bg-transparent font-semibold text-slate-800 focus:outline-none"
+                            aria-label="تصفية حسب عدد الأصناف"
+                            value="@_itemsFilter"
+                            @onchange="OnItemsChanged">
+                        @foreach (var option in _itemsOptions)
+                        {
+                            <option value="@option.Value">@option.Label</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-1.5 rounded-lg bg-slate-50 px-3 py-1.5 text-xs">
+                    <MudIcon Icon="@Icons.Material.Filled.Sort" Class="text-[16px] text-slate-500" />
+                    <span class="font-medium text-slate-500">الفرز:</span>
+                    <select class="cursor-pointer bg-transparent font-semibold text-slate-800 focus:outline-none"
+                            aria-label="ترتيب المسودات"
+                            value="@_sort"
+                            @onchange="OnSortChanged">
+                        @foreach (var option in _sortOptions)
+                        {
+                            <option value="@option.Value">@option.Label</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @if (_busy)
+    {
+        <MudProgressLinear Color="Color.Info" Indeterminate="true" Class="rounded-full" aria-label="جارٍ تحميل المسودات" />
+    }
+
+    @if (_error is not null)
+    {
+        <section class="rounded-xl bg-rose-50 p-4" role="alert">
+            <p class="text-sm font-bold text-rose-700">@_error</p>
+            <button type="button"
+                    class="mt-3 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-100 disabled:opacity-50"
+                    disabled="@_busy"
+                    @onclick="RefreshAsync">إعادة المحاولة</button>
+        </section>
+    }
+    else if (!_busy && _items.Count == 0)
+    {
+        <section class="rounded-xl bg-white p-10 text-center shadow-xs">
+            <span class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+                <MudIcon Icon="@Icons.Material.Filled.Description" Class="text-[28px]" aria-hidden="true" />
+            </span>
+            <p class="text-base font-bold text-slate-900">
+                @(HasFilters ? "لا توجد نتائج مطابقة" : "لا توجد مسودات.")
+            </p>
+            <p class="mt-1 text-sm text-slate-500">
+                @(HasFilters
+                    ? "جرّب تعديل البحث أو التصفية للحصول على نتائج."
+                    : "ستظهر هنا الطلبات التي لم يتم إكمالها بعد.")
+            </p>
+        </section>
+    }
+    else if (_items.Count > 0)
+    {
+        <section class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" id="drafts-grid">
+            @foreach (OrderDraftSummary draftSummary in _items)
+            {
+                <DraftCard Summary="draftSummary"
+                           Busy="_busy"
+                           OnContinue="NavigateToDraft"
+                           OnDelete="DeleteDraftAsync"
+                           @key="draftSummary.Id" />
+            }
+        </section>
+    }
+
+    @if (_error is null && _filteredTotal > 0)
+    {
+        <DraftsPager TotalItems="_filteredTotal"
+                     CurrentPage="_page"
+                     CurrentPageChanged="OnPageChanged"
+                     PageSize="_pageSize" />
+    }
+</div>

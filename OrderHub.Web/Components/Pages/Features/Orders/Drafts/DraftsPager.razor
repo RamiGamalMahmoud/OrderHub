@@ -1,0 +1,120 @@
+@using System.Globalization
+
+@* Template pagination (drafts.html): count summary «عرض A إلى B من أصل C مسودات محفوظة»
+   plus previous/numbered/next controls. Current page is 1-BASED; no rows-per-page control. *@
+
+<section class="@(Compact
+                  ? "flex flex-col items-center gap-2"
+                  : "flex flex-col items-center justify-between gap-4 rounded-xl bg-white p-4 shadow-xs sm:flex-row")"
+         aria-label="التنقل بين صفحات المسودات">
+    <div class="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
+        <span>عرض</span>
+        <span class="font-bold text-slate-800">@StartItem.ToString(CultureInfo.InvariantCulture)</span>
+        <span>إلى</span>
+        <span class="font-bold text-slate-800">@EndItem.ToString(CultureInfo.InvariantCulture)</span>
+        <span>من أصل</span>
+        <span class="font-bold text-slate-800">@TotalItems.ToString(CultureInfo.InvariantCulture)</span>
+        <span>مسودات محفوظة</span>
+    </div>
+
+    <div class="flex items-center gap-1 text-xs">
+        <button type="button"
+                class="@ArrowClass(disabled: SafeCurrentPage <= 1)"
+                disabled="@(SafeCurrentPage <= 1)"
+                @onclick="() => GoToAsync(SafeCurrentPage - 1)"
+                aria-label="الصفحة السابقة">
+            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Class="@((Compact ? "text-[16px]" : "text-[18px]"))" />
+        </button>
+
+        @foreach (var page in VisiblePages)
+        {
+            var captured = page;
+            <button type="button"
+                    class="@PageClass(isActive: page == SafeCurrentPage)"
+                    @onclick="() => GoToAsync(captured)"
+                    aria-current="@(page == SafeCurrentPage ? "page" : null)">
+                @(page.ToString(CultureInfo.InvariantCulture))
+            </button>
+        }
+
+        <button type="button"
+                class="@ArrowClass(disabled: SafeCurrentPage >= TotalPages)"
+                disabled="@(SafeCurrentPage >= TotalPages)"
+                @onclick="() => GoToAsync(SafeCurrentPage + 1)"
+                aria-label="الصفحة التالية">
+            <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Class="@((Compact ? "text-[16px]" : "text-[18px]"))" />
+        </button>
+    </div>
+</section>
+
+@code
+{
+    [Parameter]
+    public int TotalItems { get; set; }
+
+    /// <summary>1-based current page (two-way).</summary>
+    [Parameter]
+    public int CurrentPage { get; set; } = 1;
+
+    [Parameter]
+    public EventCallback<int> CurrentPageChanged { get; set; }
+
+    [Parameter]
+    public int PageSize { get; set; } = 8;
+
+    /// <summary>Smaller controls for the drafts drawer footer.</summary>
+    [Parameter]
+    public bool Compact { get; set; }
+
+    private int TotalPages =>
+        PageSize > 0 ? (int)Math.Ceiling(TotalItems / (double)PageSize) : 1;
+
+    private int SafeCurrentPage => Math.Clamp(CurrentPage, 1, Math.Max(1, TotalPages));
+
+    private int StartItem => TotalItems == 0 ? 0 : (SafeCurrentPage - 1) * PageSize + 1;
+
+    private int EndItem => Math.Min(TotalItems, SafeCurrentPage * PageSize);
+
+    private IEnumerable<int> VisiblePages
+    {
+        get
+        {
+            if (TotalPages <= 5)
+            {
+                for (var page = 1; page <= TotalPages; page++)
+                {
+                    yield return page;
+                }
+
+                yield break;
+            }
+
+            var end = Math.Min(TotalPages, SafeCurrentPage + 2);
+            var start = Math.Max(1, end - 4);
+            end = Math.Min(TotalPages, start + 4);
+            for (var page = start; page <= end; page++)
+            {
+                yield return page;
+            }
+        }
+    }
+
+    private string PageClass(bool isActive)
+    {
+        var size = Compact ? "h-7 w-7 text-[11px]" : "h-8 w-8";
+        return isActive
+            ? $"flex items-center justify-center rounded-lg bg-sky-600 font-bold text-white shadow-xs {size}"
+            : $"flex items-center justify-center rounded-lg font-semibold text-slate-600 transition-colors hover:bg-slate-100 {size}";
+    }
+
+    private string ArrowClass(bool disabled)
+    {
+        var padding = Compact ? "p-1.5" : "p-2";
+        return disabled
+            ? $"cursor-not-allowed rounded-lg text-slate-300 {padding}"
+            : $"rounded-lg text-slate-600 transition-colors hover:bg-slate-100 {padding}";
+    }
+
+    private Task GoToAsync(int page) =>
+        CurrentPageChanged.InvokeAsync(Math.Clamp(page, 1, Math.Max(1, TotalPages)));
+}

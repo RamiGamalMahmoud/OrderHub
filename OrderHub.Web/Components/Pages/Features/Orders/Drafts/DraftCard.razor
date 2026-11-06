@@ -1,0 +1,157 @@
+@using System.Globalization
+@using OrderHub.Application.Features.OrderDrafts.Contracts
+@using OrderHub.Web.Components.Pages.Features.Orders.Workflow
+
+@if (Compact)
+{
+    <article class="rounded-xl bg-white p-3 shadow-xs">
+        <div class="flex items-center justify-between gap-2">
+            <span class="rounded bg-sky-50 px-1.5 py-0.5 font-mono text-[11px] font-bold text-sky-700" dir="ltr">
+                #@Summary.ShortId
+            </span>
+            <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                <MudIcon Icon="@Icons.Material.Filled.Schedule" Class="text-[13px]" />
+                <span>@Summary.UpdatedAtHumanized</span>
+            </span>
+        </div>
+
+        <div class="mt-2 flex items-center justify-between gap-2">
+            <p class="@(HasClient
+                         ? "min-w-0 truncate text-sm font-extrabold text-slate-900"
+                         : "min-w-0 truncate text-sm font-extrabold italic text-slate-400")">
+                @ClientLabel
+            </p>
+            <span class="shrink-0 text-[11px] font-medium text-slate-500">
+                عدد المنتجات:
+                <span class="@(HasItems ? "text-xs font-black text-slate-900" : "text-xs font-black text-rose-600")">@ItemCountLabel</span>
+            </span>
+        </div>
+
+        <div class="@(HasItems
+                        ? "mt-2 flex items-center justify-between gap-2 rounded-lg bg-slate-50 p-2 text-[11px] text-slate-600"
+                        : "mt-2 flex items-center justify-between gap-2 rounded-lg bg-rose-50/60 p-2 text-[11px] text-rose-700")">
+            <span class="flex min-w-0 items-center gap-1">
+                <MudIcon Icon="@(HasItems ? Icons.Material.Filled.LocalMall : Icons.Material.Filled.Info)"
+                         Class="shrink-0 text-[13px]" />
+                <span class="truncate">@SummaryLabel</span>
+            </span>
+            <span class="shrink-0 font-bold">@TotalLabel</span>
+        </div>
+
+        <div class="mt-2 flex items-center gap-1.5">
+            @Actions
+        </div>
+    </article>
+}
+else
+{
+    <article class="group flex flex-col justify-between rounded-2xl bg-white p-5 shadow-xs transition-shadow hover:shadow-md">
+        <div class="space-y-4">
+            <div class="flex items-center justify-between gap-2">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Class="text-[15px]" />
+                    <span>@Summary.UpdatedAtHumanized</span>
+                </span>
+                <span class="text-left text-[11px] font-mono font-medium text-slate-400" dir="ltr">
+                    <UserLocalTime Value="Summary.UpdatedAt" />
+                </span>
+            </div>
+
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="rounded bg-sky-50 px-2 py-0.5 font-mono text-xs font-bold text-sky-700" dir="ltr">
+                        #@Summary.ShortId
+                    </span>
+                    <span class="text-[11px] text-slate-400">العميل</span>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                    <h2 class="@(HasClient
+                                   ? "min-w-0 text-sm font-extrabold text-slate-900 transition-colors group-hover:text-sky-700"
+                                   : "min-w-0 text-sm font-extrabold italic text-slate-400")">
+                        @ClientLabel
+                    </h2>
+                    <div class="flex shrink-0 items-center gap-1.5">
+                        <span class="text-xs font-medium text-slate-500">عدد المنتجات:</span>
+                        <span class="@(HasItems ? "text-sm font-black text-slate-900" : "text-sm font-black text-rose-600")">@ItemCountLabel</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="@(HasItems
+                            ? "flex items-center justify-between gap-3 rounded-lg bg-slate-50 p-2.5 text-[11px] text-slate-600"
+                            : "flex items-center justify-between gap-3 rounded-lg bg-rose-50/60 p-2.5 text-[11px] text-rose-700")">
+                <span class="flex min-w-0 items-center gap-1">
+                    <MudIcon Icon="@(HasItems ? Icons.Material.Filled.LocalMall : Icons.Material.Filled.Info)"
+                             Class="shrink-0 text-[14px]" />
+                    <span class="truncate">@SummaryLabel</span>
+                </span>
+                <span class="shrink-0 font-bold">@TotalLabel</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 pt-5">
+            @Actions
+        </div>
+    </article>
+}
+
+@code
+{
+    [Parameter, EditorRequired]
+    public OrderDraftSummary Summary { get; set; } = default!;
+
+    /// <summary>Compact mini-card used inside the drafts drawer.</summary>
+    [Parameter]
+    public bool Compact { get; set; }
+
+    [Parameter]
+    public bool Busy { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnContinue { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnDelete { get; set; }
+
+    private bool HasItems => Summary.ItemsCount > 0;
+
+    private bool HasClient => !string.IsNullOrWhiteSpace(Summary.ClientName);
+
+    private string ClientLabel => HasClient ? Summary.ClientName : "غير محدد (عميل جديد)";
+
+    private string ItemCountLabel => Summary.ItemsCount.ToString(CultureInfo.InvariantCulture);
+
+    private string SummaryLabel => HasItems
+        ? (string.IsNullOrWhiteSpace(Summary.ProductSummary) ? "لا توجد منتجات بعد" : Summary.ProductSummary)
+        : "سلة تسوق فارغة بدون أي منتجات";
+
+    // Template shows whole amounts with thousands separators and 0.00 for empty carts.
+    private string TotalLabel => Summary.TotalAmount <= 0
+        ? "0.00 ر.س"
+        : $"{Summary.TotalAmount.ToString("#,##0.##", CultureInfo.InvariantCulture)} ر.س";
+
+    private RenderFragment Actions => @<text>
+        <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write">
+            <button type="button"
+                    class="@(Compact
+                               ? "inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-sky-600 px-2 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
+                               : "inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-sky-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-sky-700 disabled:opacity-50")"
+                    disabled="@Busy"
+                    @onclick="() => OnContinue.InvokeAsync(Summary.Id)">
+                <span>متابعة</span>
+                <MudIcon Icon="@Icons.Material.Filled.ArrowRightAlt"
+                         Class="@(Compact ? "rotate-180 text-[14px]" : "rotate-180 text-[16px]")" />
+            </button>
+            <button type="button"
+                    class="@(Compact
+                               ? "inline-flex items-center justify-center gap-1 rounded-lg bg-rose-50 px-2 py-1.5 text-[11px] font-bold text-rose-600 transition-colors hover:bg-rose-100 disabled:opacity-50"
+                               : "inline-flex items-center justify-center gap-1 rounded-lg bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 transition-colors hover:bg-rose-100 disabled:opacity-50")"
+                    disabled="@Busy"
+                    @onclick="() => OnDelete.InvokeAsync(Summary.Id)">
+                <MudIcon Icon="@Icons.Material.Filled.Delete"
+                         Class="@(Compact ? "text-[14px]" : "text-[16px]")" />
+                <span>حذف</span>
+            </button>
+        </PermissionView>
+    </text>;
+}

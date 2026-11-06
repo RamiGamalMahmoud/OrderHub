@@ -3,6 +3,7 @@
 @using OrderHub.Application.Interfaces
 @using OrderHub.Application.Features.OrderDrafts.List
 @using OrderHub.Application.Features.OrderDrafts.Delete
+@using OrderHub.Web.Components.Pages.Features.Orders.Drafts
 @inject IRequestExecutor RequestExecutor
 @inject IDialogService DialogService
 @inject ILogger<OrderDrafts> Logger
@@ -17,13 +18,13 @@
 
     <div class="flex h-full min-h-0 flex-col">
         <header class="flex items-center gap-2.5 border-b border-slate-200 bg-white px-4 py-3">
-            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-                <MudIcon Icon="@Icons.Material.Outlined.Description" Size="Size.Small" />
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+                <MudIcon Icon="@Icons.Material.Filled.Description" Class="text-[18px]" />
             </span>
             <div class="min-w-0">
                 <p class="text-sm font-black text-slate-900">الطلبات المعلقة</p>
                 <p class="text-[11px] text-slate-500">
-                    @(_drafts.Count.ToString(CultureInfo.InvariantCulture)) مسودة غير مكتملة
+                    @((_stats?.TotalCount ?? 0).ToString(CultureInfo.InvariantCulture)) مسودة غير مكتملة
                 </p>
             </div>
             <MudIconButton Icon="@Icons.Material.Outlined.Close"
@@ -33,74 +34,60 @@
                            Class="ms-auto rounded-lg text-slate-500" />
         </header>
 
-        <div class="flex-1 space-y-3 overflow-y-auto p-4">
-            <p class="text-[11px] leading-5 text-slate-500">
-                طلبات لم يتم إكمالها بعد؛ اضغط متابعة لإكمال الطلب أو حذف لإزالة المسودة.
-            </p>
-
+        <div class="flex-1 space-y-2.5 overflow-y-auto p-3">
             @if (_busy)
             {
-                <MudProgressLinear Indeterminate="true" Color="Color.Primary" aria-label="تحميل المسودات" />
+                <MudProgressLinear Color="Color.Info" Indeterminate="true" Class="rounded-full" aria-label="جارٍ تحميل المسودات" />
             }
 
             @if (_error is not null)
             {
-                <div class="rounded-xl border border-red-200 bg-red-50 p-3" role="alert">
-                    <p class="text-xs font-bold text-red-800">@_error</p>
+                <div class="rounded-xl bg-rose-50 p-3" role="alert">
+                    <p class="text-xs font-bold text-rose-700">@_error</p>
                     <button type="button"
-                            class="mt-2 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 disabled:opacity-50"
+                            class="mt-2 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-100 disabled:opacity-50"
                             disabled="@_busy"
                             @onclick="RefreshAsync">إعادة المحاولة</button>
                 </div>
             }
-            else if (!_busy && _drafts.Count == 0)
+            else if (!_busy && _items.Count == 0)
             {
-                <div class="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center">
-                    <span class="mx-auto mb-2 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
-                        <MudIcon Icon="@Icons.Material.Outlined.Description" aria-hidden="true" />
+                <div class="rounded-xl bg-white p-6 text-center shadow-xs">
+                    <span class="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+                        <MudIcon Icon="@Icons.Material.Filled.Description" Class="text-[22px]" aria-hidden="true" />
                     </span>
                     <p class="text-sm font-bold text-slate-800">لا توجد طلبات معلقة.</p>
                     <p class="mt-1 text-[11px] text-slate-500">ستظهر هنا الطلبات التي لم يتم إكمالها بعد.</p>
                 </div>
             }
 
-            @foreach (OrderDraftSummary draftSummary in _drafts)
+            @foreach (OrderDraftSummary draftSummary in _items)
             {
-                <article class="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm" @key="draftSummary.Id">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-800">
-                            <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Small" />
-                            @draftSummary.UpdatedAtHumanized
-                        </span>
-                        <span class="text-[11px] text-slate-500">@draftSummary.UpdatedAtLocal</span>
-                    </div>
-
-                    <dl class="mt-3 space-y-1.5 text-xs">
-                        <div class="flex items-center justify-between gap-3">
-                            <dt class="text-slate-500">العميل</dt>
-                            <dd class="truncate font-bold text-slate-900">@draftSummary.ClientName</dd>
-                        </div>
-                        <div class="flex items-center justify-between gap-3">
-                            <dt class="text-slate-500">عدد المنتجات</dt>
-                            <dd class="tabular-nums font-bold text-slate-900">@draftSummary.ItemsCount.ToString(CultureInfo.InvariantCulture)</dd>
-                        </div>
-                    </dl>
-
-                    <div class="mt-3 flex items-center justify-end gap-2">
-                        <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write">
-                            <button type="button"
-                                    class="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-700 disabled:opacity-50"
-                                    disabled="@_busy"
-                                    @onclick="@(() => NavigateToDraft(draftSummary.Id))">متابعة</button>
-                            <button type="button"
-                                    class="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 disabled:opacity-50"
-                                    disabled="@_busy"
-                                    @onclick="@(() => DeleteDraftAsync(draftSummary.Id))">حذف</button>
-                        </PermissionView>
-                    </div>
-                </article>
+                <DraftCard Summary="draftSummary"
+                           Compact="true"
+                           Busy="_busy"
+                           OnContinue="NavigateToDraft"
+                           OnDelete="DeleteDraftAsync"
+                           @key="draftSummary.Id" />
             }
         </div>
+
+        <footer class="space-y-2 border-t border-slate-200 bg-white p-3">
+            <button type="button"
+                    class="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-sky-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-sky-700"
+                    @onclick="OpenDraftsPage">
+                <MudIcon Icon="@Icons.Material.Filled.Description" Class="text-[16px]" />
+                <span>عرض كل المسودات</span>
+            </button>
+            @if (_error is null && _total > 0)
+            {
+                <DraftsPager TotalItems="_total"
+                             CurrentPage="_page"
+                             CurrentPageChanged="OnPageChanged"
+                             PageSize="_pageSize"
+                             Compact="true" />
+            }
+        </footer>
     </div>
 </MudDrawer>
 
@@ -108,7 +95,11 @@
 {
     [Inject] private NavigationManager Navigation { get; set; } = null!;
 
-    private IReadOnlyList<OrderDraftSummary> _drafts { get; set; } = [];
+    private IReadOnlyList<OrderDraftSummary> _items { get; set; } = [];
+    private DraftListStats? _stats;
+    private int _page = 1;
+    private int _pageSize = 5;
+    private int _total;
     private bool _wasOpen;
     private bool _busy;
     private bool _refreshPending;
@@ -129,16 +120,29 @@
 
     protected override Task OnParametersSetAsync()
     {
-        var opening = IsOpen && !_wasOpen;
+        bool opening = IsOpen && !_wasOpen;
         _wasOpen = IsOpen;
         if (!IsOpen)
+        {
             _loadVersion++;
+            return Task.CompletedTask;
+        }
+
+        if (opening)
+            _page = 1;
+
         return opening ? RefreshAsync() : Task.CompletedTask;
     }
 
     private Task OnCloseClicked() => IsOpenChanged.InvokeAsync(false);
 
     private void NavigateToDraft(Guid draftId) => Navigation.NavigateTo($"/orders/continue/{draftId}");
+
+    private async Task OpenDraftsPage()
+    {
+        await IsOpenChanged.InvokeAsync(false);
+        Navigation.NavigateTo("/orders/drafts");
+    }
 
     public async Task RefreshAsync()
     {
@@ -157,12 +161,17 @@
             {
                 _refreshPending = false;
                 _error = null;
-                var version = ++_loadVersion;
+                long version = ++_loadVersion;
                 try
                 {
-                    var drafts = await RequestExecutor.ExecuteAsync(new GetDraftListQuery());
+                    var result = await RequestExecutor.ExecuteAsync(new GetDraftListQuery(new DraftListRequest(_page, _pageSize)));
                     if (!_disposed && IsOpen && version == _loadVersion)
-                        _drafts = drafts;
+                    {
+                        _items = result.Items;
+                        _total = result.TotalCount;
+                        _stats = result.Stats;
+                        _page = result.Page;
+                    }
                 }
                 catch (Exception exception)
                 {
@@ -178,6 +187,12 @@
         }
     }
 
+    private async Task OnPageChanged(int page)
+    {
+        _page = Math.Max(1, page);
+        await RefreshAsync();
+    }
+
     private async Task DeleteDraftAsync(Guid draftId)
     {
         if (_busy || _disposed)
@@ -187,7 +202,7 @@
         try
         {
             var result = await DialogService.ShowMessageBoxAsync(
-                "حذف مسودة", "هل تريد حذف هذه المسودة؟", yesText: "نعم", cancelText: "لا");
+                "حذف مسودة", "هل أنت متأكد من حذف هذه المسودة نهائياً؟", yesText: "نعم", cancelText: "لا");
             if (result is true && !_disposed)
             {
                 var deleteResult = await RequestExecutor.ExecuteAsync(new DeleteDraftCommand(draftId));
