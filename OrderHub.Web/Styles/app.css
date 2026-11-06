@@ -1,4 +1,15 @@
-﻿@import "tailwindcss" important;
+﻿/* Tailwind v4 import split (Option B, replaces the "important" workaround):
+   - theme + preflight stay in named layers (draft) so they can never fight
+     MudBlazor's own unlayered resets/defaults;
+   - utilities import WITHOUT a layer so Tailwind utilities sit unlayered and,
+     because this stylesheet is linked LAST (see App.razor), they beat both
+     MudBlazor component CSS and our global defaults wherever a page adds a
+     Tailwind class: no !important anywhere.
+   Cascade result: MudBlazor > preflight; overrides/app.css > MudBlazor;
+   utilities > MudBlazor + app defaults; razor-scoped styles still win last. */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
 
 /* =========================================================
    OrderHub design-system tokens (T-A1)
