@@ -1,0 +1,548 @@
+@using System.Globalization
+@using OrderHub.Application.Features.Setup.Categories.GetCategoryColors
+@inject IRequestExecutor RequestExecutor
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject ILogger<CategoryEditorDialog> Logger
+
+<MudDialog Class="category-editor-shell"
+           TitleClass="category-editor-dialog-title"
+           ContentClass="category-editor-dialog-content"
+           ActionsClass="category-editor-dialog-actions"
+           Gutters="false">
+    <TitleContent>
+        <header class="category-editor-modal-header" dir="ltr">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600">
+                    <MudIcon Icon="@(CategoryId.HasValue ? Icons.Material.Filled.Edit : Icons.Material.Filled.AddBox)"
+                             Size="Size.Small" />
+                </span>
+                <div class="min-w-0" dir="rtl">
+                    <h2 class="text-lg font-bold leading-tight text-slate-900">@DialogTitle</h2>
+                    <div class="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                        @if (CategoryId is int id)
+                        {
+                            <span>رمز القسم: CAT-@id.ToString("D3", CultureInfo.InvariantCulture)</span>
+                            <span class="h-1 w-1 rounded-full bg-slate-300"></span>
+                            <span class="truncate text-blue-600">@(_state.Name is { Length: > 0 } ? _state.Name : "القسم")</span>
+                        }
+                        else
+                        {
+                            <span>إضافة قسم جديد</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Size="Size.Small"
+                           Color="Color.Default"
+                           Disabled="_saving"
+                           OnClick="Cancel"
+                           aria-label="إغلاق النافذة"
+                           Class="shrink-0 rounded-xl text-slate-400" />
+        </header>
+    </TitleContent>
+
+    <DialogContent>
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true"
+                               Color="Color.Primary" />
+
+            <MudText Typo="Typo.body2" Class="mt-2 px-6">
+                جاري تحميل بيانات القسم...
+            </MudText>
+        }
+        else if (_loadError is not null)
+        {
+            <div class="space-y-3 p-6">
+                <MudAlert Severity="Severity.Error" Dense="true">
+                    @_loadError
+                </MudAlert>
+                <MudButton Variant="Variant.Text" OnClick="LoadAsync">
+                    إعادة المحاولة
+                </MudButton>
+            </div>
+        }
+        else
+        {
+            <MudForm @key="_formVersion"
+                     @ref="_form">
+                <div class="category-editor-modal-body">
+                    <section class="category-editor-template-card" data-purpose="category-info-card">
+                        <div class="category-editor-section-heading" dir="ltr">
+                            <span class="category-editor-section-badge" dir="rtl">البيانات الأساسية</span>
+                            <div class="flex items-center gap-2.5" dir="ltr">
+                                <span class="category-editor-section-icon">
+                                    <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Small" />
+                                </span>
+                                <div dir="rtl">
+                                    <h3 class="font-bold text-slate-900">بيانات القسم</h3>
+                                    <p class="mt-0.5 text-xs text-slate-500">أدخل اسماً واضحاً واختر اللون والقسم الرئيسي.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-5">
+                            <div>
+                                <div class="category-editor-field-heading" dir="ltr">
+                                    <span class="text-[11px] text-slate-400">إجباري للتعريف بالنظام</span>
+                                    <label class="text-xs font-bold text-slate-700" dir="rtl">اسم القسم <span class="text-red-500">*</span></label>
+                                </div>
+                                <MudTextField T="string"
+                                              @bind-Value="_state.Name"
+                                              aria-label="اسم القسم"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Required="true"
+                                              RequiredError="اسم القسم مطلوب."
+                                              Placeholder="مثال: الخشبيات، الدهانات، المواد العازلة"
+                                              MaxLength="100"
+                                              Validation="@(new Func<string, string?>(ValidateName))"
+                                              Immediate="true"
+                                              Disabled="_saving"
+                                              Class="category-editor-field" />
+                            </div>
+
+                            <div>
+                                <div class="category-editor-field-heading" dir="ltr">
+                                    <span class="text-[11px] text-slate-400">
+                                        @((_state.Description?.Length ?? 0).ToString(CultureInfo.InvariantCulture)) / 500
+                                    </span>
+                                    <label class="text-xs font-bold text-slate-700" dir="rtl">الوصف <span class="font-normal text-slate-400">(اختياري)</span></label>
+                                </div>
+                                <MudTextField T="string"
+                                              @bind-Value="_state.Description"
+                                              aria-label="الوصف الاختياري"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Lines="3"
+                                              Placeholder="أدخل وصفاً تفصيلياً يوضح نوعية المنتجات والمواد المندرجة تحت هذا القسم..."
+                                              MaxLength="500"
+                                              Validation="@(new Func<string?, string?>(ValidateDescription))"
+                                              Immediate="true"
+                                              Disabled="_saving"
+                                              Class="category-editor-field" />
+                            </div>
+
+                            <div>
+                                <MudSelect T="int?"
+                                           @bind-Value="_state.ParentId"
+                                           Label="القسم الرئيسي"
+                                           Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
+                                           Disabled="_saving"
+                                           Placeholder="قسم أساسي (بدون قسم رئيسي)"
+                                           Class="category-editor-field">
+                                    <MudSelectItem T="int?" Value="@((int?)null)">
+                                        قسم أساسي (بدون قسم رئيسي)
+                                    </MudSelectItem>
+                                    @foreach (var parent in _parents)
+                                    {
+                                        <MudSelectItem T="int?" Value="@((int?)parent.Id)">
+                                            @parent.FullPath
+                                        </MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <p class="mt-1.5 flex items-start gap-1 text-[11px] text-slate-500">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Info" Class="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                    <span>اختر قسماً رئيسياً ليكون هذا القسم فرعياً منه أو اتركه كقسم أساسي مستقل.</span>
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="category-editor-template-card" data-purpose="category-color-card">
+                        <div class="category-editor-section-heading category-editor-color-heading" dir="ltr">
+                            <div class="flex items-center gap-2" dir="ltr">
+                                <span class="category-editor-current-color-code" dir="ltr">@_state.Color</span>
+                                <span class="category-editor-current-color" style="background-color: @_state.Color;" title="اللون المختار حالياً"></span>
+                            </div>
+                            <div class="flex items-center gap-2.5" dir="ltr">
+                                <span class="category-editor-palette-icon">
+                                    <MudIcon Icon="@Icons.Material.Filled.Palette" Size="Size.Small" />
+                                </span>
+                                <div dir="rtl">
+                                    <h3 class="font-bold text-slate-900">لون القسم</h3>
+                                    <p class="mt-0.5 text-xs text-slate-500">اختر لوناً محفوظاً أو افتح محرر الألوان لاختيار لون جديد.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="mb-1.5 block text-xs font-bold text-slate-700">الألوان المستخدمة</label>
+                                @if (_savedColors.Count > 0)
+                                {
+                                    <MudSelect T="string"
+                                               @bind-Value="_state.Color"
+                                               Variant="Variant.Outlined"
+                                               Margin="Margin.Dense"
+                                               Disabled="_saving"
+                                               ToStringFunc="GetSavedColorLabel"
+                                               Class="category-editor-field category-editor-saved-colors">
+                                        @foreach (string color in _savedColors)
+                                        {
+                                            <MudSelectItem T="string" Value="@color">
+                                                <div class="category-editor-saved-color-option" dir="rtl">
+                                                    <span class="category-editor-swatch" style="background-color: @color;"></span>
+                                                    <span class="font-mono font-semibold" dir="ltr">@color</span>
+                                                    <span class="text-xs text-slate-400">لون محفوظ</span>
+                                                </div>
+                                            </MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">
+                                        لا توجد ألوان محفوظة بعد. اختر أول لون من المحرر.
+                                    </MudText>
+                                }
+                            </div>
+
+                            <div>
+                                <label class="mb-1.5 block text-xs font-bold text-slate-700">اختيار لون جديد</label>
+                                <div class="category-editor-new-color-control" dir="rtl">
+                                    <span class="category-editor-new-color-swatch" style="background-color: @_state.Color;"></span>
+                                    <MudColorPicker @bind-Text="_state.Color"
+                                                    aria-label="افتح محرر الألوان"
+                                                    Variant="Variant.Outlined"
+                                                    Margin="Margin.Dense"
+                                                    PickerVariant="PickerVariant.Inline"
+                                                    ColorPickerMode="ColorPickerMode.HEX"
+                                                    ColorPickerView="ColorPickerView.Spectrum"
+                                                    ShowToolbar="false"
+                                                    ShowInputs="false"
+                                                    ShowAlpha="false"
+                                                    ShowModeSwitch="false"
+                                                    ShowPreview="true"
+                                                    Editable="false"
+                                                    Disabled="_saving"
+                                                    Class="category-editor-color-picker" />
+                                </div>
+                            </div>
+
+                            @if (_savedColors.Count > 0)
+                            {
+                                <div class="pt-1">
+                                    <span class="mb-2 block text-[11px] font-semibold text-slate-400">ألوان محفوظة للاختيار السريع:</span>
+                                    <div class="flex flex-wrap items-center gap-2" data-purpose="saved-color-swatches">
+                                        @foreach (string color in _savedColors)
+                                        {
+                                            <button type="button"
+                                                    class="category-editor-quick-swatch"
+                                                    style="background-color: @color; @(IsSelectedColor(color) ? "outline: 2px solid #2563EB; outline-offset: 2px;" : null)"
+                                                    title="@color"
+                                                    aria-label="اختيار اللون @color"
+                                                    aria-pressed="@IsSelectedColor(color)"
+                                                    disabled="@_saving"
+                                                    @onclick="() => SelectColor(color)">
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <div class="category-editor-tip" role="note">
+                                <span class="category-editor-tip-icon">
+                                <MudIcon Icon="@Icons.Material.Filled.Lightbulb" Size="Size.Small" />
+                                </span>
+                                <p>اختر لوناً يسهّل تمييز القسم. اللون الذي تحفظه مع الفئة سيظهر ضمن الألوان المستخدمة لإعادة اختياره في بطاقات الأقسام.</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </MudForm>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <footer class="category-editor-modal-footer" dir="rtl">
+            <div class="flex items-center gap-2 text-xs font-medium text-slate-500">
+                <span class="h-2.5 w-2.5 rounded-full" style="background-color: @_state.Color;"></span>
+                <span>معاينة اللون المختار</span>
+            </div>
+            <div class="category-editor-action-buttons" dir="ltr">
+                @if (_loadError is null && !_loading)
+                {
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="SaveAsync"
+                               Disabled="_saving"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               Class="category-editor-save-button">
+                        @SaveButtonText
+                    </MudButton>
+                }
+                @if (!CategoryId.HasValue && _loadError is null && !_loading)
+                {
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               OnClick="SaveAndAddAnotherAsync"
+                               Disabled="_saving"
+                               Class="category-editor-secondary-button">
+                        حفظ وإضافة قسم آخر
+                    </MudButton>
+                }
+                <MudButton Variant="Variant.Text"
+                           OnClick="Cancel"
+                           Disabled="_saving"
+                           Class="category-editor-cancel-button">
+                    إلغاء
+                </MudButton>
+            </div>
+        </footer>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter]
+    public int? CategoryId { get; set; }
+
+    [Parameter]
+    public int? ParentId { get; set; }
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private CategoryEditorState _state = new();
+    private MudForm? _form;
+    private IReadOnlyList<CategoryInfo> _parents = [];
+    private IReadOnlyList<string> _savedColors = [];
+    private string? _loadError;
+    private bool _loading = true;
+    private bool _saving;
+    private int _formVersion;
+
+    private string DialogTitle =>
+        CategoryId.HasValue ? "تعديل القسم" : "إضافة قسم جديد";
+
+    private string SaveButtonText =>
+        _saving
+            ? "جاري الحفظ..."
+            : CategoryId.HasValue
+                ? "حفظ التعديلات"
+                : "حفظ القسم";
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        _state = CategoryEditorState.Create(ParentId);
+
+        try
+        {
+            CategoryEdit? category = CategoryId is int categoryId
+                ? await RequestExecutor.ExecuteAsync(new GetCategoryForEditQuery(categoryId))
+                : null;
+
+            if (CategoryId.HasValue && category is null)
+            {
+                _loadError = "القسم غير موجود.";
+                return;
+            }
+
+            var allCategories = (await RequestExecutor.ExecuteAsync(
+                new GetCategoriesInfoQuery())).ToList();
+
+            _savedColors = await RequestExecutor.ExecuteAsync(
+                new GetCategoryColorsQuery());
+
+            if (category is not null)
+            {
+                _state = CategoryEditorState.Edit(category);
+            }
+
+            if (_state.ParentId.HasValue &&
+                allCategories.All(item => item.Id != _state.ParentId.Value))
+            {
+                _loadError = "القسم الرئيسي غير موجود.";
+                return;
+            }
+
+            _parents = CategoryEditorState.ParentOptions(
+                allCategories,
+                CategoryId);
+
+            if (!_savedColors.Contains(_state.Color, StringComparer.OrdinalIgnoreCase))
+            {
+                _savedColors = _savedColors
+                    .Append(_state.Color)
+                    .OrderBy(color => color, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+            MudDialog.Cancel();
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to load category editor for {CategoryId}",
+                CategoryId);
+
+            _loadError = "تعذر تحميل بيانات القسم. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveAsync() => await SaveAsync(addAnother: false);
+
+    private async Task SaveAndAddAnotherAsync() => await SaveAsync(addAnother: true);
+
+    private async Task SaveAsync(bool addAnother)
+    {
+        if (_saving || _form is null)
+        {
+            return;
+        }
+
+        _saving = true;
+
+        try
+        {
+            await _form.ValidateAsync();
+
+            if (!_form.IsValid)
+            {
+                return;
+            }
+
+            Result result;
+
+            if (CategoryId is int id)
+            {
+                CategoryUpdateInput request = new(
+                    id,
+                    _state.Name,
+                    _state.ParentId,
+                    _state.Description,
+                    _state.Color);
+
+                result = await RequestExecutor.ExecuteAsync(
+                    new UpdateCategoryCommand(request));
+            }
+            else
+            {
+                CategoryCreateInput request = new(
+                    _state.Name,
+                    _state.ParentId,
+                    _state.Description,
+                    _state.Color);
+
+                result = await RequestExecutor.ExecuteAsync(
+                    new CreateCategoryCommand(request));
+            }
+
+            if (!result.IsSuccess)
+            {
+                Snackbar.Add(result.ErrorMessage, Severity.Error);
+                return;
+            }
+
+            if (addAnother && !CategoryId.HasValue)
+            {
+                int? parentId = _state.ParentId;
+                string savedColor = _state.Color;
+                try
+                {
+                    await RefreshOptionsAsync();
+                }
+                catch (Exception exception)
+                {
+                    Logger.LogWarning(
+                        exception,
+                        "Category was saved but category editor options could not be refreshed.");
+
+                    _savedColors = _savedColors
+                        .Append(savedColor)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .OrderBy(color => color, StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                }
+
+                _state = CategoryEditorState.Create(parentId, savedColor);
+                _formVersion++;
+
+                Snackbar.Add("تم حفظ القسم. يمكنك إضافة قسم آخر.", Severity.Success);
+                return;
+            }
+
+            Snackbar.Add("تم حفظ القسم بنجاح.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+            MudDialog.Cancel();
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to save category {CategoryId}",
+                CategoryId);
+
+            Snackbar.Add("تعذر حفظ القسم. يرجى المحاولة مرة أخرى.", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task RefreshOptionsAsync()
+    {
+        var allCategories = (await RequestExecutor.ExecuteAsync(
+            new GetCategoriesInfoQuery())).ToList();
+
+        _savedColors = await RequestExecutor.ExecuteAsync(
+            new GetCategoryColorsQuery());
+
+        _parents = CategoryEditorState.ParentOptions(allCategories, categoryId: null);
+    }
+
+    private static string GetSavedColorLabel(string color) => color;
+
+    private void SelectColor(string color) => _state.Color = color;
+
+    private bool IsSelectedColor(string color) =>
+        string.Equals(_state.Color, color, StringComparison.OrdinalIgnoreCase);
+
+    private void Cancel()
+    {
+        if (!_saving)
+        {
+            MudDialog.Cancel();
+        }
+    }
+
+    private static string? ValidateName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "اسم القسم يجب أن يتكون من 2 إلى 100 حرف.";
+        }
+
+        int length = name.Trim().Length;
+
+        return length is < 2 or > 100
+            ? "اسم القسم يجب أن يتكون من 2 إلى 100 حرف."
+            : null;
+    }
+
+    private static string? ValidateDescription(string? description) =>
+        description?.Length > 500
+            ? "الوصف يجب ألا يتجاوز 500 حرف."
+            : null;
+}

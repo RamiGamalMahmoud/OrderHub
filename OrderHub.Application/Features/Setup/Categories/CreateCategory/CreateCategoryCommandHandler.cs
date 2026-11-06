@@ -25,8 +25,8 @@ internal sealed class CreateCategoryCommandHandler(ICategoryRepository repositor
         if (description?.Length > 500)
             return Result.Failure("وصف القسم لا يمكن أن يتجاوز 500 حرف.");
 
-        if (!Enum.IsDefined(request.CategoryCreateInput.Color))
-            return Result.Failure("لون القسم غير مدعوم.");
+        if (!HexColor.TryNormalize(request.CategoryCreateInput.Color, out string color))
+            return Result.Failure("اختر لونًا صالحًا من محرر الألوان.");
 
         Category parent = null;
         if (request.CategoryCreateInput.ParentId is int parentId)
@@ -43,7 +43,7 @@ internal sealed class CreateCategoryCommandHandler(ICategoryRepository repositor
             return Result.Failure("هذا القسم موجود بالفعل.");
         }
 
-        Category category = new(name, parent, description, request.CategoryCreateInput.Color);
+        Category category = new(name, parent, description, color);
 
         repository.Add(category);
 

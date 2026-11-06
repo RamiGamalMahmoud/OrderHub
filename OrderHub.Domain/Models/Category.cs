@@ -1,5 +1,5 @@
 using OrderHub.Domain.ValueObjects;
-using OrderHub.Domain.Enums;
+using OrderHub.Domain.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +15,7 @@ public class Category : ModelBase
         string name,
         Category parentCategory = null,
         string description = null,
-        CategoryColor color = CategoryColor.Blue)
+        string color = HexColor.Default)
     {
         UpdateName(name);
         UpdateDescription(description);
@@ -27,7 +27,7 @@ public class Category : ModelBase
 
     public string Description { get; private set; }
 
-    public CategoryColor Color { get; private set; } = CategoryColor.Blue;
+    public string Color { get; private set; } = HexColor.Default;
 
     public Category ParentCategory { get; private set; }
 
@@ -56,12 +56,9 @@ public class Category : ModelBase
         Description = normalized;
     }
 
-    public void UpdateColor(CategoryColor color)
+    public void UpdateColor(string color)
     {
-        if (!Enum.IsDefined(color))
-            throw new ArgumentOutOfRangeException(nameof(color), "Category color is not supported.");
-
-        Color = color;
+        Color = HexColor.Normalize(color);
     }
     public void MoveTo(Category parentCategory)
     {

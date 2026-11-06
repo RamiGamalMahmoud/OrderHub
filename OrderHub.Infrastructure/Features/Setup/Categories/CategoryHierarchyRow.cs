@@ -1,5 +1,3 @@
-using OrderHub.Domain.Enums;
-
 namespace OrderHub.Infrastructure.Features.Setup.Categories;
 
 internal sealed record CategoryHierarchyRow(
@@ -8,4 +6,4 @@ internal sealed record CategoryHierarchyRow(
     int? ParentId,
     int DirectProductsCount,
     string Description,
-    CategoryColor Color);
+    string Color);

@@ -1,7 +1,5 @@
 
 
-using OrderHub.Domain.Enums;
-
 namespace OrderHub.Application.Features.Setup.Categories.Contracts;
 
 public record CategoryInfo(
@@ -11,4 +9,4 @@ public record CategoryInfo(
     bool HasSubCategories,
     int? ParentId = null,
     string Description = null,
-    CategoryColor Color = CategoryColor.Blue);
+    string Color = "#2563EB");

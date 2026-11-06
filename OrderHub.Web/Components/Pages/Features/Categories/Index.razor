@@ -26,8 +26,8 @@
                            Size="Size.Large"
                            Class="rounded-xl px-5 font-bold shadow-sm"
                            StartIcon="@Icons.Material.Filled.Add"
-                           Href="@CreateUrl"
-                           Disabled="_deleting">
+                           OnClick="OpenCreateDialogAsync"
+                           Disabled="_deleting || _dialogOpen">
                     @CreateButtonText
                 </MudButton>
             }
@@ -80,10 +80,11 @@
 
                 @if (_canWrite)
                 {
-                    <MudButton Href="@CreateUrl"
-                               Color="Color.Primary"
+                    <MudButton Color="Color.Primary"
                                StartIcon="@Icons.Material.Filled.Add"
-                               Class="mt-2">
+                               Class="mt-2"
+                               OnClick="OpenCreateDialogAsync"
+                               Disabled="_deleting || _dialogOpen">
                         @CreateButtonText
                     </MudButton>
                 }
@@ -98,7 +99,8 @@
                     <div @key="category.Id" class="min-w-0">
                         <CategoryCard Category="category"
                                       CanWrite="_canWrite"
-                                      Busy="_deleting"
+                                      Busy="_deleting || _dialogOpen"
+                                      OnEdit="OpenEditDialogAsync"
                                       OnDelete="ConfirmDeleteAsync" />
                     </div>
                 }
@@ -120,6 +122,7 @@
     private bool _loading = true;
     private bool _canWrite;
     private bool _deleting;
+    private bool _dialogOpen;
 
     private string? _error;
 
@@ -128,6 +131,7 @@
 
     private bool CanCreate =>
         _canWrite &&
+        !_dialogOpen &&
         !_loading &&
         _response?.ParentExists == true;
 
@@ -135,11 +139,6 @@
         ParentId.HasValue && _response?.Path.LastOrDefault() is { } current
             ? current.Name
             : "الأقسام";
-
-    private string CreateUrl =>
-        ParentId.HasValue
-            ? $"/categories/create?parentId={ParentId}"
-            : "/categories/create";
 
     private string CreateButtonText =>
         ParentId.HasValue
@@ -232,9 +231,78 @@
     }
 
 
+    private Task OpenCreateDialogAsync() => OpenEditorAsync(null, ParentId);
+
+
+    private Task OpenEditDialogAsync(CategoryIndexItem category) =>
+        OpenEditorAsync(category.Id, null);
+
+
+    private async Task OpenEditorAsync(int? categoryId, int? parentId)
+    {
+        if (_deleting || _dialogOpen || !_canWrite)
+        {
+            return;
+        }
+
+        _dialogOpen = true;
+
+        try
+        {
+            DialogParameters<CategoryEditorDialog> parameters = new()
+            {
+                { dialog => dialog.CategoryId, categoryId },
+                { dialog => dialog.ParentId, parentId }
+            };
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.Medium,
+                FullWidth = true,
+                CloseButton = false,
+                CloseOnEscapeKey = false,
+                BackdropClick = false
+            };
+
+            string title = categoryId.HasValue ? "تعديل القسم" : "إضافة قسم";
+
+            var dialog = await DialogService.ShowAsync<CategoryEditorDialog>(
+                title,
+                parameters,
+                options);
+
+            DialogResult? result = await dialog.Result;
+
+            if (result is { Canceled: false, Data: true })
+            {
+                await LoadAsync();
+            }
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to open category editor for {CategoryId}",
+                categoryId);
+
+            Snackbar.Add(
+                "تعذر فتح محرر القسم. يرجى المحاولة مرة أخرى.",
+                Severity.Error);
+        }
+        finally
+        {
+            _dialogOpen = false;
+        }
+    }
+
+
     private async Task ConfirmDeleteAsync(CategoryIndexItem category)
     {
-        if (_deleting)
+        if (_deleting || _dialogOpen)
         {
             return;
         }

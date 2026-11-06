@@ -53,8 +53,8 @@ internal sealed class UpdateCategoryCommandHandler(ICategoryRepository repositor
         if (description?.Length > 500)
             return Result.Failure("وصف القسم لا يمكن أن يتجاوز 500 حرف.");
 
-        if (!Enum.IsDefined(request.CategoryUpdateInput.Color))
-            return Result.Failure("لون القسم غير مدعوم.");
+        if (!HexColor.TryNormalize(request.CategoryUpdateInput.Color, out string color))
+            return Result.Failure("اختر لونًا صالحًا من محرر الألوان.");
 
         Category parent = null;
         if (request.CategoryUpdateInput.ParentId is int parentId)
@@ -74,7 +74,7 @@ internal sealed class UpdateCategoryCommandHandler(ICategoryRepository repositor
 
         category.UpdateName(name);
         category.UpdateDescription(description);
-        category.UpdateColor(request.CategoryUpdateInput.Color);
+        category.UpdateColor(color);
         category.MoveTo(parent);
 
         try

@@ -74,9 +74,9 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Property<string>("Color")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("varchar(20)")
-                        .HasDefaultValue("Blue")
+                        .HasMaxLength(7)
+                        .HasColumnType("varchar(7)")
+                        .HasDefaultValue("#2563EB")
                         .HasColumnName("color");
 
                     b.Property<DateTime>("CreatedAt")

@@ -9,4 +9,5 @@ public interface ICategoryReader
     Task<GetCategoriesResponse> GetCategoriesAsync(int? parentId, CancellationToken cancellationToken);
     Task<CategoryEdit> GetCategoryForEditAsync(int id, CancellationToken cancellationToken);
     Task<IEnumerable<CategoryInfo>> GetCategoriesInfoAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<string>> GetCategoryColorsAsync(CancellationToken cancellationToken);
 }

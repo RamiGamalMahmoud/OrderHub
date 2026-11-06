@@ -39,4 +39,15 @@ internal sealed class CategoryReader(AppDbContextFactory contextFactory) : ICate
 
     public async Task<IEnumerable<CategoryInfo>> GetCategoriesInfoAsync(CancellationToken cancellationToken) =>
         (await LoadHierarchyAsync(cancellationToken, includeProductCounts: false)).Options();
+
+    public async Task<IReadOnlyList<string>> GetCategoryColorsAsync(CancellationToken cancellationToken)
+    {
+        await using var context = contextFactory.CreateDbContext();
+
+        return await context.Categories.AsNoTracking()
+            .Select(category => category.Color)
+            .Distinct()
+            .OrderBy(color => color)
+            .ToListAsync(cancellationToken);
+    }
 }

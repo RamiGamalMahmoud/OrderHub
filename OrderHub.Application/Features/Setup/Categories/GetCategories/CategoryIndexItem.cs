@@ -1,5 +1,3 @@
-using OrderHub.Domain.Enums;
-
 namespace OrderHub.Application.Features.Setup.Categories;
 
 public sealed record CategoryIndexItem(
@@ -8,7 +6,7 @@ public sealed record CategoryIndexItem(
     int DirectChildrenCount,
     int TotalProductsCount,
     string Description = null,
-    CategoryColor Color = CategoryColor.Blue)
+    string Color = "#2563EB")
 {
     public bool HasChildren => DirectChildrenCount > 0;
 }

@@ -16,7 +16,7 @@
                     <MudStack Row Spacing="0">
                         <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                        Size="Size.Small"
-                                       Href="@($"/categories/{Category.Id}/edit")"
+                                       OnClick="EditAsync"
                                        Disabled="Busy"
                                        aria-label="تعديل القسم" />
                         <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
@@ -84,15 +84,10 @@
     [Parameter]
     public EventCallback<CategoryIndexItem> OnDelete { get; set; }
 
-    private string AccentHex => Category.Color switch
-    {
-        OrderHub.Domain.Enums.CategoryColor.Emerald => "#059669",
-        OrderHub.Domain.Enums.CategoryColor.Purple => "#7C3AED",
-        OrderHub.Domain.Enums.CategoryColor.Amber => "#D97706",
-        OrderHub.Domain.Enums.CategoryColor.Rose => "#E11D48",
-        OrderHub.Domain.Enums.CategoryColor.Slate => "#64748B",
-        _ => "#2563EB"
-    };
+    [Parameter]
+    public EventCallback<CategoryIndexItem> OnEdit { get; set; }
+
+    private string AccentHex => Category.Color;
 
     private string? SubCategoriesUrl =>
         Category.HasChildren ? $"/categories/{Category.Id}" : null;
@@ -101,4 +96,6 @@
         Category.HasChildren ? "الأقسام الفرعية" : "لا توجد أقسام فرعية";
 
     private Task DeleteAsync() => OnDelete.InvokeAsync(Category);
+
+    private Task EditAsync() => OnEdit.InvokeAsync(Category);
 }
