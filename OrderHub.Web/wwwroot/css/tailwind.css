@@ -714,6 +714,9 @@
 .w-20 {
   width: calc(var(--spacing) * 20);
 }
+.w-24 {
+  width: calc(var(--spacing) * 24);
+}
 .w-25 {
   width: calc(var(--spacing) * 25);
 }
@@ -737,6 +740,9 @@
 }
 .max-w-6xl {
   max-width: var(--container-6xl);
+}
+.max-w-\[36rem\] {
+  max-width: 36rem;
 }
 .max-w-\[40rem\] {
   max-width: 40rem;
@@ -884,6 +890,13 @@
     margin-block-end: calc(calc(var(--spacing) * 2) * calc(1 - var(--tw-space-y-reverse)));
   }
 }
+.space-y-2\.5 {
+  :where(& > :not(:last-child)) {
+    --tw-space-y-reverse: 0;
+    margin-block-start: calc(calc(var(--spacing) * 2.5) * var(--tw-space-y-reverse));
+    margin-block-end: calc(calc(var(--spacing) * 2.5) * calc(1 - var(--tw-space-y-reverse)));
+  }
+}
 .space-y-3 {
   :where(& > :not(:last-child)) {
     --tw-space-y-reverse: 0;
@@ -1013,6 +1026,10 @@
 .border-b {
   border-bottom-style: var(--tw-border-style);
   border-bottom-width: 1px;
+}
+.border-dashed {
+  --tw-border-style: dashed;
+  border-style: dashed;
 }
 .border-amber-100 {
   border-color: var(--color-amber-100);

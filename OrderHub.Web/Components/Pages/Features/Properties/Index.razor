@@ -13,169 +13,228 @@
 
 <PageTitle>خصائص المنتجات</PageTitle>
 
-<MudStack Spacing="3">
-    <MudStack Row
-              Wrap="Wrap.Wrap"
-              AlignItems="AlignItems.Center"
-              Justify="Justify.SpaceBetween">
-        <div>
-            <MudText Typo="Typo.h5">
-                خصائص المنتجات
-            </MudText>
-
-            <MudText Typo="Typo.body2"
-                     Color="Color.Secondary">
-                إدارة خصائص وخيارات المنتجات
-            </MudText>
-        </div>
-
-        @if (CanCreate)
-        {
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       StartIcon="@Icons.Material.Filled.Add"
-                       Disabled="IsBusy"
-                       OnClick="OpenCreateDialogAsync">
-                إضافة خاصية
-            </MudButton>
-        }
-    </MudStack>
+<div class="space-y-5">
+    <PageScaffold Title="خصائص المنتجات"
+                  Description="إدارة خصائص وخيارات المنتجات"
+                  Crumbs="_scaffoldCrumbs"
+                  Count="@_properties.Count">
+        <Actions>
+            @if (CanCreate)
+            {
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Large"
+                           Class="rounded-xl px-5 font-bold shadow-sm"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Disabled="IsBusy"
+                           OnClick="OpenCreateDialogAsync">
+                    إضافة خاصية
+                </MudButton>
+            }
+        </Actions>
+    </PageScaffold>
 
     @if (_loading)
     {
-        <MudProgressLinear Indeterminate="true"
-                           Color="Color.Primary" />
-
-        <MudText Typo="Typo.body2">
-            جاري تحميل خصائص المنتجات...
-        </MudText>
+        <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <MudProgressCircular Indeterminate="true"
+                                 Color="Color.Primary" />
+            <p class="mt-2 text-sm text-slate-500">جاري تحميل خصائص المنتجات...</p>
+        </div>
     }
     else if (_error is not null)
     {
-        <MudAlert Severity="Severity.Error"
-                  Dense="true">
-            @_error
-        </MudAlert>
+        <div class="rounded-2xl border border-red-100 bg-red-50 p-5">
+            <MudAlert Severity="Severity.Error"
+                      Dense="true">
+                @_error
+            </MudAlert>
 
-        <MudButton Variant="Variant.Outlined"
-                   OnClick="LoadAsync">
-            إعادة المحاولة
-        </MudButton>
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Primary"
+                       Class="mt-3"
+                       OnClick="LoadAsync">
+                إعادة المحاولة
+            </MudButton>
+        </div>
     }
     else if (_properties.Count == 0)
     {
-        <MudPaper Outlined="true"
-                  Class="pa-4">
-            <MudText Typo="Typo.body1">
-                لم تتم إضافة خصائص بعد.
-            </MudText>
-        </MudPaper>
+        <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+                <MudIcon Icon="@Icons.Material.Filled.Tune" aria-hidden="true" />
+            </span>
+            <p class="text-base font-bold text-slate-900">لم تتم إضافة خصائص بعد.</p>
+            <p class="mt-1 text-sm text-slate-500">أضف أول خاصية ليظهر في الجدول أعلاه.</p>
+        </div>
     }
     else
     {
-        <MudTable T="PropertyListItem"
-                  Items="_properties"
-                  Dense="true"
-                  Hover="true"
-                  Outlined="true"
-                  Elevation="0"
-                  Breakpoint="Breakpoint.Sm">
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+                <MudTextField T="string"
+                              @bind-Value="_searchTerm"
+                              Placeholder="ابحث عن خاصية..."
+                              aria-label="البحث عن خاصية"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Immediate="true"
+                              Clearable="true"
+                              Class="w-full max-w-xs" />
 
-            <HeaderContent>
-                <MudTh>
-                    اسم الخاصية
-                </MudTh>
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                               Variant="Variant.Text"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               Disabled="IsBusy"
+                               aria-label="تحديث القائمة"
+                               OnClick="LoadAsync"
+                               Class="rounded-lg" />
+            </div>
 
-                <MudTh>
-                    النوع
-                </MudTh>
+            <MudTable T="PropertyListItem"
+                      Items="FilteredProperties"
+                      Dense="true"
+                      Hover="true"
+                      Elevation="0"
+                      Square="true"
+                      Breakpoint="Breakpoint.Sm"
+                      @bind-CurrentPage="_currentPage"
+                      @bind-RowsPerPage="_rowsPerPage">
 
-                <MudTh>
-                    الخيارات
-                </MudTh>
-
-                @if (_canWrite)
-                {
-                    <MudTh>
-                        الإجراءات
+                <HeaderContent>
+                    <MudTh Class="text-xs font-bold text-slate-500">
+                        اسم الخاصية
                     </MudTh>
-                }
-            </HeaderContent>
 
-            <RowTemplate Context="property">
-                <MudTd DataLabel="اسم الخاصية"
-                       Style="overflow-wrap:anywhere">
-                    @property.Name
-                </MudTd>
+                    <MudTh Class="text-xs font-bold text-slate-500">
+                        النوع
+                    </MudTh>
 
-                <MudTd DataLabel="النوع">
-                    @PropertyEditorState.TypeLabel(property.Type)
-                </MudTd>
+                    <MudTh Class="text-xs font-bold text-slate-500">
+                        الخيارات
+                    </MudTh>
 
-                <MudTd DataLabel="الخيارات">
-                    @if (property.Type == PropertyType.List)
+                    @if (_canWrite)
                     {
-                        <span>@property.OptionsCount خيارات</span>
+                        <MudTh Class="w-24 text-xs font-bold text-slate-500">
+                            <span class="sr-only">الإجراءات</span>
+                        </MudTh>
                     }
-                    else
-                    {
-                        <span>—</span>
-                    }
-                </MudTd>
+                </HeaderContent>
 
-                @if (_canWrite)
-                {
-                    <MudTd DataLabel="الإجراءات">
-                        <MudStack Row
-                                  Spacing="0">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                           Size="Size.Small"
-                                           Disabled="IsBusy"
-                                           aria-label="تعديل الخاصية"
-                                           OnClick="@(() => OpenEditDialogAsync(property))" />
-
-                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
-                                           Color="Color.Error"
-                                           Size="Size.Small"
-                                           Disabled="IsBusy"
-                                           aria-label="حذف الخاصية"
-                                           OnClick="@(() => ConfirmDeleteAsync(property))" />
-                        </MudStack>
+                <RowTemplate Context="property">
+                    <MudTd DataLabel="اسم الخاصية"
+                           Class="text-sm font-bold text-slate-900"
+                           Style="overflow-wrap:anywhere">
+                        @property.Name
                     </MudTd>
-                }
-            </RowTemplate>
 
-            <NoRecordsContent>
-                <MudText Typo="Typo.body2">
-                    لا توجد خصائص.
-                </MudText>
-            </NoRecordsContent>
+                    <MudTd DataLabel="النوع">
+                        <span class="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
+                            @PropertyEditorState.TypeLabel(property.Type)
+                        </span>
+                    </MudTd>
 
-            <PagerContent>
-                @if (_properties.Count > 10)
-                {
-                    <MudTablePager PageSizeOptions="@(new[] { 10, 25, 50 })"
-                                   RowsPerPageString="خصائص لكل صفحة"
-                                   InfoFormat="{first_item}-{last_item} من {all_items}" />
-                }
-            </PagerContent>
-        </MudTable>
+                    <MudTd DataLabel="الخيارات"
+                           Class="text-sm text-slate-700">
+                        @if (property.Type == PropertyType.List)
+                        {
+                            <span class="font-bold text-slate-900">@Fmt(property.OptionsCount)</span>
+                            <span class="text-slate-500">خيارات</span>
+                        }
+                        else
+                        {
+                            <span class="text-slate-400">—</span>
+                        }
+                    </MudTd>
+
+                    @if (_canWrite)
+                    {
+                        <MudTd DataLabel="الإجراءات">
+                            <div class="flex items-center">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Size="Size.Small"
+                                               Disabled="IsBusy"
+                                               aria-label="تعديل الخاصية"
+                                               OnClick="@(() => OpenEditDialogAsync(property))" />
+
+                                <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                               Color="Color.Error"
+                                               Size="Size.Small"
+                                               Disabled="IsBusy"
+                                               aria-label="حذف الخاصية"
+                                               OnClick="@(() => ConfirmDeleteAsync(property))" />
+                            </div>
+                        </MudTd>
+                    }
+                </RowTemplate>
+
+                <NoRecordsContent>
+                    <div class="py-6 text-center text-sm text-slate-500">
+                        لا توجد خصائص تطابق البحث.
+                    </div>
+                </NoRecordsContent>
+
+                <PagerContent>
+                    <TableFooter TotalItems="@(FilteredProperties.Count())"
+                                 CurrentPage="@FooterCurrentPage"
+                                 CurrentPageChanged="OnFooterPageChanged"
+                                 RowsPerPage="@_rowsPerPage"
+                                 RowsPerPageChanged="OnFooterRowsPerPageChanged" />
+                </PagerContent>
+            </MudTable>
+        </section>
     }
-</MudStack>
+</div>
 
-@code {
+@code
+{
     private IReadOnlyList<PropertyListItem> _properties = [];
+    private string? _searchTerm;
     private string? _error;
     private bool _loading = true;
     private bool _canWrite;
     private bool _dialogOpen;
     private bool _deleting;
 
+    private static readonly PageScaffold.CrumbItem[] _scaffoldCrumbs =
+    [
+        new("خصائص المنتجات")
+    ];
+
+    private int _currentPage;
+    private int _rowsPerPage = 10;
+
+    /// <summary>مجدد PageScaffold (1-based) مقابل CurrentPage (0-based) في MudTable.</summary>
+    private int FooterCurrentPage => _currentPage + 1;
+
     private bool CanCreate =>
         _canWrite && !_loading && _error is null;
 
     private bool IsBusy =>
         _loading || _dialogOpen || _deleting;
+
+    private IEnumerable<PropertyListItem> FilteredProperties
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_searchTerm))
+            {
+                return _properties;
+            }
+
+            string searchTerm = _searchTerm.Trim();
+
+            return _properties.Where(property =>
+                property.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    private static string Fmt(int value) =>
+        value.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
@@ -184,6 +243,7 @@
         _loading = true;
         _canWrite = false;
         _error = null;
+        _currentPage = 0;
 
         try
         {
@@ -208,6 +268,19 @@
         {
             _loading = false;
         }
+    }
+
+    private Task OnFooterPageChanged(int page)
+    {
+        _currentPage = page - 1;
+        return Task.CompletedTask;
+    }
+
+    private Task OnFooterRowsPerPageChanged(int rowsPerPage)
+    {
+        _rowsPerPage = rowsPerPage;
+        _currentPage = 0;
+        return Task.CompletedTask;
     }
 
     private Task OpenCreateDialogAsync() => OpenEditorAsync(null);
@@ -328,4 +401,3 @@
         }
     }
 }
-
