@@ -2,6 +2,8 @@
 @implements IDisposable
 @attribute [PermissionAuthorize(PermissionFeature.Products, PermissionLevel.Read)]
 
+@using System.Globalization
+
 @inject IRequestExecutor RequestExecutor
 @inject OrderHub.Web.Services.PermissionAccess PermissionAccess
 @inject NavigationManager Navigation
@@ -11,113 +13,193 @@
 
 <PageTitle>المنتجات</PageTitle>
 
-<MudContainer>
-
-    <MudStack Spacing="3">
-        <MudStack Row
-                  Wrap="Wrap.Wrap"
-                  Justify="Justify.SpaceBetween"
-                  AlignItems="AlignItems.Center">
-            <div>
-                <MudText Typo="Typo.h5">المنتجات</MudText>
-                <MudText Typo="Typo.body2"
-                         Color="Color.Secondary">إدارة المنتجات والأقسام والموردين والخصائص</MudText>
-            </div>
+<div class="space-y-5">
+    <PageScaffold Title="المنتجات"
+                  Description="إدارة المنتجات والأقسام والموردين والخصائص"
+                  Crumbs="_scaffoldCrumbs"
+                  Count="@_totalItems">
+        <Actions>
             @if (_canWrite)
             {
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
+                           Size="Size.Large"
+                           Class="rounded-xl px-5 font-bold shadow-sm"
                            StartIcon="@Icons.Material.Filled.Add"
-                           OnClick="Create"
-                           Disabled="IsBusy">
+                           Disabled="IsBusy"
+                           OnClick="Create">
                     إضافة منتج
                 </MudButton>
             }
-        </MudStack>
-        <MudTextField T="string"
-                      Value="_search"
-                      ValueChanged="SearchChangedAsync"
-                      Placeholder="ابحث بالاسم أو الكود أو القسم أو المورد"
-                      aria-label="البحث عن منتج"
-                      Adornment="Adornment.Start"
-                      AdornmentIcon="@Icons.Material.Filled.Search"
-                      Variant="Variant.Outlined"
-                      Margin="Margin.Dense"
-                      Clearable="true"
-                      Immediate="true"
-                      Disabled="_deleting" />
+        </Actions>
+    </PageScaffold>
+
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        @* ============================================================
+           Toolbar: search + refresh
+           ============================================================ *@
+        <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 px-4 py-3">
+            <MudTextField T="string"
+                          Value="_search"
+                          ValueChanged="SearchChangedAsync"
+                          Placeholder="ابحث بالاسم أو الكود أو القسم أو المورد"
+                          aria-label="البحث عن منتج"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Margin="Margin.Dense"
+                          Immediate="true"
+                          Clearable="true"
+                          Disabled="_deleting"
+                          Class="w-full sm:max-w-xs" />
+
+            <div class="flex-1"></div>
+
+            <MudTooltip Text="تحديث القائمة">
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                               OnClick="RefreshAsync"
+                               aria-label="تحديث القائمة"
+                               Disabled="IsBusy"
+                               Class="rounded-lg text-slate-500" />
+            </MudTooltip>
+        </div>
+
         @if (_error is not null)
         {
-            <MudAlert Severity="Severity.Error">@_error</MudAlert>
-            <MudButton OnClick="LoadAsync" Disabled="_deleting">إعادة المحاولة</MudButton>
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-red-100 bg-red-50 px-4 py-3">
+                <p class="text-sm font-bold text-red-800">@_error</p>
+                <MudButton Variant="Variant.Outlined"
+                           Size="Size.Small"
+                           Class="rounded-lg font-bold"
+                           OnClick="RefreshAsync"
+                           Disabled="IsBusy">
+                    إعادة المحاولة
+                </MudButton>
+            </div>
         }
+
+        @* ============================================================
+           Products table
+           ============================================================ *@
         <MudTable T="ProductIndexItem"
                   @ref="_table"
                   ServerData="LoadServerDataAsync"
-                  @bind-RowsPerPage="_rowsPerPage"
+                  RowsPerPage="@_pageSize"
+                  Dense="true"
                   Hover="true"
-                  Outlined="true"
                   Elevation="0"
+                  Square="true"
                   Breakpoint="Breakpoint.Sm">
             <HeaderContent>
-                <MudTh>المنتج</MudTh>
-                <MudTh>الكود</MudTh>
-                <MudTh>القسم</MudTh>
-                <MudTh>السعر</MudTh>
-                <MudTh>الموردون</MudTh>
-                <MudTh>الخصائص</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">المنتج</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">الكود</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">القسم</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">السعر</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">الموردون</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">الخصائص</MudTh>
                 @if (_canWrite)
                 {
-                    <MudTh>الإجراءات</MudTh>
+                    <MudTh Class="w-24 text-xs font-bold text-slate-500">
+                        <span class="sr-only">الإجراءات</span>
+                    </MudTh>
                 }
             </HeaderContent>
+
             <RowTemplate Context="product">
-                <MudTd DataLabel="المنتج"
-                       Style="overflow-wrap:anywhere">@product.Name</MudTd>
-                <MudTd DataLabel="الكود">@product.Code</MudTd>
+                <MudTd DataLabel="المنتج" Style="overflow-wrap:anywhere">
+                    <div class="flex items-center gap-2.5">
+                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-black text-brand-600">
+                            @FirstLetter(product.Name)
+                        </span>
+                        <span class="text-sm font-bold text-slate-900">@product.Name</span>
+                    </div>
+                </MudTd>
+
+                <MudTd DataLabel="الكود">
+                    <span class="font-mono text-xs font-semibold text-slate-700" dir="ltr">@product.Code</span>
+                </MudTd>
+
                 <MudTd DataLabel="القسم"
+                       Class="text-sm text-slate-700"
                        Style="overflow-wrap:anywhere">@product.CategoryName</MudTd>
-                <MudTd DataLabel="السعر">@product.Price.ToString("0.00")</MudTd>
-                <MudTd DataLabel="الموردون">@product.SuppliersCount</MudTd>
-                <MudTd DataLabel="الخصائص">@product.PropertiesCount</MudTd>
+
+                <MudTd DataLabel="السعر">
+                    <span class="inline-flex items-baseline gap-1">
+                        <span class="tabular-nums text-sm font-bold text-slate-900" dir="ltr">@product.Price.ToString("N2", CultureInfo.InvariantCulture)</span>
+                        <span class="text-xs text-slate-500">ر.س</span>
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="الموردون">
+                    <span class="inline-flex min-w-8 items-center justify-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700">
+                        @product.SuppliersCount.ToString(CultureInfo.InvariantCulture)
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="الخصائص">
+                    <span class="inline-flex min-w-8 items-center justify-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700">
+                        @product.PropertiesCount.ToString(CultureInfo.InvariantCulture)
+                    </span>
+                </MudTd>
+
                 @if (_canWrite)
                 {
                     <MudTd DataLabel="الإجراءات">
-                        <MudStack Row
-                                  Spacing="0">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                           aria-label="تعديل المنتج"
-                                           Size="Size.Small"
-                                           OnClick="@(() => Edit(product.Id))"
-                                           Disabled="IsBusy" />
-                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
-                                           Color="Color.Error"
-                                           aria-label="حذف المنتج"
-                                           Size="Size.Small"
-                                           OnClick="@(() => DeleteAsync(product))"
-                                           Disabled="IsBusy" />
-                        </MudStack>
+                        <div class="flex items-center justify-end gap-1.5">
+                            <MudTooltip Text="تعديل المنتج">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Size="Size.Small"
+                                               Class="rounded-lg text-brand-600 shadow-none hover:bg-brand-50"
+                                               aria-label="تعديل المنتج"
+                                               OnClick="@(() => Edit(product.Id))"
+                                               Disabled="IsBusy" />
+                            </MudTooltip>
+
+                            <MudTooltip Text="حذف المنتج">
+                                <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                               Color="Color.Error"
+                                               Size="Size.Small"
+                                               Class="rounded-lg shadow-none"
+                                               aria-label="حذف المنتج"
+                                               OnClick="@(() => DeleteAsync(product))"
+                                               Disabled="IsBusy" />
+                            </MudTooltip>
+                        </div>
                     </MudTd>
                 }
             </RowTemplate>
-            <LoadingContent>
-                <MudText>جاري تحميل المنتجات...</MudText>
-            </LoadingContent>
+
             <NoRecordsContent>
-                <MudText>@EmptyText</MudText>
+                <div class="py-8 text-center">
+                    <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+                        <MudIcon Icon="@Icons.Material.Filled.Inventory2" aria-hidden="true" />
+                    </span>
+                    <p class="text-base font-bold text-slate-900">@EmptyTitle</p>
+                    <p class="mt-1 text-sm text-slate-500">@EmptyHint</p>
+                </div>
             </NoRecordsContent>
+
+            <LoadingContent>
+                <div class="flex flex-col items-center gap-2 py-8">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                    <p class="text-sm text-slate-500">جاري تحميل المنتجات...</p>
+                </div>
+            </LoadingContent>
+
             <PagerContent>
-                <MudTablePager PageSizeOptions="@(new[] { 10, 20, 50 })"
-                               RowsPerPageString="عدد العناصر"
-                               InfoFormat="@RangeFormat" />
+                <TableFooter TotalItems="@(_totalItems ?? 0)"
+                             CurrentPage="_pageIndex"
+                             CurrentPageChanged="OnFooterPageChanged"
+                             RowsPerPage="_pageSize"
+                             RowsPerPageChanged="OnFooterRowsPerPageChanged" />
             </PagerContent>
         </MudTable>
-    </MudStack>
-
-</MudContainer>
-
+    </section>
+</div>
 
 @code {
+    private static readonly PageScaffold.CrumbItem[] _scaffoldCrumbs = [new("المنتجات")];
+
     private MudTable<ProductIndexItem>? _table;
     private readonly CancellationTokenSource _lifetime = new();
     private CancellationTokenSource? _searchDelay;
@@ -126,7 +208,9 @@
     private string? _search;
     private string? _activeSearch;
     private string? _error;
-    private int _rowsPerPage = 20;
+    private int _pageIndex = 1;
+    private int _pageSize = 10;
+    private int? _totalItems;
     private long _requestVersion;
     private bool _loading = true;
     private bool _canWrite;
@@ -134,7 +218,8 @@
     private bool _disposed;
 
     private bool IsBusy => _loading || _deleting;
-    private string EmptyText
+
+    private string EmptyTitle
     {
         get
         {
@@ -144,16 +229,38 @@
             }
             if (_error is not null)
             {
-                return "تعذر عرض المنتجات.";
+                return "تعذر تحميل المنتجات.";
             }
-            return string.IsNullOrWhiteSpace(_activeSearch)
-                ? "لم تتم إضافة منتجات بعد."
-                : "لا توجد منتجات تطابق البحث.";
+            return HasSearch ? "لا توجد نتائج مطابقة" : "لم تتم إضافة منتجات بعد.";
         }
     }
-    private string RangeFormat => _latestData.TotalItems == 0 ? "عرض 0–0 من 0" : "عرض {first_item}–{last_item} من {all_items}";
 
-    private Task LoadAsync() => _disposed || _table is null ? Task.CompletedTask : _table.ReloadServerData();
+    private string EmptyHint => _loading
+        ? "يتم جلب بيانات المنتجات من الخادم."
+        : _error is not null
+            ? "حدّث القائمة أو حاول مرة أخرى."
+            : HasSearch
+                ? "جرّب تعديل عبارة البحث للحصول على نتائج."
+                : "أضف منتجًا جديدًا ليظهر في القائمة.";
+
+    private bool HasSearch => !string.IsNullOrWhiteSpace(_activeSearch);
+
+    private static string FirstLetter(string name)
+    {
+        string trimmed = name.Trim();
+
+        return trimmed.Length == 0 ? "—" : trimmed[..1];
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (IsBusy || _table is null)
+        {
+            return;
+        }
+
+        await _table.ReloadServerData();
+    }
 
     private async Task<TableData<ProductIndexItem>> LoadServerDataAsync(TableState state, CancellationToken tableCancellation)
     {
@@ -172,23 +279,28 @@
         {
             bool canWrite = await PermissionAccess.IsAllowedAsync(PermissionFeature.Products, PermissionLevel.Write);
             cancellation.Token.ThrowIfCancellationRequested();
+
             var result = await RequestExecutor.ExecuteAsync(
-                new GetProductIndexQuery(_activeSearch, state.Page + 1, state.PageSize), cancellation.Token);
+                new GetProductIndexQuery(_activeSearch, _pageIndex, _pageSize), cancellation.Token);
             cancellation.Token.ThrowIfCancellationRequested();
+
+            // A deletion can shrink the last page; re-query the clamped page once.
+            int lastPage = Math.Max(1, result.TotalPages);
+            if (_pageIndex > lastPage)
+            {
+                _pageIndex = lastPage;
+                result = await RequestExecutor.ExecuteAsync(
+                    new GetProductIndexQuery(_activeSearch, _pageIndex, _pageSize), cancellation.Token);
+                cancellation.Token.ThrowIfCancellationRequested();
+            }
+
             if (version != _requestVersion || _disposed)
             {
                 return _latestData;
             }
 
             _canWrite = canWrite;
-            int lastPage = Math.Max(0, result.TotalPages - 1);
-            if (state.Page > lastPage && _table is not null)
-            {
-                // Let the native pager reload a valid page after deletions/count changes.
-                _table.NavigateTo(lastPage);
-                return _latestData;
-            }
-
+            _totalItems = result.TotalCount;
             _latestData = new TableData<ProductIndexItem>
             {
                 Items = result.Items,
@@ -214,6 +326,7 @@
             {
                 Logger.LogError(exception, "Failed to load products");
                 _error = "تعذر تحميل المنتجات. يرجى المحاولة مرة أخرى.";
+                _totalItems = 0;
                 _latestData = new TableData<ProductIndexItem> { Items = [], TotalItems = 0 };
             }
             return _latestData;
@@ -249,16 +362,10 @@
             await Task.Delay(400, delay.Token);
             delay.Token.ThrowIfCancellationRequested();
             _activeSearch = text;
+            _pageIndex = 1;
             if (_table is not null && !_disposed)
             {
-                if (_table.CurrentPage != 0)
-                {
-                    _table.NavigateTo(0);
-                }
-                else
-                {
-                    await _table.ReloadServerData();
-                }
+                await _table.ReloadServerData();
             }
         }
         catch (OperationCanceledException) when (delay.IsCancellationRequested)
@@ -271,6 +378,25 @@
             {
                 _searchDelay = null;
             }
+        }
+    }
+
+    private async Task OnFooterPageChanged(int page)
+    {
+        _pageIndex = Math.Max(1, page);
+        if (_table is not null)
+        {
+            await _table.ReloadServerData();
+        }
+    }
+
+    private async Task OnFooterRowsPerPageChanged(int rowsPerPage)
+    {
+        _pageSize = rowsPerPage;
+        _pageIndex = 1;
+        if (_table is not null)
+        {
+            await _table.ReloadServerData();
         }
     }
 
@@ -326,7 +452,10 @@
                 return;
             }
             Snackbar.Add("تم حذف المنتج بنجاح.", Severity.Success);
-            await LoadAsync();
+            if (_table is not null)
+            {
+                await _table.ReloadServerData();
+            }
         }
         catch (AuthorizationDeniedException)
         {
