@@ -32,63 +32,6 @@
         </Actions>
     </PageScaffold>
 
-    @* placeholder: not wired to system data *@
-    <section aria-label="إحصائيات سريعة"
-             class="grid grid-cols-2 gap-4 xl:grid-cols-4">
-
-        <article class="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div class="flex items-center justify-between gap-4">
-                <div class="space-y-2">
-                    <p class="text-sm font-medium text-slate-500">إجمالي الموردين</p>
-                    <p class="text-3xl font-black tracking-tight text-slate-900">48</p>
-                    <p class="text-xs font-medium text-slate-500">موثقون في النظام</p>
-                </div>
-                <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
-                    <MudIcon Icon="@Icons.Material.Filled.Storefront" aria-hidden="true" />
-                </span>
-            </div>
-        </article>
-
-        <article class="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div class="flex items-center justify-between gap-4">
-                <div class="space-y-2">
-                    <p class="text-sm font-medium text-slate-500">موردون نشطون</p>
-                    <p class="text-3xl font-black tracking-tight text-slate-900">39</p>
-                    <p class="text-xs font-medium text-slate-500">ساعات عمل مفعّلة</p>
-                </div>
-                <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" aria-hidden="true" />
-                </span>
-            </div>
-        </article>
-
-        <article class="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div class="flex items-center justify-between gap-4">
-                <div class="space-y-2">
-                    <p class="text-sm font-medium text-slate-500">منتجات مرتبطة</p>
-                    <p class="text-3xl font-black tracking-tight text-slate-900">61</p>
-                    <p class="text-xs font-medium text-slate-500">توفيرات مسجلة</p>
-                </div>
-                <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
-                    <MudIcon Icon="@Icons.Material.Filled.Inventory2" aria-hidden="true" />
-                </span>
-            </div>
-        </article>
-
-        <article class="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div class="flex items-center justify-between gap-4">
-                <div class="space-y-2">
-                    <p class="text-sm font-medium text-slate-500">طلبات هذا الشهر</p>
-                    <p class="text-3xl font-black tracking-tight text-slate-900">14</p>
-                    <p class="text-xs font-medium text-slate-500">عقود توريد فعلية</p>
-                </div>
-                <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-                    <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" aria-hidden="true" />
-                </span>
-            </div>
-        </article>
-    </section>
-
     @if (_loading)
     {
         <MudProgressLinear Indeterminate="true"
