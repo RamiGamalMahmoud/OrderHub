@@ -2,47 +2,112 @@
 @page "/products/{Id:int}/edit"
 @attribute [PermissionAuthorize(PermissionFeature.Products, PermissionLevel.Write)]
 
+@using System.Globalization
+@using OrderHub.Web.Components.Pages.Features.Categories.Editor
+
 @inject IRequestExecutor RequestExecutor
+@inject PermissionAccess PermissionAccess
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 @inject ILogger<Editor> Logger
 
 <PageTitle>@Title</PageTitle>
 
-<MudContainer>
-    <MudStack Spacing="3">
-        <MudText Typo="Typo.h5">@Title</MudText>
-        <MudText Typo="Typo.body2"
-                 Color="Color.Secondary">
-            بيانات المنتج وقسمه وموردوه والخصائص المطلوبة عند الطلب
-        </MudText>
+<div class="space-y-4">
+    <section class="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs md:flex-row md:items-center md:justify-between"
+             data-purpose="page-intro-header">
+        <div>
+            <nav aria-label="مسار التنقل" class="mb-1 flex items-center gap-2 text-xs font-medium text-slate-600">
+                <a href="/" class="flex items-center gap-1 transition-colors hover:text-brand-600">
+                    <MudIcon Icon="@Icons.Material.Filled.Home" Class="text-[12px]" />
+                    الرئيسية
+                </a>
+                <span class="text-slate-400">/</span>
+                <a href="/products" class="transition-colors hover:text-brand-600">المنتجات</a>
+                <span class="text-slate-400">/</span>
+                <span class="font-bold text-slate-900">@Title</span>
+            </nav>
+            <div class="flex items-center gap-2.5">
+                <h1 class="text-xl font-extrabold tracking-tight text-slate-900">@Title</h1>
+                <span class="rounded-md px-2 py-0.5 text-[11px] font-bold @(Id.HasValue ? "border border-slate-200 bg-slate-100 text-slate-700" : "border border-brand-200 bg-brand-100 text-brand-700")">
+                    @(Id.HasValue ? "تعديل" : "جديد")
+                </span>
+                <p class="mr-0.5 hidden border-r border-slate-300 pr-2.5 text-xs font-medium text-slate-600 sm:inline-block">
+                    تحديد بيانات الصنف، الأقسام، الموردين المعتمدين والمواصفات التفصيلية
+                </p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 self-end md:self-center">
+            <button type="button"
+                    class="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-3.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled="@_saving"
+                    @onclick="Cancel">
+                <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Class="text-[12px]" />
+                العودة للمنتجات
+            </button>
+            <button type="button"
+                    class="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-1.5 text-xs font-bold text-white shadow-sm shadow-brand-500/25 transition-all hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled="@SaveDisabled"
+                    aria-busy="@_saving"
+                    @onclick="() => SaveAsync(addAnother: false)">
+                @if (_saving)
+                {
+                    <MudProgressCircular Indeterminate="true" Size="Size.Small" Color="Color.Inherit" />
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Save" Class="text-[12px]" />
+                }
+                @SaveText
+            </button>
+        </div>
+    </section>
 
-        @if (_loading)
-        {
-            <MudProgressLinear Indeterminate="true" />
-            <MudText>جاري تحميل بيانات المنتج...</MudText>
-        }
-        else if (_loadError is not null)
-        {
-            <MudAlert Severity="Severity.Error">@_loadError</MudAlert>
-            <MudButton OnClick="LoadAsync">إعادة المحاولة</MudButton>
-        }
-        else
-        {
-            <MudForm @ref="_form">
-                <MudStack Spacing="3">
-                    @if (_saveError is not null)
-                    {
-                        <MudAlert Severity="Severity.Error"
-                                  Dense="true">@_saveError</MudAlert>
-                    }
-                    <MudPaper Outlined="true"
-                              Class="pa-3">
-                        <MudText Typo="Typo.h6"
-                                 Class="mb-2">بيانات المنتج</MudText>
-                        <MudGrid Spacing="2">
-                            <MudItem xs="12"
-                                     md="6">
+    @if (_loading)
+    {
+        <div class="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-xs">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" aria-label="تحميل بيانات المنتج" />
+            <p class="mt-2 text-sm text-slate-500">جاري تحميل بيانات المنتج...</p>
+        </div>
+    }
+    else if (_loadError is not null)
+    {
+        <div class="rounded-xl border border-red-100 bg-red-50 p-5">
+            <p class="text-sm font-bold text-red-800">@_loadError</p>
+            <button type="button"
+                    class="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-bold text-red-700 transition-colors hover:bg-red-100"
+                    @onclick="LoadAsync">
+                <MudIcon Icon="@Icons.Material.Filled.Refresh" Class="text-[16px]" />
+                <span>إعادة المحاولة</span>
+            </button>
+        </div>
+    }
+    else
+    {
+        <MudForm @ref="_form" @key="_formVersion">
+            <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-12">
+                @* ================= RIGHT COLUMN (7 Cols) ================= *@
+                <div class="space-y-4 lg:col-span-7">
+                    @* ---------- Card 1: Basic information ---------- *@
+                    <article class="rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs sm:p-5" data-purpose="product-info-card">
+                        <header class="mb-3.5 flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div class="flex items-center gap-2.5">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-sm text-brand-600">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Inventory2" Class="text-[18px]" />
+                                </div>
+                                <div>
+                                    <h2 class="text-sm font-bold text-slate-800">بيانات المنتج الأساسية</h2>
+                                    <p class="text-[11px] text-slate-600">الاسم، الكود، وتسعير الوحدة قبل الضريبة</p>
+                                </div>
+                            </div>
+                            <span class="inline-flex items-center rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                                مطلوب
+                            </span>
+                        </header>
+
+                        <div class="grid grid-cols-1 gap-3.5 sm:grid-cols-12">
+                            <div class="sm:col-span-12">
                                 <MudTextField T="string"
                                               @bind-Value="_state.Name"
                                               Label="اسم المنتج"
@@ -53,245 +118,444 @@
                                               Variant="Variant.Outlined"
                                               Margin="Margin.Dense"
                                               Disabled="_saving" />
-                            </MudItem>
-                            <MudItem xs="12"
-                                     sm="6"
-                                     md="3">
+                            </div>
+
+                            <div class="-mb-2 flex items-center justify-end sm:col-span-12">
+                                <button type="button"
+                                        disabled
+                                        title="توليد الكود تلقائيًا سيتوفر لاحقًا"
+                                        class="flex cursor-not-allowed items-center gap-0.5 text-[10px] font-bold text-slate-400">
+                                    <MudIcon Icon="@Icons.Material.Filled.AutoFixHigh" Class="text-[10px]" />
+                                    توليد تلقائي
+                                </button>
+                            </div>
+
+                            <div class="sm:col-span-6">
                                 <MudTextField T="string"
                                               @bind-Value="_state.Code"
-                                              Label="كود المنتج"
+                                              Label="كود المنتج (SKU)"
                                               Required="true"
                                               RequiredError="كود المنتج مطلوب."
                                               MaxLength="10"
                                               Validation="@(new Func<string, string?>(ProductEditorState.ValidateCode))"
                                               Variant="Variant.Outlined"
                                               Margin="Margin.Dense"
+                                              Class="font-mono uppercase"
                                               Disabled="_saving" />
-                            </MudItem>
-                            <MudItem xs="12"
-                                     sm="6"
-                                     md="3">
+                                <p class="mt-1 flex items-center gap-1 text-[10px] text-slate-600">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Info" Class="text-[10px]" />
+                                    رمز قصير فريد يسهل البحث في المخزون
+                                </p>
+                            </div>
+
+                            <div class="sm:col-span-6">
                                 <MudNumericField T="decimal"
                                                  @bind-Value="_state.Price"
-                                                 Label="السعر"
+                                                 Label="سعر الوحدة قبل الضريبة"
                                                  Min="0"
+                                                 Adornment="Adornment.End"
+                                                 AdornmentText="ر.س"
                                                  Validation="@(new Func<decimal, string?>(ProductEditorState.ValidatePrice))"
                                                  Variant="Variant.Outlined"
                                                  Margin="Margin.Dense"
                                                  Disabled="_saving" />
-                            </MudItem>
-                        </MudGrid>
-                    </MudPaper>
+                            </div>
+                        </div>
+                    </article>
 
-                    <MudPaper Outlined="true"
-                              Class="pa-3">
-                        <MudText Typo="Typo.h6">القسم</MudText>
-                        <MudText Typo="Typo.body2"
-                                 Class="mb-2">
-                            القسم المختار: @SelectedCategoryText
-                        </MudText>
-                        @if (!_categoryPickerOpen)
-                        {
-                            <MudButton Variant="Variant.Outlined"
-                                       OnClick="OpenCategoryPickerAsync"
-                                       Disabled="BrowserDisabled">
-                                تغيير القسم
-                            </MudButton>
-                        }
-                        @if (_categoryPickerOpen)
-                        {
-                            <MudStack Row
-                                      Wrap="Wrap.Wrap"
-                                      AlignItems="AlignItems.Center"
-                                      Spacing="0">
-                                <MudButton OnClick="@(() => BrowseAsync(null))" Disabled="BrowserDisabled">كل الأقسام</MudButton>
+                    @* ---------- Card 2: Category ---------- *@
+                    <article class="rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs sm:p-5" data-purpose="category-card">
+                        <header class="mb-3 flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div class="flex items-center gap-2.5">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 text-sm text-indigo-600">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Category" Class="text-[18px]" />
+                                </div>
+                                <div>
+                                    <h2 class="text-sm font-bold text-slate-800">قسم وتصنيف المنتج</h2>
+                                    <p class="text-[11px] text-slate-600">اختر القسم الذي يندرج تحته الصنف</p>
+                                </div>
+                            </div>
+                            @if (_canManageCategories)
+                            {
+                                <button type="button"
+                                        class="flex items-center gap-1 text-xs font-bold text-brand-600 transition-colors hover:text-brand-700 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                                        disabled="@BrowserDisabled"
+                                        @onclick="OpenCreateCategoryAsync">
+                                    <MudIcon Icon="@Icons.Material.Filled.Add" Class="text-[10px]" />
+                                    قسم جديد
+                                </button>
+                            }
+                        </header>
+
+                        <div class="mb-3.5 flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                            <div class="flex min-w-0 items-center gap-2 text-xs">
+                                <span class="shrink-0 font-medium text-slate-600">القسم المختار:</span>
+                                <span class="inline-flex min-w-0 items-center gap-1 rounded-full border border-brand-200 bg-white px-2.5 py-0.5 text-[11px] font-bold text-brand-700 shadow-2xs">
+                                    <MudIcon Icon="@Icons.Material.Filled.FolderOpen" Class="shrink-0 text-[13px] text-brand-500" />
+                                    <span class="truncate">@SelectedCategoryText</span>
+                                </span>
+                            </div>
+                            @if (_state.CategoryId.HasValue)
+                            {
+                                <button type="button"
+                                        class="shrink-0 text-[11px] font-semibold text-rose-500 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                        disabled="@BrowserDisabled"
+                                        @onclick="ClearCategory">
+                                    إلغاء التحديد
+                                </button>
+                            }
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="flex flex-wrap items-center gap-1 text-[11px] font-semibold text-slate-500">
+                                <button type="button"
+                                        class="rounded-md px-2 py-1 transition-colors hover:bg-slate-100 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50 @(_browserId is null ? "text-slate-800" : "")"
+                                        disabled="@BrowserDisabled"
+                                        @onclick="@(() => BrowseAsync(null))">كل الأقسام</button>
                                 @foreach (var segment in _browse.Path)
                                 {
-                                    <MudText>/</MudText>
-                                    <MudButton OnClick="@(() => BrowseAsync(segment.Id))" Disabled="BrowserDisabled">
-                                        @segment.Name
-                                    </MudButton>
+                                    <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Class="text-[12px] text-slate-300" />
+                                    <button type="button"
+                                            class="rounded-md px-2 py-1 transition-colors hover:bg-slate-100 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                            disabled="@BrowserDisabled"
+                                            @onclick="@(() => BrowseAsync(segment.Id))">@segment.Name</button>
                                 }
-                            </MudStack>
+                            </div>
+
                             @if (_browseError is not null)
                             {
-                                <MudAlert Severity="Severity.Error"
-                                          Dense="true">@_browseError</MudAlert>
-                                <MudButton OnClick="RetryBrowseAsync"
-                                           Disabled="BrowserDisabled">إعادة المحاولة</MudButton>
+                                <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-100 bg-red-50 px-3 py-2">
+                                    <p class="text-xs font-bold text-red-800">@_browseError</p>
+                                    <button type="button"
+                                            class="rounded-md border border-red-200 bg-white px-2.5 py-1 text-xs font-bold text-red-700 transition-colors hover:bg-red-100 disabled:opacity-60"
+                                            disabled="@BrowserDisabled"
+                                            @onclick="RetryBrowseAsync">إعادة المحاولة</button>
+                                </div>
                             }
+
                             @if (_browsing)
                             {
-                                <MudProgressLinear Indeterminate="true" />
+                                <MudProgressLinear Indeterminate="true" Color="Color.Primary" aria-label="تحميل الأقسام" />
                             }
-                            @if (_browse.Path.Count > 0)
-                            {
-                                <MudButton Variant="Variant.Filled"
-                                           Color="Color.Primary"
-                                           OnClick="SelectCurrentCategory"
-                                           Disabled="BrowserDisabled"
-                                           Class="my-2">
-                                    اختيار هذا القسم
-                                </MudButton>
-                            }
-                            <MudGrid Spacing="2">
+
+                            <div class="flex items-center justify-between text-xs font-bold text-slate-600">
+                                <span>تصفح الأقسام المتاحة:</span>
+                                <span class="text-[11px] font-normal text-slate-600">اختر القسم بنقرة واحدة</span>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                 @foreach (var category in _browse.Categories)
                                 {
-                                    <MudItem xs="12"
-                                             sm="6"
-                                             md="4">
-                                        <MudButton FullWidth="true"
-                                                   Variant="Variant.Outlined"
-                                                   EndIcon="@Icons.Material.Filled.ChevronLeft"
-                                                   OnClick="@(() => BrowseAsync(category.Id))"
-                                                   Disabled="BrowserDisabled">
-                                            @category.Name
-                                        </MudButton>
-                                    </MudItem>
+                                    bool isSelected = _state.CategoryId == category.Id;
+
+                                    <div class="flex items-center gap-1 rounded-lg border transition-all @(isSelected ? "border-brand-500 bg-brand-50 ring-1 ring-brand-500" : "border-slate-200 hover:border-brand-500 hover:bg-brand-50/50")">
+                                        <button type="button"
+                                                class="flex min-w-0 flex-1 items-center gap-2 p-2 text-right disabled:cursor-not-allowed disabled:opacity-60"
+                                                disabled="@BrowserDisabled"
+                                                @onclick="@(() => SelectCategory(category))">
+                                            <span class="h-2 w-2 shrink-0 rounded-full" style="background-color: @category.Color;"></span>
+                                            <span class="truncate text-xs font-bold @(isSelected ? "text-brand-700" : "text-slate-800")">@category.Name</span>
+                                        </button>
+                                        @if (category.HasChildren)
+                                        {
+                                            <button type="button"
+                                                    class="p-1.5 text-slate-400 transition-transform hover:text-brand-600 hover:-translate-x-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    disabled="@BrowserDisabled"
+                                                    aria-label="عرض الأقسام الفرعية"
+                                                    @onclick="@(() => BrowseAsync(category.Id))">
+                                                <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Class="text-[12px]" />
+                                            </button>
+                                        }
+                                    </div>
                                 }
-                            </MudGrid>
+                            </div>
+
                             @if (_browse.Categories.Count == 0 && !_browsing)
                             {
-                                <MudText Typo="Typo.body2"
-                                         Class="mt-2">لا توجد أقسام فرعية هنا.</MudText>
+                                <p class="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-xs text-slate-500">
+                                    لا توجد أقسام فرعية هنا.
+                                </p>
                             }
-                        }
-                    </MudPaper>
+                        </div>
+                    </article>
+                </div>
 
-                    <MudPaper Outlined="true"
-                              Class="pa-3">
-                        <MudText Typo="Typo.h6">الموردون (@_state.SupplierIds.Count)</MudText>
-                        <MudTextField T="string"
-                                      @bind-Value="_supplierSearch"
-                                      Placeholder="ابحث عن مورد"
-                                      Adornment="Adornment.Start"
-                                      AdornmentIcon="@Icons.Material.Filled.Search"
-                                      Immediate="true"
-                                      Clearable="true"
-                                      Margin="Margin.Dense"
-                                      Disabled="_saving" />
-                        <MudGrid Spacing="1">
+                @* ================= LEFT COLUMN (5 Cols) ================= *@
+                <div class="space-y-4 lg:col-span-5">
+                    @* ---------- Card 3: Suppliers ---------- *@
+                    <article class="rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs sm:p-5" data-purpose="suppliers-card">
+                        <header class="mb-3 flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div class="flex items-center gap-2.5">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-lg border border-teal-100 bg-teal-50 text-sm text-teal-600">
+                                    <MudIcon Icon="@Icons.Material.Outlined.LocalShipping" Class="text-[18px]" />
+                                </div>
+                                <div>
+                                    <h2 class="text-sm font-bold text-slate-800">الموردون المعتمدون</h2>
+                                    <p class="text-[11px] text-slate-600">ربط الموردين المتاحين لتوريد هذا الصنف</p>
+                                </div>
+                            </div>
+                            <span class="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-0.5 text-[11px] font-bold text-teal-700">
+                                @_state.SupplierIds.Count.ToString(CultureInfo.InvariantCulture) مورد محدد
+                            </span>
+                        </header>
+
+                        <div class="mb-3">
+                            <MudTextField T="string"
+                                          @bind-Value="_supplierSearch"
+                                          Placeholder="ابحث عن مورد..."
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Search"
+                                          Immediate="true"
+                                          Clearable="true"
+                                          Margin="Margin.Dense"
+                                          Disabled="_saving" />
+                        </div>
+
+                        <div class="grid max-h-44 grid-cols-2 gap-2 overflow-y-auto pl-1">
                             @foreach (var supplier in VisibleSuppliers)
                             {
-                                <MudItem xs="12"
-                                         sm="6"
-                                         md="4">
-                                    <MudCheckBox T="bool"
-                                                 Value="@_state.SupplierIds.Contains(supplier.Id)"
-                                                 ValueChanged="@(value => SetSupplier(supplier.Id, value))"
-                                                 Label="@supplier.Name"
-                                                 Dense="true"
-                                                 Disabled="_saving" />
-                                </MudItem>
+                                bool selected = _state.SupplierIds.Contains(supplier.Id);
+
+                                <label class="flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-xs transition-colors @(selected ? "border-brand-500 bg-brand-50/60" : "border-slate-200/80 hover:bg-slate-50")">
+                                    <input type="checkbox"
+                                           class="h-3.5 w-3.5 shrink-0 accent-brand-600"
+                                           checked="@selected"
+                                           disabled="@_saving"
+                                           @onchange="@(e => SetSupplier(supplier.Id, e.Value is true))" />
+                                    <span class="truncate font-semibold text-slate-700">@supplier.Name</span>
+                                </label>
                             }
-                        </MudGrid>
+                        </div>
+
                         @if (_suppliers.Count == 0)
                         {
-                            <MudText Typo="Typo.body2">لا يوجد موردون متاحون.</MudText>
+                            <p class="mt-2 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-center text-xs text-slate-500">
+                                لا يوجد موردون متاحون.
+                            </p>
                         }
-                        <MudText Typo="Typo.caption">يمكن اختيار موردين من صفحات مختلفة؛ تبقى الاختيارات محفوظة.</MudText>
-                        <MudPagination Count="SupplierPages"
-                                       Selected="_supplierPage"
-                                       SelectedChanged="SetSupplierPage"
-                                       Disabled="_saving" />
-                    </MudPaper>
-
-                    <MudPaper Outlined="true"
-                              Class="pa-3">
-                        <MudText Typo="Typo.h6">خصائص المنتج</MudText>
-                        <MudText Typo="Typo.body2">اختر الخصائص وحدد الإلزام. تُدخل قيمها داخل الطلب.</MudText>
-                        @foreach (var assignment in AssignedProperties)
+                        else if (!VisibleSuppliers.Any())
                         {
-                            <MudPaper Outlined="true"
-                                      Class="pa-3 mt-2">
-                                <MudStack Row
-                                          Wrap="Wrap.Wrap"
-                                          AlignItems="AlignItems.Center"
-                                          Justify="Justify.SpaceBetween">
-                                    <MudText Typo="Typo.subtitle1">@assignment.Definition.Name — @TypeName(assignment.Definition.Type)</MudText>
-                                    <MudStack Row
-                                              AlignItems="AlignItems.Center">
-                                        <MudCheckBox T="bool"
-                                                     @bind-Value="assignment.Required"
-                                                     Label="مطلوبة"
-                                                     Dense="true"
-                                                     Disabled="_saving" />
-                                        <MudIconButton Icon="@Icons.Material.Filled.RemoveCircleOutline"
-                                                       aria-label="إزالة الخاصية"
-                                                       OnClick="@(() => RemoveProperty(assignment))"
-                                                       Disabled="_saving" />
-                                    </MudStack>
-                                </MudStack>
-                                @if (assignment.Definition.Type == PropertyType.List)
-                                {
-                                    <MudText Typo="Typo.caption">الخيارات المتاحة عند الطلب:</MudText>
-                                    <MudStack Row
-                                              Wrap="Wrap.Wrap"
-                                              Spacing="1">
-                                        @foreach (var option in assignment.Definition.Options)
-                                        {
-                                            <MudChip T="string"
-                                                     Size="Size.Small">@option.Value</MudChip>
-                                        }
-                                    </MudStack>
-                                }
-                                else if (assignment.Definition.Type == PropertyType.Boolean)
-                                {
-                                    <MudText Typo="Typo.caption">اختيار نعم أو لا عند الطلب.</MudText>
-                                }
-                                else
-                                {
-                                    <MudText Typo="Typo.caption">إدخال قيمة نصية عند الطلب.</MudText>
-                                }
-                            </MudPaper>
+                            <p class="mt-2 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-center text-xs text-slate-500">
+                                لا توجد نتائج مطابقة.
+                            </p>
                         }
-                        <MudTextField T="string"
-                                      @bind-Value="_propertySearch"
-                                      Placeholder="ابحث عن خاصية لإضافتها"
-                                      Adornment="Adornment.Start"
-                                      AdornmentIcon="@Icons.Material.Filled.Search"
-                                      Immediate="true"
-                                      Clearable="true"
-                                      Margin="Margin.Dense"
-                                      Disabled="_saving" />
-                        <MudStack Row
-                                  Wrap="Wrap.Wrap">
-                            @foreach (var property in AvailableProperties)
+
+                        <div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px] text-slate-600">
+                            <span class="flex items-center gap-1">
+                                <MudIcon Icon="@Icons.Material.Outlined.Lock" Class="text-[11px] text-slate-400" />
+                                تبقى التحديدات محفوظة
+                            </span>
+                            @if (SupplierPages > 1)
                             {
-                                <MudButton Variant="Variant.Outlined"
-                                           StartIcon="@Icons.Material.Filled.Add"
-                                           OnClick="@(() => AddProperty(property))"
-                                           Disabled="_saving">
-                                    @property.Definition.Name (@TypeName(property.Definition.Type))
-                                </MudButton>
+                                <div class="flex items-center gap-1">
+                                    <button type="button"
+                                            class="flex h-6 w-6 items-center justify-center rounded border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                            disabled="@(_supplierPage <= 1 || _saving)"
+                                            aria-label="الصفحة السابقة"
+                                            @onclick="() => SetSupplierPage(_supplierPage - 1)">
+                                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Class="text-[12px]" />
+                                    </button>
+                                    @foreach (var pageNumber in PageWindow(_supplierPage, SupplierPages))
+                                    {
+                                        <button type="button"
+                                                class="flex h-6 w-6 items-center justify-center rounded text-[10px] font-bold disabled:cursor-not-allowed disabled:opacity-60 @(pageNumber == _supplierPage ? "border border-brand-200 bg-brand-50 text-brand-700" : "border border-slate-200 text-slate-600 hover:bg-slate-100")"
+                                                disabled="@_saving"
+                                                @onclick="() => SetSupplierPage(pageNumber)">@pageNumber.ToString(CultureInfo.InvariantCulture)</button>
+                                    }
+                                    <button type="button"
+                                            class="flex h-6 w-6 items-center justify-center rounded border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                            disabled="@(_supplierPage >= SupplierPages || _saving)"
+                                            aria-label="الصفحة التالية"
+                                            @onclick="() => SetSupplierPage(_supplierPage + 1)">
+                                        <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Class="text-[12px]" />
+                                    </button>
+                                </div>
                             }
-                        </MudStack>
-                        @if (_state.Properties.Count == 0)
-                        {
-                            <MudText Typo="Typo.body2">لا توجد خصائص متاحة.</MudText>
-                        }
-                        <MudPagination Count="PropertyPages"
-                                       Selected="_propertyPage"
-                                       SelectedChanged="SetPropertyPage"
-                                       Disabled="_saving" />
-                    </MudPaper>
-                </MudStack>
-            </MudForm>
-        }
-        <MudStack Row
-                  Spacing="2">
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       OnClick="SaveAsync"
-                       Disabled="SaveDisabled">
-                @SaveText
-            </MudButton>
-            <MudButton OnClick="Cancel"
-                       Disabled="_saving">العودة إلى المنتجات</MudButton>
-        </MudStack>
-    </MudStack>
-</MudContainer>
+                        </div>
+                    </article>
 
+                    @* ---------- Card 4: Attributes ---------- *@
+                    <article class="rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs sm:p-5" data-purpose="attributes-card">
+                        <header class="mb-3 flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div class="flex items-center gap-2.5">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-lg border border-purple-100 bg-purple-50 text-sm text-purple-700">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Tune" Class="text-[18px]" />
+                                </div>
+                                <div>
+                                    <h2 class="text-sm font-bold text-slate-800">خصائص ومواصفات المنتج</h2>
+                                    <p class="text-[11px] text-slate-600">تحديد الخيارات والمحددات المطلوبة عند الطلب</p>
+                                </div>
+                            </div>
+                            <span class="rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-[11px] font-bold text-purple-700">
+                                @AssignedProperties.Count().ToString(CultureInfo.InvariantCulture) خاصية
+                            </span>
+                        </header>
+
+                        <div class="mb-3">
+                            <MudTextField T="string"
+                                          @bind-Value="_propertySearch"
+                                          Placeholder="ابحث أو أضف خاصية جديدة..."
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Search"
+                                          Immediate="true"
+                                          Clearable="true"
+                                          Margin="Margin.Dense"
+                                          Disabled="_saving" />
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <span class="block text-[11px] font-semibold text-slate-600">خصائص شائعة مقترحة:</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                @foreach (var property in AvailableProperties)
+                                {
+                                    <button type="button"
+                                            class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700 transition-colors hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                            disabled="@_saving"
+                                            @onclick="@(() => AddProperty(property))">
+                                        <MudIcon Icon="@Icons.Material.Filled.Add" Class="text-[9px]" />
+                                        @property.Definition.Name (@TypeName(property.Definition.Type))
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                        @if (AssignedProperties.Any())
+                        {
+                            <div class="mt-3 space-y-2">
+                                @foreach (var assignment in AssignedProperties)
+                                {
+                                    <div class="flex items-start justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50/60 p-2.5">
+                                        <div class="min-w-0">
+                                            <span class="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                                                <span class="truncate">@assignment.Definition.Name</span>
+                                                <span class="font-medium text-slate-500">(@TypeName(assignment.Definition.Type))</span>
+                                            </span>
+                                            @if (assignment.Definition.Type == PropertyType.List)
+                                            {
+                                                <div class="mt-1 flex flex-wrap gap-1">
+                                                    @foreach (var option in assignment.Definition.Options)
+                                                    {
+                                                        <span class="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] text-slate-600">@option.Value</span>
+                                                    }
+                                                </div>
+                                            }
+                                            else if (assignment.Definition.Type == PropertyType.Boolean)
+                                            {
+                                                <p class="mt-1 text-[10px] text-slate-500">اختيار نعم أو لا عند الطلب.</p>
+                                            }
+                                            else
+                                            {
+                                                <p class="mt-1 text-[10px] text-slate-500">إدخال قيمة نصية عند الطلب.</p>
+                                            }
+                                        </div>
+                                        <div class="flex shrink-0 items-center gap-1.5">
+                                            <label class="flex cursor-pointer items-center gap-1 text-[11px] font-semibold text-slate-600">
+                                                <input type="checkbox"
+                                                       class="h-3.5 w-3.5 accent-brand-600"
+                                                       checked="@assignment.Required"
+                                                       disabled="@_saving"
+                                                       @onchange="@(e => assignment.Required = e.Value is true)" />
+                                                مطلوبة
+                                            </label>
+                                            <button type="button"
+                                                    class="rounded p-1 text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    disabled="@_saving"
+                                                    aria-label="إزالة الخاصية"
+                                                    @onclick="@(() => RemoveProperty(assignment))">
+                                                <MudIcon Icon="@Icons.Material.Filled.RemoveCircleOutline" Class="text-[16px]" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mt-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-2.5 text-center">
+                                <p class="text-xs font-medium text-slate-600">لم يتم إضافة أي خصائص لهذا المنتج حتى الآن.</p>
+                            </div>
+                        }
+
+                        @if (PropertyPages > 1)
+                        {
+                            <div class="mt-3 flex justify-end">
+                                <div class="flex items-center gap-1">
+                                    <button type="button"
+                                            class="flex h-6 w-6 items-center justify-center rounded border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                            disabled="@(_propertyPage <= 1 || _saving)"
+                                            aria-label="الصفحة السابقة"
+                                            @onclick="() => SetPropertyPage(_propertyPage - 1)">
+                                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Class="text-[12px]" />
+                                    </button>
+                                    @foreach (var pageNumber in PageWindow(_propertyPage, PropertyPages))
+                                    {
+                                        <button type="button"
+                                                class="flex h-6 w-6 items-center justify-center rounded text-[10px] font-bold disabled:cursor-not-allowed disabled:opacity-60 @(pageNumber == _propertyPage ? "border border-brand-200 bg-brand-50 text-brand-700" : "border border-slate-200 text-slate-600 hover:bg-slate-100")"
+                                                disabled="@_saving"
+                                                @onclick="() => SetPropertyPage(pageNumber)">@pageNumber.ToString(CultureInfo.InvariantCulture)</button>
+                                    }
+                                    <button type="button"
+                                            class="flex h-6 w-6 items-center justify-center rounded border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                            disabled="@(_propertyPage >= PropertyPages || _saving)"
+                                            aria-label="الصفحة التالية"
+                                            @onclick="() => SetPropertyPage(_propertyPage + 1)">
+                                        <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Class="text-[12px]" />
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </article>
+                </div>
+            </div>
+
+            @* ---------- Form actions bar ---------- *@
+            <section class="mt-4 flex flex-col items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm sm:flex-row" data-purpose="form-actions-bar">
+                <div class="w-full text-xs text-slate-600 sm:w-auto">
+                    @if (_saveError is not null)
+                    {
+                        <p class="flex items-center gap-1.5 font-bold text-red-700" role="alert">
+                            <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Class="text-[14px]" />
+                            @_saveError
+                        </p>
+                    }
+                </div>
+                <div class="flex w-full items-center justify-end gap-2.5 sm:w-auto">
+                    <button type="button"
+                            class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                            disabled="@_saving"
+                            @onclick="Cancel">
+                        إلغاء والتراجع
+                    </button>
+                    @if (!Id.HasValue)
+                    {
+                        <button type="button"
+                                class="flex w-full items-center justify-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-xs font-bold text-brand-700 transition-colors hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                                disabled="@SaveDisabled"
+                                @onclick="() => SaveAsync(addAnother: true)">
+                            <MudIcon Icon="@Icons.Material.Filled.Layers" Class="text-[12px]" />
+                            حفظ وإضافة آخر
+                        </button>
+                    }
+                    <button type="button"
+                            class="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-6 py-2 text-xs font-bold text-white shadow-md shadow-brand-500/20 transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                            disabled="@SaveDisabled"
+                            aria-busy="@_saving"
+                            @onclick="() => SaveAsync(addAnother: false)">
+                        @if (_saving)
+                        {
+                            <MudProgressCircular Indeterminate="true" Size="Size.Small" Color="Color.Inherit" />
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Save" Class="text-[12px]" />
+                        }
+                        @SaveText
+                    </button>
+                </div>
+            </section>
+        </MudForm>
+    }
+</div>
 
 @code {
     [Parameter]
@@ -310,14 +574,16 @@
     private int? _requestedBrowserId;
     private int _supplierPage = 1;
     private int _propertyPage = 1;
+    private int _formVersion;
     private bool _loading = true;
     private bool _saving;
     private bool _browsing;
-    private bool _categoryPickerOpen = true;
+    private bool _canManageCategories;
+    private bool _categoryDialogOpen;
 
-    private string Title => Id.HasValue ? "تعديل المنتج" : "إضافة منتج";
+    private string Title => Id.HasValue ? "تعديل المنتج" : "إضافة منتج جديد";
     private string SaveText => _saving ? "جاري الحفظ..." : "حفظ المنتج";
-    private string SelectedCategoryText => string.IsNullOrEmpty(_state.CategoryPath) ? "لم يتم اختيار قسم بعد" : _state.CategoryPath;
+    private string SelectedCategoryText => string.IsNullOrWhiteSpace(_state.CategoryPath) ? "لم يتم اختيار قسم بعد" : _state.CategoryPath;
     private bool BrowserDisabled => _loading || _saving || _browsing;
     private bool SaveDisabled => BrowserDisabled || _loadError is not null;
 
@@ -342,20 +608,29 @@
     }
 
     private IEnumerable<ProductEditorSupplier> MatchingSuppliers => _suppliers.Where(item => Matches(item.Name, _supplierTerm));
-    private IEnumerable<ProductEditorSupplier> VisibleSuppliers => MatchingSuppliers.Skip((_supplierPage - 1) * 12).Take(12);
-    private int SupplierPages => Math.Max(1, (MatchingSuppliers.Count() + 11) / 12);
+    private IEnumerable<ProductEditorSupplier> VisibleSuppliers => MatchingSuppliers.Skip((_supplierPage - 1) * 10).Take(10);
+    private int SupplierPages => Math.Max(1, (MatchingSuppliers.Count() + 9) / 10);
     private IEnumerable<ProductPropertyEditorState> AssignedProperties => _state.Properties.Where(item => item.Assigned);
     private IEnumerable<ProductPropertyEditorState> MatchingProperties => _state.Properties.Where(item => !item.Assigned && Matches(item.Definition.Name, _propertyTerm));
-    private IEnumerable<ProductPropertyEditorState> AvailableProperties => MatchingProperties.Skip((_propertyPage - 1) * 12).Take(12);
-    private int PropertyPages => Math.Max(1, (MatchingProperties.Count() + 11) / 12);
+    private IEnumerable<ProductPropertyEditorState> AvailableProperties => MatchingProperties.Skip((_propertyPage - 1) * 9).Take(9);
+    private int PropertyPages => Math.Max(1, (MatchingProperties.Count() + 8) / 9);
 
     private static bool Matches(string name, string? term) => string.IsNullOrWhiteSpace(term) || name.Contains(term.Trim(), StringComparison.OrdinalIgnoreCase);
+
     private static string TypeName(PropertyType type) => type switch
     {
         PropertyType.Boolean => "نعم / لا",
         PropertyType.List => "قائمة",
         _ => "نص"
     };
+
+    private static IEnumerable<int> PageWindow(int currentPage, int totalPages)
+    {
+        const int windowSize = 5;
+        int start = Math.Max(1, Math.Min(currentPage - 2, totalPages - windowSize + 1));
+        int end = Math.Min(totalPages, start + windowSize - 1);
+        return Enumerable.Range(start, Math.Max(0, end - start + 1));
+    }
 
     protected override Task OnParametersSetAsync() => LoadAsync();
 
@@ -365,7 +640,6 @@
         _loadError = null;
         _saveError = null;
         _browseError = null;
-        _categoryPickerOpen = !Id.HasValue;
         _supplierSearch = null;
         _propertySearch = null;
         try
@@ -376,6 +650,11 @@
                 _loadError = "المنتج غير موجود أو لم يعد متاحًا.";
                 return;
             }
+
+            _canManageCategories = await PermissionAccess.IsAllowedAsync(
+                PermissionFeature.Categories,
+                PermissionLevel.Write);
+
             _state = ProductEditorState.FromRead(data);
             _suppliers = data.Suppliers;
             _browserId = _state.CategoryId;
@@ -402,16 +681,6 @@
         }
     }
 
-    private async Task OpenCategoryPickerAsync()
-    {
-        if (BrowserDisabled)
-        {
-            return;
-        }
-        _categoryPickerOpen = true;
-        await BrowseAsync(_state.CategoryId);
-    }
-
     private Task RetryBrowseAsync() => BrowseAsync(_requestedBrowserId);
 
     private async Task BrowseAsync(int? id)
@@ -420,9 +689,11 @@
         {
             return;
         }
+
         _browsing = true;
         _browseError = null;
         _requestedBrowserId = id;
+
         try
         {
             var response = await RequestExecutor.ExecuteAsync(new GetProductEditorCategoriesQuery(id));
@@ -431,6 +702,7 @@
                 _browseError = "القسم لم يعد موجودًا. يمكنك العودة إلى كل الأقسام.";
                 return;
             }
+
             _browserId = id;
             _browse = response;
         }
@@ -449,15 +721,76 @@
         }
     }
 
-    private void SelectCurrentCategory()
+    private void SelectCategory(CategoryIndexItem category)
     {
-        if (BrowserDisabled || !_categoryPickerOpen || _browserId is null || _browse.Path.Count == 0)
+        if (BrowserDisabled)
         {
             return;
         }
-        _state.CategoryId = _browserId;
-        _state.CategoryPath = string.Join(" / ", _browse.Path.Select(segment => segment.Name));
-        _categoryPickerOpen = false;
+
+        _state.CategoryId = category.Id;
+        _state.CategoryPath = string.Join(" / ", _browse.Path.Select(segment => segment.Name).Append(category.Name));
+    }
+
+    private void ClearCategory()
+    {
+        if (BrowserDisabled)
+        {
+            return;
+        }
+
+        _state.CategoryId = null;
+        _state.CategoryPath = "";
+    }
+
+    private async Task OpenCreateCategoryAsync()
+    {
+        if (!_canManageCategories || _categoryDialogOpen || BrowserDisabled)
+        {
+            return;
+        }
+
+        _categoryDialogOpen = true;
+
+        try
+        {
+            DialogParameters<CategoryEditorDialog> parameters = new()
+            {
+                { dialog => dialog.CategoryId, null },
+                { dialog => dialog.ParentId, _browserId }
+            };
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.Medium,
+                FullWidth = true,
+                CloseButton = false,
+                CloseOnEscapeKey = false,
+                BackdropClick = false
+            };
+
+            var dialog = await DialogService.ShowAsync<CategoryEditorDialog>("إضافة قسم", parameters, options);
+            DialogResult? result = await dialog.Result;
+
+            if (result is { Canceled: false, Data: true })
+            {
+                await BrowseAsync(_browserId);
+                Snackbar.Add("تم إنشاء القسم.", Severity.Success);
+            }
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to open category editor from product editor");
+            Snackbar.Add("تعذر فتح محرر القسم. يرجى المحاولة مرة أخرى.", Severity.Error);
+        }
+        finally
+        {
+            _categoryDialogOpen = false;
+        }
     }
 
     private void SetSupplier(int id, bool selected)
@@ -466,6 +799,7 @@
         {
             return;
         }
+
         if (selected)
         {
             _state.SupplierIds.Add(id);
@@ -476,14 +810,16 @@
         }
     }
 
-    private void SetSupplierPage(int page) => _supplierPage = page;
-    private void SetPropertyPage(int page) => _propertyPage = page;
+    private void SetSupplierPage(int page) => _supplierPage = Math.Clamp(page, 1, SupplierPages);
+    private void SetPropertyPage(int page) => _propertyPage = Math.Clamp(page, 1, PropertyPages);
+
     private void AddProperty(ProductPropertyEditorState property)
     {
         if (_saving)
         {
             return;
         }
+
         property.Assigned = true;
         _propertyPage = Math.Min(_propertyPage, PropertyPages);
     }
@@ -494,7 +830,9 @@
         {
             return;
         }
+
         property.Assigned = false;
+        property.Required = false;
     }
 
     private void Cancel()
@@ -503,17 +841,20 @@
         {
             return;
         }
+
         Navigation.NavigateTo("/products");
     }
 
-    private async Task SaveAsync()
+    private async Task SaveAsync(bool addAnother)
     {
         if (SaveDisabled || _form is null)
         {
             return;
         }
+
         _saving = true;
         _saveError = null;
+
         try
         {
             await _form.ValidateAsync();
@@ -522,6 +863,7 @@
             {
                 return;
             }
+
             Result<int> result;
             if (Id is int id)
             {
@@ -531,13 +873,22 @@
             {
                 result = await RequestExecutor.ExecuteAsync(_state.CreateCommand());
             }
+
             if (!result.IsSuccess)
             {
                 _saveError = result.ErrorMessage;
                 return;
             }
-            Snackbar.Add("تم حفظ المنتج بنجاح.", Severity.Success);
-            Navigation.NavigateTo("/products");
+
+            if (!addAnother || Id.HasValue)
+            {
+                Snackbar.Add("تم حفظ المنتج بنجاح.", Severity.Success);
+                Navigation.NavigateTo("/products");
+                return;
+            }
+
+            ResetForAnother();
+            Snackbar.Add("تم حفظ المنتج. يمكنك إضافة منتج آخر.", Severity.Success);
         }
         catch (AuthorizationDeniedException)
         {
@@ -552,5 +903,26 @@
         {
             _saving = false;
         }
+    }
+
+    private void ResetForAnother()
+    {
+        _state.Name = "";
+        _state.Code = "";
+        _state.Price = 0;
+        _state.SupplierIds.Clear();
+
+        foreach (var property in _state.Properties)
+        {
+            property.Assigned = false;
+            property.Required = false;
+        }
+
+        _supplierTerm = null;
+        _propertyTerm = null;
+        _supplierPage = 1;
+        _propertyPage = 1;
+        _saveError = null;
+        _formVersion++;
     }
 }
