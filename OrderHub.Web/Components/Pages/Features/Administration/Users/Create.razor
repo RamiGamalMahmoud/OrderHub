@@ -1,7 +1,8 @@
-@attribute [PermissionAuthorize(PermissionFeature.Users, PermissionLevel.Write)]
 @page "/admin/users/create"
+@attribute [PermissionAuthorize(PermissionFeature.Users, PermissionLevel.Write)]
 
 @using Microsoft.AspNetCore.Authorization
+@using System.Globalization
 @using MudBlazor
 @using OrderHub.Application.Features.Administration.Roles.GetRoles
 @using OrderHub.Application.Features.Administration.Users.Create
@@ -16,58 +17,18 @@
 
 <PageTitle>إضافة مستخدم</PageTitle>
 
-<MudStack Spacing="3">
-
-    @* ============================================================
-       Header
-       ============================================================ *@
-
-    <MudStack Row
-              AlignItems="AlignItems.Center"
-              Spacing="2">
-
-        <MudIconButton Icon="@Icons.Material.Filled.ArrowForward"
-                       Color="Color.Default"
-                       Disabled="_saving"
-                       OnClick="GoBack" />
-
-        <div>
-            <MudText Typo="Typo.h5">
-                إضافة مستخدم
-            </MudText>
-
-            <MudText Typo="Typo.body2"
-                     Color="Color.Secondary">
-                إنشاء حساب مستخدم جديد وتحديد الدور وحالة الحساب
-            </MudText>
-        </div>
-
-    </MudStack>
-
-
-    @* ============================================================
-       Loading
-       ============================================================ *@
+<div class="space-y-5">
+    <PageScaffold Title="إضافة مستخدم"
+                  Description="إنشاء حساب مستخدم جديد وتحديد الدور وحالة الحساب"
+                  Crumbs="_scaffoldCrumbs" />
 
     @if (_loading)
     {
-        <MudPaper Outlined="true"
-                  Class="pa-8">
-
-            <MudStack AlignItems="AlignItems.Center"
-                      Spacing="2">
-
-                <MudProgressCircular Indeterminate="true"
-                                     Color="Color.Primary" />
-
-                <MudText Typo="Typo.body2"
-                         Color="Color.Secondary">
-                    جاري تحميل البيانات...
-                </MudText>
-
-            </MudStack>
-
-        </MudPaper>
+        <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <MudProgressCircular Indeterminate="true"
+                                 Color="Color.Primary" />
+            <p class="mt-2 text-sm text-slate-500">جاري تحميل البيانات...</p>
+        </div>
     }
     else
     {
@@ -75,225 +36,185 @@
                  Model="_model"
                  ValidationDelay="0">
 
-            <MudStack Spacing="3">
+            <div class="space-y-5">
 
                 @* ==================================================
                    Account information
                    ================================================== *@
 
-                <MudPaper Outlined="true"
-                          Class="pa-4">
-
-                    <MudStack Spacing="3">
-
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="mb-4 flex items-center gap-2.5">
+                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <MudIcon Icon="@Icons.Material.Filled.PersonAddAlt1" Size="Size.Small" />
+                        </span>
                         <div>
-                            <MudText Typo="Typo.h6">
-                                بيانات المستخدم
-                            </MudText>
-
-                            <MudText Typo="Typo.body2"
-                                     Color="Color.Secondary">
-                                البيانات الأساسية المستخدمة لتسجيل الدخول والتعريف بالمستخدم
-                            </MudText>
+                            <h3 class="text-sm font-bold text-slate-900">بيانات المستخدم</h3>
+                            <p class="mt-0.5 text-xs text-slate-500">البيانات الأساسية المستخدمة لتسجيل الدخول والتعريف بالمستخدم</p>
                         </div>
+                    </div>
 
-                        <MudDivider />
-
-                        <MudGrid Spacing="3">
-
-                            <MudItem xs="12"
-                                     md="6">
-
-                                <MudTextField T="string"
-                                              @bind-Value="_model.UserName"
-                                              Label="اسم المستخدم"
-                                              Placeholder="أدخل اسم المستخدم"
-                                              Variant="Variant.Outlined"
-                                              Margin="Margin.Dense"
-                                              Required="true"
-                                              RequiredError="اسم المستخدم مطلوب."
-                                              MaxLength="100"
-                                              Counter="100"
-                                              Immediate="true"
-                                              Disabled="_saving"
-                                              Adornment="Adornment.Start"
-                                              AdornmentIcon="@Icons.Material.Filled.AccountCircle" />
-
-                            </MudItem>
-
-                            <MudItem xs="12"
-                                     md="6">
-
-                                <MudTextField T="string"
-                                              @bind-Value="_model.DisplayName"
-                                              Label="الاسم"
-                                              Placeholder="أدخل اسم المستخدم للعرض"
-                                              Variant="Variant.Outlined"
-                                              Margin="Margin.Dense"
-                                              Required="true"
-                                              RequiredError="الاسم مطلوب."
-                                              MaxLength="150"
-                                              Counter="150"
-                                              Immediate="true"
-                                              Disabled="_saving"
-                                              Adornment="Adornment.Start"
-                                              AdornmentIcon="@Icons.Material.Filled.Badge" />
-
-                            </MudItem>
-
-                            <MudItem xs="12"
-                                     md="6">
-
-                                <MudTextField T="string"
-                                              @bind-Value="_model.Password"
-                                              Label="كلمة المرور"
-                                              Placeholder="أدخل كلمة المرور"
-                                              Variant="Variant.Outlined"
-                                              Margin="Margin.Dense"
-                                              InputType="@(_showPassword
-                                                  ? InputType.Text
-                                                  : InputType.Password)"
-                                              Required="true"
-                                              RequiredError="كلمة المرور مطلوبة."
-                                              Immediate="true"
-                                              Disabled="_saving"
-                                              Adornment="Adornment.End"
-                                              AdornmentIcon="@(_showPassword
-                                                  ? Icons.Material.Filled.VisibilityOff
-                                                  : Icons.Material.Filled.Visibility)"
-                                              OnAdornmentClick="TogglePasswordVisibility" />
-
-                            </MudItem>
-
-                            <MudItem xs="12"
-                                     md="6">
-
-                                <MudTextField T="string"
-                                      @bind-Value="_model.ConfirmPassword"
-                                      Label="تأكيد كلمة المرور"
-                                      Placeholder="أعد إدخال كلمة المرور"
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <MudTextField T="string"
+                                      @bind-Value="_model.UserName"
+                                      Label="اسم المستخدم"
+                                      Placeholder="أدخل اسم المستخدم"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
-                                      InputType="@(_showConfirmPassword
-                                          ? InputType.Text
-                                          : InputType.Password)"
                                       Required="true"
-                                      RequiredError="تأكيد كلمة المرور مطلوب."
+                                      RequiredError="اسم المستخدم مطلوب."
+                                      MaxLength="100"
+                                      Counter="100"
                                       Immediate="true"
                                       Disabled="_saving"
-                                      Adornment="Adornment.End"
-                                      AdornmentIcon="@(_showConfirmPassword
-                                          ? Icons.Material.Filled.VisibilityOff
-                                          : Icons.Material.Filled.Visibility)"
-                                      OnAdornmentClick="ToggleConfirmPasswordVisibility"
-                                      Validation="@((string value) => ValidateConfirmPassword(value))" />
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.AccountCircle" />
 
-                            </MudItem>
+                        <MudTextField T="string"
+                                      @bind-Value="_model.DisplayName"
+                                      Label="الاسم"
+                                      Placeholder="أدخل اسم المستخدم للعرض"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Required="true"
+                                      RequiredError="الاسم مطلوب."
+                                      MaxLength="150"
+                                      Counter="150"
+                                      Immediate="true"
+                                      Disabled="_saving"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Badge" />
 
-                        </MudGrid>
+                        <div class="space-y-2">
+                            <MudTextField T="string"
+                                          @bind-Value="_model.Password"
+                                          Label="كلمة المرور"
+                                          Placeholder="أدخل كلمة المرور"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          InputType="@(_showPassword
+                                              ? InputType.Text
+                                              : InputType.Password)"
+                                          Required="true"
+                                          RequiredError="كلمة المرور مطلوبة."
+                                          Immediate="true"
+                                          Disabled="_saving"
+                                          Adornment="Adornment.End"
+                                          AdornmentIcon="@(_showPassword
+                                              ? Icons.Material.Filled.VisibilityOff
+                                              : Icons.Material.Filled.Visibility)"
+                                          OnAdornmentClick="TogglePasswordVisibility" />
 
-                    </MudStack>
+                            @* UI-only password strength bar: computed from length + variety, never persisted and not validated server-side *@
+                            @if (!string.IsNullOrEmpty(_model.Password))
+                            {
+                                <div class="space-y-1" dir="ltr">
+                                    <div class="h-1.5 w-full rounded-full bg-slate-100">
+                                        <div class="h-full rounded-full transition-all duration-300 @StrengthBarClass"
+                                             style="width:@StrengthPercent"></div>
+                                    </div>
+                                    <p class="text-xs font-bold @StrengthTextClass">@StrengthLabel</p>
+                                </div>
+                            }
+                        </div>
 
-                </MudPaper>
+                        <div>
+                            <MudTextField T="string"
+                                          @bind-Value="_model.ConfirmPassword"
+                                          Label="تأكيد كلمة المرور"
+                                          Placeholder="أعد إدخال كلمة المرور"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          InputType="@(_showConfirmPassword
+                                              ? InputType.Text
+                                              : InputType.Password)"
+                                          Required="true"
+                                          RequiredError="تأكيد كلمة المرور مطلوب."
+                                          Immediate="true"
+                                          Disabled="_saving"
+                                          Adornment="Adornment.End"
+                                          AdornmentIcon="@(_showConfirmPassword
+                                              ? Icons.Material.Filled.VisibilityOff
+                                              : Icons.Material.Filled.Visibility)"
+                                          OnAdornmentClick="ToggleConfirmPasswordVisibility"
+                                          Validation="@((string value) => ValidateConfirmPassword(value))" />
+                        </div>
+                    </div>
 
+                    <p class="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                        لزيادة قوة كلمة المرور: 8 خانات على الأقل مع أحرف كبيرة وصغيرة وأرقام ورموز.
+                    </p>
+                </section>
 
                 @* ==================================================
                    Access
                    ================================================== *@
 
-                <MudPaper Outlined="true"
-                          Class="pa-4">
-
-                    <MudStack Spacing="3">
-
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="mb-4 flex items-center gap-2.5">
+                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <MudIcon Icon="@Icons.Material.Filled.ManageAccounts" Size="Size.Small" />
+                        </span>
                         <div>
-                            <MudText Typo="Typo.h6">
-                                الصلاحيات والوصول
-                            </MudText>
+                            <h3 class="text-sm font-bold text-slate-900">الصلاحيات والوصول</h3>
+                            <p class="mt-0.5 text-xs text-slate-500">حدد دور المستخدم وطريقة وصوله إلى النظام</p>
+                        </div>
+                    </div>
 
-                            <MudText Typo="Typo.body2"
-                                     Color="Color.Secondary">
-                                حدد دور المستخدم وطريقة وصوله إلى النظام
-                            </MudText>
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <MudSelect T="int?"
+                                       @bind-Value="_model.RoleId"
+                                       Label="الدور"
+                                       Variant="Variant.Outlined"
+                                       Margin="Margin.Dense"
+                                       Clearable="true"
+                                       Disabled="_saving">
+
+                                @foreach (RoleListItem role in _roles)
+                                {
+                                    <MudSelectItem T="int?"
+                                                   Value="@role.Id">
+                                        @role.Name
+                                    </MudSelectItem>
+                                }
+
+                            </MudSelect>
+
+                            <p class="mt-1 text-xs text-slate-500">
+                                المستخدم بدون دور لا يحصل على صلاحيات الدور.
+                            </p>
                         </div>
 
-                        <MudDivider />
+                        <div class="space-y-1">
+                            <MudSwitch T="bool"
+                                       @bind-Value="_model.IsAdmin"
+                                       Label="مدير النظام"
+                                       Color="Color.Error"
+                                       Disabled="_saving" />
 
-                        <MudGrid Spacing="3">
+                            <p class="text-xs text-slate-500">
+                                مدير النظام يمتلك وصولًا كاملًا ولا يعتمد وصوله على صلاحيات الدور.
+                            </p>
+                        </div>
 
-                            <MudItem xs="12"
-                                     md="6">
+                        <div class="md:col-span-2">
+                            <MudSwitch T="bool"
+                                       @bind-Value="_model.IsActive"
+                                       Label="الحساب نشط"
+                                       Color="Color.Success"
+                                       Disabled="_saving" />
 
-                                <MudSelect T="int?"
-                                           @bind-Value="_model.RoleId"
-                                           Label="الدور"
-                                           Variant="Variant.Outlined"
-                                           Margin="Margin.Dense"
-                                           Clearable="true"
-                                           Disabled="_saving">
+                            <p class="text-xs text-slate-500">
+                                المستخدم غير النشط لا يمكنه تسجيل الدخول إلى النظام.
+                            </p>
+                        </div>
+                    </div>
 
-                                    @foreach (RoleListItem role in _roles)
-                                    {
-                                        <MudSelectItem T="int?"
-                                                       Value="@role.Id">
-                                            @role.Name
-                                        </MudSelectItem>
-                                    }
-
-                                </MudSelect>
-
-                                <MudText Typo="Typo.caption"
-                                         Color="Color.Secondary"
-                                         Class="mt-1">
-                                    المستخدم بدون دور لا يحصل على صلاحيات الدور.
-                                </MudText>
-
-                            </MudItem>
-
-                            <MudItem xs="12"
-                                     md="6">
-
-                                <MudStack Spacing="1">
-
-                                    <MudSwitch T="bool"
-                                               @bind-Value="_model.IsAdmin"
-                                               Label="مدير النظام"
-                                               Color="Color.Error"
-                                               Disabled="_saving" />
-
-                                    <MudText Typo="Typo.caption"
-                                             Color="Color.Secondary">
-                                        مدير النظام يمتلك وصولًا كاملًا ولا يعتمد وصوله على صلاحيات الدور.
-                                    </MudText>
-
-                                </MudStack>
-
-                            </MudItem>
-
-                            <MudItem xs="12">
-
-                                <MudSwitch T="bool"
-                                           @bind-Value="_model.IsActive"
-                                           Label="الحساب نشط"
-                                           Color="Color.Success"
-                                           Disabled="_saving" />
-
-                                <MudText Typo="Typo.caption"
-                                         Color="Color.Secondary">
-                                    المستخدم غير النشط لا يمكنه تسجيل الدخول إلى النظام.
-                                </MudText>
-
-                            </MudItem>
-
-                        </MudGrid>
-
-
-                        @if (_model.IsAdmin)
-                        {
-                            <MudAlert Severity="Severity.Info"
-                                      Variant="Variant.Outlined"
-                                      Dense="true">
-
+                    @if (_model.IsAdmin)
+                    {
+                        <div class="mt-4 flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm text-blue-800">
+                            <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" class="mt-0.5 shrink-0" />
+                            <p>
                                 هذا المستخدم مدير للنظام، لذلك يمتلك وصولًا كاملًا
                                 بغض النظر عن الدور المحدد.
 
@@ -304,75 +225,77 @@
                                         صلاحية مدير النظام لاحقًا.
                                     </span>
                                 }
-
-                            </MudAlert>
-                        }
-                        else if (!_model.RoleId.HasValue)
-                        {
-                            <MudAlert Severity="Severity.Warning"
-                                      Variant="Variant.Outlined"
-                                      Dense="true">
-
+                            </p>
+                        </div>
+                    }
+                    else if (!_model.RoleId.HasValue)
+                    {
+                        <div class="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-100 bg-amber-50 p-3 text-sm text-amber-800">
+                            <MudIcon Icon="@Icons.Material.Filled.WarningAmber" Size="Size.Small" class="mt-0.5 shrink-0" />
+                            <p>
                                 لم يتم تحديد دور لهذا المستخدم.
                                 سيتم إنشاء الحساب بدون صلاحيات وصول إلى الميزات
                                 المحمية بالصلاحيات.
-
-                            </MudAlert>
-                        }
-
-                    </MudStack>
-
-                </MudPaper>
-
+                            </p>
+                        </div>
+                    }
+                </section>
 
                 @* ==================================================
                    Actions
                    ================================================== *@
 
-                <MudStack Row
-                          Justify="Justify.FlexEnd"
-                          AlignItems="AlignItems.Center"
-                          Spacing="2">
+                <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div class="flex flex-wrap items-center justify-end gap-2">
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Default"
+                                   Disabled="_saving"
+                                   OnClick="GoBack"
+                                   Class="rounded-xl text-slate-600">
+                            إلغاء
+                        </MudButton>
 
-                    <MudButton Variant="Variant.Text"
-                               Color="Color.Default"
-                               Disabled="_saving"
-                               OnClick="GoBack">
-                        إلغاء
-                    </MudButton>
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Add"
+                                   Disabled="_saving"
+                                   OnClick="@(() => SaveAsync(true))"
+                                   Class="rounded-xl px-5 font-bold">
+                            حفظ وإضافة مستخدم آخر
+                        </MudButton>
 
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.PersonAdd"
-                               Disabled="_saving"
-                               OnClick="SaveAsync">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.PersonAdd"
+                                   Disabled="_saving"
+                                   OnClick="@(() => SaveAsync(false))"
+                                   Class="rounded-xl px-5 font-bold shadow-sm">
 
-                        @if (_saving)
-                        {
-                            <MudProgressCircular Indeterminate="true"
-                                                 Size="Size.Small"
-                                                 Class="me-2" />
+                            @if (_saving)
+                            {
+                                <MudProgressCircular Indeterminate="true"
+                                                     Size="Size.Small"
+                                                     Class="me-2" />
 
-                            <span>جاري الحفظ...</span>
-                        }
-                        else
-                        {
-                            <span>إضافة المستخدم</span>
-                        }
+                                <span>جاري الحفظ...</span>
+                            }
+                            else
+                            {
+                                <span>إضافة المستخدم</span>
+                            }
 
-                    </MudButton>
+                        </MudButton>
+                    </div>
+                </section>
 
-                </MudStack>
-
-            </MudStack>
+            </div>
 
         </MudForm>
     }
+</div>
 
-</MudStack>
-
-
-@code {
+@code
+{
 
     // ============================================================
     // State
@@ -392,6 +315,88 @@
 
     private bool _showConfirmPassword;
 
+    private static readonly PageScaffold.CrumbItem[] _scaffoldCrumbs =
+    [
+        new("إدارة المستخدمين", "/admin/users"),
+        new("إضافة مستخدم")
+    ];
+
+    // ============================================================
+    // UI-only password strength (length + variety; not persisted)
+    // ============================================================
+
+    private int StrengthScore
+    {
+        get
+        {
+            string password = _model.Password ?? string.Empty;
+
+            if (password.Length == 0)
+            {
+                return 0;
+            }
+
+            int score = 0;
+
+            if (password.Length >= 8)
+            {
+                score++;
+            }
+            else if (password.Length >= 6)
+            {
+                score++;
+            }
+
+            if (password.Any(char.IsLower))
+            {
+                score++;
+            }
+
+            if (password.Any(char.IsUpper))
+            {
+                score++;
+            }
+
+            if (password.Any(char.IsDigit))
+            {
+                score++;
+            }
+
+            if (password.Any(character => !char.IsLetterOrDigit(character)))
+            {
+                score++;
+            }
+
+            return Math.Min(score, 4);
+        }
+    }
+
+    private string StrengthPercent =>
+        $"{Math.Max(StrengthScore, 1) * 25}%";
+
+    private string StrengthLabel => StrengthScore switch
+    {
+        0 or 1 => "ضعيفة",
+        2 => "متوسطة",
+        3 => "جيدة",
+        _ => "قوية"
+    };
+
+    private string StrengthBarClass => StrengthScore switch
+    {
+        0 or 1 => "bg-rose-500",
+        2 => "bg-amber-500",
+        3 => "bg-lime-500",
+        _ => "bg-emerald-600"
+    };
+
+    private string StrengthTextClass => StrengthScore switch
+    {
+        0 or 1 => "text-rose-600",
+        2 => "text-amber-600",
+        3 => "text-lime-700",
+        _ => "text-emerald-600"
+    };
 
     // ============================================================
     // Lifecycle
@@ -401,7 +406,6 @@
     {
         await LoadAsync();
     }
-
 
     // ============================================================
     // Loading
@@ -428,12 +432,11 @@
         }
     }
 
-
     // ============================================================
     // Save
     // ============================================================
 
-    private async Task SaveAsync()
+    private async Task SaveAsync(bool saveAndAddAnother)
     {
         if (_saving)
             return;
@@ -479,12 +482,23 @@
                 return;
             }
 
-            Snackbar.Add(
-                "تمت إضافة المستخدم بنجاح.",
-                Severity.Success);
+            if (saveAndAddAnother)
+            {
+                Snackbar.Add(
+                    $"تمت إضافة المستخدم {_model.DisplayName.Trim()} بنجاح. أضف المستخدم التالي.",
+                    Severity.Success);
 
-            NavigationManager.NavigateTo(
-                "/admin/users");
+                await ResetFormAsync();
+            }
+            else
+            {
+                Snackbar.Add(
+                    "تمت إضافة المستخدم بنجاح.",
+                    Severity.Success);
+
+                NavigationManager.NavigateTo(
+                    "/admin/users");
+            }
         }
         catch (Exception)
         {
@@ -498,6 +512,21 @@
         }
     }
 
+    private async Task ResetFormAsync()
+    {
+        _model.UserName = string.Empty;
+        _model.DisplayName = string.Empty;
+        _model.Password = string.Empty;
+        _model.ConfirmPassword = string.Empty;
+        _model.IsActive = true;
+        _model.IsAdmin = false;
+        _model.RoleId = null;
+
+        if (_form is not null)
+        {
+            await _form.ResetValidationAsync();
+        }
+    }
 
     // ============================================================
     // Validation
