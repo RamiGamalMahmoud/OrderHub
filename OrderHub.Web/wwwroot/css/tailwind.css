@@ -13,13 +13,19 @@
     --color-amber-50: oklch(98.7% 0.022 95.277);
     --color-amber-600: oklch(66.6% 0.179 58.318);
     --color-emerald-50: oklch(97.9% 0.021 166.113);
+    --color-emerald-200: oklch(90.5% 0.093 164.15);
     --color-emerald-500: oklch(69.6% 0.17 162.48);
     --color-emerald-600: oklch(59.6% 0.145 163.225);
+    --color-emerald-700: oklch(50.8% 0.118 165.612);
     --color-blue-50: oklch(97% 0.014 254.604);
     --color-blue-100: oklch(93.2% 0.032 255.585);
     --color-blue-200: oklch(88.2% 0.059 254.128);
     --color-blue-600: oklch(54.6% 0.245 262.881);
     --color-blue-700: oklch(48.8% 0.243 264.376);
+    --color-rose-50: oklch(96.9% 0.015 12.422);
+    --color-rose-200: oklch(89.2% 0.058 10.001);
+    --color-rose-600: oklch(58.6% 0.253 17.585);
+    --color-rose-700: oklch(51.4% 0.222 16.935);
     --color-slate-50: oklch(98.4% 0.003 247.858);
     --color-slate-100: oklch(96.8% 0.007 247.896);
     --color-slate-200: oklch(92.9% 0.013 255.508);
@@ -227,6 +233,17 @@
 }
 .visible {
   visibility: visible;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border-width: 0;
 }
 .absolute {
   position: absolute;
@@ -588,6 +605,9 @@
 .h-1 {
   height: calc(var(--spacing) * 1);
 }
+.h-1\.5 {
+  height: calc(var(--spacing) * 1.5);
+}
 .h-2\.5 {
   height: calc(var(--spacing) * 2.5);
 }
@@ -654,6 +674,9 @@
 .w-1 {
   width: calc(var(--spacing) * 1);
 }
+.w-1\.5 {
+  width: calc(var(--spacing) * 1.5);
+}
 .w-2\.5 {
   width: calc(var(--spacing) * 2.5);
 }
@@ -680,6 +703,9 @@
 }
 .w-14 {
   width: calc(var(--spacing) * 14);
+}
+.w-20 {
+  width: calc(var(--spacing) * 20);
 }
 .w-25 {
   width: calc(var(--spacing) * 25);
@@ -986,8 +1012,14 @@
 .border-brand-200 {
   border-color: var(--color-brand-200);
 }
+.border-emerald-200 {
+  border-color: var(--color-emerald-200);
+}
 .border-red-100 {
   border-color: var(--color-red-100);
+}
+.border-rose-200 {
+  border-color: var(--color-rose-200);
 }
 .border-slate-100 {
   border-color: var(--color-slate-100);
@@ -1034,6 +1066,9 @@
 .bg-red-50 {
   background-color: var(--color-red-50);
 }
+.bg-rose-50 {
+  background-color: var(--color-rose-50);
+}
 .bg-slate-50 {
   background-color: var(--color-slate-50);
 }
@@ -1043,8 +1078,14 @@
     background-color: color-mix(in oklab, var(--color-slate-50) 70%, transparent);
   }
 }
+.bg-slate-100 {
+  background-color: var(--color-slate-100);
+}
 .bg-slate-300 {
   background-color: var(--color-slate-300);
+}
+.bg-slate-400 {
+  background-color: var(--color-slate-400);
 }
 .bg-transparent {
   background-color: transparent;
@@ -1135,6 +1176,9 @@
 }
 .py-6 {
   padding-block: calc(var(--spacing) * 6);
+}
+.py-8 {
+  padding-block: calc(var(--spacing) * 8);
 }
 .ps-0 {
   padding-inline-start: calc(var(--spacing) * 0);
@@ -1330,8 +1374,17 @@
 .text-emerald-600 {
   color: var(--color-emerald-600);
 }
+.text-emerald-700 {
+  color: var(--color-emerald-700);
+}
 .text-red-500 {
   color: var(--color-red-500);
+}
+.text-rose-600 {
+  color: var(--color-rose-600);
+}
+.text-rose-700 {
+  color: var(--color-rose-700);
 }
 .text-slate-400 {
   color: var(--color-slate-400);
@@ -1365,6 +1418,10 @@
 }
 .italic {
   font-style: italic;
+}
+.tabular-nums {
+  --tw-numeric-spacing: tabular-nums;
+  font-variant-numeric: var(--tw-ordinal,) var(--tw-slashed-zero,) var(--tw-numeric-figure,) var(--tw-numeric-spacing,) var(--tw-numeric-fraction,);
 }
 .line-through {
   text-decoration-line: line-through;
@@ -1528,6 +1585,16 @@
     display: inline;
   }
 }
+.sm\:w-44 {
+  @media (width >= 40rem) {
+    width: calc(var(--spacing) * 44);
+  }
+}
+.sm\:w-52 {
+  @media (width >= 40rem) {
+    width: calc(var(--spacing) * 52);
+  }
+}
 .sm\:grid-cols-2 {
   @media (width >= 40rem) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1647,6 +1714,26 @@
   inherits: false;
 }
 @property --tw-tracking {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ordinal {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-slashed-zero {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-figure {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-spacing {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-fraction {
   syntax: "*";
   inherits: false;
 }
@@ -1791,6 +1878,11 @@
       --tw-leading: initial;
       --tw-font-weight: initial;
       --tw-tracking: initial;
+      --tw-ordinal: initial;
+      --tw-slashed-zero: initial;
+      --tw-numeric-figure: initial;
+      --tw-numeric-spacing: initial;
+      --tw-numeric-fraction: initial;
       --tw-shadow: 0 0 #0000;
       --tw-shadow-color: initial;
       --tw-shadow-alpha: 100%;

@@ -1,14 +1,15 @@
-@attribute [PermissionAuthorize(PermissionFeature.Users, PermissionLevel.Read)]
 @page "/admin/users"
+@attribute [PermissionAuthorize(PermissionFeature.Users, PermissionLevel.Read)]
+@attribute [Authorize(Roles = "Admin")]
+
 @using Microsoft.AspNetCore.Authorization
+@using System.Globalization
 @using OrderHub.Application.Features.Administration.Users.GetUsers
 @using OrderHub.Application.Features.Administration.Users.ActivateUser
 @using OrderHub.Application.Features.Administration.Users.DeactivateUser
 @using OrderHub.Application.Interfaces
 @using OrderHub.Domain.Common
 @using MudBlazor
-
-@attribute [Authorize(Roles = "Admin")]
 
 @inject IRequestExecutor RequestExecutor
 @inject NavigationManager NavigationManager
@@ -17,371 +18,326 @@
 
 <PageTitle>إدارة المستخدمين</PageTitle>
 
-<MudStack Spacing="3">
+<div class="space-y-5">
+    <PageScaffold Title="إدارة المستخدمين"
+                  Description="إدارة حسابات المستخدمين والأدوار وحالة الحساب"
+                  Crumbs="_scaffoldCrumbs"
+                  Count="@_users.Count">
+        <Actions>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Size="Size.Large"
+                       Class="rounded-xl px-5 font-bold shadow-sm"
+                       StartIcon="@Icons.Material.Filled.PersonAdd"
+                       OnClick="CreateUser"
+                       Disabled="IsBusy">
+                مستخدم جديد
+            </MudButton>
+        </Actions>
+    </PageScaffold>
 
-    @* ============================================================
-       Header
-       ============================================================ *@
+    @* Stats bar: real numbers derived from the loaded list *@
+    <section aria-label="إحصائيات المستخدمين"
+             class="grid grid-cols-2 gap-4 xl:grid-cols-4">
 
-    <MudStack Row
-              AlignItems="AlignItems.Center"
-              Justify="Justify.SpaceBetween">
+        <article class="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between gap-4">
+                <div class="space-y-2">
+                    <p class="text-sm font-medium text-slate-500">إجمالي المستخدمين</p>
+                    <p class="text-3xl font-black tracking-tight text-slate-900">@Fmt(TotalUsers)</p>
+                    <p class="text-xs font-medium text-slate-500">جميع الحسابات المسجلة</p>
+                </div>
+                <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+                    <MudIcon Icon="@Icons.Material.Filled.People" aria-hidden="true" />
+                </span>
+            </div>
+        </article>
 
-        <div>
-            <MudText Typo="Typo.h5">
-                إدارة المستخدمين
-            </MudText>
+        <article class="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between gap-4">
+                <div class="space-y-2">
+                    <p class="text-sm font-medium text-slate-500">مستخدمون نشطون</p>
+                    <p class="text-3xl font-black tracking-tight text-slate-900">@Fmt(ActiveUsers)</p>
+                    <p class="text-xs font-medium text-slate-500">حسابات مفعلة حاليًا</p>
+                </div>
+                <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                    <MudIcon Icon="@Icons.Material.Filled.VerifiedUser" aria-hidden="true" />
+                </span>
+            </div>
+        </article>
 
-            <MudText Typo="Typo.body2"
-                     Color="Color.Secondary">
-                إدارة حسابات المستخدمين والأدوار وحالة الحساب
-            </MudText>
+        <article class="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between gap-4">
+                <div class="space-y-2">
+                    <p class="text-sm font-medium text-slate-500">مديرو النظام</p>
+                    <p class="text-3xl font-black tracking-tight text-slate-900">@Fmt(AdminUsers)</p>
+                    <p class="text-xs font-medium text-slate-500">حسابات بصلاحية المدير</p>
+                </div>
+                <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                    <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" aria-hidden="true" />
+                </span>
+            </div>
+        </article>
+
+        <article class="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between gap-4">
+                <div class="space-y-2">
+                    <p class="text-sm font-medium text-slate-500">الأدوار المخصصة</p>
+                    <p class="text-3xl font-black tracking-tight text-slate-900">@Fmt(RoleCount)</p>
+                    <p class="text-xs font-medium text-slate-500">أدوار مستخدمة في النظام</p>
+                </div>
+                <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+                    <MudIcon Icon="@Icons.Material.Filled.Workspaces" aria-hidden="true" />
+                </span>
+            </div>
+        </article>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 px-4 py-3">
+
+            <MudTextField T="string"
+                          @bind-Value="_searchTerm"
+                          Placeholder="ابحث باسم المستخدم أو الاسم..."
+                          aria-label="البحث عن مستخدم"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Margin="Margin.Dense"
+                          Immediate="true"
+                          Clearable="true"
+                          Class="w-full max-w-xs" />
+
+            <MudSelect T="UserStatusFilter"
+                       @bind-Value="_statusFilter"
+                       aria-label="تصفية حسب حالة الحساب"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Class="w-full sm:w-44">
+                <MudSelectItem Value="@UserStatusFilter.All">جميع الحالات</MudSelectItem>
+                <MudSelectItem Value="@UserStatusFilter.Active">نشط</MudSelectItem>
+                <MudSelectItem Value="@UserStatusFilter.Inactive">غير نشط</MudSelectItem>
+            </MudSelect>
+
+            <MudSelect T="int?"
+                       @bind-Value="_roleId"
+                       aria-label="تصفية حسب الدور"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Clearable="true"
+                       Class="w-full sm:w-52">
+                @foreach (var role in AvailableRoles)
+                {
+                    <MudSelectItem T="int?"
+                                   Value="@role.Id">
+                        @role.Name
+                    </MudSelectItem>
+                }
+            </MudSelect>
+
+            <div class="flex-1"></div>
+
+            <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                           Variant="Variant.Text"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           Disabled="IsBusy"
+                           aria-label="تحديث القائمة"
+                           OnClick="LoadAsync"
+                           Class="rounded-lg" />
         </div>
-
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.PersonAdd"
-                   OnClick="CreateUser">
-            مستخدم جديد
-        </MudButton>
-
-    </MudStack>
-
-
-    @* ============================================================
-       Filters
-       ============================================================ *@
-
-    <MudPaper Outlined="true"
-              Class="pa-4">
-
-        <MudGrid Spacing="2">
-
-            <MudItem xs="12"
-                     md="5">
-
-                <MudTextField T="string"
-                              @bind-Value="_searchTerm"
-                              Placeholder="ابحث باسم المستخدم أو الاسم..."
-                              Variant="Variant.Outlined"
-                              Margin="Margin.Dense"
-                              Immediate="true"
-                              Clearable="true"
-                              Adornment="Adornment.Start"
-                              AdornmentIcon="@Icons.Material.Filled.Search" />
-
-            </MudItem>
-
-            <MudItem xs="12"
-                     sm="6"
-                     md="3">
-
-                <MudSelect T="UserStatusFilter"
-                           @bind-Value="_statusFilter"
-                           Label="حالة الحساب"
-                           Variant="Variant.Outlined"
-                           Margin="Margin.Dense">
-
-                    <MudSelectItem Value="@UserStatusFilter.All">
-                        الكل
-                    </MudSelectItem>
-
-                    <MudSelectItem Value="@UserStatusFilter.Active">
-                        نشط
-                    </MudSelectItem>
-
-                    <MudSelectItem Value="@UserStatusFilter.Inactive">
-                        غير نشط
-                    </MudSelectItem>
-
-                </MudSelect>
-
-            </MudItem>
-
-            <MudItem xs="12"
-                     sm="6"
-                     md="4">
-
-                <MudSelect T="int?"
-                           @bind-Value="_roleId"
-                           Label="الدور"
-                           Variant="Variant.Outlined"
-                           Margin="Margin.Dense"
-                           Clearable="true">
-
-                    @foreach (var role in AvailableRoles)
-                    {
-                        <MudSelectItem T="int?"
-                                       Value="@role.Id">
-                            @role.Name
-                        </MudSelectItem>
-                    }
-
-                </MudSelect>
-
-            </MudItem>
-
-        </MudGrid>
-
-    </MudPaper>
-
-
-    @* ============================================================
-       Table
-       ============================================================ *@
-
-    <MudPaper Outlined="true">
 
         <MudTable T="UserListItem"
                   Items="FilteredUsers"
+                  Dense="true"
                   Hover="true"
-                  Dense="false"
-                  Striped="true"
-                  Loading="_loading">
-
-            <ToolBarContent>
-
-                <MudText Typo="Typo.subtitle1">
-                    المستخدمون
-                </MudText>
-
-                <MudSpacer />
-
-                @if (!_loading)
-                {
-                    <MudText Typo="Typo.body2"
-                             Color="Color.Secondary">
-                        @FilteredUsers.Count مستخدم
-                    </MudText>
-                }
-
-                <MudIconButton Icon="@Icons.Material.Filled.Refresh"
-                               Color="Color.Default"
-                               Disabled="_loading"
-                               OnClick="LoadAsync" />
-
-            </ToolBarContent>
+                  Elevation="0"
+                  Square="true"
+                  Breakpoint="Breakpoint.Sm"
+                  Loading="_loading"
+                  @bind-CurrentPage="_currentPage"
+                  @bind-RowsPerPage="_rowsPerPage">
 
             <HeaderContent>
-
-                <MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">
                     المستخدم
                 </MudTh>
 
-                <MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">
                     الاسم
                 </MudTh>
 
-                <MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">
                     الدور
                 </MudTh>
 
-                <MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">
                     النوع
                 </MudTh>
 
-                <MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">
                     الحالة
                 </MudTh>
 
-                <MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">
                     تاريخ الإنشاء
                 </MudTh>
 
-                <MudTh Style="width:120px">
+                <MudTh Class="w-20 text-xs font-bold text-slate-500">
+                    <span class="sr-only">إجراءات</span>
                 </MudTh>
-
             </HeaderContent>
 
-            <RowTemplate>
-
-                <MudTd DataLabel="المستخدم">
-
-                    <MudStack Row
-                              AlignItems="AlignItems.Center"
-                              Spacing="2">
-
-                        <MudAvatar Size="Size.Small">
-                            <MudIcon Icon="@Icons.Material.Filled.Person"
-                                     Size="Size.Small" />
-                        </MudAvatar>
-
-                        <MudText Typo="Typo.body2">
-                            @context.UserName
-                        </MudText>
-
-                    </MudStack>
-
+            <RowTemplate Context="user">
+                <MudTd DataLabel="المستخدم"
+                       Class="text-sm text-slate-700">
+                    <div class="flex items-center gap-2.5">
+                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+                            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" />
+                        </span>
+                        <span class="font-bold text-slate-900">@user.UserName</span>
+                    </div>
                 </MudTd>
 
-                <MudTd DataLabel="الاسم">
-                    @context.DisplayName
+                <MudTd DataLabel="الاسم"
+                       Class="text-sm text-slate-700"
+                       Style="overflow-wrap:anywhere">
+                    @user.DisplayName
                 </MudTd>
 
                 <MudTd DataLabel="الدور">
-
-                    @if (context.RoleId.HasValue)
+                    @if (user.RoleId.HasValue)
                     {
-                        <MudChip T="string"
-                                 Size="Size.Small"
-                                 Variant="Variant.Outlined">
-                            @context.RoleName
-                        </MudChip>
+                        <span class="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
+                            @user.RoleName
+                        </span>
                     }
                     else
                     {
-                        <MudText Typo="Typo.body2"
-                                 Color="Color.Secondary">
-                            بدون دور
-                        </MudText>
+                        <span class="text-sm text-slate-400">بدون دور</span>
                     }
-
                 </MudTd>
 
                 <MudTd DataLabel="النوع">
-
-                    @if (context.IsAdmin)
+                    @if (user.IsAdmin)
                     {
-                        <MudChip T="string"
-                                 Size="Size.Small"
-                                 Color="Color.Error"
-                                 Variant="Variant.Outlined"
-                                 Icon="@Icons.Material.Filled.AdminPanelSettings">
+                        <span class="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700">
+                            <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" />
                             مدير النظام
-                        </MudChip>
+                        </span>
                     }
                     else
                     {
-                        <MudText Typo="Typo.body2">
-                            مستخدم
-                        </MudText>
+                        <span class="text-sm text-slate-500">مستخدم</span>
                     }
-
                 </MudTd>
 
                 <MudTd DataLabel="الحالة">
-
-                    @if (context.IsActive)
+                    @if (user.IsActive)
                     {
-                        <MudChip T="string"
-                                 Size="Size.Small"
-                                 Color="Color.Success"
-                                 Variant="Variant.Outlined">
+                        <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                             نشط
-                        </MudChip>
+                        </span>
                     }
                     else
                     {
-                        <MudChip T="string"
-                                 Size="Size.Small"
-                                 Color="Color.Default"
-                                 Variant="Variant.Outlined">
+                        <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500">
+                            <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
                             غير نشط
-                        </MudChip>
+                        </span>
                     }
-
                 </MudTd>
 
-                <MudTd DataLabel="تاريخ الإنشاء">
-                    @context.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd")
+                <MudTd DataLabel="تاريخ الإنشاء"
+                       Class="text-sm text-slate-700">
+                    <span class="tabular-nums" style="direction:ltr">
+                        @user.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd", CultureInfo.InvariantCulture)
+                    </span>
                 </MudTd>
 
-                <MudTd>
-
+                <MudTd DataLabel="إجراءات">
                     <MudMenu Icon="@Icons.Material.Filled.MoreVert"
                              Size="Size.Small"
                              AnchorOrigin="Origin.BottomRight"
-                             TransformOrigin="Origin.TopRight">
+                             TransformOrigin="Origin.TopRight"
+                             Disabled="IsBusy"
+                             aria-label="إجراءات المستخدم">
 
                         <MudMenuItem Icon="@Icons.Material.Filled.Edit"
-                                     OnClick="@(() => EditUser(context.Id))">
+                                     OnClick="@(() => EditUser(user.Id))">
                             تعديل
                         </MudMenuItem>
 
-                        @if (context.IsActive)
+                        @if (user.IsActive)
                         {
                             <MudMenuItem Icon="@Icons.Material.Filled.PersonOff"
-                                         OnClick="@(() => ConfirmDeactivateAsync(context))">
+                                         OnClick="@(() => ConfirmDeactivateAsync(user))">
                                 تعطيل الحساب
                             </MudMenuItem>
                         }
                         else
                         {
                             <MudMenuItem Icon="@Icons.Material.Filled.Person"
-                                         OnClick="@(() => ActivateAsync(context))">
+                                         OnClick="@(() => ActivateAsync(user))">
                                 تفعيل الحساب
                             </MudMenuItem>
                         }
 
                     </MudMenu>
-
                 </MudTd>
-
             </RowTemplate>
 
             <NoRecordsContent>
-
-                <MudStack AlignItems="AlignItems.Center"
-                          Class="pa-8"
-                          Spacing="2">
-
-                    <MudIcon Icon="@Icons.Material.Filled.PeopleOutline"
-                             Size="Size.Large"
-                             Color="Color.Secondary" />
-
-                    <MudText Typo="Typo.subtitle1">
-                        لا يوجد مستخدمون
-                    </MudText>
-
-                    <MudText Typo="Typo.body2"
-                             Color="Color.Secondary">
-
+                <div class="py-8 text-center">
+                    <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+                        <MudIcon Icon="@Icons.Material.Filled.PeopleOutline" aria-hidden="true" />
+                    </span>
+                    <p class="text-base font-bold text-slate-900">
                         @if (HasFilters)
                         {
-                            <span>
-                                لا توجد نتائج مطابقة لمعايير البحث.
-                            </span>
+                            @:لا توجد نتائج مطابقة لمعايير البحث.
                         }
                         else
                         {
-                            <span>
-                                لم تتم إضافة مستخدمين بعد.
-                            </span>
+                            @:لم تتم إضافة مستخدمين بعد.
                         }
-
-                    </MudText>
-
-                </MudStack>
-
+                    </p>
+                    <p class="mt-1 text-sm text-slate-500">
+                        @if (HasFilters)
+                        {
+                            @:جرّب تعديل البحث أو التصفية للحصول على نتائج.
+                        }
+                        else
+                        {
+                            @:أضف أول مستخدم ليظهر في الجدول أعلاه.
+                        }
+                    </p>
+                </div>
             </NoRecordsContent>
 
             <LoadingContent>
-
-                <MudStack AlignItems="AlignItems.Center"
-                          Class="pa-8"
-                          Spacing="2">
-
+                <div class="flex flex-col items-center gap-2 py-8">
                     <MudProgressCircular Indeterminate="true"
                                          Color="Color.Primary" />
-
-                    <MudText Typo="Typo.body2"
-                             Color="Color.Secondary">
-                        جاري تحميل المستخدمين...
-                    </MudText>
-
-                </MudStack>
-
+                    <p class="text-sm text-slate-500">جاري تحميل المستخدمين...</p>
+                </div>
             </LoadingContent>
 
+            <PagerContent>
+                <TableFooter TotalItems="@(FilteredUsers.Count)"
+                             CurrentPage="@FooterCurrentPage"
+                             CurrentPageChanged="OnFooterPageChanged"
+                             RowsPerPage="@_rowsPerPage"
+                             RowsPerPageChanged="OnFooterRowsPerPageChanged" />
+            </PagerContent>
+
         </MudTable>
+    </section>
+</div>
 
-    </MudPaper>
-
-</MudStack>
-
-
-@code {
-
+@code
+{
     private IReadOnlyList<UserListItem> _users = [];
 
     private string? _searchTerm;
@@ -390,8 +346,43 @@
 
     private int? _roleId;
 
-    private bool _loading;
+    private bool _loading = true;
 
+    private bool _statusChanging;
+
+    private static readonly PageScaffold.CrumbItem[] _scaffoldCrumbs =
+    [
+        new("إدارة المستخدمين")
+    ];
+
+    private int _currentPage;
+    private int _rowsPerPage = 10;
+
+    /// <summary>مجدد PageScaffold (1-based) مقابل CurrentPage (0-based) في MudTable.</summary>
+    private int FooterCurrentPage => _currentPage + 1;
+
+    private bool IsBusy =>
+        _loading || _statusChanging;
+
+    // ============================================================
+    // Stats (derived from the loaded list — real numbers)
+    // ============================================================
+
+    private int TotalUsers => _users.Count;
+
+    private int ActiveUsers => _users.Count(user => user.IsActive);
+
+    private int AdminUsers => _users.Count(user => user.IsAdmin);
+
+    private int RoleCount =>
+        _users
+            .Where(user => user.RoleId.HasValue)
+            .Select(user => user.RoleId!.Value)
+            .Distinct()
+            .Count();
+
+    private static string Fmt(int value) =>
+        value.ToString("N0", CultureInfo.InvariantCulture);
 
     // ============================================================
     // Lifecycle
@@ -401,7 +392,6 @@
     {
         await LoadAsync();
     }
-
 
     // ============================================================
     // Data
@@ -415,6 +405,8 @@
 
             _users = await RequestExecutor.ExecuteAsync(
                 new GetUsersQuery());
+
+            _currentPage = 0;
         }
         catch (Exception)
         {
@@ -427,7 +419,6 @@
             _loading = false;
         }
     }
-
 
     // ============================================================
     // Filtering
@@ -473,7 +464,6 @@
         }
     }
 
-
     private IReadOnlyList<RoleFilterItem> AvailableRoles =>
         _users
             .Where(user =>
@@ -486,12 +476,27 @@
             .OrderBy(role => role.Name)
             .ToList();
 
-
     private bool HasFilters =>
         !string.IsNullOrWhiteSpace(_searchTerm) ||
         _statusFilter != UserStatusFilter.All ||
         _roleId.HasValue;
 
+    // ============================================================
+    // Footer paging (TableFooter is 1-based, MudTable is 0-based)
+    // ============================================================
+
+    private Task OnFooterPageChanged(int page)
+    {
+        _currentPage = page - 1;
+        return Task.CompletedTask;
+    }
+
+    private Task OnFooterRowsPerPageChanged(int rowsPerPage)
+    {
+        _rowsPerPage = rowsPerPage;
+        _currentPage = 0;
+        return Task.CompletedTask;
+    }
 
     // ============================================================
     // Navigation
@@ -503,13 +508,11 @@
             "/admin/users/create");
     }
 
-
     private void EditUser(int userId)
     {
         NavigationManager.NavigateTo(
             $"/admin/users/{userId}/edit");
     }
-
 
     // ============================================================
     // Activate
@@ -518,6 +521,13 @@
     private async Task ActivateAsync(
         UserListItem user)
     {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        _statusChanging = true;
+
         try
         {
             Result result = await RequestExecutor.ExecuteAsync(
@@ -544,8 +554,11 @@
                 "تعذر تفعيل المستخدم.",
                 Severity.Error);
         }
+        finally
+        {
+            _statusChanging = false;
+        }
     }
-
 
     // ============================================================
     // Deactivate
@@ -554,20 +567,35 @@
     private async Task ConfirmDeactivateAsync(
         UserListItem user)
     {
-        bool? confirmed = await DialogService.ShowMessageBoxAsync(
-            "تعطيل المستخدم",
-            $"هل تريد تعطيل حساب \"{user.DisplayName}\"؟",
-            yesText: "تعطيل",
-            cancelText: "إلغاء");
-
-        if (confirmed != true)
+        if (IsBusy)
+        {
             return;
+        }
 
-        await DeactivateAsync(user);
+        _statusChanging = true;
+
+        try
+        {
+            bool? confirmed = await DialogService.ShowMessageBoxAsync(
+                "تعطيل المستخدم",
+                $"هل تريد تعطيل حساب \"{user.DisplayName}\"؟",
+                yesText: "تعطيل",
+                cancelText: "إلغاء");
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await DeactivateCoreAsync(user);
+        }
+        finally
+        {
+            _statusChanging = false;
+        }
     }
 
-
-    private async Task DeactivateAsync(
+    private async Task DeactivateCoreAsync(
         UserListItem user)
     {
         try
@@ -598,7 +626,6 @@
         }
     }
 
-
     // ============================================================
     // Local UI Types
     // ============================================================
@@ -609,7 +636,6 @@
         Active,
         Inactive
     }
-
 
     private sealed record RoleFilterItem(
         int Id,
