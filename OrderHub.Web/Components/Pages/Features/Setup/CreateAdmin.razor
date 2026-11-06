@@ -1,180 +1,173 @@
-﻿@page "/setup/admin"
+@page "/setup/admin"
+@using System.Globalization
 @using OrderHub.Web.Components.Layout
 @layout StandaloneLayout
 
-<PageTitle>إعداد مدير النظام - OrderHub</PageTitle>
+<PageTitle>إعداد مدير النظام | OrderHub - نظام إدارة العمليات والطلبات</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Small"
-              Class="d-flex align-center justify-center pa-4"
-              Style="min-height: 100dvh;">
+<div class="relative flex min-h-dvh flex-col overflow-hidden bg-slate-50 text-slate-800 antialiased">
 
-    <MudPaper Elevation="3"
-              Class="pa-6"
-              Style="width: 100%; max-width: 560px; border-radius: 12px;">
+    @* ---------- Background: 32px grid + ambient glows ---------- *@
+    <div aria-hidden="true"
+         class="pointer-events-none absolute inset-0"
+         style="background-image: linear-gradient(to right, rgba(226,232,240,0.45) 1px, transparent 1px), linear-gradient(to bottom, rgba(226,232,240,0.45) 1px, transparent 1px); background-size: 32px 32px;"></div>
+    <div aria-hidden="true"
+         class="pointer-events-none absolute -top-[150px] start-[25%] h-[500px] w-[500px] rounded-full blur-[40px]"
+         style="background: radial-gradient(circle, rgba(37,99,235,0.12) 0%, rgba(255,255,255,0) 70%);"></div>
+    <div aria-hidden="true"
+         class="pointer-events-none absolute -bottom-[150px] end-[20%] h-[450px] w-[450px] rounded-full blur-[40px]"
+         style="background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, rgba(255,255,255,0) 70%);"></div>
 
-        <MudStack Spacing="4">
+    @* ---------- Main ---------- *@
+    <main class="relative z-10 flex flex-1 items-center justify-center px-4 py-8">
+        <div class="w-full max-w-[34rem]">
 
-            @* ============================= *@
-            @* Header                        *@
-            @* ============================= *@
+            @* ---------- Brand identity ---------- *@
+            <div class="mb-7 text-center">
+                <div class="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-700 via-brand-600 to-blue-500 shadow-xl shadow-blue-500/25">
+                    <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" stroke-width="1.8"
+                         stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
+                        <path d="m3.3 7 8.7 5 8.7-5"></path>
+                        <path d="M12 22V12"></path>
+                    </svg>
+                </div>
 
-            <MudStack AlignItems="AlignItems.Center"
-                      Spacing="2">
+                <div class="flex items-center justify-center gap-1.5 text-2xl font-bold tracking-tight">
+                    <span class="text-slate-900">Order</span><span class="text-brand-600">Hub</span>
+                </div>
 
-                <MudAvatar Size="Size.Large"
-                           Color="Color.Error">
+                <p class="mt-1 text-xs font-semibold tracking-wide text-slate-500">
+                    نظام إدارة العمليات والطلبات المتكامل
+                </p>
+            </div>
 
-                    <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings"
-                             Size="Size.Large" />
+            @* ---------- Setup card ---------- *@
+            <div class="rounded-3xl border border-slate-200/90 bg-white p-8 shadow-[0_12px_40px_-10px_rgba(15,23,42,0.08)] sm:p-9">
+                <div class="mb-6 flex items-start gap-3">
+                    <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-100 bg-amber-50 text-amber-600">
+                        <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Class="text-[20px]" />
+                    </span>
+                    <div>
+                        <h1 class="text-xl font-bold leading-snug text-slate-900">إعداد مدير النظام</h1>
+                        <p class="mt-1 text-xs leading-relaxed text-slate-500">
+                            لم يتم إنشاء حساب مدير للنظام بعد. أنشئ حساب المدير الأول للمتابعة.
+                        </p>
+                    </div>
+                </div>
 
-                </MudAvatar>
+                <div class="mb-5 flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs text-blue-800">
+                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mt-0.5 shrink-0" />
+                    <p>
+                        حساب المدير يمتلك صلاحيات إدارة المستخدمين والصلاحيات وإعدادات النظام.
+                    </p>
+                </div>
 
-                <MudText Typo="Typo.h5"
-                         Align="Align.Center">
-                    إعداد مدير النظام
-                </MudText>
+                <MudForm @ref="_form">
+                    <div class="space-y-4">
+                        <MudTextField T="string"
+                                      @bind-Value="_displayName"
+                                      Label="الاسم"
+                                      Placeholder="اسم المدير"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Required
+                                      RequiredError="الاسم مطلوب"
+                                      Clearable
+                                      Disabled="_isBusy"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Badge" />
 
-                <MudText Typo="Typo.body2"
-                         Color="Color.Secondary"
-                         Align="Align.Center"
-                         Style="max-width: 430px;">
-                    لم يتم إنشاء حساب مدير للنظام بعد.
-                    أنشئ حساب المدير الأول للمتابعة.
-                </MudText>
+                        <MudTextField T="string"
+                                      @bind-Value="_userName"
+                                      Label="اسم المستخدم"
+                                      Placeholder="اسم المستخدم"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Required
+                                      RequiredError="اسم المستخدم مطلوب"
+                                      Clearable
+                                      Disabled="_isBusy"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Person" />
 
-            </MudStack>
+                        <MudTextField T="string"
+                                      @bind-Value="_password"
+                                      Label="كلمة المرور"
+                                      Placeholder="كلمة المرور"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Required
+                                      RequiredError="كلمة المرور مطلوبة"
+                                      Disabled="_isBusy"
+                                      InputType="@(_showPassword
+                                          ? InputType.Text
+                                          : InputType.Password)"
+                                      Adornment="Adornment.End"
+                                      AdornmentIcon="@(_showPassword
+                                          ? Icons.Material.Filled.VisibilityOff
+                                          : Icons.Material.Filled.Visibility)"
+                                      OnAdornmentClick="TogglePasswordVisibility" />
 
+                        <MudTextField T="string"
+                                      @bind-Value="_confirmPassword"
+                                      Label="تأكيد كلمة المرور"
+                                      Placeholder="أعد كتابة كلمة المرور"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Required
+                                      RequiredError="تأكيد كلمة المرور مطلوب"
+                                      Disabled="_isBusy"
+                                      InputType="@(_showConfirmPassword
+                                          ? InputType.Text
+                                          : InputType.Password)"
+                                      Adornment="Adornment.End"
+                                      AdornmentIcon="@(_showConfirmPassword
+                                          ? Icons.Material.Filled.VisibilityOff
+                                          : Icons.Material.Filled.Visibility)"
+                                      OnAdornmentClick="ToggleConfirmPasswordVisibility" />
+                    </div>
+                </MudForm>
 
-            @* ============================= *@
-            @* Information                   *@
-            @* ============================= *@
+                <button type="button"
+                        disabled="@_isBusy"
+                        @onclick="CreateAdminAsync"
+                        class="group mt-6 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition-all duration-200 hover:bg-brand-700 hover:shadow-blue-500/40 disabled:cursor-not-allowed disabled:opacity-60">
+                    @if (_isBusy)
+                    {
+                        <MudProgressCircular Indeterminate Size="Size.Small" Color="Color.Inherit" />
+                        <span>جاري إنشاء الحساب...</span>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.VerifiedUser" Class="text-[18px]" />
+                        <span>إنشاء حساب المدير</span>
+                    }
+                </button>
 
-            <MudAlert Severity="Severity.Info"
-                      Variant="Variant.Outlined"
-                      Dense>
-                حساب المدير يمتلك صلاحيات إدارة المستخدمين
-                والصلاحيات وإعدادات النظام.
-            </MudAlert>
+                <div class="mt-6 flex items-center justify-center gap-1.5 border-t border-slate-100 pt-5 text-[11px] text-slate-400">
+                    <svg class="h-3.5 w-3.5 text-emerald-500" fill="none" stroke="currentColor"
+                         stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                    <span>سيتم تشفير كلمة المرور قبل حفظها في قاعدة البيانات.</span>
+                </div>
+            </div>
+        </div>
+    </main>
 
+    @* ---------- Footer ---------- *@
+    <footer class="relative z-10 w-full border-t border-slate-200/50 bg-white/40 px-4 py-6 text-center">
+        <p class="text-xs text-slate-500">
+            <span class="font-semibold text-slate-700">OrderHub</span>
+            <span class="mx-1">•</span>
+            <span>نظام إدارة العمليات والطلبات © @CurrentYear. جميع الحقوق محفوظة.</span>
+        </p>
+    </footer>
+</div>
 
-            <MudDivider />
-
-
-            @* ============================= *@
-            @* Form                          *@
-            @* ============================= *@
-
-            <MudForm @ref="_form">
-
-                <MudStack Spacing="3">
-
-                    <MudTextField T="string"
-                                  @bind-Value="_displayName"
-                                  Label="الاسم"
-                                  Placeholder="اسم المدير"
-                                  Variant="Variant.Outlined"
-                                  Required
-                                  RequiredError="الاسم مطلوب"
-                                  Clearable
-                                  Disabled="_isBusy"
-                                  Adornment="Adornment.Start"
-                                  AdornmentIcon="@Icons.Material.Filled.Badge" />
-
-
-                    <MudTextField T="string"
-                                  @bind-Value="_userName"
-                                  Label="اسم المستخدم"
-                                  Placeholder="اسم المستخدم"
-                                  Variant="Variant.Outlined"
-                                  Required
-                                  RequiredError="اسم المستخدم مطلوب"
-                                  Clearable
-                                  Disabled="_isBusy"
-                                  Adornment="Adornment.Start"
-                                  AdornmentIcon="@Icons.Material.Filled.Person" />
-
-
-                    <MudTextField T="string"
-                                  @bind-Value="_password"
-                                  Label="كلمة المرور"
-                                  Placeholder="كلمة المرور"
-                                  Variant="Variant.Outlined"
-                                  Required
-                                  RequiredError="كلمة المرور مطلوبة"
-                                  Disabled="_isBusy"
-                                  InputType="@(_showPassword
-                                      ? InputType.Text
-                                      : InputType.Password)"
-                                  Adornment="Adornment.End"
-                                  AdornmentIcon="@(_showPassword
-                                      ? Icons.Material.Filled.VisibilityOff
-                                      : Icons.Material.Filled.Visibility)"
-                                  OnAdornmentClick="TogglePasswordVisibility" />
-
-
-                    <MudTextField T="string"
-                                  @bind-Value="_confirmPassword"
-                                  Label="تأكيد كلمة المرور"
-                                  Placeholder="أعد كتابة كلمة المرور"
-                                  Variant="Variant.Outlined"
-                                  Required
-                                  RequiredError="تأكيد كلمة المرور مطلوب"
-                                  Disabled="_isBusy"
-                                  InputType="@(_showConfirmPassword
-                                      ? InputType.Text
-                                      : InputType.Password)"
-                                  Adornment="Adornment.End"
-                                  AdornmentIcon="@(_showConfirmPassword
-                                      ? Icons.Material.Filled.VisibilityOff
-                                      : Icons.Material.Filled.Visibility)"
-                                  OnAdornmentClick="ToggleConfirmPasswordVisibility" />
-
-                </MudStack>
-
-            </MudForm>
-
-
-            @* ============================= *@
-            @* Footer                        *@
-            @* ============================= *@
-
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Error"
-                       Size="Size.Large"
-                       FullWidth
-                       Disabled="_isBusy"
-                       OnClick="CreateAdminAsync">
-
-                @if (_isBusy)
-                {
-                    <MudProgressCircular Indeterminate
-                                         Size="Size.Small"
-                                         Class="me-2" />
-
-                    <MudText Color="Color.Inherit">
-                        جاري إنشاء الحساب...
-                    </MudText>
-                }
-                else
-                {
-                    <MudIcon Icon="@Icons.Material.Filled.VerifiedUser"
-                             Class="me-2" />
-
-                    <MudText Color="Color.Inherit">
-                        إنشاء حساب المدير
-                    </MudText>
-                }
-
-            </MudButton>
-
-            <MudText Typo="Typo.caption"
-                     Color="Color.Secondary"
-                     Align="Align.Center">
-                سيتم تشفير كلمة المرور قبل حفظها في قاعدة البيانات.
-            </MudText>
-
-        </MudStack>
-
-    </MudPaper>
-
-</MudContainer>
+@code
+{
+    private static string CurrentYear =>
+        DateTime.Now.Year.ToString(CultureInfo.InvariantCulture);
+}
