@@ -1,4 +1,5 @@
 @attribute [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Read)]
+@using System.Globalization
 @using OrderHub.Application.Features.Orders.GetPage
 @using OrderHub.Application.Features.Setup.PaymentMethods.Contracts
 @using Microsoft.AspNetCore.Authorization
@@ -11,270 +12,243 @@
 @page "/orders"
 @page "/orders/archived"
 
-
-<PageTitle>الطلبات</PageTitle>
+<PageTitle>@(_archivedOnly ? "سجل الطلبات المؤرشفة" : "الطلبات")</PageTitle>
 
 <OrderDrafts @bind-IsOpen="@_isDraftsOpen" />
 
-<MudStack Spacing="3">
+<div class="space-y-5">
+    <PageScaffold Title="@(_archivedOnly ? "سجل الطلبات المؤرشفة" : "الطلبات")"
+                  Description="@(_archivedOnly ? "البيانات والتاريخ محفوظان للقراءة فقط؛ لا توجد استعادة." : "متابعة وإدارة طلبات العملاء")"
+                  Crumbs="_crumbs"
+                  Count="@_totalItems">
+        <Actions>
+            <MudButton Href="@(_archivedOnly ? "/orders" : "/orders/archived")"
+                       Variant="Variant.Text"
+                       StartIcon="@(_archivedOnly ? Icons.Material.Filled.ListAlt : Icons.Material.Filled.Inventory2)"
+                       Class="rounded-xl font-bold">
+                @(_archivedOnly ? "الطلبات الحالية" : "سجل المؤرشف")
+            </MudButton>
+        </Actions>
+    </PageScaffold>
 
-    @* =========================
-       Header
-       ========================= *@
-
-    <MudGrid Class="align-center">
-
-        <MudItem xs="12" md="4">
-            <MudText Typo="Typo.h5">
-                @(_archivedOnly ? "سجل الطلبات المؤرشفة" : "الطلبات")
-            </MudText>
-
-            <MudText Typo="Typo.body2"
-                     Color="Color.Secondary">
-                @(_archivedOnly ? "البيانات والتاريخ محفوظان للقراءة فقط؛ لا توجد استعادة." : "متابعة وإدارة طلبات العملاء")
-            </MudText>
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="4">
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        @* ============================================================
+           Toolbar: search + payment filter + drafts + create/refresh
+           ============================================================ *@
+        <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 px-4 py-3">
             <MudTextField T="string"
                           Value="_searchTerm"
                           ValueChanged="OnSearchChanged"
                           Placeholder="ابحث برقم الطلب أو اسم العميل..."
+                          aria-label="البحث في الطلبات"
                           Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          Immediate="true"
                           Adornment="Adornment.Start"
                           AdornmentIcon="@Icons.Material.Filled.Search"
-                          FullWidth="true" />
-        </MudItem>
+                          Margin="Margin.Dense"
+                          Immediate="true"
+                          Clearable="true"
+                          Class="w-full sm:max-w-xs" />
 
-        <MudItem xs="12" sm="6" md="4">
+            <MudSelect T="int?"
+                       Value="_selectedPaymentMethodId"
+                       ValueChanged="OnPaymentChanged"
+                       Label="وسيلة الدفع"
+                       aria-label="تصفية حسب وسيلة الدفع"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Clearable="true"
+                       Class="w-full sm:w-52">
+                @foreach (var paymentMethod in _paymentMethods)
+                {
+                    <MudSelectItem T="int?" Value="@paymentMethod!.Id">
+                        @paymentMethod!.DisplayName
+                    </MudSelectItem>
+                }
+            </MudSelect>
 
-            <MudStack Row
-                      Spacing="2"
-                      Justify="Justify.FlexEnd">
-                <MudButton
-                    Color=@(_archivedOnly ? Color.Warning : Color.Default)
-                    Href="@(_archivedOnly ? "/orders" : "/orders/archived")">@(_archivedOnly ? "الطلبات الحالية" : "سجل المؤرشف")</MudButton>
+            <div class="flex-1"></div>
 
-                <MudButton OnClick="@ShowDrafts">
-                    الطلبات المعلقة
-                </MudButton>
+            <MudButton OnClick="ShowDrafts"
+                       Variant="Variant.Text"
+                       Size="Size.Small"
+                       StartIcon="@Icons.Material.Outlined.Description"
+                       Class="rounded-lg font-bold">
+                الطلبات المعلقة
+            </MudButton>
 
+            @if (!_archivedOnly)
+            {
                 <CreateOrderButton />
+            }
 
-            </MudStack>
+            <MudTooltip Text="تحديث القائمة">
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                               OnClick="RefreshAsync"
+                               aria-label="تحديث القائمة"
+                               Class="rounded-lg text-slate-500" />
+            </MudTooltip>
+        </div>
 
-        </MudItem>
+        @* ============================================================
+           Status filter chips (server-side OrderStatus filter)
+           ============================================================ *@
+        <div class="flex flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-3"
+             role="group"
+             aria-label="تصفية حسب حالة الطلب">
+            <button type="button"
+                    class="@StatusChipClass(null)"
+                    aria-pressed="@(_selectedStatus is null)"
+                    @onclick="() => OnStatusChipAsync(null)">الكل</button>
+            @foreach (var item in _enumItems)
+            {
+                var status = item.Value;
+                <button type="button"
+                        class="@StatusChipClass(status)"
+                        aria-pressed="@(_selectedStatus == status)"
+                        @onclick="() => OnStatusChipAsync(status)">@item.DisplayName</button>
+            }
+        </div>
 
-    </MudGrid>
-
-
-    @* =========================
-       Filters
-       ========================= *@
-
-    <MudPaper Class="pa-4"
-              Elevation="0">
-
-        <MudGrid Class="align-center">
-
-            <MudItem xs="12" sm="6" md="4">
-
-                <MudSelect T="OrderStatus?"
-                           Value="_selectedStatus"
-                           ValueChanged="OnStatusChanged"
-                           Label="حالة الطلب"
-                           Variant="Variant.Outlined"
-                           Margin="Margin.Dense"
-                           Clearable="true"
-                           FullWidth="true">
-
-                    @foreach (var item in _enumItems)
-                    {
-                        <MudSelectItem T="OrderStatus?"
-                                       Value="@item.Value">
-                            @item.DisplayName
-                        </MudSelectItem>
-                    }
-
-                </MudSelect>
-
-            </MudItem>
-
-            <MudItem xs="12" sm="6" md="4">
-
-                <MudSelect T="int?"
-                           Label="وسيلة الدفع"
-                           Value="_selectedPaymentMethodId"
-                           ValueChanged="OnPaymentChanged"
-                           Clearable="true"
-                           Variant="Variant.Outlined"
-                           Margin="Margin.Dense"
-                           FullWidth="true">
-
-                    @foreach (var paymentMethod in _paymentMethods)
-                    {
-                        <MudSelectItem T="int?"
-                                       Value="@paymentMethod!.Id">
-                            @paymentMethod!.DisplayName
-                        </MudSelectItem>
-                    }
-
-                </MudSelect>
-
-            </MudItem>
-
-            <MudItem xs="12" md="4">
-
-                <MudStack Row
-                          Justify="Justify.FlexEnd">
-
-                    <MudTooltip Text="تحديث">
-                        <MudIconButton Icon="@Icons.Material.Filled.Refresh"
-                                       OnClick="RefreshAsync" />
-                    </MudTooltip>
-
-                </MudStack>
-
-            </MudItem>
-
-        </MudGrid>
-
-    </MudPaper>
-
-
-    @* =========================
-       Orders
-       ========================= *@
-
-    <MudPaper Elevation="0">
-
+        @* ============================================================
+           Orders table
+           ============================================================ *@
         <MudTable T="OrderListItem"
                   @ref="_table"
                   ServerData="LoadOrdersAsync"
                   RowsPerPage="@_pageSize"
+                  Dense="true"
                   Hover="true"
-                  Striped="true">
+                  Elevation="0"
+                  Square="true"
+                  Breakpoint="Breakpoint.Sm">
 
             <HeaderContent>
-
-                <MudTh>رقم الطلب</MudTh>
-                <MudTh>العميل</MudTh>
-                <MudTh>الهاتف</MudTh>
-                <MudTh>المنتجات</MudTh>
-                <MudTh>الإجمالي</MudTh>
-                <MudTh>طريقة الدفع</MudTh>
-                <MudTh>الحالة</MudTh>
-                <MudTh>التوصيل</MudTh>
-                <MudTh>التاريخ</MudTh>
-                <MudTh></MudTh>
-
+                <MudTh Class="text-xs font-bold text-slate-500">رقم الطلب</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">العميل</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">الهاتف</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">المنتجات</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">الإجمالي</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">طريقة الدفع</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">الحالة</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">التوصيل</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">التاريخ</MudTh>
+                <MudTh Class="w-24 text-xs font-bold text-slate-500">
+                    <span class="sr-only">إجراءات</span>
+                </MudTh>
             </HeaderContent>
 
             <RowTemplate>
-
                 <MudTd DataLabel="رقم الطلب">
-                    @context.OrderNumber
+                    <span class="font-mono text-xs font-bold text-slate-900" dir="ltr">@context.OrderNumber</span>
                 </MudTd>
 
-                <MudTd DataLabel="العميل">
-                    @context.ClientName
+                <MudTd DataLabel="العميل" Class="text-sm text-slate-700">
+                    <div class="flex items-center gap-2.5">
+                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+                            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" />
+                        </span>
+                        <span class="font-bold text-slate-900">@context.ClientName</span>
+                    </div>
                 </MudTd>
 
                 <MudTd DataLabel="الهاتف">
-                    @context.ClientPhoneNumber
+                    <span class="tabular-nums text-xs text-slate-600" dir="ltr">@context.ClientPhoneNumber</span>
                 </MudTd>
 
-                <MudTd DataLabel="المنتجات">
-                    @context.ItemsCount
+                <MudTd DataLabel="المنتجات" Class="text-sm text-slate-700">
+                    @context.ItemsCount.ToString(CultureInfo.InvariantCulture)
                 </MudTd>
 
                 <MudTd DataLabel="الإجمالي">
-                    @context.Total.ToString("N2")
+                    <span class="tabular-nums text-sm font-bold text-slate-900" dir="ltr">@context.Total.ToString("N2", CultureInfo.InvariantCulture)</span>
                 </MudTd>
 
-                <MudTd DataLabel="طريقة الدفع">
+                <MudTd DataLabel="طريقة الدفع" Class="text-sm text-slate-700">
                     @(context.PaymentMethod?.DisplayName ?? "غير محددة")
                 </MudTd>
 
                 <MudTd DataLabel="الحالة">
-
-                    <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(context.OrderStatus)}")">@context.EnumItem.DisplayName</span>
-                    @if (context.IsArchived)
-                    {
-                        <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(OrderWorkflowPresentation.Neutral)}")">مؤرشف</span>
-                    }
-
+                    <div class="flex flex-wrap gap-1.5">
+                        <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(context.OrderStatus)}")">@context.EnumItem.DisplayName</span>
+                        @if (context.IsArchived)
+                        {
+                            <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(OrderWorkflowPresentation.Neutral)}")">مؤرشف</span>
+                        }
+                    </div>
                 </MudTd>
 
-                <MudTd DataLabel="التوصيل">@(context.DeliveryMethod.HasValue? context.DeliveryMethod.Value.GetDescription() : "غير محددة")</MudTd>
+                <MudTd DataLabel="التوصيل" Class="text-sm text-slate-700">
+                    @(context.DeliveryMethod.HasValue ? context.DeliveryMethod.Value.GetDescription() : "غير محددة")
+                </MudTd>
 
-                <MudTd DataLabel="التاريخ">
+                <MudTd DataLabel="التاريخ" Class="text-xs text-slate-600">
                     <UserLocalTime Value="context.CreatedAt" />
                 </MudTd>
 
-                <MudTd>
+                <MudTd DataLabel="إجراءات">
+                    <div class="flex items-center gap-1.5">
+                        <MudTooltip Text="تفاصيل الطلب">
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                           Class="@($"rounded-lg shadow-none {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
+                                           Size="Size.Small"
+                                           Href="@($"/orders/{context.Id}")"
+                                           aria-label="تفاصيل الطلب" />
+                        </MudTooltip>
 
-                    <MudStack Row>
-
-                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                       Class="@($"rounded-lg shadow-none {OrderWorkflowPresentation.Action("delivery")}")"
-                                       Size="Size.Small"
-                                       Href=@($"/orders/{context.Id}")
-                                       OnClick="@(() => SelectOrder(context))" />
+                        <MudTooltip Text="دورة الطلب">
+                            <MudIconButton Icon="@Icons.Material.Filled.Timeline"
+                                           Class="@($"rounded-lg shadow-none {OrderWorkflowPresentation.Action("delivery")}")"
+                                           Size="Size.Small"
+                                           Href="@($"/orders/{context.Id}/workflow")"
+                                           aria-label="دورة الطلب" />
+                        </MudTooltip>
 
                         @if (!context.IsArchived && context.OrderStatus == OrderStatus.Processing)
                         {
                             <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write">
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                               Class="@($"rounded-lg shadow-none {OrderWorkflowPresentation.Action("processing")}")"
-                                               Size="Size.Small"
-                                               Href=@($"/orders/{context.Id}/edit")
-                                               OnClick="@(() => SelectOrder(context))" />
+                                <MudTooltip Text="تعديل الطلب">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                   Class="@($"rounded-lg shadow-none {OrderWorkflowPresentation.Action("processing")}")"
+                                                   Size="Size.Small"
+                                                   Href="@($"/orders/{context.Id}/edit")"
+                                                   aria-label="تعديل الطلب" />
+                                </MudTooltip>
                             </PermissionView>
                         }
-
-                    </MudStack>
-
+                    </div>
                 </MudTd>
-
             </RowTemplate>
 
             <NoRecordsContent>
-
-                <MudText Class="pa-4">
-                    لا توجد طلبات
-                </MudText>
-
+                <div class="py-8 text-center">
+                    <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+                        <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" aria-hidden="true" />
+                    </span>
+                    <p class="text-base font-bold text-slate-900">
+                        @(HasFilters ? "لا توجد نتائج مطابقة" : _archivedOnly ? "لا توجد طلبات مؤرشفة." : "لا توجد طلبات.")
+                    </p>
+                    <p class="mt-1 text-sm text-slate-500">
+                        @(HasFilters ? "جرّب تعديل البحث أو التصفية للحصول على نتائج."
+                            : _archivedOnly ? "ستظهر الطلبات هنا بعد أرشفتها."
+                            : "أنشئ طلبًا جديدًا ليظهر في القائمة.")
+                    </p>
+                </div>
             </NoRecordsContent>
 
             <LoadingContent>
-
-                <MudText Class="pa-4">
-                    جاري تحميل الطلبات...
-                </MudText>
-
+                <div class="flex flex-col items-center gap-2 py-8">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                    <p class="text-sm text-slate-500">جاري تحميل الطلبات...</p>
+                </div>
             </LoadingContent>
 
             <PagerContent>
-
-                <MudStack Row AlignItems="AlignItems.Baseline" Justify="Justify.Center">
-
-                    <MudTablePager HidePagination
-                                   PageSizeOptions="@(new[] {5, 10, 20, 50, 100 })" />
-
-                    <MudPagination Rectangular="true"
-                                   Variant="Variant.Text"
-                                   SelectedChanged="OnPageIndexChanged"
-                                   Selected="@_pageIndex"
-                                   Count="@TotalPages" />
-                </MudStack>
-
+                <TableFooter TotalItems="@(_totalItems ?? 0)"
+                             CurrentPage="_pageIndex"
+                             CurrentPageChanged="OnFooterPageChanged"
+                             RowsPerPage="_pageSize"
+                             RowsPerPageChanged="OnFooterRowsPerPageChanged" />
             </PagerContent>
-
         </MudTable>
-
-    </MudPaper>
-
-</MudStack>
+    </section>
+</div>
