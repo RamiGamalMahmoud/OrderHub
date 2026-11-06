@@ -1,5 +1,8 @@
+#nullable enable
+
 using MediatR;
 using OrderHub.Domain.Enums;
+using System;
 using System.Collections.Generic;
 
 namespace OrderHub.Application.Features.Orders.GetForEdit;
@@ -20,4 +23,6 @@ public record OrderEditorData(
         decimal DeliveryCost = 0,
         DiscountType DiscountType = DiscountType.FixedAmount,
         decimal DiscountValue = 0,
-        decimal DiscountAmount = 0);
+        decimal DiscountAmount = 0,
+        string? OrderNumber = null,
+        DateTime? ModifiedAt = null);

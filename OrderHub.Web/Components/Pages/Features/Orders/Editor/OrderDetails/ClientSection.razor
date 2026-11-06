@@ -1,45 +1,65 @@
-﻿@using OrderHub.Application.Common.Lookups
+@using OrderHub.Application.Common.Lookups
 @using OrderHub.Application.Features.Setup.Clients
 @using OrderHub.Application.Interfaces
 
-<MudPaper Outlined="true" Class="pa-4 rounded-2xl border-slate-200">
-    <MudStack Spacing="2">
-
-        <MudStack Row AlignItems="AlignItems.Center" Spacing="2" Class="pb-1">
-            <MudIcon Icon="@Icons.Material.Outlined.Person"
-                     Size="Size.Medium"
-                     Color="Color.Primary" />
-
+<section class="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm sm:p-5">
+    <div class="flex items-center justify-between pb-1">
+        <div class="flex items-center gap-2">
+            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                <MudIcon Icon="@Icons.Material.Outlined.Person" Size="Size.Small" />
+            </span>
             <div>
-                <MudText Typo="Typo.subtitle1" Class="font-bold">
-                    العميل
-                </MudText>
+                <h3 class="text-sm font-bold leading-tight text-slate-900">بيانات العميل</h3>
+                <p class="text-[11px] text-slate-500">تحديد العميل المرتبط بالطلب</p>
+            </div>
+        </div>
 
-                <MudText Typo="Typo.body2"
-                         Color="Color.Secondary">
-                    اختر العميل المرتبط بالطلب
-                </MudText>
+        <ClientEditorButton Variant="Variant.Text"
+                            ButtonText="عميل جديد"
+                            StartIcon="@Icons.Material.Outlined.PersonAdd"
+                            Class="oh-btn oh-btn--ghost oh-btn--sm"
+                            OnSaved="OnClientCreated" />
+    </div>
+
+    <MudAutocomplete Variant="Variant.Outlined"
+                     Strict="false"
+                     ToStringFunc="@(x => x?.Name)"
+                     Clearable
+                     T="ClientLookup"
+                     ValueChanged="OnClientChangedAsync"
+                     Label="العميل"
+                     Value="_selectedClient"
+                     SearchFunc="Search"
+                     Margin="Margin.Dense"
+                     InputClass="text-xs font-bold"
+                     Disabled="Disabled"
+                     Text="@_selectedClient?.Name" />
+
+    @if (_selectedClient is not null)
+    {
+        <div class="flex flex-col gap-2 rounded-lg bg-slate-50 p-3">
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex min-w-0 items-center gap-2">
+                    <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-black text-blue-700">
+                        @InitialOf(_selectedClient.Name)
+                    </span>
+                    <div class="min-w-0">
+                        <span class="block truncate text-xs font-bold text-slate-900">@_selectedClient.Name</span>
+                        <span dir="ltr" class="block font-mono text-[11px] text-slate-500">@_selectedClient.PhoneNumber</span>
+                    </div>
+                </div>
             </div>
 
-            <MudSpacer />
-
-            <ClientEditorButton Variant="Variant.Text" OnSaved="OnClientCreated" />
-        </MudStack>
-
-        <MudAutocomplete Variant="Variant.Outlined"
-                         Strict="false"
-                         ToStringFunc="@(x => x?.Name)"
-                         Clearable
-                         T="ClientLookup"
-                         ValueChanged="OnClientChangedAsync"
-                         Label="العميل"
-                         Value="_selectedClient"
-                         SearchFunc="Search"
-                         Margin="Margin.Dense"
-                         Text="@_selectedClient?.Name" />
-
-    </MudStack>
-</MudPaper>
+            @if (!string.IsNullOrWhiteSpace(_selectedClient.Address))
+            {
+                <div class="flex items-start gap-1.5 pt-1 text-[11px] text-slate-600">
+                    <MudIcon Icon="@Icons.Material.Outlined.LocationOn" Class="mt-0.5 h-3.5 w-3.5 text-slate-400" />
+                    <span>@_selectedClient.Address</span>
+                </div>
+            }
+        </div>
+    }
+</section>
 
 @code
 {
@@ -66,6 +86,10 @@
         {
             _selectedClient = Clients.SingleOrDefault(x => x.Id == ClientId.Value);
         }
+        else
+        {
+            _selectedClient = null;
+        }
     }
 
     private void OnClientChangedAsync(ClientLookup client)
@@ -73,6 +97,7 @@
         if (client is null || ClientId == client.Id)
             return;
 
+        _selectedClient = client;
         ClientIdChanged.InvokeAsync(client.Id);
     }
 
@@ -81,11 +106,16 @@
         if (string.IsNullOrEmpty(value))
             return Task.FromResult<IEnumerable<ClientLookup>>(Clients);
 
-        return Task.FromResult<IEnumerable<ClientLookup>>(Clients.Where(x => x.Name.Contains(value)));
+        return Task.FromResult<IEnumerable<ClientLookup>>(Clients.Where(x =>
+            x.Name.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            x.PhoneNumber.Contains(value, StringComparison.OrdinalIgnoreCase)));
     }
 
     private async void OnClientCreated()
     {
         Clients = await RequestExecutor!.ExecuteAsync(new GetClientLookupsQuery());
     }
+
+    private static string InitialOf(string? name) =>
+        string.IsNullOrWhiteSpace(name) ? "؟" : name.Trim()[..1];
 }

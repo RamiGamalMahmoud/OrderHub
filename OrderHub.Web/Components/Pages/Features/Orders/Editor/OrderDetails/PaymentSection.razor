@@ -1,50 +1,28 @@
-﻿@using OrderHub.Application.Common.Lookups
+@using OrderHub.Application.Common.Lookups
 
-<MudPaper Outlined="true" Class="pa-4 rounded-2xl border-slate-200">
-    <MudStack Spacing="2">
+<div>
+    <label class="mb-1 block text-xs font-semibold text-slate-600">طريقة الدفع</label>
 
-        <MudStack Row
-                  AlignItems="AlignItems.Center"
-                  Spacing="2">
+    <MudSelect T="int?"
+               Value="PaymentMethodId"
+               ValueChanged="OnPaymentMethodChangedAsync"
+               Placeholder="اختر طريقة الدفع"
+               Clearable="true"
+               Disabled="Disabled"
+               Variant="Variant.Outlined"
+               Margin="Margin.Dense"
+               InputClass="text-xs font-bold">
 
-            <MudIcon Icon="@Icons.Material.Outlined.Payments"
-                     Size="Size.Medium"
-                     Color="Color.Primary" />
+        @foreach (var payment in PaymentMethods)
+        {
+            <MudSelectItem T="int?"
+                           Value="@((int?)payment.Id)">
+                @payment.DisplayName
+            </MudSelectItem>
+        }
 
-            <div>
-                <MudText Typo="Typo.subtitle1" Class="font-bold">
-                    طريقة الدفع
-                </MudText>
-
-                <MudText Typo="Typo.body2"
-                         Color="Color.Secondary">
-                    حدد طريقة دفع الطلب
-                </MudText>
-            </div>
-
-        </MudStack>
-
-        <MudSelect T="int?"
-                   Label="طريقة الدفع"
-                   Value="PaymentMethodId"
-                   ValueChanged="OnPaymentMethodChangedAsync"
-                   Clearable="true"
-                   Disabled="Disabled"
-                   Variant="Variant.Outlined"
-                   Margin="Margin.Dense">
-
-            @foreach (var payment in PaymentMethods)
-            {
-                <MudSelectItem T="int?"
-                               Value="@((int?)payment.Id)">
-                    @payment.DisplayName
-                </MudSelectItem>
-            }
-
-        </MudSelect>
-
-    </MudStack>
-</MudPaper>
+    </MudSelect>
+</div>
 
 @code
 {

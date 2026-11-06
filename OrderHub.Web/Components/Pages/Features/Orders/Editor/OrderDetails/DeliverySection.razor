@@ -1,103 +1,89 @@
-﻿@using OrderHub.Application.Common.Lookups
+@using OrderHub.Application.Common.Lookups
 @using OrderHub.Domain.Enums
 @using OrderHub.Web.Components.Pages.Features.Orders.Editor.State
 
-<MudPaper Outlined="true" Class="pa-4 rounded-2xl border-slate-200">
-    <MudStack Spacing="3">
+<section class="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm sm:p-5">
+    <div class="flex items-center gap-2 pb-1">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+            <MudIcon Icon="@Icons.Material.Outlined.Route" Size="Size.Small" />
+        </span>
+        <div>
+            <h3 class="text-sm font-bold leading-tight text-slate-900">سلسلة وخطة التوصيل</h3>
+            <p class="text-[11px] text-slate-500">مسار الشحن اللوجستي متعدد المراحل</p>
+        </div>
+    </div>
 
-        <MudStack Row
-                  AlignItems="AlignItems.Center"
-                  Spacing="2">
+    @* Delivery methods *@
+    <div class="grid grid-cols-2 gap-1 rounded-lg bg-slate-50 p-1 text-center text-xs">
+        @foreach (var method in EnumItems.For<DeliveryMethod>())
+        {
+            var isSelected = Delivery.Method == method.Value;
+            <button type="button"
+                    class="rounded py-1 font-semibold transition @(isSelected
+                                                                   ? "bg-blue-600 font-bold text-white shadow-sm"
+                                                                   : "text-slate-600 hover:bg-white")"
+                    disabled="@Disabled"
+                    aria-pressed="@(isSelected ? "true" : "false")"
+                    @onclick="@(() => OnDeliveryMethodChangedAsync(method.Value))">
+                @method.DisplayName
+            </button>
+        }
+    </div>
 
-            <MudIcon Icon="@Icons.Material.Outlined.LocalShipping"
-                     Size="Size.Medium"
-                     Color="Color.Primary" />
+    @if (Delivery.Method == DeliveryMethod.DeliveryMan)
+    {
+        <MudSelect T="int?"
+                   Placeholder="مندوب التوصيل"
+                   Value="Delivery.DeliverymanId"
+                   ValueChanged="OnDeliverymanChangedAsync"
+                   Clearable="true"
+                   Disabled="Disabled"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense"
+                   InputClass="text-xs font-semibold">
 
-            <div>
-                <MudText Typo="Typo.subtitle1" Class="font-bold">
-                    التوصيل
-                </MudText>
-
-                <MudText Typo="Typo.body2"
-                         Color="Color.Secondary">
-                    حدد طريقة تسليم الطلب
-                </MudText>
-            </div>
-
-        </MudStack>
-
-        <MudToggleGroup T="DeliveryMethod?"
-                        Class="flex flex-wrap gap-2 border-0"
-                        Value="Delivery.Method"
-                        FixedContent
-                        CheckMark
-                        ValueChanged="OnDeliveryMethodChangedAsync"
-                        SelectionMode="SelectionMode.SingleSelection"
-                        Outlined="true">
-
-            @foreach (var method in EnumItems.For<DeliveryMethod>())
+            @foreach (var deliveryman in Deliverymen)
             {
-                <MudToggleItem T="DeliveryMethod?"
-                               Value="@((DeliveryMethod?)method.Value)"
-                               Class="rounded-xl"
-                               Text="@method.DisplayName" />
+                <MudSelectItem T="int?"
+                               Value="@((int?)deliveryman.Id)">
+                    @deliveryman.Name
+                </MudSelectItem>
             }
 
-        </MudToggleGroup>
+        </MudSelect>
+    }
+    else if (Delivery.Method == DeliveryMethod.ShippingCompany)
+    {
+        <MudSelect T="int?"
+                   Placeholder="شركة الشحن"
+                   Value="Delivery.ShippingCarrierId"
+                   ValueChanged="OnShippingCarrierChangedAsync"
+                   Clearable="true"
+                   Disabled="Disabled"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense"
+                   InputClass="text-xs font-semibold">
 
-        @if (Delivery.Method == DeliveryMethod.DeliveryMan)
-        {
-            <MudSelect T="int?"
-                       Label="مندوب التوصيل"
-                       Value="Delivery.DeliverymanId"
-                       ValueChanged="OnDeliverymanChangedAsync"
-                       Clearable="true"
-                       Disabled="Disabled"
-                       Variant="Variant.Outlined"
-                       Margin="Margin.Dense">
+            @foreach (var carrier in ShippingCarriers)
+            {
+                <MudSelectItem T="int?"
+                               Value="@((int?)carrier.Id)">
+                    @carrier.Name
+                </MudSelectItem>
+            }
 
-                @foreach (var deliveryman in Deliverymen)
-                {
-                    <MudSelectItem T="int?"
-                                   Value="@((int?)deliveryman.Id)">
-                        @deliveryman.Name
-                    </MudSelectItem>
-                }
+        </MudSelect>
+    }
+    else if (Delivery.Method == DeliveryMethod.DeliveryChain)
+    {
+        <DeliveryChainEditor Steps="Delivery.Steps"
+                             Deliverymen="Deliverymen"
+                             ShippingCarriers="ShippingCarriers"
+                             Disabled="Disabled"
+                             Changed="Changed" />
+    }
 
-            </MudSelect>
-        }
-        else if (Delivery.Method == DeliveryMethod.ShippingCompany)
-        {
-            <MudSelect T="int?"
-                       Label="شركة الشحن"
-                       Value="Delivery.ShippingCarrierId"
-                       ValueChanged="OnShippingCarrierChangedAsync"
-                       Clearable="true"
-                       Disabled="Disabled"
-                       Variant="Variant.Outlined"
-                       Margin="Margin.Dense">
-
-                @foreach (var carrier in ShippingCarriers)
-                {
-                    <MudSelectItem T="int?"
-                                   Value="@((int?)carrier.Id)">
-                        @carrier.Name
-                    </MudSelectItem>
-                }
-
-            </MudSelect>
-        }
-        else if (Delivery.Method == DeliveryMethod.DeliveryChain)
-        {
-            <DeliveryChainEditor Steps="Delivery.Steps"
-                                 Deliverymen="Deliverymen"
-                                 ShippingCarriers="ShippingCarriers"
-                                 Disabled="Disabled"
-                                 Changed="Changed" />
-        }
-
-    </MudStack>
-</MudPaper>
+</section>
 
 @code
 {
@@ -116,9 +102,9 @@
     [Parameter]
     public bool Disabled { get; set; }
 
-    private async Task OnDeliveryMethodChangedAsync(DeliveryMethod? value)
+    private async Task OnDeliveryMethodChangedAsync(DeliveryMethod value)
     {
-        if (value == Delivery.Method)
+        if (Disabled || value == Delivery.Method)
             return;
 
         Delivery.Method = value;

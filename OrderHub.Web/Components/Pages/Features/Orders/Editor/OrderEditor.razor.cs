@@ -9,31 +9,24 @@ using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Features.Orders;
 using OrderHub.Application.Features.Documents.ProformaInvoices;
 using OrderHub.Application.Features.Documents.Quotations;
+using System.Globalization;
 
 using OrderHub.Application.Features.Setup.Properties.Get;
 using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Services.Pricing;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor.State;
-using OrderHub.Web.Components.Common;
 
 namespace OrderHub.Web.Components.Pages.Features.Orders.Editor;
 
 public partial class OrderEditor : IDisposable
 {
-    private static readonly PageScaffold.CrumbItem[] _crumbs =
-    [
-        new("الطلبات", "/orders")
-    ];
-
     private bool _isDraftsOpen;
     private bool _isSavingUpdate;
     private bool _isCreatingDocument;
     private string? _loadError;
     private string? _createdDocumentNumber;
     private DocumentType? _createdDocumentType;
-
-    private OrderEditorStep _activeStep = OrderEditorStep.Products;
 
     private OrderEditorState _state = new();
 
@@ -217,15 +210,16 @@ public partial class OrderEditor : IDisposable
         _changeVersion = 0;
         _createdDocumentNumber = null;
         _createdDocumentType = null;
-        _activeStep = OrderEditorStep.Products;
         _isDraftsOpen = false;
 
         if (OrderId.HasValue)
         {
-            _pageTitle = $"تعديل طلب {OrderId.Value}";
+            _pageTitle = $"تعديل طلب #{OrderId.Value.ToString(CultureInfo.InvariantCulture)}";
 
-            // لاحقًا:
             _state = await LoadOrderAsync(OrderId.Value);
+
+            if (_state.OrderNumber is { } orderNumber)
+                _pageTitle = $"تعديل طلب #{orderNumber}";
 
             return;
         }
@@ -364,6 +358,8 @@ public partial class OrderEditor : IDisposable
             Version = order.Version,
             Status = order.Status,
             IsArchived = order.IsArchived,
+            OrderNumber = order.OrderNumber,
+            ModifiedAt = order.ModifiedAt,
             DeliveryCost = order.DeliveryCost,
             DiscountType = order.DiscountType,
             DiscountValue = order.DiscountValue,
@@ -421,16 +417,32 @@ public partial class OrderEditor : IDisposable
             option.OptionId, option.Value)).ToList()
     };
 
-    private void SelectStep(OrderEditorStep step)
-    {
-        _activeStep = step;
-    }
+    private string? ModifiedText => _state.ModifiedAt is { } modified
+        ? $"تم التحديث: {FormatRelative(modified)}"
+        : null;
 
-    private Variant GetStepVariant(OrderEditorStep step)
+    private static string FormatRelative(DateTime value)
     {
-        return _activeStep == step
-            ? Variant.Filled
-            : Variant.Text;
+        var now = value.Kind == DateTimeKind.Utc ? DateTime.UtcNow : DateTime.Now;
+        var elapsed = now - value;
+
+        if (elapsed < TimeSpan.FromMinutes(1))
+            return "الآن";
+
+        if (elapsed < TimeSpan.FromHours(1))
+        {
+            var minutes = (int)elapsed.TotalMinutes;
+            return minutes == 1 ? "منذ دقيقة" : $"منذ {minutes.ToString(CultureInfo.InvariantCulture)} دقيقة";
+        }
+
+        if (elapsed < TimeSpan.FromDays(1))
+        {
+            var hours = (int)elapsed.TotalHours;
+            return hours == 1 ? "منذ ساعة" : $"منذ {hours.ToString(CultureInfo.InvariantCulture)} ساعة";
+        }
+
+        var days = (int)elapsed.TotalDays;
+        return days == 1 ? "منذ يوم" : $"منذ {days.ToString(CultureInfo.InvariantCulture)} يوم";
     }
 
     private OrderInput.Order BuildOrderInput()
@@ -666,10 +678,4 @@ public partial class OrderEditor : IDisposable
     }
 
     public void Dispose() => _draftLifecycle.IsClosed = true;
-}
-
-public enum OrderEditorStep
-{
-    Products,
-    Details
 }

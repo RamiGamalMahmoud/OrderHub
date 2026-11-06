@@ -1,39 +1,26 @@
-﻿@using OrderHub.Application.Common.Lookups
+@using OrderHub.Application.Common.Lookups
 @using OrderHub.Domain.Enums
 @using OrderHub.Web.Components.Pages.Features.Orders.Editor.State
 
-<MudStack Spacing="2">
+<div class="flex flex-col gap-2.5 pt-1">
 
-    <MudStack Row
-              AlignItems="AlignItems.Center"
-              Justify="Justify.SpaceBetween"
-              Class="flex-wrap gap-y-2">
-
-        <div>
-            <MudText Typo="Typo.subtitle2" Class="font-bold">
-                سلسلة التوصيل
-            </MudText>
-
-            <MudText Typo="Typo.body2"
-                     Color="Color.Secondary">
-                حدد مراحل انتقال الطلب بالترتيب
-            </MudText>
-        </div>
-
-        <MudButton Variant="Variant.Outlined"
-                   Class="oh-btn oh-btn--secondary"
-                   StartIcon="@Icons.Material.Outlined.Add"
+    <div class="flex items-center justify-end">
+        <MudButton Variant="Variant.Text"
+                   Size="Size.Small"
+                   Color="Color.Primary"
+                   Class="oh-btn oh-btn--ghost oh-btn--sm font-bold"
+                   StartIcon="@Icons.Material.Outlined.AddCircleOutline"
                    Disabled="Disabled"
                    OnClick="AddStepAsync">
             إضافة خطوة
         </MudButton>
-
-    </MudStack>
+    </div>
 
     @if (Steps.Count == 0)
     {
         <MudAlert Severity="Severity.Info"
-                  Variant="Variant.Outlined">
+                  Variant="Variant.Outlined"
+                  Dense="true">
             لم تتم إضافة أي خطوات للتوصيل بعد.
         </MudAlert>
     }
@@ -58,7 +45,7 @@
         }
     }
 
-</MudStack>
+</div>
 
 @code
 {

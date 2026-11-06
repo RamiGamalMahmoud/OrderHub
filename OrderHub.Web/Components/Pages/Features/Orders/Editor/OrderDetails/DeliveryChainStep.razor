@@ -1,139 +1,105 @@
-﻿@using OrderHub.Application.Common.Lookups
+@using OrderHub.Application.Common.Lookups
 @using OrderHub.Domain.Enums
 @using OrderHub.Web.Components.Pages.Features.Orders.Editor.State
 
-<MudPaper Outlined="true" Class="pa-4 rounded-2xl border-slate-200 bg-slate-50">
+<div class="flex flex-col gap-2 rounded-lg bg-slate-50 p-2.5">
 
-    <MudStack Spacing="3">
+    <div class="flex items-center justify-between gap-2">
+        <div class="flex min-w-0 items-center gap-2">
+            <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[10px] font-black text-white">
+                @Step.StepOrder
+            </span>
+            <span class="truncate text-xs font-bold text-slate-800">خطوة @Step.StepOrder</span>
 
-        @* Header *@
-        <MudStack Row
-                  AlignItems="AlignItems.Center"
-                  Justify="Justify.SpaceBetween">
+            <span class="inline-flex shrink-0 rounded bg-slate-200 p-0.5">
+                <button type="button"
+                        class="rounded px-2 py-0.5 text-[10px] font-bold transition @(Step.Method == DeliveryMethod.DeliveryMan ? "bg-blue-100 text-blue-700" : "text-slate-500 hover:text-slate-700")"
+                        disabled="@Disabled"
+                        aria-pressed="@(Step.Method == DeliveryMethod.DeliveryMan ? "true" : "false")"
+                        @onclick="@(() => OnMethodChangedAsync(DeliveryMethod.DeliveryMan))">
+                    مندوب
+                </button>
+                <button type="button"
+                        class="rounded px-2 py-0.5 text-[10px] font-bold transition @(Step.Method == DeliveryMethod.ShippingCompany ? "bg-purple-100 text-purple-700" : "text-slate-500 hover:text-slate-700")"
+                        disabled="@Disabled"
+                        aria-pressed="@(Step.Method == DeliveryMethod.ShippingCompany ? "true" : "false")"
+                        @onclick="@(() => OnMethodChangedAsync(DeliveryMethod.ShippingCompany))">
+                    شركة شحن
+                </button>
+            </span>
+        </div>
 
-            <MudStack Row
-                      AlignItems="AlignItems.Center"
-                      Spacing="2">
+        <div class="flex shrink-0 items-center gap-1">
+            <MudIconButton Icon="@Icons.Material.Outlined.ArrowUpward"
+                           Size="Size.Small"
+                           Disabled="@(Disabled || !CanMoveUp)"
+                           OnClick="MoveUp"
+                           aria-label="نقل الخطوة لأعلى"
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
 
-                <MudAvatar Size="Size.Small"
-                           Color="Color.Primary"
-                           Class="font-bold">
-                    @Step.StepOrder
-                </MudAvatar>
+            <MudIconButton Icon="@Icons.Material.Outlined.ArrowDownward"
+                           Size="Size.Small"
+                           Disabled="@(Disabled || !CanMoveDown)"
+                           OnClick="MoveDown"
+                           aria-label="نقل الخطوة لأسفل"
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
 
-                <div>
-                    <MudText Typo="Typo.subtitle2" Class="font-bold">
-                        خطوة @Step.StepOrder
-                    </MudText>
+            <MudIconButton Icon="@Icons.Material.Outlined.Close"
+                           Size="Size.Small"
+                           Color="Color.Error"
+                           Disabled="Disabled"
+                           OnClick="Remove"
+                           aria-label="حذف الخطوة"
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost oh-btn--danger" />
+        </div>
+    </div>
 
-                    <MudText Typo="Typo.caption"
-                             Color="Color.Secondary">
-                        @GetStepDescription()
-                    </MudText>
-                </div>
+    @if (Step.Method == DeliveryMethod.DeliveryMan)
+    {
+        <MudSelect T="int?"
+                   Placeholder="مندوب التوصيل"
+                   Value="Step.HandlerId"
+                   ValueChanged="OnHandlerChangedAsync"
+                   Clearable="true"
+                   Disabled="Disabled"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense"
+                   InputClass="text-xs font-semibold">
 
-            </MudStack>
+            @foreach (var deliveryman in Deliverymen)
+            {
+                <MudSelectItem T="int?"
+                               Value="@((int?)deliveryman.Id)">
+                    @deliveryman.Name
+                </MudSelectItem>
+            }
 
-            <MudStack Row
-                      AlignItems="AlignItems.Center"
-                      Spacing="1">
+        </MudSelect>
+    }
+    else if (Step.Method == DeliveryMethod.ShippingCompany)
+    {
+        <MudSelect T="int?"
+                   Placeholder="شركة الشحن"
+                   Value="Step.HandlerId"
+                   ValueChanged="OnHandlerChangedAsync"
+                   Clearable="true"
+                   Disabled="Disabled"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense"
+                   InputClass="text-xs font-semibold">
 
-                <MudIconButton Icon="@Icons.Material.Outlined.ArrowUpward"
-                               Size="Size.Small"
-                               Disabled="@(Disabled || !CanMoveUp)"
-                               OnClick="MoveUp"
-                               aria-label="نقل الخطوة لأعلى"
-                               Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+            @foreach (var carrier in ShippingCarriers)
+            {
+                <MudSelectItem T="int?"
+                               Value="@((int?)carrier.Id)">
+                    @carrier.Name
+                </MudSelectItem>
+            }
 
-                <MudIconButton Icon="@Icons.Material.Outlined.ArrowDownward"
-                               Size="Size.Small"
-                               Disabled="@(Disabled || !CanMoveDown)"
-                               OnClick="MoveDown"
-                               aria-label="نقل الخطوة لأسفل"
-                               Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+        </MudSelect>
+    }
 
-                <MudIconButton Icon="@Icons.Material.Outlined.DeleteOutline"
-                               Size="Size.Small"
-                               Color="Color.Error"
-                               Disabled="Disabled"
-                               OnClick="Remove"
-                               aria-label="حذف الخطوة"
-                               Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost oh-btn--danger" />
-
-            </MudStack>
-
-        </MudStack>
-
-        @* Step type *@
-        <MudToggleGroup T="DeliveryMethod"
-                        Class="flex flex-wrap gap-2 border-0"
-                        CheckMark
-                        FixedContent
-                        Value="Step.Method"
-                        ValueChanged="OnMethodChangedAsync"
-                        SelectionMode="SelectionMode.SingleSelection"
-                        Outlined="true"
-                        Disabled="Disabled">
-
-            <MudToggleItem T="DeliveryMethod"
-                           Value="DeliveryMethod.DeliveryMan"
-                           Class="rounded-xl"
-                           Text="مندوب" />
-
-            <MudToggleItem T="DeliveryMethod"
-                           Value="DeliveryMethod.ShippingCompany"
-                           Class="rounded-xl"
-                           Text="شركة شحن" />
-
-        </MudToggleGroup>
-
-        @* Handler *@
-        @if (Step.Method == DeliveryMethod.DeliveryMan)
-        {
-            <MudSelect T="int?"
-                       Label="مندوب التوصيل"
-                       Value="Step.HandlerId"
-                       ValueChanged="OnHandlerChangedAsync"
-                       Clearable="true"
-                       Disabled="Disabled"
-                       Variant="Variant.Outlined"
-                       Margin="Margin.Dense">
-
-                @foreach (var deliveryman in Deliverymen)
-                {
-                    <MudSelectItem T="int?"
-                                   Value="@((int?)deliveryman.Id)">
-                        @deliveryman.Name
-                    </MudSelectItem>
-                }
-
-            </MudSelect>
-        }
-        else if (Step.Method == DeliveryMethod.ShippingCompany)
-        {
-            <MudSelect T="int?"
-                       Label="شركة الشحن"
-                       Value="Step.HandlerId"
-                       ValueChanged="OnHandlerChangedAsync"
-                       Clearable="true"
-                       Disabled="Disabled"
-                       Variant="Variant.Outlined"
-                       Margin="Margin.Dense">
-
-                @foreach (var carrier in ShippingCarriers)
-                {
-                    <MudSelectItem T="int?"
-                                   Value="@((int?)carrier.Id)">
-                        @carrier.Name
-                    </MudSelectItem>
-                }
-
-            </MudSelect>
-        }
-
-    </MudStack>
-
-</MudPaper>
+</div>
 
 @code
 {
@@ -193,15 +159,5 @@
         Step.HandlerId = value;
 
         await Changed.InvokeAsync();
-    }
-
-    private string GetStepDescription()
-    {
-        return Step.Method switch
-        {
-            DeliveryMethod.DeliveryMan => "التسليم بواسطة مندوب",
-            DeliveryMethod.ShippingCompany => "التسليم بواسطة شركة شحن",
-            _ => "حدد طريقة تنفيذ الخطوة"
-        };
     }
 }

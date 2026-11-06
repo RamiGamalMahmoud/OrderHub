@@ -9,16 +9,7 @@
 @inject IRequestExecutor RequestExecutor
 @inject ILogger<DetailsStep> Logger
 
-<MudStack Spacing="4" Class="pt-2">
-
-    <div class="flex flex-col gap-1 border-b border-slate-100 pb-4">
-        <MudText Typo="Typo.h6" Class="font-bold">
-            بيانات الطلب
-        </MudText>
-        <MudText Typo="Typo.body2" Color="Color.Secondary">
-            بيانات العميل والدفع ومصدر الطلب وطريقة التوصيل
-        </MudText>
-    </div>
+<div class="flex flex-col gap-5">
 
     @if (_loading)
     {
@@ -57,21 +48,26 @@
                    Clients="_clients"
                    Disabled="_loading" />
 
-    <MudGrid Spacing="3">
+    @* Source & payment *@
+    <section class="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm sm:p-5">
+        <div class="flex items-center gap-2 pb-1">
+            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                <MudIcon Icon="@Icons.Material.Outlined.Payments" Size="Size.Small" />
+            </span>
+            <div>
+                <h3 class="text-sm font-bold leading-tight text-slate-900">مصدر الطلب وطريقة الدفع</h3>
+                <p class="text-[11px] text-slate-500">قناة البيع وأسلوب تسوية الفاتورة</p>
+            </div>
+        </div>
 
-        <MudItem xs="12" md="6">
-            <PaymentSection PaymentMethodId="State.PaymentMethodId"
-                            PaymentMethodIdChanged="SetPaymentAsync"
-                            PaymentMethods="_payments"
-                            Disabled="_loading" />
-        </MudItem>
+        <OrderSourceSection OrderSource="State.OrderSource"
+                            OrderSourceChanged="SetSourceAsync" />
 
-        <MudItem xs="12" md="6">
-            <OrderSourceSection OrderSource="State.OrderSource"
-                                OrderSourceChanged="SetSourceAsync" />
-        </MudItem>
-
-    </MudGrid>
+        <PaymentSection PaymentMethodId="State.PaymentMethodId"
+                        PaymentMethodIdChanged="SetPaymentAsync"
+                        PaymentMethods="_payments"
+                        Disabled="_loading" />
+    </section>
 
     <DeliverySection Delivery="State.Delivery"
                      Deliverymen="_deliverymen"
@@ -79,7 +75,7 @@
                      Disabled="_loading"
                      Changed="NotifyChangedAsync" />
 
-</MudStack>
+</div>
 
 @code
 {

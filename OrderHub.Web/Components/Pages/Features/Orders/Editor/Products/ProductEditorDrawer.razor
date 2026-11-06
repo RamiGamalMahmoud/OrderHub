@@ -9,38 +9,34 @@
            OpenChanged="OnOpenChanged"
            Anchor="Anchor.End"
            Variant="DrawerVariant.Temporary"
-           Width="min(420px, 100vw)"
+           Width="min(448px, 100vw)"
            Style="z-index: 1600 !important;"
-           Class="pa-4">
+           Class="p-5">
 
     @if (_workingCopy is not null)
     {
-        <MudStack Spacing="3" Class="h-full">
-            <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
-                <MudIcon Icon="@Icons.Material.Outlined.Inventory2"
-                         Color="Color.Primary" />
+        <div class="flex h-full flex-col gap-4 overflow-y-auto">
 
-                <MudText Typo="Typo.h6" Class="font-bold">
-                    @if (IsAdding)
-                    {
-                        <text>إضافة منتج إلى الطلب</text>
-                    }
-                    else
-                    {
-                        <text>تعديل المنتج</text>
-                    }
-                </MudText>
-            </MudStack>
+            @* Header *@
+            <header class="flex items-start justify-between gap-3 pb-3">
+                <div class="flex min-w-0 items-center gap-2">
+                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                        <MudIcon Icon="@Icons.Material.Outlined.Tune" Size="Size.Small" />
+                    </span>
+                    <div class="min-w-0">
+                        <h3 class="truncate text-sm font-bold text-slate-900">@_workingCopy.ProductName</h3>
+                        <p class="truncate text-[11px] text-slate-400">ضبط خصائص المنتج — @_workingCopy.CategoryName</p>
+                    </div>
+                </div>
 
-            <MudDivider />
-
-            <MudText Typo="Typo.subtitle1">
-                @_workingCopy.ProductName
-            </MudText>
-
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                @_workingCopy.CategoryName
-            </MudText>
+                <MudIconButton Icon="@Icons.Material.Filled.Close"
+                               Size="Size.Small"
+                               Color="Color.Default"
+                               Disabled="_saving"
+                               OnClick="Cancel"
+                               aria-label="إغلاق الدرج"
+                               Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+            </header>
 
             @if (!string.IsNullOrWhiteSpace(_workingCopy.MetadataRestorationError))
             {
@@ -50,181 +46,193 @@
             }
 
             <MudForm @ref="_form">
-                <MudStack Spacing="3">
-                    <MudSelect T="int?"
-                               Label="المورد"
-                               @bind-Value="_workingCopy.SupplierId"
-                               Clearable="true"
-                               Disabled="_saving">
+                <div class="flex flex-col gap-4">
 
-                        @foreach (var supplier in _workingCopy.Suppliers)
-                        {
-                            <MudSelectItem T="int?"
-                                           Value="@((int?)supplier.Id)">
-                                @supplier.Name
-                            </MudSelectItem>
-                        }
-                    </MudSelect>
-
-                    <SupplierEditorButton Variant="Variant.Text" ButtonText="إضافة مورد"
-                                          PreselectedProductId="_workingCopy.ProductId"
-                                          OnCreated="OnSupplierCreatedAsync" />
-
-                    @if (_workingCopy.SupplierId.HasValue &&
-                                    !_workingCopy.Suppliers.Any(s => s.Id == _workingCopy.SupplierId))
-                    {
-                        <MudAlert Severity="Severity.Warning">
-                            المورد المحدد لم يعد متاحاً. اختر مورداً متاحاً أو امسح الاختيار.
-                        </MudAlert>
-                    }
-
-                    <MudNumericField T="decimal"
-                                     Label="سعر الوحدة قبل الضريبة"
-                                     @bind-Value="_workingCopy.UnitPrice"
-                                     Min="0"
-                                     Disabled="_saving"
-                                     Variant="Variant.Outlined"
-                                     Validation="@(new Func<decimal, string?>(value =>
-                                                                              value > 0 ? null : "يجب أن يكون السعر أكبر من صفر."))" />
-
-                <MudNumericField T="int"
-                                 Label="الكمية"
-                                 @bind-Value="_workingCopy.Quantity"
-                                 Min="1"
-                                 Disabled="_saving"
-                                 Variant="Variant.Outlined"
-                                 Validation="@(new Func<int, string?>(value =>
-                                                                          value > 0 ? null : "يجب أن تكون الكمية أكبر من صفر."))" />
-
-                <MudNumericField T="decimal"
-                                 Label="الضريبة (%)"
-                                 @bind-Value="_workingCopy.VatRate"
-                                 Min="0"
-                                 Max="100"
-                                 Disabled="_saving"
-                                 Variant="Variant.Outlined"
-                                 Validation="@(new Func<decimal, string?>(value =>
-                                                                          value is >= 0 and <= 100
-                                                                              ? null
-                                                                              : "الضريبة يجب أن تكون بين 0 و100."))" />
-
-                @if (CurrentPricing is { } pricing)
-                    {
-            <MudPaper Outlined="true" Class="pa-4 rounded-2xl border-slate-200 bg-slate-50">
-                            <MudStack Spacing="2">
-                                <MudText Typo="Typo.subtitle2" Class="font-bold">
-                                    ملخص السعر
-                                </MudText>
-
-                                <MudStack Row
-                                          AlignItems="AlignItems.Center"
-                                          Justify="Justify.SpaceBetween">
-                                    <MudText Typo="Typo.body2">
-                                        قيمة المنتجات قبل الضريبة
-                                    </MudText>
-                                    <MudText Typo="Typo.body2">
-                                        @pricing.Subtotal.ToString("N2") ر.س
-                                    </MudText>
-                                </MudStack>
-
-                                <MudStack Row
-                                          AlignItems="AlignItems.Center"
-                                          Justify="Justify.SpaceBetween">
-                                    <MudText Typo="Typo.body2">
-                                        الضريبة (@pricing.VatRate%)
-                                    </MudText>
-                                    <MudText Typo="Typo.body2">
-                                        @pricing.VatAmount.ToString("N2") ر.س
-                                    </MudText>
-                                </MudStack>
-
-                                <MudDivider />
-
-                                <MudStack Row
-                                          AlignItems="AlignItems.Center"
-                                          Justify="Justify.SpaceBetween">
-                                    <MudText Typo="Typo.subtitle2">
-                                        الإجمالي شامل الضريبة
-                                    </MudText>
-                                    <MudText Typo="Typo.subtitle2"
-                                             Color="Color.Primary">
-                                        @pricing.Total.ToString("N2") ر.س
-                                    </MudText>
-                                </MudStack>
-                            </MudStack>
-                        </MudPaper>
-                    }
-
-                    <MudDivider />
-
-                    @foreach (var property in _workingCopy.Properties)
-                    {
-                        @if (!property.HasMetadata)
-                        {
-                            <MudAlert Severity="Severity.Warning">
-                                @property.ValidateValue(property.Value) — @property.Value
-                            </MudAlert>
-                            continue;
-                        }
-
-                        @switch (property.Type)
-                        {
-                            case PropertyType.Text:
-                                <MudTextField T="string"
-                                              @key="property.PropertyId"
-                                              Label="@property.Name"
-                                              @bind-Value="property.Value"
-                                              Required="property.IsRequired"
-                                              Disabled="_saving"
-                                              Validation="@(new Func<string?, string?>(property.ValidateValue))" />
-                                break;
-
-                            case PropertyType.Boolean:
-                                <MudSelect T="string"
-                                           @key="property.PropertyId"
-                                           Label="@property.Name"
-                                           @bind-Value="property.Value"
+                    @* Supplier *@
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-slate-700">المورد المعتمد</label>
+                        <div class="flex items-center gap-2">
+                            <div class="min-w-0 flex-1">
+                                <MudSelect T="int?"
+                                           @bind-Value="_workingCopy.SupplierId"
                                            Clearable="true"
-                                           Required="property.IsRequired"
                                            Disabled="_saving"
-                                           Validation="@(new Func<string?, string?>(property.ValidateValue))">
-                                    <MudSelectItem T="string" Value='@("true")'>
-                                        نعم
-                                    </MudSelectItem>
-                                    <MudSelectItem T="string" Value='@("false")'>
-                                        لا
-                                    </MudSelectItem>
-                                </MudSelect>
-                                break;
+                                           Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
+                                           InputClass="text-xs font-semibold">
 
-                            case PropertyType.List:
-                                <MudSelect T="string"
-                                           @key="property.PropertyId"
-                                           Label="@property.Name"
-                                           @bind-Value="property.Value"
-                                           Clearable="true"
-                                           Required="property.IsRequired"
-                                           Disabled="_saving"
-                                           Validation="@(new Func<string?, string?>(property.ValidateValue))">
-                                    @foreach (var option in property.Options)
+                                    @foreach (var supplier in _workingCopy.Suppliers)
                                     {
-                                        <MudSelectItem T="string" Value="@option.Value">
-                                            @option.Value
+                                        <MudSelectItem T="int?"
+                                                       Value="@((int?)supplier.Id)">
+                                            @supplier.Name
                                         </MudSelectItem>
                                     }
                                 </MudSelect>
-                                break;
-                        }
+                            </div>
 
-                        @if (property.Value is not null &&
-                                        property.ValidateValue(property.Value) is { } error)
+                            <SupplierEditorButton Variant="Variant.Text"
+                                                  ButtonText=""
+                                                  StartIcon="@Icons.Material.Outlined.Add"
+                                                  Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--secondary"
+                                                  PreselectedProductId="_workingCopy.ProductId"
+                                                  OnCreated="OnSupplierCreatedAsync" />
+                        </div>
+
+                        @if (_workingCopy.SupplierId.HasValue &&
+                             !_workingCopy.Suppliers.Any(s => s.Id == _workingCopy.SupplierId))
                         {
                             <MudAlert Severity="Severity.Warning">
-                                @error
+                                المورد المحدد لم يعد متاحاً. اختر مورداً متاحاً أو امسح الاختيار.
                             </MudAlert>
                         }
+                    </div>
+
+                    @* Price & quantity *@
+                    <div class="grid grid-cols-2 gap-3">
+                        <MudNumericField T="decimal"
+                                         Label="سعر الوحدة قبل الضريبة"
+                                         @bind-Value="_workingCopy.UnitPrice"
+                                         Min="0"
+                                         Disabled="_saving"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Validation="@(new Func<decimal, string?>(value =>
+                                                                                      value > 0 ? null : "يجب أن يكون السعر أكبر من صفر."))" />
+
+                        <MudNumericField T="int"
+                                         Label="الكمية"
+                                         @bind-Value="_workingCopy.Quantity"
+                                         Min="1"
+                                         Disabled="_saving"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Validation="@(new Func<int, string?>(value =>
+                                                                                  value > 0 ? null : "يجب أن تكون الكمية أكبر من صفر."))" />
+                    </div>
+
+                    @* Tax *@
+                    <MudNumericField T="decimal"
+                                     Label="نسبة الضريبة (%)"
+                                     @bind-Value="_workingCopy.VatRate"
+                                     Min="0"
+                                     Max="100"
+                                     Disabled="_saving"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense"
+                                     Validation="@(new Func<decimal, string?>(value =>
+                                                                                  value is >= 0 and <= 100
+                                                                                      ? null
+                                                                                      : "الضريبة يجب أن تكون بين 0 و100."))" />
+
+                    @* Properties *@
+                    @if (_workingCopy.Properties.Count > 0)
+                    {
+                        <div class="space-y-2 border-t border-slate-100 pt-3">
+                            <label class="block text-xs font-bold text-slate-700">خيارات ومواصفات المنتج</label>
+
+                            @foreach (var property in _workingCopy.Properties)
+                            {
+                                @if (!property.HasMetadata)
+                                {
+                                    <MudAlert Severity="Severity.Warning">
+                                        @property.ValidateValue(property.Value) — @property.Value
+                                    </MudAlert>
+                                    continue;
+                                }
+
+                                @switch (property.Type)
+                                {
+                                    case PropertyType.Text:
+                                        <MudTextField T="string"
+                                                      @key="property.PropertyId"
+                                                      Label="@property.Name"
+                                                      @bind-Value="property.Value"
+                                                      Required="property.IsRequired"
+                                                      Disabled="_saving"
+                                                      Variant="Variant.Outlined"
+                                                      Margin="Margin.Dense"
+                                                      InputClass="text-xs"
+                                                      Validation="@(new Func<string?, string?>(property.ValidateValue))" />
+                                        break;
+
+                                    case PropertyType.Boolean:
+                                        <MudSelect T="string"
+                                                   @key="property.PropertyId"
+                                                   Label="@property.Name"
+                                                   @bind-Value="property.Value"
+                                                   Clearable="true"
+                                                   Required="property.IsRequired"
+                                                   Disabled="_saving"
+                                                   Variant="Variant.Outlined"
+                                                   Margin="Margin.Dense"
+                                                   InputClass="text-xs"
+                                                   Validation="@(new Func<string?, string?>(property.ValidateValue))">
+                                            <MudSelectItem T="string" Value='@("true")'>
+                                                نعم
+                                            </MudSelectItem>
+                                            <MudSelectItem T="string" Value='@("false")'>
+                                                لا
+                                            </MudSelectItem>
+                                        </MudSelect>
+                                        break;
+
+                                    case PropertyType.List:
+                                        <MudSelect T="string"
+                                                   @key="property.PropertyId"
+                                                   Label="@property.Name"
+                                                   @bind-Value="property.Value"
+                                                   Clearable="true"
+                                                   Required="property.IsRequired"
+                                                   Disabled="_saving"
+                                                   Variant="Variant.Outlined"
+                                                   Margin="Margin.Dense"
+                                                   InputClass="text-xs"
+                                                   Validation="@(new Func<string?, string?>(property.ValidateValue))">
+                                            @foreach (var option in property.Options)
+                                            {
+                                                <MudSelectItem T="string" Value="@option.Value">
+                                                    @option.Value
+                                                </MudSelectItem>
+                                            }
+                                        </MudSelect>
+                                        break;
+                                }
+
+                                @if (property.Value is not null &&
+                                     property.ValidateValue(property.Value) is { } error)
+                                {
+                                    <MudAlert Severity="Severity.Warning">
+                                        @error
+                                    </MudAlert>
+                                }
+                            }
+                        </div>
                     }
-                </MudStack>
+
+                    @* Mini summary *@
+                    @if (CurrentPricing is { } pricing)
+                    {
+                        <div class="space-y-1.5 rounded-xl bg-slate-50 p-3 text-xs">
+                            <span class="block text-xs font-bold text-slate-800">ملخص الصنف المعدل:</span>
+
+                            <div class="flex items-center justify-between text-slate-500">
+                                <span>قيمة المنتجات قبل الضريبة</span>
+                                <span class="font-mono text-slate-800">@pricing.Subtotal.ToString("N2") ر.س</span>
+                            </div>
+
+                            <div class="flex items-center justify-between text-slate-500">
+                                <span>قيمة الضريبة (@pricing.VatRate.ToString("N2")%)</span>
+                                <span class="font-mono text-slate-800">@pricing.VatAmount.ToString("N2") ر.س</span>
+                            </div>
+
+                            <div class="flex items-center justify-between border-t border-slate-200 pt-1.5 font-bold text-blue-700">
+                                <span>الإجمالي للصنف:</span>
+                                <span class="font-mono text-sm">@pricing.Total.ToString("N2") ر.س</span>
+                            </div>
+                        </div>
+                    }
+                </div>
             </MudForm>
 
             @if (_error is not null)
@@ -234,9 +242,9 @@
                 </MudAlert>
             }
 
-            <MudStack Row Justify="Justify.FlexEnd" Spacing="2" Class="mt-auto flex-wrap border-t border-slate-100 pt-4">
+            <div class="mt-auto flex items-center gap-2 border-t border-slate-100 pt-4">
                 <MudButton OnClick="Cancel"
-                           Class="oh-btn oh-btn--secondary"
+                           Class="oh-btn oh-btn--secondary w-1/2"
                            Disabled="_saving">
                     إلغاء
                 </MudButton>
@@ -245,11 +253,11 @@
                            Disabled="_saving"
                            Color="Color.Primary"
                            Variant="Variant.Filled"
-                           Class="oh-btn oh-btn--primary"
+                           Class="oh-btn oh-btn--primary w-1/2"
                            StartIcon="@(IsAdding
-                                                          ? Icons.Material.Outlined.Add
-                                                      : Icons.Material.Outlined.Save)">
-                @if (_saving)
+                                            ? Icons.Material.Outlined.Add
+                                            : Icons.Material.Outlined.Save)">
+                    @if (_saving)
                     {
                         <MudProgressCircular Size="Size.Small"
                                              Indeterminate="true"
@@ -258,8 +266,8 @@
 
                     @(IsAdding ? "إضافة المنتج" : "حفظ التعديلات")
                 </MudButton>
-            </MudStack>
-        </MudStack>
+            </div>
+        </div>
     }
 </MudDrawer>
 

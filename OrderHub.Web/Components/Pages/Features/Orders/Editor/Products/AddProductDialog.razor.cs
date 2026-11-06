@@ -139,7 +139,7 @@ public partial class AddProductDialog : IDisposable
         {
             var result = await ProductSelected(_selectedProduct);
             if (result.IsSuccess)
-                _selectedProduct = null;
+                MudDialog.Close(DialogResult.Ok(_selectedProduct));
             else
                 _addError = result.ErrorMessage;
         }

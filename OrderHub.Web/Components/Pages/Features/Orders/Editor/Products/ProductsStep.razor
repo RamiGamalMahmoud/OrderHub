@@ -1,144 +1,158 @@
+@using System.Globalization
 @using OrderHub.Web.Components.Pages.Features.Orders.Editor.State
 
-<MudStack Spacing="3" Class="pt-2">
+<section class="flex flex-col gap-4 rounded-xl bg-white p-4 shadow-sm sm:p-5">
 
-    @* Header *@
-    <MudStack Row
-              AlignItems="AlignItems.Center"
-              Justify="Justify.SpaceBetween"
-              Class="flex-wrap gap-y-2">
-
-        <div>
-            <MudText Typo="Typo.h6" Class="font-bold">
-                المنتجات المضافة إلى الطلب
-            </MudText>
+    @* Card header *@
+    <div class="flex flex-col justify-between gap-3 pb-1 sm:flex-row sm:items-center">
+        <div class="flex items-center gap-2">
+            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                <MudIcon Icon="@Icons.Material.Outlined.Inventory2" Size="Size.Small" />
+            </span>
+            <div>
+                <h3 class="text-base font-bold leading-tight text-slate-900">المنتجات المضافة إلى الطلب</h3>
+                <p class="text-xs text-slate-500">إدارة ومراجعة البنود المحجوزة والكميات</p>
+            </div>
+            <span class="mr-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-extrabold text-blue-800">
+                @Items.Count.ToString(CultureInfo.InvariantCulture) منتجات
+            </span>
         </div>
 
-        <MudStack Row Class="flex-wrap gap-2">
-
+        <div class="flex flex-wrap items-center gap-2">
             <PermissionView Feature="PermissionFeature.Products">
-                <MudButton Color="Color.Primary"
-                           Class="oh-btn oh-btn--secondary"
-                           StartIcon="@Icons.Material.Outlined.OpenInNew"
-                           Href="/products/create"
-                           Target="_blank">
-                    إضافة منتج جديد
+                <MudButton Variant="Variant.Outlined"
+                           Size="Size.Small"
+                           Class="oh-btn oh-btn--secondary oh-btn--sm"
+                           StartIcon="@Icons.Material.Outlined.AddShoppingCart"
+                           OnClick="AddProductAsync">
+                    اختيار منتج
                 </MudButton>
             </PermissionView>
 
-            @if (Items.Count > 0)
-            {
-                <PermissionView Feature="PermissionFeature.Products">
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Primary"
-                               Class="oh-btn oh-btn--secondary"
-                               StartIcon="@Icons.Material.Outlined.ListAlt"
-                               OnClick="AddProductAsync">
-                        اختيار منتج
-                    </MudButton>
-                </PermissionView>
-
-            }
-        </MudStack>
-
-    </MudStack>
+            <PermissionView Feature="PermissionFeature.Products">
+                <MudButton Variant="Variant.Outlined"
+                           Size="Size.Small"
+                           Class="oh-btn oh-btn--secondary oh-btn--sm"
+                           StartIcon="@Icons.Material.Outlined.AddBox"
+                           Href="/products/create"
+                           Target="_blank">
+                    منتج جديد
+                </MudButton>
+            </PermissionView>
+        </div>
+    </div>
 
     @if (Items.Count == 0)
     {
-        @* Empty State *@
-        <MudPaper Elevation="0"
-                  Outlined="true"
-                  Class="pa-6 rounded-2xl border-slate-200 bg-slate-50">
+        <div class="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-6 text-center">
+            <MudIcon Icon="@Icons.Material.Outlined.Inventory2" Size="Size.Large" Class="text-slate-400" />
+            <p class="text-sm font-bold text-slate-800">لا توجد منتجات مضافة</p>
+            <p class="text-xs text-slate-500">ابدأ بإضافة المنتجات المطلوبة لهذا الطلب</p>
 
-            <MudStack AlignItems="AlignItems.Center"
-                      Spacing="2">
-
-                <MudIcon Icon="@Icons.Material.Outlined.Inventory2"
-                         Size="Size.Large"
-                         Color="Color.Secondary" />
-
-                <MudText Typo="Typo.subtitle1">
-                    لا توجد منتجات مضافة
-                </MudText>
-
-                <MudText Typo="Typo.body2"
-                         Color="Color.Secondary">
-                    ابدأ بإضافة المنتجات المطلوبة لهذا الطلب
-                </MudText>
-
-                <PermissionView Feature="PermissionFeature.Products">
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Outlined.Add"
-                               OnClick="AddProductAsync"
-                               Class="oh-btn oh-btn--secondary">
-                        اختيار منتج
-                    </MudButton>
-                </PermissionView>
-
-            </MudStack>
-
-        </MudPaper>
+            <PermissionView Feature="PermissionFeature.Products">
+                <MudButton Variant="Variant.Outlined"
+                           Size="Size.Small"
+                           Class="oh-btn oh-btn--secondary oh-btn--sm"
+                           StartIcon="@Icons.Material.Outlined.Add"
+                           OnClick="AddProductAsync">
+                    اختيار منتج
+                </MudButton>
+            </PermissionView>
+        </div>
     }
     else
     {
+        @* In-table quick filter *@
+        <div class="flex items-center justify-between gap-2 rounded-lg bg-slate-50 p-2.5">
+            <MudTextField T="string"
+                          Value="@_searchTerm"
+                          ValueChanged="OnSearchChanged"
+                          Placeholder="بحث داخل المنتجات المضافة..."
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Immediate="true"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Outlined.Search"
+                          Class="w-full max-w-xs" />
+        </div>
 
-        @* Products *@
         <MudDataGrid T="OrderItemEditorState"
-                     Items="Items"
-                     Class="rounded-xl"
+                     Items="FilteredItems"
+                     Class="oh-products-table w-full"
+                     Dense="true"
+                     Hover="true"
+                     ReadOnly="true"
                      @bind-CurrentPage="_gridCurrentPage"
                      @bind-RowsPerPage="_gridRowsPerPage"
-                     Style="cursor: pointer;"
                      SelectedItem="@_selectedItem"
                      SelectOnRowClick="true"
                      SelectedItemChanged="OnSelectedItemChanged"
-                     RowClick="@(args => OnGridRowClicked(args.Item))"
-                     Hover="true"
-                     Striped="true"
-                     ReadOnly="true">
+                     RowClick="@(args => OnGridRowClicked(args.Item))">
 
             <Columns>
-
-                <PropertyColumn Property="x => x.ProductName"
-                                Title="المنتج" />
-
-                <PropertyColumn Property="x => x.UnitPrice"
-                                Title="سعر الوحدة قبل الضريبة"
-                                Format="N2" />
-
-                <PropertyColumn Property="x => x.Quantity"
-                                Title="الكمية" />
-
-                <PropertyColumn Property="@(x => $"{x.VatRate}%")" Title="الضريبة" />
-
-                <PropertyColumn Title="قيمة الضريبة" Property="@(x => $"{PricingOf(x).VatAmount:N2} ر.س")" />
-
-                <PropertyColumn Title="الإجمالي شامل الضريبة" Property="@(x => $"{PricingOf(x).Total:N2} ر.س")" />
-
-                <TemplateColumn Title="" Sortable="false">
+                <TemplateColumn Title="المنتج / الصنف" Sortable="false">
                     <CellTemplate>
-                        <span style="display:inline-flex; gap:8px;"
+                        <div class="flex items-center gap-3">
+                            <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                                <MudIcon Icon="@Icons.Material.Outlined.Inventory2" Size="Size.Small" />
+                            </span>
+                            <div class="min-w-0">
+                                <span class="block font-bold text-slate-900">@context.Item.ProductName</span>
+                                <span class="block text-[11px] text-slate-400">@context.Item.CategoryName</span>
+                            </div>
+                        </div>
+                    </CellTemplate>
+                </TemplateColumn>
+
+                <TemplateColumn Title="السعر الإفرادي" Sortable="false">
+                    <CellTemplate>
+                        <span class="font-semibold text-slate-800">@context.Item.UnitPrice.ToString("N2") ر.س</span>
+                    </CellTemplate>
+                </TemplateColumn>
+
+                <TemplateColumn Title="الكمية" Sortable="false">
+                    <CellTemplate>
+                        <span class="font-bold text-slate-800">@context.Item.Quantity.ToString(CultureInfo.InvariantCulture)</span>
+                    </CellTemplate>
+                </TemplateColumn>
+
+                <TemplateColumn Title="الضريبة" Sortable="false">
+                    <CellTemplate>
+                        <span class="font-semibold text-slate-700">@PricingOf(context.Item).VatAmount.ToString("N2") ر.س</span>
+                        <span class="block font-mono text-[10px] text-slate-400">@context.Item.VatRate.ToString(CultureInfo.InvariantCulture)%</span>
+                    </CellTemplate>
+                </TemplateColumn>
+
+                <TemplateColumn Title="الإجمالي" Sortable="false">
+                    <CellTemplate>
+                        <span class="text-sm font-bold text-blue-700">@PricingOf(context.Item).Total.ToString("N2") ر.س</span>
+                    </CellTemplate>
+                </TemplateColumn>
+
+                <TemplateColumn Title="إجراءات" Sortable="false">
+                    <CellTemplate>
+                        <span class="inline-flex items-center gap-1"
                               @onclick="@(() => { })"
                               @onclick:stopPropagation="true">
-                            <MudIconButton Icon="@Icons.Material.Outlined.Edit"
+                            <MudIconButton Icon="@Icons.Material.Outlined.Tune"
                                            Size="Size.Small"
                                            OnClick="@(() => EditItem(context.Item))"
+                                           aria-label="تعديل خصائص المنتج"
                                            Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
 
                             <MudIconButton Icon="@Icons.Material.Outlined.DeleteOutline"
                                            Color="Color.Error"
                                            Size="Size.Small"
                                            OnClick="@(() => RemoveItem(context.Item))"
+                                           aria-label="حذف المنتج"
                                            Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost oh-btn--danger" />
                         </span>
                     </CellTemplate>
                 </TemplateColumn>
-
             </Columns>
 
             <PagerContent>
-                <TableFooter TotalItems="Items.Count"
+                <TableFooter TotalItems="FilteredItems.Count()"
                              CurrentPage="@FooterCurrentPage"
                              CurrentPageChanged="OnFooterPageChanged"
                              RowsPerPage="@_gridRowsPerPage"
@@ -146,10 +160,9 @@
             </PagerContent>
 
         </MudDataGrid>
-
     }
 
-</MudStack>
+</section>
 
 @if (_editingItem is not null)
 {
@@ -166,8 +179,22 @@
     private OrderItemEditorState? _selectedItem;
     private int _gridCurrentPage;
     private int _gridRowsPerPage = 10;
+    private string? _searchTerm;
 
     private int FooterCurrentPage => _gridCurrentPage + 1;
+
+    private IEnumerable<OrderItemEditorState> FilteredItems =>
+        string.IsNullOrWhiteSpace(_searchTerm)
+            ? Items
+            : Items.Where(item =>
+                item.ProductName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                item.CategoryName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    private void OnSearchChanged(string? value)
+    {
+        _searchTerm = value;
+        _gridCurrentPage = 0;
+    }
 
     private Task OnFooterPageChanged(int page)
     {
