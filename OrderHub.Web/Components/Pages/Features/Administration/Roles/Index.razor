@@ -17,292 +17,272 @@
 
 <PageTitle>إدارة الأدوار</PageTitle>
 
-<MudStack Spacing="3">
+<div class="space-y-5">
+    <PageScaffold Title="الأدوار والصلاحيات"
+                  Description="إدارة أدوار المستخدمين والصلاحيات المرتبطة بكل دور"
+                  Crumbs="_scaffoldCrumbs"
+                  Count="@BadgeCount">
+        <Actions>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Size="Size.Large"
+                       Class="rounded-xl px-5 font-bold shadow-sm"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="IsBusy"
+                       OnClick="CreateRole">
+                دور جديد
+            </MudButton>
+        </Actions>
+    </PageScaffold>
 
-    @* ============================================================
-       Header
-       ============================================================ *@
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        @* ============================================================
+           Toolbar: search + refresh
+           ============================================================ *@
+        <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 px-4 py-3">
+            <MudTextField T="string"
+                          Value="_searchTerm"
+                          ValueChanged="SearchChangedAsync"
+                          Placeholder="ابحث باسم الدور"
+                          aria-label="البحث عن دور"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Margin="Margin.Dense"
+                          Immediate="true"
+                          Clearable="true"
+                          Disabled="IsBusy"
+                          Class="w-full sm:max-w-xs" />
 
-    <MudStack Row
-              AlignItems="AlignItems.Center"
-              Justify="Justify.SpaceBetween">
+            <div class="flex-1"></div>
 
-        <div>
-            <MudText Typo="Typo.h5">
-                الأدوار والصلاحيات
-            </MudText>
-
-            <MudText Typo="Typo.body2"
-                     Color="Color.Secondary">
-                إدارة أدوار المستخدمين والصلاحيات المرتبطة بكل دور
-            </MudText>
+            <MudTooltip Text="تحديث القائمة">
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                               OnClick="RefreshAsync"
+                               aria-label="تحديث القائمة"
+                               Disabled="IsBusy"
+                               Class="rounded-lg text-slate-500" />
+            </MudTooltip>
         </div>
 
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Add"
-                   OnClick="CreateRole">
-            دور جديد
-        </MudButton>
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true"
+                               Color="Color.Primary"
+                               aria-label="تحميل الأدوار" />
+        }
 
-    </MudStack>
+        @if (_error is not null)
+        {
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-red-100 bg-red-50 px-4 py-3">
+                <p class="text-sm font-bold text-red-800">@_error</p>
+                <button type="button"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled="@(_loading || _deleting)"
+                        @onclick="LoadAsync">
+                    <MudIcon Icon="@Icons.Material.Filled.Refresh" Class="text-[14px]" />
+                    إعادة المحاولة
+                </button>
+            </div>
+        }
 
-
-    @* ============================================================
-       Search
-       ============================================================ *@
-
-    <MudPaper Outlined="true"
-              Class="pa-4">
-
-        <MudTextField T="string"
-                      @bind-Value="_searchTerm"
-                      Placeholder="ابحث باسم الدور..."
-                      Variant="Variant.Outlined"
-                      Margin="Margin.Dense"
-                      Immediate="true"
-                      Clearable="true"
-                      Adornment="Adornment.Start"
-                      AdornmentIcon="@Icons.Material.Filled.Search" />
-
-    </MudPaper>
-
-
-    @* ============================================================
-       Roles table
-       ============================================================ *@
-
-    <MudPaper Outlined="true">
-
+        @* ============================================================
+           Roles table
+           ============================================================ *@
         <MudTable T="RoleListItem"
-                  Items="FilteredRoles"
+                  @ref="_table"
+                  ServerData="LoadServerDataAsync"
+                  RowsPerPage="@_pageSize"
+                  Dense="true"
                   Hover="true"
-                  Loading="_loading">
-
-            <ToolBarContent>
-
-                <MudText Typo="Typo.subtitle1">
-                    الأدوار
-                </MudText>
-
-                <MudSpacer />
-
-                @if (!_loading)
-                {
-                    <MudText Typo="Typo.body2"
-                             Color="Color.Secondary">
-                        @FilteredRoles.Count دور
-                    </MudText>
-                }
-
-                <MudIconButton Icon="@Icons.Material.Filled.Refresh"
-                               Disabled="_loading"
-                               OnClick="LoadAsync" />
-
-            </ToolBarContent>
-
+                  Elevation="0"
+                  Square="true"
+                  Breakpoint="Breakpoint.Sm">
             <HeaderContent>
-
-                <MudTh>
-                    الدور
+                <MudTh Class="text-xs font-bold text-slate-500">الدور</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">الصلاحيات</MudTh>
+                <MudTh Class="w-24 text-xs font-bold text-slate-500">
+                    <span class="sr-only">الإجراءات</span>
                 </MudTh>
-
-                <MudTh>
-                    الصلاحيات
-                </MudTh>
-
-                <MudTh Style="width:120px">
-                </MudTh>
-
             </HeaderContent>
 
-            <RowTemplate>
-
-                <MudTd DataLabel="الدور">
-
-                    <MudStack Row
-                              AlignItems="AlignItems.Center"
-                              Spacing="2">
-
-                        <MudAvatar Size="Size.Small">
-                            <MudIcon Icon="@Icons.Material.Filled.ManageAccounts"
-                                     Size="Size.Small" />
-                        </MudAvatar>
-
-                        <MudText Typo="Typo.body1">
-                            @context.Name
-                        </MudText>
-
-                    </MudStack>
-
+            <RowTemplate Context="role">
+                <MudTd DataLabel="الدور" Style="overflow-wrap:anywhere">
+                    <div class="flex items-center gap-2.5">
+                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-black text-brand-600">
+                            @FirstLetter(role.Name)
+                        </span>
+                        <span class="text-sm font-bold text-slate-900">@role.Name</span>
+                    </div>
                 </MudTd>
 
                 <MudTd DataLabel="الصلاحيات">
-
-                    @if (context.PermissionCount > 0)
+                    @if (role.PermissionCount > 0)
                     {
-                        <MudChip T="string"
-                                 Size="Size.Small"
-                                 Variant="Variant.Outlined"
-                                 Color="Color.Primary">
-
-                            @GetPermissionsText(context.PermissionCount)
-
-                        </MudChip>
+                        <span class="inline-flex items-center rounded-full border border-brand-100 bg-brand-50 px-2.5 py-0.5 text-[11px] font-bold text-brand-700">
+                            @GetPermissionsText(role.PermissionCount)
+                        </span>
                     }
                     else
                     {
-                        <MudText Typo="Typo.body2"
-                                 Color="Color.Secondary">
-                            بدون صلاحيات
-                        </MudText>
+                        <span class="text-xs font-semibold text-slate-400">بدون صلاحيات</span>
                     }
-
                 </MudTd>
 
-                <MudTd>
+                <MudTd DataLabel="الإجراءات">
+                    <div class="flex items-center justify-end gap-1.5">
+                        <MudTooltip Text="تعديل الدور">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           Class="rounded-lg text-brand-600 shadow-none hover:bg-brand-50"
+                                           aria-label="تعديل الدور"
+                                           OnClick="@(() => EditRole(role.Id))"
+                                           Disabled="IsBusy" />
+                        </MudTooltip>
 
-                    <MudMenu Icon="@Icons.Material.Filled.MoreVert"
-                             Size="Size.Small"
-                             AnchorOrigin="Origin.BottomRight"
-                             TransformOrigin="Origin.TopRight">
-
-                        <MudMenuItem Icon="@Icons.Material.Filled.Edit"
-                                     OnClick="@(() => EditRole(context.Id))">
-                            تعديل
-                        </MudMenuItem>
-
-                        <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                     OnClick="@(() => ConfirmDeleteAsync(context))">
-                            حذف
-                        </MudMenuItem>
-
-                    </MudMenu>
-
+                        <MudTooltip Text="حذف الدور">
+                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           Class="rounded-lg shadow-none"
+                                           aria-label="حذف الدور"
+                                           OnClick="@(() => ConfirmDeleteAsync(role))"
+                                           Disabled="IsBusy" />
+                        </MudTooltip>
+                    </div>
                 </MudTd>
-
             </RowTemplate>
 
-
-            @* ====================================================
-               Empty
-               ==================================================== *@
-
             <NoRecordsContent>
-
-                <MudStack AlignItems="AlignItems.Center"
-                          Spacing="2"
-                          Class="pa-8">
-
-                    <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings"
-                             Size="Size.Large"
-                             Color="Color.Secondary" />
-
-                    @if (string.IsNullOrWhiteSpace(_searchTerm))
+                <div class="py-8 text-center">
+                    <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+                        <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" aria-hidden="true" />
+                    </span>
+                    <p class="text-base font-bold text-slate-900">@EmptyTitle</p>
+                    <p class="mt-1 text-sm text-slate-500">@EmptyHint</p>
+                    @if (string.IsNullOrWhiteSpace(_searchTerm) && _error is null)
                     {
-                        <MudText Typo="Typo.subtitle1">
-                            لا توجد أدوار
-                        </MudText>
-
-                        <MudText Typo="Typo.body2"
-                                 Color="Color.Secondary">
-                            أضف دورًا جديدًا لتحديد صلاحيات المستخدمين.
-                        </MudText>
-
-                        <MudButton Variant="Variant.Outlined"
-                                   Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.Add"
-                                   OnClick="CreateRole">
+                        <button type="button"
+                                class="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-brand-500/25 transition-colors hover:bg-brand-700"
+                                @onclick="CreateRole">
+                            <MudIcon Icon="@Icons.Material.Filled.Add" Class="text-[14px]" />
                             إضافة دور
-                        </MudButton>
+                        </button>
                     }
-                    else
-                    {
-                        <MudText Typo="Typo.subtitle1">
-                            لا توجد نتائج
-                        </MudText>
-
-                        <MudText Typo="Typo.body2"
-                                 Color="Color.Secondary">
-                            لا يوجد دور مطابق لعملية البحث.
-                        </MudText>
-                    }
-
-                </MudStack>
-
+                </div>
             </NoRecordsContent>
 
-
-            @* ====================================================
-               Loading
-               ==================================================== *@
-
             <LoadingContent>
-
-                <MudStack AlignItems="AlignItems.Center"
-                          Spacing="2"
-                          Class="pa-8">
-
-                    <MudProgressCircular Indeterminate="true"
-                                         Color="Color.Primary" />
-
-                    <MudText Typo="Typo.body2"
-                             Color="Color.Secondary">
-                        جاري تحميل الأدوار...
-                    </MudText>
-
-                </MudStack>
-
+                <div class="flex flex-col items-center gap-2 py-8">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                    <p class="text-sm text-slate-500">جاري تحميل الأدوار...</p>
+                </div>
             </LoadingContent>
 
+            <PagerContent>
+                <TableFooter TotalItems="@TotalCount"
+                             CurrentPage="_pageIndex"
+                             CurrentPageChanged="OnFooterPageChanged"
+                             RowsPerPage="_pageSize"
+                             RowsPerPageChanged="OnFooterRowsPerPageChanged" />
+            </PagerContent>
         </MudTable>
-
-    </MudPaper>
-
-</MudStack>
-
+    </section>
+</div>
 
 @code {
+    private static readonly PageScaffold.CrumbItem[] _scaffoldCrumbs = [new("الأدوار")];
 
-    // ============================================================
-    // State
-    // ============================================================
-
+    private MudTable<RoleListItem>? _table;
     private IReadOnlyList<RoleListItem> _roles = [];
-
     private string? _searchTerm;
-
+    private string? _error;
+    private int _pageIndex = 1;
+    private int _pageSize = 10;
     private bool _loading;
+    private bool _deleting;
 
+    private bool IsBusy =>
+        _loading || _deleting;
 
-    // ============================================================
-    // Lifecycle
-    // ============================================================
+    private List<RoleListItem> FilteredRoles
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_searchTerm))
+            {
+                return _roles.ToList();
+            }
+
+            string searchTerm = _searchTerm.Trim();
+
+            return _roles
+                .Where(role => role.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+    private int TotalCount => FilteredRoles.Count;
+    private int? BadgeCount => _loading && _roles.Count == 0 ? null : TotalCount;
+
+    private string EmptyTitle
+    {
+        get
+        {
+            if (_error is not null)
+            {
+                return "تعذر تحميل الأدوار.";
+            }
+
+            return string.IsNullOrWhiteSpace(_searchTerm) ? "لا توجد أدوار" : "لا توجد نتائج";
+        }
+    }
+
+    private string EmptyHint
+    {
+        get
+        {
+            if (_error is not null)
+            {
+                return "حدّث القائمة أو حاول مرة أخرى.";
+            }
+
+            return string.IsNullOrWhiteSpace(_searchTerm)
+                ? "أضف دورًا جديدًا لتحديد صلاحيات المستخدمين."
+                : "لا يوجد دور مطابق لعملية البحث.";
+        }
+    }
+
+    private static string FirstLetter(string name)
+    {
+        string trimmed = name.Trim();
+
+        return trimmed.Length == 0 ? "—" : trimmed[..1];
+    }
 
     protected override async Task OnInitializedAsync()
     {
         await LoadAsync();
     }
 
-
-    // ============================================================
-    // Loading
-    // ============================================================
-
     private async Task LoadAsync()
     {
+        _loading = true;
+        _error = null;
+
         try
         {
-            _loading = true;
+            _roles = await RequestExecutor.ExecuteAsync(new GetRolesQuery());
 
-            _roles = await RequestExecutor.ExecuteAsync(
-                new GetRolesQuery());
+            if (_table is not null)
+            {
+                await _table.ReloadServerData();
+            }
         }
         catch (Exception)
         {
-            Snackbar.Add(
-                "تعذر تحميل الأدوار.",
-                Severity.Error);
+            _error = "تعذر تحميل الأدوار.";
+            Snackbar.Add("تعذر تحميل الأدوار.", Severity.Error);
         }
         finally
         {
@@ -310,55 +290,78 @@
         }
     }
 
-
-    // ============================================================
-    // Filtering
-    // ============================================================
-
-    private IReadOnlyList<RoleListItem> FilteredRoles
+    private Task<TableData<RoleListItem>> LoadServerDataAsync(TableState state, CancellationToken cancellationToken)
     {
-        get
+        var filtered = FilteredRoles;
+        int lastPage = Math.Max(1, (int)Math.Ceiling(filtered.Count / (double)_pageSize));
+        _pageIndex = Math.Clamp(_pageIndex, 1, lastPage);
+
+        return Task.FromResult(new TableData<RoleListItem>
         {
-            if (string.IsNullOrWhiteSpace(_searchTerm))
-                return _roles;
+            Items = filtered.Skip((_pageIndex - 1) * _pageSize).Take(_pageSize).ToList(),
+            TotalItems = filtered.Count
+        });
+    }
 
-            string searchTerm = _searchTerm.Trim();
+    private async Task SearchChangedAsync(string? value)
+    {
+        _searchTerm = value;
+        _pageIndex = 1;
 
-            return _roles
-                .Where(role =>
-                    role.Name.Contains(
-                        searchTerm,
-                        StringComparison.OrdinalIgnoreCase))
-                .ToList();
+        if (_table is not null)
+        {
+            await _table.ReloadServerData();
         }
     }
 
+    private async Task RefreshAsync()
+    {
+        if (IsBusy)
+        {
+            return;
+        }
 
-    // ============================================================
-    // Navigation
-    // ============================================================
+        await LoadAsync();
+    }
+
+    private async Task OnFooterPageChanged(int page)
+    {
+        _pageIndex = Math.Max(1, page);
+
+        if (_table is not null)
+        {
+            await _table.ReloadServerData();
+        }
+    }
+
+    private async Task OnFooterRowsPerPageChanged(int rowsPerPage)
+    {
+        _pageSize = rowsPerPage;
+        _pageIndex = 1;
+
+        if (_table is not null)
+        {
+            await _table.ReloadServerData();
+        }
+    }
 
     private void CreateRole()
     {
-        NavigationManager.NavigateTo(
-            "/admin/roles/create");
+        NavigationManager.NavigateTo("/admin/roles/create");
     }
-
 
     private void EditRole(int roleId)
     {
-        NavigationManager.NavigateTo(
-            $"/admin/roles/{roleId}/edit");
+        NavigationManager.NavigateTo($"/admin/roles/{roleId}/edit");
     }
 
-
-    // ============================================================
-    // Delete
-    // ============================================================
-
-    private async Task ConfirmDeleteAsync(
-        RoleListItem role)
+    private async Task ConfirmDeleteAsync(RoleListItem role)
     {
+        if (IsBusy)
+        {
+            return;
+        }
+
         bool? confirmed = await DialogService.ShowMessageBoxAsync(
             "حذف الدور",
             $"هل تريد حذف الدور \"{role.Name}\"؟",
@@ -366,50 +369,41 @@
             cancelText: "إلغاء");
 
         if (confirmed != true)
+        {
             return;
+        }
 
         await DeleteAsync(role);
     }
 
-
-    private async Task DeleteAsync(
-        RoleListItem role)
+    private async Task DeleteAsync(RoleListItem role)
     {
+        _deleting = true;
+
         try
         {
-            Result result = await RequestExecutor.ExecuteAsync(
-                new DeleteRoleCommand(role.Id));
+            Result result = await RequestExecutor.ExecuteAsync(new DeleteRoleCommand(role.Id));
 
             if (!result.IsSuccess)
             {
-                Snackbar.Add(
-                    result.ErrorMessage,
-                    Severity.Error);
-
+                Snackbar.Add(result.ErrorMessage, Severity.Error);
                 return;
             }
 
-            Snackbar.Add(
-                $"تم حذف الدور \"{role.Name}\" بنجاح.",
-                Severity.Success);
-
+            Snackbar.Add($"تم حذف الدور \"{role.Name}\" بنجاح.", Severity.Success);
             await LoadAsync();
         }
         catch (Exception)
         {
-            Snackbar.Add(
-                "حدث خطأ أثناء حذف الدور.",
-                Severity.Error);
+            Snackbar.Add("حدث خطأ أثناء حذف الدور.", Severity.Error);
+        }
+        finally
+        {
+            _deleting = false;
         }
     }
 
-
-    // ============================================================
-    // Display helpers
-    // ============================================================
-
-    private static string GetPermissionsText(
-        int count)
+    private static string GetPermissionsText(int count)
     {
         return count switch
         {
