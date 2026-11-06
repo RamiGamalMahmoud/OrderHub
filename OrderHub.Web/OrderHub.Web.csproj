@@ -8,10 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Remove="wwwroot\fonts\Cairo.ttf" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.12" />
     <PackageReference Include="MudBlazor" Version="9.11.0" />
@@ -26,7 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="wwwroot\fonts\Cairo.ttf" />
     <Resource Include="wwwroot\fonts\Tajawal-Regular.ttf" />
   </ItemGroup>
 

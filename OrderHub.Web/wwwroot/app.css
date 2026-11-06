@@ -152,24 +152,8 @@ h1:focus {
     display: flex;
 }
 
-
-/* ����� ����� ��� ������ ����� ���� ������� ������ */
-.text-primary {
-    color: var(--mud-palette-primary) !important;
-}
-
-.font-weight-bold {
-    font-weight: 700 !important;
-}
-
 .tracking-tight {
     letter-spacing: -0.025em;
-}
-
-/* ����� ����� ����� ����� ������� �������� ���� Cards ����� ����� ����� ����� */
-.main-content-bg {
-    background-color: var(--mud-palette-background) !important;
-    min-height: 100vh;
 }
 
 .checkbox-between {
