@@ -1,17 +1,61 @@
+@using System.Globalization
 @using OrderHub.Domain.Models
 
-<MudDialog>
+<MudDialog Class="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-xl"
+           TitleClass="p-0"
+           ContentClass="p-0"
+           ActionsClass="p-0"
+           Gutters="false">
+    <TitleContent>
+        <header class="flex items-start justify-between gap-3 border-b border-slate-100 p-5">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="@($"inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {OrderWorkflowPresentation.IconTile(ConfirmTone)}")">
+                    <MudIcon Icon="@Icons.Material.Filled.EditNote" Size="Size.Small" />
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-bold leading-tight text-slate-900">@ConfirmLabel</h2>
+                    <p class="mt-1 text-xs font-medium text-slate-500">أدخل سبب العملية قبل التأكيد</p>
+                </div>
+            </div>
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Size="Size.Small"
+                           Color="Color.Default"
+                           Disabled="_submitting"
+                           OnClick="Cancel"
+                           aria-label="إغلاق النافذة"
+                           Class="shrink-0 rounded-xl text-slate-400" />
+        </header>
+    </TitleContent>
+
     <DialogContent>
-        <MudStack Spacing="2">
-            <MudText>@Explanation</MudText>
-            <MudTextField T="string" @bind-Value="_reason" Label="السبب" Required="true" Immediate="true"
-                          MaxLength="200" Counter="200" Lines="3" Variant="Variant.Outlined" Disabled="_submitting" />
-            @if (_error is not null) { <MudAlert Severity="Severity.Error">@_error</MudAlert> }
-        </MudStack>
+        <div class="space-y-4 bg-slate-50/70 p-5">
+            <p class="text-sm leading-7 text-slate-700">@Explanation</p>
+
+            <MudTextField T="string"
+                          @bind-Value="_reason"
+                          Label="السبب"
+                          Required="true"
+                          Immediate="true"
+                          MaxLength="200"
+                          HelperText="@_counter"
+                          Lines="3"
+                          Variant="Variant.Outlined"
+                          Disabled="_submitting" />
+
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+            }
+        </div>
     </DialogContent>
+
     <DialogActions>
-        <MudButton OnClick="Cancel" Disabled="_submitting" Class="order-action order-tone-neutral">رجوع دون تغيير</MudButton>
-        <MudButton Class="@($"order-action {ConfirmTone}")" OnClick="ConfirmAsync" Disabled="_submitting">@(_submitting ? "جاري الحفظ…" : ConfirmLabel)</MudButton>
+        <footer class="flex items-center justify-end gap-2 border-t border-slate-100 bg-white p-4">
+            <MudButton OnClick="Cancel" Disabled="_submitting" Variant="Variant.Text" Class="rounded-xl text-slate-600">رجوع دون تغيير</MudButton>
+            <MudButton Class="@($"rounded-xl shadow-none font-bold {OrderWorkflowPresentation.Action(ConfirmTone)}")"
+                       OnClick="ConfirmAsync"
+                       Disabled="_submitting">@(_submitting ? "جاري الحفظ…" : ConfirmLabel)</MudButton>
+        </footer>
     </DialogActions>
 </MudDialog>
 
@@ -19,11 +63,12 @@
     [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
     [Parameter] public string Explanation { get; set; } = "سيتم تسجيل العملية في تاريخ الطلب.";
     [Parameter] public string ConfirmLabel { get; set; } = "تأكيد";
-    [Parameter] public string ConfirmTone { get; set; } = "order-tone-neutral";
+    [Parameter] public string ConfirmTone { get; set; } = OrderWorkflowPresentation.Neutral;
     [Parameter] public Func<string, Task<OrderHub.Domain.Common.Result<OrderHub.Application.Features.Orders.Lifecycle.OrderOperationReceipt>>>? Submit { get; set; }
     private string? _reason;
     private string? _error;
     private bool _submitting;
+    private string _counter => $"{(_reason?.Length ?? 0).ToString(CultureInfo.InvariantCulture)} / 200";
     private void Cancel() => Dialog.Cancel();
     private async Task ConfirmAsync()
     {

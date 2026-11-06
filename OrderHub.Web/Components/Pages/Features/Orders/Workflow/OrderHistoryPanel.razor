@@ -1,3 +1,4 @@
+@using System.Globalization
 @using OrderHub.Application.Features.Orders.Lifecycle
 @using OrderHub.Application.Common
 @using OrderHub.Application.Interfaces
@@ -5,47 +6,107 @@
 @inject IRequestExecutor Executor
 @inject ILogger<OrderHistoryPanel> Logger
 
-<MudPaper Class="pa-3" Outlined="true">
-    <MudStack Row="true" AlignItems="AlignItems.Center">
-        <MudText Typo="Typo.subtitle2">@(StepId.HasValue ? "تاريخ الخطوة" : "سجل حالات الطلب")</MudText>
-        <MudSpacer />
-        @if (!_opened) { <MudButton OnClick="OpenAsync" Class="order-action order-tone-neutral">عرض السجل</MudButton> }
-    </MudStack>
+<section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <header class="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-3">
+        <h3 class="text-sm font-black text-slate-900">@(StepId.HasValue ? "تاريخ الخطوة" : "سجل حالات الطلب")</h3>
+        @if (_opened && _data is not null)
+        {
+            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">
+                @_data.TotalCount.ToString(CultureInfo.InvariantCulture) حدث
+            </span>
+        }
+        @if (!_opened)
+        {
+            <button type="button"
+                    class="@($"ms-auto rounded-lg px-3 py-1.5 text-xs font-bold {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
+                    @onclick="OpenAsync">عرض السجل</button>
+        }
+    </header>
+
     @if (_opened)
     {
-        @if (_loading) { <MudProgressLinear Indeterminate="true" /> }
-        @if (_error is not null) { <MudAlert Severity="Severity.Error">@_error</MudAlert><MudButton OnClick="ReloadAsync">إعادة المحاولة</MudButton> }
-        else if (_data is not null)
-        {
-            <ol class="order-history" aria-label="@(StepId.HasValue ? "تاريخ الخطوة" : "سجل حالات الطلب")">
-            @foreach (var entry in _data.Items)
+        <div class="px-4 py-3">
+            @if (_loading)
             {
-                <li class="order-history-entry @OrderWorkflowPresentation.HistoryTone(entry.NewStatus, StepId.HasValue)" @key="entry.Id">
-                <MudStack Spacing="1">
-                    <div><span class="order-status">@entry.NewStatus @(entry.Source == OrderHistorySource.Retry ? "— إعادة محاولة" : "")</span></div>
-                    <MudText Typo="Typo.caption"><UserLocalTime Value="entry.ChangedAtUtc" /> @(!string.IsNullOrWhiteSpace(entry.UserName) ? $"— بواسطة {entry.UserName}" : "")</MudText>
-                    @if (entry.Reason is not null) { <MudText Typo="Typo.body2">السبب: @entry.Reason</MudText> }
-                    @if (entry.Source == OrderHistorySource.LegacyMigration)
-                    { <MudText Typo="Typo.caption">سجل ترحيل بيانات قديمة؛ التوقيت لا يثبت وقت التنفيذ الفعلي. @(entry.OriginalStatus is not null ? $"الحالة الأصلية: {OrderWorkflowPresentation.LegacyStatusLabel(entry.OriginalStatus)}" : "")</MudText> }
-                    else if (entry.Source == OrderHistorySource.DirectDelivery)
-                    { <MudText Typo="Typo.caption">ناتج عن تأكيد التسليم المباشر للطلب.</MudText> }
-                    else if (entry.Source == OrderHistorySource.OrderCancellation && StepId.HasValue)
-                    { <MudText Typo="Typo.caption">ناتج عن إلغاء الطلب.</MudText> }
-                    else if (entry.Source == OrderHistorySource.LastStepCompleted)
-                    { <MudText Typo="Typo.caption">ناتج عن اكتمال آخر خطوة توصيل.</MudText> }
-                </MudStack>
-                </li>
+                <MudProgressLinear Indeterminate="true" aria-label="تحميل السجل" />
             }
-            </ol>
-            @if (_data.TotalCount == 0) { <MudText Typo="Typo.body2">لا توجد أحداث مسجلة.</MudText> }
-            <MudStack Row="true" AlignItems="AlignItems.Center">
-                <MudButton Disabled="@(_loading || !_data.HasPreviousPage)" OnClick="PreviousAsync">السابق</MudButton>
-                <MudText Typo="Typo.caption">الصفحة @_data.PageNumber من @Math.Max(1, _data.TotalPages)</MudText>
-                <MudButton Disabled="@(_loading || !_data.HasNextPage)" OnClick="NextAsync">التالي</MudButton>
-            </MudStack>
-        }
+            @if (_error is not null)
+            {
+                <p class="text-xs font-bold text-red-700">@_error</p>
+                <button type="button"
+                        class="@($"mt-2 rounded-lg px-3 py-1.5 text-xs font-bold {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
+                        @onclick="ReloadAsync">إعادة المحاولة</button>
+            }
+            else if (_data is not null)
+            {
+                @if (_data.TotalCount == 0)
+                {
+                    <p class="text-xs text-slate-500">لا توجد أحداث مسجلة.</p>
+                }
+                else
+                {
+                    <ol class="space-y-0" aria-label="@(StepId.HasValue ? "تاريخ الخطوة" : "سجل حالات الطلب")">
+                        @foreach (var entry in _data.Items)
+                        {
+                            var tone = OrderWorkflowPresentation.HistoryTone(entry.NewStatus, StepId.HasValue);
+                            <li class="flex gap-3" @key="entry.Id">
+                                <div class="flex flex-col items-center">
+                                    <span class="@($"mt-2 h-2.5 w-2.5 shrink-0 rounded-full {OrderWorkflowPresentation.Dot(tone)}")"></span>
+                                    <span class="mt-1 w-px flex-1 bg-slate-200"></span>
+                                </div>
+                                <div class="mb-3 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(tone)}")">
+                                            @entry.NewStatus @(entry.Source == OrderHistorySource.Retry ? "— إعادة محاولة" : "")
+                                        </span>
+                                        <span class="text-[11px] text-slate-500">
+                                            <UserLocalTime Value="entry.ChangedAtUtc" />
+                                            @(!string.IsNullOrWhiteSpace(entry.UserName) ? $" — بواسطة {entry.UserName}" : "")
+                                        </span>
+                                    </div>
+                                    @if (entry.Reason is not null)
+                                    {
+                                        <p class="mt-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600">السبب: @entry.Reason</p>
+                                    }
+                                    @if (entry.Source == OrderHistorySource.LegacyMigration)
+                                    {
+                                        <p class="mt-2 text-[11px] text-amber-700">سجل ترحيل بيانات قديمة؛ التوقيت لا يثبت وقت التنفيذ الفعلي. @(entry.OriginalStatus is not null ? $"الحالة الأصلية: {OrderWorkflowPresentation.LegacyStatusLabel(entry.OriginalStatus)}" : "")</p>
+                                    }
+                                    else if (entry.Source == OrderHistorySource.DirectDelivery)
+                                    {
+                                        <p class="mt-2 text-[11px] text-slate-500">ناتج عن تأكيد التسليم المباشر للطلب.</p>
+                                    }
+                                    else if (entry.Source == OrderHistorySource.OrderCancellation && StepId.HasValue)
+                                    {
+                                        <p class="mt-2 text-[11px] text-slate-500">ناتج عن إلغاء الطلب.</p>
+                                    }
+                                    else if (entry.Source == OrderHistorySource.LastStepCompleted)
+                                    {
+                                        <p class="mt-2 text-[11px] text-slate-500">ناتج عن اكتمال آخر خطوة توصيل.</p>
+                                    }
+                                </div>
+                            </li>
+                        }
+                    </ol>
+
+                    <div class="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
+                        <button type="button"
+                                class="@($"rounded-lg px-3 py-1.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50 {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
+                                disabled="@(_loading || !_data.HasPreviousPage)"
+                                @onclick="PreviousAsync">السابق</button>
+                        <span class="text-[11px] font-bold text-slate-600">
+                            الصفحة @_data.PageNumber.ToString(CultureInfo.InvariantCulture) من @Math.Max(1, _data.TotalPages).ToString(CultureInfo.InvariantCulture)
+                        </span>
+                        <button type="button"
+                                class="@($"rounded-lg px-3 py-1.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50 {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
+                                disabled="@(_loading || !_data.HasNextPage)"
+                                @onclick="NextAsync">التالي</button>
+                    </div>
+                }
+            }
+        </div>
     }
-</MudPaper>
+</section>
 
 @code {
     [Parameter] public int OrderId { get; set; }

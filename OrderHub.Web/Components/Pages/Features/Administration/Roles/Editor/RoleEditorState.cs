@@ -1,4 +1,5 @@
-﻿using OrderHub.Domain.Enums;
+﻿using OrderHub.Application.Features.Administration.Roles;
+using OrderHub.Domain.Enums;
 
 namespace OrderHub.Web.Components.Pages.Features.Administration.Roles.Editor;
 
@@ -35,5 +36,13 @@ public sealed class RoleEditorState
     {
         foreach (RolePermissionEditorState permission in Permissions)
             permission.Level = PermissionLevel.None;
+    }
+
+    public IReadOnlyList<RolePermissionInput> BuildPermissionInputs()
+    {
+        return Permissions
+            .Where(x => x.Level != PermissionLevel.None)
+            .Select(x => new RolePermissionInput(x.Feature, x.Level))
+            .ToList();
     }
 }

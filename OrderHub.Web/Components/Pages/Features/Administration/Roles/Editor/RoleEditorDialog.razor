@@ -1,0 +1,283 @@
+@using System.Globalization
+@using MudBlazor
+@using OrderHub.Application.Authorization
+@using OrderHub.Application.Features.Administration.Roles
+@using OrderHub.Application.Features.Administration.Roles.Create
+@using OrderHub.Application.Interfaces
+@using OrderHub.Domain.Common
+
+@inject IRequestExecutor RequestExecutor
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<MudDialog Class="flex max-h-[92vh] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-xl w-full"
+           TitleClass="p-0"
+           ContentClass="p-0"
+           ActionsClass="p-0"
+           Gutters="false">
+    <TitleContent>
+        <header class="flex items-center justify-between gap-3 border-b border-slate-100 p-5">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600">
+                    <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" />
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-bold leading-tight text-slate-900">إضافة دور</h2>
+                    <p class="mt-1 text-xs font-medium text-slate-500">
+                        أنشئ دورًا جديدًا وحدد صلاحيات الوصول الخاصة به
+                    </p>
+                </div>
+            </div>
+
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Size="Size.Small"
+                           Color="Color.Default"
+                           Disabled="_saving"
+                           OnClick="Cancel"
+                           aria-label="إغلاق النافذة"
+                           Class="shrink-0 rounded-xl text-slate-400" />
+        </header>
+    </TitleContent>
+
+    <DialogContent>
+        <MudForm @ref="_form"
+                 Model="_state"
+                 ValidationDelay="0">
+            <div class="min-h-0 flex-1 space-y-5 bg-slate-50/70 p-5">
+
+                @if (_saveError is not null)
+                {
+                    <MudAlert Severity="Severity.Error"
+                              Dense="true">
+                        @_saveError
+                    </MudAlert>
+                }
+
+                @* ==================================================
+                   Role information
+                   ================================================== *@
+
+                <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div class="mb-3 flex items-center gap-2.5">
+                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <MudIcon Icon="@Icons.Material.Filled.Badge" Size="Size.Small" />
+                        </span>
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">بيانات الدور</h3>
+                            <p class="mt-0.5 text-xs text-slate-500">أدخل اسمًا واضحًا يعبّر عن مسؤوليات المستخدمين التابعين لهذا الدور</p>
+                        </div>
+                    </div>
+
+                    <MudTextField T="string"
+                                  @bind-Value="_state.Name"
+                                  Label="اسم الدور"
+                                  Placeholder="مثال: المبيعات"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  RequiredError="اسم الدور مطلوب."
+                                  MaxLength="100"
+                                  Immediate="true"
+                                  Disabled="_saving"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Badge" />
+
+                    <div class="mt-1 flex items-center gap-1 text-xs font-medium text-slate-500">
+                        <span class="tabular-nums">@FmtCount(_state.Name.Length)</span>
+                        <span>/ 100</span>
+                    </div>
+                </section>
+
+                @* ==================================================
+                   Permissions
+                   ================================================== *@
+
+                <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div class="mb-3 flex items-center gap-2.5">
+                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" />
+                        </span>
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">الصلاحيات</h3>
+                            <p class="mt-0.5 text-xs text-slate-500">حدد مستوى الوصول لكل جزء من النظام</p>
+                        </div>
+                    </div>
+
+                    <RolePermissionCards Permissions="_state.Permissions"
+                                         Disabled="_saving"
+                                         ShowBulkActions="true"
+                                         OnChanged="StateHasChanged" />
+                </section>
+
+                @* ==================================================
+                   No permissions warning
+                   ================================================== *@
+
+                @if (GrantedPermissionCount == 0)
+                {
+                    <div class="flex items-start gap-2.5 rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-800">
+                        <MudIcon Icon="@Icons.Material.Filled.WarningAmber" Size="Size.Small" class="mt-0.5 shrink-0" />
+                        <p>
+                            لم يتم منح أي صلاحيات لهذا الدور.
+                            يمكن حفظ الدور بهذه الحالة، لكن المستخدمين المرتبطين به
+                            لن يحصلوا على صلاحيات وصول من خلاله.
+                        </p>
+                    </div>
+                }
+            </div>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <footer class="flex items-center justify-between gap-3 border-t border-slate-100 bg-white p-4">
+            <div class="flex items-center gap-2 text-xs font-medium text-slate-500">
+                <span class="inline-flex h-2.5 w-2.5 rounded-full @(ReadyToSave ? "bg-emerald-500" : "bg-slate-300")"></span>
+                <span>@(ReadyToSave ? "جاهز للحفظ" : "غير جاهز للحفظ")</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <MudButton Disabled="_saving"
+                           OnClick="Cancel"
+                           Variant="Variant.Text"
+                           Class="rounded-xl text-slate-600">
+                    إلغاء
+                </MudButton>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Disabled="@(!ReadyToSave)"
+                           OnClick="SaveAsync"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Class="rounded-xl px-5 font-bold">
+                    @SaveButtonText
+                </MudButton>
+            </div>
+        </footer>
+    </DialogActions>
+</MudDialog>
+
+@code
+{
+    // ============================================================
+    // Injected services / cascade
+    // ============================================================
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+
+    // ============================================================
+    // State
+    // ============================================================
+
+    private readonly RoleEditorState _state = new();
+
+    private MudForm? _form;
+
+    private string? _saveError;
+
+    private bool _saving;
+
+
+    // ============================================================
+    // Readiness
+    // ============================================================
+
+    private bool ReadyToSave =>
+        !_saving && !string.IsNullOrWhiteSpace(_state.Name);
+
+
+    private string SaveButtonText =>
+        _saving ? "جاري الحفظ..." : "إضافة الدور";
+
+
+    private int GrantedPermissionCount =>
+        _state.Permissions.Count(
+            x => x.Level != PermissionLevel.None);
+
+
+    // ============================================================
+    // Number formatting (InvariantCulture — Latin digits)
+    // ============================================================
+
+    private static string FmtCount(int value) =>
+        value.ToString("N0", CultureInfo.InvariantCulture);
+
+
+    // ============================================================
+    // Cancel
+    // ============================================================
+
+    private void Cancel()
+    {
+        if (_saving)
+        {
+            return;
+        }
+
+        MudDialog.Cancel();
+    }
+
+
+    // ============================================================
+    // Save
+    // ============================================================
+
+    private async Task SaveAsync()
+    {
+        if (!ReadyToSave || _form is null)
+        {
+            return;
+        }
+
+        await _form.ValidateAsync();
+
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        _saving = true;
+        _saveError = null;
+
+        try
+        {
+            var request = new CreateRoleRequest(
+                _state.Name.Trim(),
+                _state.BuildPermissionInputs());
+
+            Result<int> result =
+                await RequestExecutor.ExecuteAsync(
+                    new CreateRoleCommand(request));
+
+            if (!result.IsSuccess)
+            {
+                _saveError = result.ErrorMessage;
+                return;
+            }
+
+            Snackbar.Add(
+                "تمت إضافة الدور بنجاح.",
+                Severity.Success);
+
+            MudDialog.Close(
+                DialogResult.Ok(result.Value));
+        }
+        catch (AuthorizationDeniedException)
+        {
+            MudDialog.Cancel();
+
+            Navigation.NavigateTo(
+                "/access-denied");
+        }
+        catch (Exception)
+        {
+            _saveError =
+                "تعذر حفظ الدور. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

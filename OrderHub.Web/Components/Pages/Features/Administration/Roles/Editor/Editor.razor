@@ -125,91 +125,20 @@
                    Permissions
                    ================================================== *@
 
-                <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-5">
-                        <div class="flex items-center gap-2.5">
-                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                                <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" />
-                            </span>
-                            <div>
-                                <h3 class="text-sm font-bold text-slate-900">الصلاحيات</h3>
-                                <p class="mt-0.5 text-xs text-slate-500">حدد مستوى الوصول لكل جزء من النظام</p>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-wrap items-center gap-2">
-                            <MudButton Variant="Variant.Outlined"
-                                       Color="Color.Default"
-                                       Size="Size.Small"
-                                       Class="rounded-lg text-xs font-bold"
-                                       Disabled="_saving"
-                                       StartIcon="@Icons.Material.Filled.RestartAlt"
-                                       OnClick="@(() => SetAllLevels(null))">
-                                إعادة تعيين
-                            </MudButton>
-
-                            <MudButton Variant="Variant.Outlined"
-                                       Color="Color.Default"
-                                       Size="Size.Small"
-                                       Class="rounded-lg text-xs font-bold"
-                                       Disabled="_saving"
-                                       StartIcon="@Icons.Material.Filled.Visibility"
-                                       OnClick="@(() => SetAllLevels(PermissionLevel.Read))">
-                                قراءة للجميع
-                            </MudButton>
-
-                            <MudButton Variant="Variant.Outlined"
-                                       Color="Color.Primary"
-                                       Size="Size.Small"
-                                       Class="rounded-lg text-xs font-bold"
-                                       Disabled="_saving"
-                                       StartIcon="@Icons.Material.Filled.Edit"
-                                       OnClick="@(() => SetAllLevels(PermissionLevel.Write))">
-                                كتابة للجميع
-                            </MudButton>
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="mb-4 flex items-center gap-2.5">
+                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" />
+                        </span>
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">الصلاحيات</h3>
+                            <p class="mt-0.5 text-xs text-slate-500">حدد مستوى الوصول لكل جزء من النظام</p>
                         </div>
                     </div>
 
-                    <div class="divide-y divide-slate-100">
-                        @foreach (RolePermissionEditorState permission
-                                            in _state.Permissions)
-                        {
-                            <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-                                <div class="flex min-w-0 items-center gap-3">
-                                    <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl @FeatureTone(permission.Feature)">
-                                        <MudIcon Icon="@GetFeatureIcon(permission.Feature)" Size="Size.Small" />
-                                    </span>
-
-                                    <div class="min-w-0">
-                                        <p class="text-sm font-bold text-slate-900">
-                                            @GetFeatureName(permission.Feature)
-                                        </p>
-
-                                        <p class="mt-0.5 text-xs text-slate-500">
-                                            @GetFeatureDescription(permission.Feature)
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div class="flex items-center gap-2">
-                                    <MudToggleGroup T="PermissionLevel"
-                                                    Value="permission.Level"
-                                                    ValueChanged="@(value => SetLevel(permission, value))"
-                                                    Color="Color.Primary"
-                                                    Size="Size.Small"
-                                                    Disabled="_saving"
-                                                    Class="rounded-xl text-xs font-bold">
-                                        <MudToggleItem T="PermissionLevel"
-                                                       Value="PermissionLevel.None">لا شيء</MudToggleItem>
-                                        <MudToggleItem T="PermissionLevel"
-                                                       Value="PermissionLevel.Read">قراءة</MudToggleItem>
-                                        <MudToggleItem T="PermissionLevel"
-                                                       Value="PermissionLevel.Write">كتابة</MudToggleItem>
-                                    </MudToggleGroup>
-                                </div>
-                            </div>
-                        }
-                    </div>
+                    <RolePermissionCards Permissions="_state.Permissions"
+                                         Disabled="_saving"
+                                         OnChanged="StateHasChanged" />
                 </section>
 
 
@@ -442,38 +371,6 @@
 
 
     // ============================================================
-    // Bulk level selection
-    // ============================================================
-
-    /// <summary>يحدد مستوى دالة صريحًا للجميع، أو يجمع كل شيء إلى «لا شيء» عند تمرير null.</summary>
-    private void SetAllLevels(PermissionLevel? level)
-    {
-        if (_saving)
-        {
-            return;
-        }
-
-        foreach (RolePermissionEditorState permission in _state.Permissions)
-        {
-            permission.Level = level ?? PermissionLevel.None;
-        }
-
-        StateHasChanged();
-    }
-
-    private void SetLevel(RolePermissionEditorState permission, PermissionLevel level)
-    {
-        if (_saving)
-        {
-            return;
-        }
-
-        permission.Level = level;
-        StateHasChanged();
-    }
-
-
-    // ============================================================
     // Lifecycle
     // ============================================================
 
@@ -619,7 +516,7 @@
     private async Task CreateAsync()
     {
         IReadOnlyList<RolePermissionInput> permissions =
-            BuildPermissionInputs();
+            _state.BuildPermissionInputs();
 
         var request = new CreateRoleRequest(
             _state.Name.Trim(),
@@ -656,7 +553,7 @@
             return;
 
         IReadOnlyList<RolePermissionInput> permissions =
-            BuildPermissionInputs();
+            _state.BuildPermissionInputs();
 
         var request = new UpdateRoleRequest(
             _state.Name.Trim(),
@@ -686,23 +583,6 @@
 
 
     // ============================================================
-    // Build application input
-    // ============================================================
-
-    private IReadOnlyList<RolePermissionInput> BuildPermissionInputs()
-    {
-        return _state.Permissions
-            .Where(
-                x => x.Level != PermissionLevel.None)
-            .Select(
-                x => new RolePermissionInput(
-                    x.Feature,
-                    x.Level))
-            .ToList();
-    }
-
-
-    // ============================================================
     // Navigation
     // ============================================================
 
@@ -718,229 +598,4 @@
             "/admin/roles");
     }
 
-
-    // ============================================================
-    // Feature name
-    // ============================================================
-
-    private static string GetFeatureName(
-        PermissionFeature feature)
-    {
-        return feature switch
-        {
-            PermissionFeature.Orders =>
-                "الطلبات",
-
-            PermissionFeature.Documents =>
-                "المستندات",
-
-            PermissionFeature.Products =>
-                "المنتجات",
-
-            PermissionFeature.Categories =>
-                "الأقسام",
-
-            PermissionFeature.Properties =>
-                "خصائص المنتجات",
-
-            PermissionFeature.Clients =>
-                "العملاء",
-
-            PermissionFeature.Suppliers =>
-                "الموردون",
-
-            PermissionFeature.Deliverymen =>
-                "المناديب",
-
-            PermissionFeature.ShippingCarriers =>
-                "شركات الشحن",
-
-            PermissionFeature.Cities =>
-                "المدن",
-
-            PermissionFeature.PaymentMethods =>
-                "طرق الدفع",
-
-            PermissionFeature.Logs =>
-                "سجلات النظام",
-
-            PermissionFeature.Users =>
-                "إدارة المستخدمين",
-
-            PermissionFeature.Settings =>
-                "إعدادات النظام",
-
-            _ => feature.ToString()
-        };
-    }
-
-
-    // ============================================================
-    // Feature description
-    // ============================================================
-
-    private static string GetFeatureDescription(
-        PermissionFeature feature)
-    {
-        return feature switch
-        {
-            PermissionFeature.Orders =>
-                "عرض وإدارة الطلبات",
-
-            PermissionFeature.Documents =>
-                "عروض الأسعار والفواتير والمستندات",
-
-            PermissionFeature.Products =>
-                "عرض وإدارة المنتجات",
-
-            PermissionFeature.Categories =>
-                "إدارة أقسام المنتجات",
-
-            PermissionFeature.Properties =>
-                "إدارة خصائص وخيارات المنتجات",
-
-            PermissionFeature.Clients =>
-                "عرض وإدارة بيانات العملاء",
-
-            PermissionFeature.Suppliers =>
-                "عرض وإدارة الموردين",
-
-            PermissionFeature.Deliverymen =>
-                "عرض وإدارة المناديب",
-
-            PermissionFeature.ShippingCarriers =>
-                "عرض وإدارة شركات الشحن",
-
-            PermissionFeature.Cities =>
-                "إدارة المدن",
-
-            PermissionFeature.PaymentMethods =>
-                "إدارة طرق الدفع",
-
-            PermissionFeature.Logs =>
-                "عرض سجلات النظام",
-
-            PermissionFeature.Users =>
-                "إدارة حسابات المستخدمين",
-
-            PermissionFeature.Settings =>
-                "إدارة إعدادات النظام",
-
-            _ => string.Empty
-        };
-    }
-
-
-    // ============================================================
-    // Feature icon
-    // ============================================================
-
-    private static string GetFeatureIcon(
-        PermissionFeature feature)
-    {
-        return feature switch
-        {
-            PermissionFeature.Orders =>
-                Icons.Material.Filled.ShoppingCart,
-
-            PermissionFeature.Documents =>
-                Icons.Material.Filled.Description,
-
-            PermissionFeature.Products =>
-                Icons.Material.Filled.Inventory2,
-
-            PermissionFeature.Categories =>
-                Icons.Material.Filled.Category,
-
-            PermissionFeature.Properties =>
-                Icons.Material.Filled.Tune,
-
-            PermissionFeature.Clients =>
-                Icons.Material.Filled.People,
-
-            PermissionFeature.Suppliers =>
-                Icons.Material.Filled.Store,
-
-            PermissionFeature.Deliverymen =>
-                Icons.Material.Filled.DeliveryDining,
-
-            PermissionFeature.ShippingCarriers =>
-                Icons.Material.Filled.LocalShipping,
-
-            PermissionFeature.Cities =>
-                Icons.Material.Filled.LocationCity,
-
-            PermissionFeature.PaymentMethods =>
-                Icons.Material.Filled.Payments,
-
-            PermissionFeature.Logs =>
-                Icons.Material.Filled.ReceiptLong,
-
-            PermissionFeature.Users =>
-                Icons.Material.Filled.ManageAccounts,
-
-            PermissionFeature.Settings =>
-                Icons.Material.Filled.Settings,
-
-            _ =>
-                Icons.Material.Filled.Security
-        };
-    }
-
-
-    // ============================================================
-    // Feature tile tone (fixed color per feature, per template)
-    // ============================================================
-
-    private static string FeatureTone(
-        PermissionFeature feature)
-    {
-        return feature switch
-        {
-            PermissionFeature.Orders =>
-                "bg-blue-50 text-blue-600 border border-blue-100",
-
-            PermissionFeature.Documents =>
-                "bg-amber-50 text-amber-600 border border-amber-100",
-
-            PermissionFeature.Products =>
-                "bg-violet-50 text-violet-600 border border-violet-100",
-
-            PermissionFeature.Categories =>
-                "bg-emerald-50 text-emerald-600 border border-emerald-100",
-
-            PermissionFeature.Properties =>
-                "bg-cyan-50 text-cyan-600 border border-cyan-100",
-
-            PermissionFeature.Clients =>
-                "bg-rose-50 text-rose-600 border border-rose-100",
-
-            PermissionFeature.Suppliers =>
-                "bg-teal-50 text-teal-600 border border-teal-100",
-
-            PermissionFeature.Deliverymen =>
-                "bg-indigo-50 text-indigo-600 border border-indigo-100",
-
-            PermissionFeature.ShippingCarriers =>
-                "bg-sky-50 text-sky-600 border border-sky-100",
-
-            PermissionFeature.Cities =>
-                "bg-lime-50 text-lime-700 border border-lime-100",
-
-            PermissionFeature.PaymentMethods =>
-                "bg-green-50 text-green-600 border border-green-100",
-
-            PermissionFeature.Logs =>
-                "bg-orange-50 text-orange-600 border border-orange-100",
-
-            PermissionFeature.Users =>
-                "bg-red-50 text-red-600 border border-red-100",
-
-            PermissionFeature.Settings =>
-                "bg-zinc-50 text-zinc-600 border border-zinc-100",
-
-            _ =>
-                "bg-slate-50 text-slate-600 border border-slate-100"
-        };
-    }
 }

@@ -200,10 +200,10 @@
 
                 <MudTd DataLabel="الحالة">
 
-                    <span class="order-status @OrderWorkflowPresentation.StatusTone(context.OrderStatus)">@context.EnumItem.DisplayName</span>
+                    <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(context.OrderStatus)}")">@context.EnumItem.DisplayName</span>
                     @if (context.IsArchived)
                     {
-                        <span class="order-status order-tone-neutral">مؤرشف</span>
+                        <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(OrderWorkflowPresentation.Neutral)}")">مؤرشف</span>
                     }
 
                 </MudTd>
@@ -219,7 +219,7 @@
                     <MudStack Row>
 
                         <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                       Class="order-action order-tone-delivery"
+                                       Class="@($"rounded-lg shadow-none {OrderWorkflowPresentation.Action("delivery")}")"
                                        Size="Size.Small"
                                        Href=@($"/orders/{context.Id}")
                                        OnClick="@(() => SelectOrder(context))" />
@@ -228,7 +228,7 @@
                         {
                             <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write">
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                               Class="order-action order-tone-processing"
+                                               Class="@($"rounded-lg shadow-none {OrderWorkflowPresentation.Action("processing")}")"
                                                Size="Size.Small"
                                                Href=@($"/orders/{context.Id}/edit")
                                                OnClick="@(() => SelectOrder(context))" />

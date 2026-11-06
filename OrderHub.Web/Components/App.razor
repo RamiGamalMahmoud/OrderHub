@@ -8,12 +8,11 @@
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
     <!-- No runtime font fetching: the app runs locally; fonts are the local multi-weight Tajawal set (wwwroot/fonts/). -->
-    <!-- Design-system CSS order (Option B): MudBlazor → base app.css → mud-blazor-overrides (T-A2) → legacy order-workflow tones
-         (until T15/T-C1) → Tailwind utilities LAST and unlayered (they beat MudBlazor + our defaults without !important) → razor-scoped styles -->
+    <!-- Design-system CSS order (Option B): MudBlazor → base app.css → mud-blazor-overrides (T-A2)
+         → Tailwind utilities LAST and unlayered (they beat MudBlazor + our defaults without !important) → razor-scoped styles -->
     <link href="@Assets["_content/MudBlazor/MudBlazor.min.css"]" rel="stylesheet" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["css/mud-blazor-overrides.css"]" />
-    <link rel="stylesheet" href="@Assets["css/order-workflow.css"]" />
     <link rel="stylesheet" href="@Assets["css/tailwind.css"]" />
     <link rel="stylesheet" href="@Assets["OrderHub.Web.styles.css"]" />
     <HeadOutlet @rendermode="InteractiveServer" />

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace OrderHub.Application.Features.Administration.Roles.Create;
 
-internal sealed class CreateRoleCommandHandler : IRequestHandler<CreateRoleCommand, Result>
+internal sealed class CreateRoleCommandHandler : IRequestHandler<CreateRoleCommand, Result<int>>
 {
     private readonly IRoleRepository _roleRepository;
     private readonly IUnitOfWork _unitOfWork;
@@ -19,7 +19,7 @@ internal sealed class CreateRoleCommandHandler : IRequestHandler<CreateRoleComma
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Result> Handle(CreateRoleCommand request, CancellationToken cancellationToken)
+    public async Task<Result<int>> Handle(CreateRoleCommand request, CancellationToken cancellationToken)
     {
         var input = request.Request;
         bool nameExists = await _roleRepository.NameExistsAsync(
@@ -27,7 +27,7 @@ internal sealed class CreateRoleCommandHandler : IRequestHandler<CreateRoleComma
             cancellationToken: cancellationToken);
 
         if (nameExists)
-            return Result.Failure("اسم الدور مستخدم بالفعل.");
+            return Result<int>.Failure("اسم الدور مستخدم بالفعل.");
 
         var role = new Role(input.Name);
 
@@ -37,6 +37,6 @@ internal sealed class CreateRoleCommandHandler : IRequestHandler<CreateRoleComma
         _roleRepository.Add(role);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result.Success();
+        return Result<int>.Success(role.Id);
     }
 }

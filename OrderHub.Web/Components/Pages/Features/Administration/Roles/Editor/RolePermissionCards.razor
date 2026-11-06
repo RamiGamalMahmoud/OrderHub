@@ -1,0 +1,243 @@
+@using MudBlazor
+@using OrderHub.Domain.Enums
+
+<div class="space-y-4">
+
+    @* ============================================================
+       Toolbar: instant search + bulk selection
+       ============================================================ *@
+
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+
+        <MudTextField T="string"
+                      @bind-Value="_search"
+                      Placeholder="ابحث عن قسم…"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Immediate="true"
+                      Clearable="true"
+                      Disabled="Disabled"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Class="w-full lg:max-w-sm" />
+
+        @if (ShowBulkActions)
+        {
+            <div class="flex flex-wrap items-center gap-2 lg:ms-auto">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           Size="Size.Small"
+                           Class="rounded-lg text-xs font-bold"
+                           Disabled="Disabled"
+                           StartIcon="@Icons.Material.Filled.RestartAlt"
+                           OnClick="@(() => SetAllLevels(null))">
+                    إعادة تعيين
+                </MudButton>
+
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           Size="Size.Small"
+                           Class="rounded-lg text-xs font-bold"
+                           Disabled="Disabled"
+                           StartIcon="@Icons.Material.Filled.Visibility"
+                           OnClick="@(() => SetAllLevels(PermissionLevel.Read))">
+                    قراءة للجميع
+                </MudButton>
+
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           Class="rounded-lg text-xs font-bold"
+                           Disabled="Disabled"
+                           StartIcon="@Icons.Material.Filled.Edit"
+                           OnClick="@(() => SetAllLevels(PermissionLevel.Write))">
+                    كتابة للجميع
+                </MudButton>
+            </div>
+        }
+    </div>
+
+    @* ============================================================
+       Cards grid
+       ============================================================ *@
+
+    @if (VisiblePermissions.Count == 0)
+    {
+        <div class="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center">
+            <p class="text-sm font-medium text-slate-500">لا يوجد قسم مطابق للبحث</p>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            @foreach (RolePermissionEditorState permission in VisiblePermissions)
+            {
+                LevelBadge badge = LevelBadgeOf(permission.Level);
+
+                <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl @RoleFeatureCatalog.Tone(permission.Feature)">
+                                <MudIcon Icon="@RoleFeatureCatalog.Icon(permission.Feature)" Size="Size.Small" />
+                            </span>
+
+                            <p class="min-w-0 text-sm font-bold text-slate-900">
+                                @RoleFeatureCatalog.Name(permission.Feature)
+                            </p>
+                        </div>
+
+                        <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold @badge.Class">
+                            <span class="h-1.5 w-1.5 rounded-full @badge.DotClass"></span>
+                            @badge.Label
+                        </span>
+                    </div>
+
+                    <p class="mt-2 text-xs text-slate-500">
+                        @RoleFeatureCatalog.Description(permission.Feature)
+                    </p>
+
+                    <div class="mt-auto pt-4">
+                        <MudToggleGroup T="PermissionLevel"
+                                        Value="permission.Level"
+                                        ValueChanged="@(value => SetLevel(permission, value))"
+                                        Color="Color.Primary"
+                                        Size="Size.Small"
+                                        Disabled="Disabled"
+                                        Class="w-full grid-cols-3 overflow-hidden rounded-xl text-xs font-bold">
+                            <MudToggleItem T="PermissionLevel"
+                                           Value="PermissionLevel.None">لا شيء</MudToggleItem>
+                            <MudToggleItem T="PermissionLevel"
+                                           Value="PermissionLevel.Read">قراءة</MudToggleItem>
+                            <MudToggleItem T="PermissionLevel"
+                                           Value="PermissionLevel.Write">كتابة</MudToggleItem>
+                        </MudToggleGroup>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code
+{
+    // ============================================================
+    // Parameters
+    // ============================================================
+
+    [Parameter]
+    public IList<RolePermissionEditorState> Permissions { get; set; } = [];
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public bool ShowBulkActions { get; set; } = true;
+
+    [Parameter]
+    public EventCallback OnChanged { get; set; }
+
+
+    // ============================================================
+    // State
+    // ============================================================
+
+    private string? _search;
+
+
+    // ============================================================
+    // Filtering
+    // ============================================================
+
+    private List<RolePermissionEditorState> VisiblePermissions
+    {
+        get
+        {
+            string term = _search?.Trim() ?? string.Empty;
+
+            if (term.Length == 0)
+            {
+                return Permissions.ToList();
+            }
+
+            return Permissions
+                .Where(permission =>
+                    RoleFeatureCatalog.Name(permission.Feature)
+                        .Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    RoleFeatureCatalog.Description(permission.Feature)
+                        .Contains(term, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+
+    // ============================================================
+    // Status badge
+    // ============================================================
+
+    private static LevelBadge LevelBadgeOf(PermissionLevel level)
+    {
+        return level switch
+        {
+            PermissionLevel.Read =>
+                new LevelBadge(
+                    "قراءة",
+                    "border-sky-200 bg-sky-50 text-sky-700",
+                    "bg-sky-500"),
+
+            PermissionLevel.Write =>
+                new LevelBadge(
+                    "كتابة",
+                    "border-brand-200 bg-brand-50 text-brand-700",
+                    "bg-brand-500"),
+
+            _ =>
+                new LevelBadge(
+                    "لا شيء",
+                    "border-slate-200 bg-slate-100 text-slate-600",
+                    "bg-slate-400")
+        };
+    }
+
+    private sealed record LevelBadge(
+        string Label,
+        string Class,
+        string DotClass);
+
+
+    // ============================================================
+    // Selection
+    // ============================================================
+
+    private async Task SetAllLevels(PermissionLevel? level)
+    {
+        if (Disabled)
+        {
+            return;
+        }
+
+        foreach (RolePermissionEditorState permission in Permissions)
+        {
+            permission.Level = level ?? PermissionLevel.None;
+        }
+
+        StateHasChanged();
+
+        await OnChanged.InvokeAsync();
+    }
+
+    private async Task SetLevel(
+        RolePermissionEditorState permission,
+        PermissionLevel level)
+    {
+        if (Disabled)
+        {
+            return;
+        }
+
+        permission.Level = level;
+        StateHasChanged();
+
+        await OnChanged.InvokeAsync();
+    }
+}

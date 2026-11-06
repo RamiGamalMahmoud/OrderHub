@@ -1,48 +1,123 @@
+@using System.Globalization
 @using OrderHub.Application.Features.Orders.Lifecycle
 @using OrderHub.Domain.Models
 @using OrderHub.Domain.Common
 @using OrderHub.Application.Common.Extensions
 
-<MudDialog>
+<MudDialog Class="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-xl"
+           TitleClass="p-0"
+           ContentClass="p-0"
+           ActionsClass="p-0"
+           Gutters="false">
+    <TitleContent>
+        <header class="flex items-start justify-between gap-3 border-b border-slate-100 p-5">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-bold leading-tight text-slate-900">تأكيد التسليم المباشر</h2>
+                    <p class="mt-1 text-xs font-medium text-slate-500">سيصبح الطلب «تم التسليم» وتُغلق جميع خطواته ضد التشغيل</p>
+                </div>
+            </div>
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Size="Size.Small"
+                           Color="Color.Default"
+                           Disabled="_submitting"
+                           OnClick="Cancel"
+                           aria-label="إغلاق النافذة"
+                           Class="shrink-0 rounded-xl text-slate-400" />
+        </header>
+    </TitleContent>
+
     <DialogContent>
-        <MudStack Spacing="2">
-            <MudAlert Severity="Severity.Info">سيصبح الطلب «تم التسليم». حدد نتائج الخطوات غير المكتملة. الخطوات المكتملة سابقًا لن تتغير.</MudAlert>
+        <div class="min-h-0 flex-1 space-y-4 overflow-y-auto bg-slate-50/70 p-5">
+            <div class="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-bold leading-6 text-brand-700">
+                حدد نتيجة كل خطوة غير مكتملة. الخطوات المكتملة سابقًا لن تتغير.
+            </div>
+
             @foreach (var step in State.Steps.Where(step => step.Status == DeliveryStatus.Completed))
             {
-                <MudText Typo="Typo.body2">✓ الخطوة @step.StepOrder — @step.HandlerName — مكتملة سابقًا، دون تغيير</MudText>
+                <div class="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-800" @key="step.Id">
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                    <span class="font-semibold">الخطوة @step.StepOrder.ToString(CultureInfo.InvariantCulture) — @step.HandlerName — مكتملة سابقًا، دون تغيير</span>
+                </div>
             }
-            <MudButton Disabled="_submitting" Class="order-action order-tone-completed" OnClick="CompleteRemaining">اختيار إكمال جميع الخطوات المتبقية</MudButton>
+
+            <button type="button"
+                    class="@($"rounded-lg px-3 py-1.5 text-xs font-bold {OrderWorkflowPresentation.Action("completed")}")"
+                    disabled="@_submitting"
+                    @onclick="CompleteRemaining">اختيار إكمال جميع الخطوات المتبقية</button>
+
             @foreach (var outcome in _outcomes)
             {
-                <MudPaper Class="pa-2" Outlined="true" @key="outcome.Step.Id">
-                    <MudText Typo="Typo.subtitle2">الخطوة @outcome.Step.StepOrder — @outcome.Step.HandlerName</MudText>
-                    <span class="order-status @OrderWorkflowPresentation.StatusTone(outcome.Step.Status)">الحالة الحالية: @outcome.Step.Status.GetDescription()</span>
-                    <MudSelect T="DeliveryStatus" @bind-Value="outcome.Status" Label="نتيجة الخطوة" Disabled="_submitting" Variant="Variant.Outlined">
+                <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm" @key="outcome.Step.Id">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <p class="text-sm font-bold text-slate-900">الخطوة @outcome.Step.StepOrder.ToString(CultureInfo.InvariantCulture) — @outcome.Step.HandlerName</p>
+                        <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(outcome.Step.Status)}")">الحالة الحالية: @outcome.Step.Status.GetDescription()</span>
+                    </div>
+
+                    <MudSelect T="DeliveryStatus"
+                               @bind-Value="outcome.Status"
+                               Label="نتيجة الخطوة"
+                               Disabled="_submitting"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Class="mt-3">
                         <MudSelectItem T="DeliveryStatus" Value="outcome.Step.Status">إبقاء الحالة الحالية (@outcome.Step.Status.GetDescription())</MudSelectItem>
                         @foreach (var choice in new[] { DeliveryStatus.Completed, DeliveryStatus.Failed, DeliveryStatus.Cancelled }.Where(choice => choice != outcome.Step.Status))
-                        { <MudSelectItem T="DeliveryStatus" Value="choice">@choice.GetDescription()</MudSelectItem> }
+                        {
+                            <MudSelectItem T="DeliveryStatus" Value="choice">@choice.GetDescription()</MudSelectItem>
+                        }
                     </MudSelect>
+
                     @if (outcome.NeedsReason)
                     {
-                        <MudCheckBox T="bool" @bind-Value="outcome.UseCommonReason" Label="استخدام سبب التسليم المباشر لهذه الخطوة" Disabled="_submitting" />
+                        <MudCheckBox T="bool" @bind-Value="outcome.UseCommonReason" Label="استخدام سبب التسليم المباشر لهذه الخطوة" Disabled="_submitting" Class="mt-2" />
                         @if (!outcome.UseCommonReason)
-                        { <MudTextField T="string" @bind-Value="outcome.Reason" Label="سبب نتيجة الخطوة" Required="true" Immediate="true" MaxLength="200" Counter="200" Lines="2" Disabled="_submitting" /> }
+                        {
+                            <MudTextField T="string" @bind-Value="outcome.Reason" Label="سبب نتيجة الخطوة" Required="true"
+                                          Immediate="true" MaxLength="200" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="_submitting" Class="mt-2" />
+                        }
                     }
                     else if (outcome.Step.LatestReason is not null && outcome.Status == outcome.Step.Status)
-                    { <MudText Typo="Typo.body2">السبب المسجل: @outcome.Step.LatestReason</MudText> }
-                </MudPaper>
+                    {
+                        <p class="mt-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600">السبب المسجل: @outcome.Step.LatestReason</p>
+                    }
+                </div>
             }
-            <MudTextField T="string" @bind-Value="_reason" Label="سبب التسليم المباشر" Required="true" Immediate="true" MaxLength="200" Counter="200" Lines="2" Disabled="_submitting" />
-            <MudAlert Severity="Severity.Warning">
-                سيتم إكمال @_outcomes.Count(outcome => outcome.Status == DeliveryStatus.Completed) خطوة من المتبقي، وسيبقى @_outcomes.Count(outcome => outcome.Status != DeliveryStatus.Completed) غير مكتمل.
+
+            <MudTextField T="string"
+                          @bind-Value="_reason"
+                          Label="سبب التسليم المباشر"
+                          Required="true"
+                          Immediate="true"
+                          MaxLength="200"
+                          HelperText="@_reasonCounter"
+                          Lines="2"
+                          Variant="Variant.Outlined"
+                          Disabled="_submitting" />
+
+            <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold leading-6 text-amber-800">
+                سيتم إكمال @_outcomes.Count(outcome => outcome.Status == DeliveryStatus.Completed).ToString(CultureInfo.InvariantCulture) خطوة من المتبقي،
+                وسيبقى @_outcomes.Count(outcome => outcome.Status != DeliveryStatus.Completed).ToString(CultureInfo.InvariantCulture) غير مكتمل.
                 بعد التأكيد تُغلق جميع الخطوات ضد التشغيل، بما فيها غير المكتملة.
-            </MudAlert>
-            @if (_error is not null) { <MudAlert Severity="Severity.Error">@_error</MudAlert> }
-        </MudStack>
+            </div>
+
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+            }
+        </div>
     </DialogContent>
+
     <DialogActions>
-        <MudButton Disabled="_submitting" OnClick="Cancel" Class="order-action order-tone-neutral">رجوع دون تغيير</MudButton>
-        <MudButton Disabled="_submitting" Class="order-action order-tone-completed" OnClick="ConfirmAsync">@(_submitting ? "جاري تسجيل التسليم…" : "تأكيد تسليم الطلب بهذه النتائج")</MudButton>
+        <footer class="flex items-center justify-end gap-2 border-t border-slate-100 bg-white p-4">
+            <MudButton Disabled="_submitting" OnClick="Cancel" Variant="Variant.Text" Class="rounded-xl text-slate-600">رجوع دون تغيير</MudButton>
+            <MudButton Disabled="_submitting"
+                       Class="@($"rounded-xl shadow-none font-bold {OrderWorkflowPresentation.Action("completed")}")"
+                       OnClick="ConfirmAsync">@(_submitting ? "جاري تسجيل التسليم…" : "تأكيد تسليم الطلب بهذه النتائج")</MudButton>
+        </footer>
     </DialogActions>
 </MudDialog>
 
@@ -54,6 +129,7 @@
     private string? _reason, _error;
     private bool _submitting;
     private int _initializedId;
+    private string _reasonCounter => $"{(_reason?.Length ?? 0).ToString(CultureInfo.InvariantCulture)} / 200";
     protected override void OnParametersSet()
     {
         if (_initializedId == State.Id) return;
@@ -80,7 +156,7 @@
         {
             var reason = outcome.NeedsReason ? outcome.UseCommonReason ? _reason : outcome.Reason : null;
             valid = Order.ValidateReason(reason, outcome.NeedsReason);
-            if (!valid.IsSuccess) { _error = $"الخطوة {outcome.Step.StepOrder}: {valid.ErrorMessage}"; return; }
+            if (!valid.IsSuccess) { _error = $"الخطوة {outcome.Step.StepOrder.ToString(CultureInfo.InvariantCulture)}: {valid.ErrorMessage}"; return; }
             results.Add(new(outcome.Step.Id, outcome.Status, reason?.Trim()));
         }
         _submitting = true;

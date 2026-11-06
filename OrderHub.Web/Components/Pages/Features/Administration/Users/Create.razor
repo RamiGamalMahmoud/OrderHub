@@ -4,16 +4,19 @@
 @using Microsoft.AspNetCore.Authorization
 @using System.Globalization
 @using MudBlazor
+@using OrderHub.Application.Authorization
 @using OrderHub.Application.Features.Administration.Roles.GetRoles
 @using OrderHub.Application.Features.Administration.Users.Create
 @using OrderHub.Application.Interfaces
 @using OrderHub.Domain.Common
+@using OrderHub.Web.Components.Pages.Features.Administration.Roles.Editor
 
 @attribute [Authorize(Roles = "Admin")]
 
 @inject IRequestExecutor RequestExecutor
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
 <PageTitle>إضافة مستخدم</PageTitle>
 
@@ -180,6 +183,16 @@
 
                             </MudSelect>
 
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.ManageAccounts"
+                                       Disabled="@(_saving || _creatingRole)"
+                                       OnClick="CreateRoleAsync"
+                                       Class="mt-2 rounded-lg text-xs font-bold">
+                                إنشاء دور جديد…
+                            </MudButton>
+
                             <p class="mt-1 text-xs text-slate-500">
                                 المستخدم بدون دور لا يحصل على صلاحيات الدور.
                             </p>
@@ -311,6 +324,8 @@
 
     private bool _saving;
 
+    private bool _creatingRole;
+
     private bool _showPassword;
 
     private bool _showConfirmPassword;
@@ -429,6 +444,65 @@
         finally
         {
             _loading = false;
+        }
+    }
+
+    // ============================================================
+    // Inline role creation
+    // ============================================================
+
+    private async Task CreateRoleAsync()
+    {
+        if (_saving || _creatingRole)
+        {
+            return;
+        }
+
+        try
+        {
+            _creatingRole = true;
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.Medium,
+                FullWidth = true,
+                CloseButton = false,
+                CloseOnEscapeKey = false,
+                BackdropClick = false
+            };
+
+            var dialog =
+                await DialogService.ShowAsync<RoleEditorDialog>(
+                    "إضافة دور",
+                    new DialogParameters(),
+                    options);
+
+            DialogResult? result = await dialog.Result;
+
+            if (result is not { Canceled: false, Data: int newRoleId })
+            {
+                return;
+            }
+
+            _roles = await RequestExecutor.ExecuteAsync(
+                new GetRolesQuery());
+
+            _model.RoleId = newRoleId;
+        }
+        catch (AuthorizationDeniedException)
+        {
+            NavigationManager.NavigateTo(
+                "/access-denied");
+        }
+        catch (Exception)
+        {
+            Snackbar.Add(
+                "تعذر إنشاء الدور.",
+                Severity.Error);
+        }
+        finally
+        {
+            _creatingRole = false;
         }
     }
 

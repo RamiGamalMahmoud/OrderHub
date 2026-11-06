@@ -1,24 +1,40 @@
+@using System.Globalization
 @using OrderHub.Application.Features.Orders.Lifecycle
 @using OrderHub.Application.Common.Extensions
 
 @if (State.Status != OrderStatus.Cancelled)
 {
-    <ol class="order-stage-strip" aria-label="مراحل الطلب">
+    <ol class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3" aria-label="مراحل الطلب">
         @for (var index = 0; index < _stages.Length; index++)
         {
             var stage = _stages[index];
             var current = Math.Min(_stages.Length - 1, State.Status == OrderStatus.Processing ? 0 : State.Status == OrderStatus.Delivered ? 2 : 1);
             var active = index == current;
-            var tone = OrderWorkflowPresentation.StatusTone(active ? State.Status : stage);
-            <li class="order-stage @tone @(active ? "is-current" : index < current ? "is-previous" : "is-upcoming")" aria-current="@(active ? "step" : null)">
-                <span class="order-stage-number" aria-hidden="true">@(index < current ? "✓" : (index + 1).ToString())</span>
-                <span class="order-stage-copy">
-                    <strong>@stage.GetDescription()</strong>
-                    <small>@(active ? State.Status == OrderStatus.DeliveryFailed ? "تحتاج مراجعة" : State.Status == OrderStatus.Delivered ? "اكتملت دورة الطلب" : "المرحلة الحالية" : index < current ? "مرحلة سابقة" : "المرحلة التالية")</small>
-                </span>
+            var previous = index < current;
+            var tone = active ? OrderWorkflowPresentation.StatusTone(State.Status) : previous ? "completed" : OrderWorkflowPresentation.Neutral;
+            var caption = active
+                ? State.Status == OrderStatus.DeliveryFailed ? "تحتاج مراجعة"
+                : State.Status == OrderStatus.Delivered ? "اكتملت دورة الطلب"
+                : "المرحلة الحالية"
+                : previous ? "مرحلة مكتملة" : "لم تبدأ";
+            <li class="@($"rounded-xl p-3 {(active ? "border-2 shadow-sm" : "border")} {OrderWorkflowPresentation.Surface(tone)}")" aria-current="@(active ? "step" : null)">
+                <div class="flex items-center gap-3">
+                    <span class="@($"inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-black {OrderWorkflowPresentation.IconTile(tone)}")">
+                        @(previous ? "✓" : (index + 1).ToString(CultureInfo.InvariantCulture))
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-sm font-bold text-slate-900">@stage.GetDescription()</p>
+                        <p class="text-[11px] font-medium text-slate-500">@caption</p>
+                    </div>
+                </div>
+                @if (active && !previous)
+                {
+                    <p class="mt-2 text-[11px] text-slate-500">آخر تحديث: <UserLocalTime Value="State.LastChangedAtUtc" /></p>
+                }
             </li>
         }
     </ol>
+    <p class="mt-2 text-[11px] text-slate-500">التوقيتات التفصيلية لكل مرحلة متاحة في سجل حالات الطلب أدناه.</p>
 }
 
 @code {
