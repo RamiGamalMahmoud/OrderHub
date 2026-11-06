@@ -3,6 +3,7 @@
 @page "/admin/roles/{RoleId:int}/edit"
 
 @using Microsoft.AspNetCore.Authorization
+@using System.Globalization
 @using MudBlazor
 
 @using OrderHub.Application.Features.Administration.Roles
@@ -22,34 +23,17 @@
 <PageTitle>@PageTitleText</PageTitle>
 
 
-<MudStack Spacing="3">
-
-    @* ============================================================
-       Header
-       ============================================================ *@
-
-    <MudStack Row
-              AlignItems="AlignItems.Center"
-              Spacing="2">
-
-        <MudIconButton Icon="@Icons.Material.Filled.ArrowForward"
-                       Disabled="_saving"
-                       OnClick="GoBack" />
-
-        <div>
-
-            <MudText Typo="Typo.h5">
-                @PageTitleText
-            </MudText>
-
-            <MudText Typo="Typo.body2"
-                     Color="Color.Secondary">
-                @PageDescription
-            </MudText>
-
-        </div>
-
-    </MudStack>
+<div class="space-y-5">
+    <PageScaffold Title="@PageTitleText"
+                  Description="@PageDescription"
+                  Crumbs="ScaffoldCrumbs">
+        <Actions>
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">
+                <MudIcon Icon="@Icons.Material.Filled.Security" Size="Size.Small" />
+                صلاحيات RBAC
+            </span>
+        </Actions>
+    </PageScaffold>
 
 
     @* ============================================================
@@ -58,23 +42,11 @@
 
     @if (_loading)
     {
-        <MudPaper Outlined="true"
-                  Class="pa-8">
-
-            <MudStack AlignItems="AlignItems.Center"
-                      Spacing="2">
-
-                <MudProgressCircular Indeterminate="true"
-                                     Color="Color.Primary" />
-
-                <MudText Typo="Typo.body2"
-                         Color="Color.Secondary">
-                    جاري تحميل بيانات الدور...
-                </MudText>
-
-            </MudStack>
-
-        </MudPaper>
+        <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <MudProgressCircular Indeterminate="true"
+                                 Color="Color.Primary" />
+            <p class="mt-2 text-sm text-slate-500">جاري تحميل بيانات الدور...</p>
+        </div>
     }
 
     @* ============================================================
@@ -83,35 +55,21 @@
 
     else if (IsEditMode && !_roleFound)
     {
-        <MudPaper Outlined="true"
-                  Class="pa-6">
+        <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+                <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" aria-hidden="true" />
+            </span>
+            <p class="text-base font-bold text-slate-900">الدور غير موجود</p>
+            <p class="mt-1 text-sm text-slate-500">تعذر العثور على الدور المطلوب.</p>
 
-            <MudStack AlignItems="AlignItems.Center"
-                      Spacing="3">
-
-                <MudIcon Icon="@Icons.Material.Filled.ErrorOutline"
-                         Size="Size.Large"
-                         Color="Color.Error" />
-
-                <MudText Typo="Typo.h6">
-                    الدور غير موجود
-                </MudText>
-
-                <MudText Typo="Typo.body2"
-                         Color="Color.Secondary">
-                    تعذر العثور على الدور المطلوب.
-                </MudText>
-
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.ArrowForward"
-                           OnClick="GoBack">
-                    العودة إلى الأدوار
-                </MudButton>
-
-            </MudStack>
-
-        </MudPaper>
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.ArrowForward"
+                       Class="mt-4 rounded-xl font-bold"
+                       OnClick="GoBack">
+                العودة إلى الأدوار
+            </MudButton>
+        </div>
     }
 
     @* ============================================================
@@ -124,282 +82,210 @@
                  Model="_state"
                  ValidationDelay="0">
 
-            <MudStack Spacing="3">
+            <div class="space-y-5">
 
 
                 @* ==================================================
                    Role information
                    ================================================== *@
 
-                <MudPaper Outlined="true"
-                          Class="pa-4">
-
-                    <MudStack Spacing="3">
-
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="mb-4 flex items-center gap-2.5">
+                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <MudIcon Icon="@Icons.Material.Filled.Badge" Size="Size.Small" />
+                        </span>
                         <div>
-
-                            <MudText Typo="Typo.h6">
-                                بيانات الدور
-                            </MudText>
-
-                            <MudText Typo="Typo.body2"
-                                     Color="Color.Secondary">
-                                أدخل اسمًا واضحًا يعبّر عن مسؤوليات المستخدمين التابعين لهذا الدور
-                            </MudText>
-
+                            <h3 class="text-sm font-bold text-slate-900">بيانات الدور</h3>
+                            <p class="mt-0.5 text-xs text-slate-500">أدخل اسمًا واضحًا يعبّر عن مسؤوليات المستخدمين التابعين لهذا الدور</p>
                         </div>
+                    </div>
 
-                        <MudDivider />
+                    <MudTextField T="string"
+                                  @bind-Value="_state.Name"
+                                  Label="اسم الدور"
+                                  Placeholder="مثال: المبيعات"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  RequiredError="اسم الدور مطلوب."
+                                  MaxLength="100"
+                                  Immediate="true"
+                                  Disabled="_saving"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Badge" />
 
-                        <MudTextField T="string"
-                                      @bind-Value="_state.Name"
-                                      Label="اسم الدور"
-                                      Placeholder="مثال: المبيعات"
-                                      Variant="Variant.Outlined"
-                                      Margin="Margin.Dense"
-                                      Required="true"
-                                      RequiredError="اسم الدور مطلوب."
-                                      MaxLength="100"
-                                      Counter="100"
-                                      Immediate="true"
-                                      Disabled="_saving"
-                                      Adornment="Adornment.Start"
-                                      AdornmentIcon="@Icons.Material.Filled.Badge" />
-
-                    </MudStack>
-
-                </MudPaper>
+                    <div class="mt-1 flex items-center gap-1 text-xs font-medium text-slate-500">
+                        <span class="tabular-nums">@FmtCount(_state.Name.Length)</span>
+                        <span>/ 100</span>
+                    </div>
+                </section>
 
 
                 @* ==================================================
                    Permissions
                    ================================================== *@
 
-                <MudPaper Outlined="true">
-
-                    <MudStack Spacing="0">
-
-                        <div class="pa-4">
-
-                            <MudText Typo="Typo.h6">
-                                الصلاحيات
-                            </MudText>
-
-                            <MudText Typo="Typo.body2"
-                                     Color="Color.Secondary">
-                                حدد مستوى الوصول لكل جزء من النظام
-                            </MudText>
-
+                <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-5">
+                        <div class="flex items-center gap-2.5">
+                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                                <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" />
+                            </span>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-900">الصلاحيات</h3>
+                                <p class="mt-0.5 text-xs text-slate-500">حدد مستوى الوصول لكل جزء من النظام</p>
+                            </div>
                         </div>
 
-                        <MudDivider />
+                        <div class="flex flex-wrap items-center gap-2">
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Default"
+                                       Size="Size.Small"
+                                       Class="rounded-lg text-xs font-bold"
+                                       Disabled="_saving"
+                                       StartIcon="@Icons.Material.Filled.RestartAlt"
+                                       OnClick="@(() => SetAllLevels(null))">
+                                إعادة تعيين
+                            </MudButton>
 
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Default"
+                                       Size="Size.Small"
+                                       Class="rounded-lg text-xs font-bold"
+                                       Disabled="_saving"
+                                       StartIcon="@Icons.Material.Filled.Visibility"
+                                       OnClick="@(() => SetAllLevels(PermissionLevel.Read))">
+                                قراءة للجميع
+                            </MudButton>
 
-                        @* ==========================================
-                           Columns header
-                           ========================================== *@
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       Class="rounded-lg text-xs font-bold"
+                                       Disabled="_saving"
+                                       StartIcon="@Icons.Material.Filled.Edit"
+                                       OnClick="@(() => SetAllLevels(PermissionLevel.Write))">
+                                كتابة للجميع
+                            </MudButton>
+                        </div>
+                    </div>
 
-                        <MudGrid Class="pa-3"
-                                 AlignItems="AlignItems.Center">
-
-                            <MudItem xs="12"
-                                     sm="6">
-
-                                <MudText Typo="Typo.subtitle2">
-                                    الميزة
-                                </MudText>
-
-                            </MudItem>
-
-                            <MudItem xs="12"
-                                     sm="6">
-
-                                <MudText Typo="Typo.subtitle2">
-                                    مستوى الوصول
-                                </MudText>
-
-                            </MudItem>
-
-                        </MudGrid>
-
-                        <MudDivider />
-
-
-                        @* ==========================================
-                           Permission rows
-                           ========================================== *@
-
+                    <div class="divide-y divide-slate-100">
                         @foreach (RolePermissionEditorState permission
                                             in _state.Permissions)
                         {
-                            <MudGrid Class="pa-3"
-                                     AlignItems="AlignItems.Center">
+                            <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl @FeatureTone(permission.Feature)">
+                                        <MudIcon Icon="@GetFeatureIcon(permission.Feature)" Size="Size.Small" />
+                                    </span>
 
-                                <MudItem xs="12"
-                                         sm="6">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-bold text-slate-900">
+                                            @GetFeatureName(permission.Feature)
+                                        </p>
 
-                                    <MudStack Row
-                                              AlignItems="AlignItems.Center"
-                                              Spacing="2">
+                                        <p class="mt-0.5 text-xs text-slate-500">
+                                            @GetFeatureDescription(permission.Feature)
+                                        </p>
+                                    </div>
+                                </div>
 
-                                        <MudIcon Icon="@GetFeatureIcon(permission.Feature)"
-                                                 Color="Color.Secondary" />
-
-                                        <div>
-
-                                            <MudText Typo="Typo.body1">
-                                                @GetFeatureName(permission.Feature)
-                                            </MudText>
-
-                                            <MudText Typo="Typo.caption"
-                                                     Color="Color.Secondary">
-                                                @GetFeatureDescription(permission.Feature)
-                                            </MudText>
-
-                                        </div>
-
-                                    </MudStack>
-
-                                </MudItem>
-
-
-                                <MudItem xs="12"
-                                         sm="6">
-
-                                    <MudRadioGroup T="PermissionLevel"
-                                                   @bind-Value="permission.Level">
-
-                                        <MudStack Row
-                                                  Spacing="2">
-
-                                            <MudRadio T="PermissionLevel"
-                                                      Value="PermissionLevel.None"
-                                                      Color="Color.Default"
-                                                      Disabled="_saving">
-                                                لا شيء
-                                            </MudRadio>
-
-                                            <MudRadio T="PermissionLevel"
-                                                      Value="PermissionLevel.Read"
-                                                      Color="Color.Info"
-                                                      Disabled="_saving">
-                                                قراءة
-                                            </MudRadio>
-
-                                            <MudRadio T="PermissionLevel"
-                                                      Value="PermissionLevel.Write"
-                                                      Color="Color.Primary"
-                                                      Disabled="_saving">
-                                                كتابة
-                                            </MudRadio>
-
-                                        </MudStack>
-
-                                    </MudRadioGroup>
-
-                                </MudItem>
-
-                            </MudGrid>
-
-                            <MudDivider />
+                                <div class="flex items-center gap-2">
+                                    <MudToggleGroup T="PermissionLevel"
+                                                    Value="permission.Level"
+                                                    ValueChanged="@(value => SetLevel(permission, value))"
+                                                    Color="Color.Primary"
+                                                    Size="Size.Small"
+                                                    Disabled="_saving"
+                                                    Class="rounded-xl text-xs font-bold">
+                                        <MudToggleItem T="PermissionLevel"
+                                                       Value="PermissionLevel.None">لا شيء</MudToggleItem>
+                                        <MudToggleItem T="PermissionLevel"
+                                                       Value="PermissionLevel.Read">قراءة</MudToggleItem>
+                                        <MudToggleItem T="PermissionLevel"
+                                                       Value="PermissionLevel.Write">كتابة</MudToggleItem>
+                                    </MudToggleGroup>
+                                </div>
+                            </div>
                         }
-
-                    </MudStack>
-
-                </MudPaper>
+                    </div>
+                </section>
 
 
                 @* ==================================================
                    Permission explanation
                    ================================================== *@
 
-                <MudAlert Severity="Severity.Info"
-                          Variant="Variant.Outlined"
-                          Dense="true">
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <p class="mb-3 text-sm font-bold text-slate-900">مستويات الوصول الثلاثة</p>
 
-                    <MudStack Spacing="1">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div class="rounded-xl border border-slate-200/85 bg-slate-50 p-3">
+                            <div class="mb-1.5 flex items-center gap-2">
+                                <span class="h-2.5 w-2.5 rounded-full bg-slate-400"></span>
+                                <p class="text-xs font-bold text-slate-700">لا شيء</p>
+                            </div>
+                            <p class="text-xs text-slate-500">لا يمكن للمستخدم الوصول إلى الميزة.</p>
+                        </div>
 
-                        <MudText Typo="Typo.body2">
-                            <strong>لا شيء:</strong>
-                            لا يمكن للمستخدم الوصول إلى الميزة.
-                        </MudText>
+                        <div class="rounded-xl border border-sky-100 bg-sky-50 p-3">
+                            <div class="mb-1.5 flex items-center gap-2">
+                                <span class="h-2.5 w-2.5 rounded-full bg-sky-500"></span>
+                                <p class="text-xs font-bold text-sky-700">قراءة</p>
+                            </div>
+                            <p class="text-xs text-slate-600">يمكن عرض البيانات والبحث فيها دون تعديلها.</p>
+                        </div>
 
-                        <MudText Typo="Typo.body2">
-                            <strong>قراءة:</strong>
-                            يمكن عرض البيانات والبحث فيها دون تعديلها.
-                        </MudText>
-
-                        <MudText Typo="Typo.body2">
-                            <strong>كتابة:</strong>
-                            تشمل القراءة بالإضافة إلى عمليات الإضافة والتعديل
-                            والحذف والعمليات التي تغيّر البيانات.
-                        </MudText>
-
-                    </MudStack>
-
-                </MudAlert>
+                        <div class="rounded-xl border border-brand-100 bg-brand-50 p-3">
+                            <div class="mb-1.5 flex items-center gap-2">
+                                <span class="h-2.5 w-2.5 rounded-full bg-brand-500"></span>
+                                <p class="text-xs font-bold text-brand-700">كتابة</p>
+                            </div>
+                            <p class="text-xs text-slate-600">تشمل القراءة بالإضافة إلى عمليات الإضافة والتعديل والحذف والعمليات التي تغيّر البيانات.</p>
+                        </div>
+                    </div>
+                </section>
 
 
                 @* ==================================================
                    Summary
                    ================================================== *@
 
-                <MudPaper Outlined="true"
-                          Class="pa-4">
-
-                    <MudStack Row
-                              AlignItems="AlignItems.Center"
-                              Justify="Justify.SpaceBetween">
-
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
-
-                            <MudText Typo="Typo.subtitle1">
-                                ملخص الصلاحيات
-                            </MudText>
-
-                            <MudText Typo="Typo.body2"
-                                     Color="Color.Secondary">
-
+                            <p class="text-sm font-bold text-slate-900">ملخص الصلاحيات</p>
+                            <p class="mt-0.5 text-xs text-slate-500">
                                 @if (GrantedPermissionCount == 0)
                                 {
-                                    <span>
-                                        لم يتم منح أي صلاحيات لهذا الدور
-                                    </span>
+                                    @:لم يتم منح أي صلاحيات لهذا الدور
                                 }
                                 else
                                 {
-                                    <span>
-                                        تم تحديد @GrantedPermissionCount صلاحية
-                                    </span>
+                                    @:تم تحديد @FmtCount(GrantedPermissionCount) صلاحية
                                 }
-
-                            </MudText>
-
+                            </p>
                         </div>
 
+                        <div class="flex flex-wrap items-center gap-2 text-xs font-bold">
+                            <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-slate-500">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                                لا شيء: <span class="tabular-nums">@FmtCount(NoPermissionCount)</span>
+                            </span>
 
-                        <MudStack Row
-                                  Spacing="1">
+                            <span class="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-sky-700">
+                                <span class="h-1.5 w-1.5 rounded-full bg-sky-500"></span>
+                                قراءة: <span class="tabular-nums">@FmtCount(ReadPermissionCount)</span>
+                            </span>
 
-                            <MudChip T="string"
-                                     Size="Size.Small"
-                                     Variant="Variant.Outlined"
-                                     Color="Color.Info">
-                                قراءة: @ReadPermissionCount
-                            </MudChip>
-
-                            <MudChip T="string"
-                                     Size="Size.Small"
-                                     Variant="Variant.Outlined"
-                                     Color="Color.Primary">
-                                كتابة: @WritePermissionCount
-                            </MudChip>
-
-                        </MudStack>
-
-                    </MudStack>
-
-                </MudPaper>
+                            <span class="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-brand-700">
+                                <span class="h-1.5 w-1.5 rounded-full bg-brand-500"></span>
+                                كتابة: <span class="tabular-nums">@FmtCount(WritePermissionCount)</span>
+                            </span>
+                        </div>
+                    </div>
+                </section>
 
 
                 @* ==================================================
@@ -408,65 +294,65 @@
 
                 @if (GrantedPermissionCount == 0)
                 {
-                    <MudAlert Severity="Severity.Warning"
-                              Variant="Variant.Outlined"
-                              Dense="true">
-
-                        لم يتم منح أي صلاحيات لهذا الدور.
-                        يمكن حفظ الدور بهذه الحالة، لكن المستخدمين المرتبطين به
-                        لن يحصلوا على صلاحيات وصول من خلاله.
-
-                    </MudAlert>
+                    <div class="flex items-start gap-2.5 rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-800">
+                        <MudIcon Icon="@Icons.Material.Filled.WarningAmber" Size="Size.Small" class="mt-0.5 shrink-0" />
+                        <p>
+                            لم يتم منح أي صلاحيات لهذا الدور.
+                            يمكن حفظ الدور بهذه الحالة، لكن المستخدمين المرتبطين به
+                            لن يحصلوا على صلاحيات وصول من خلاله.
+                        </p>
+                    </div>
                 }
 
 
                 @* ==================================================
-                   Actions
+                   Sticky actions
                    ================================================== *@
 
-                <MudStack Row
-                          Justify="Justify.FlexEnd"
-                          AlignItems="AlignItems.Center"
-                          Spacing="2">
+                <div class="sticky bottom-0 z-10 -mx-px mt-6 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-sm backdrop-blur">
+                    <div class="flex flex-wrap items-center justify-end gap-2">
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Default"
+                                   Disabled="_saving"
+                                   Class="rounded-xl text-slate-600"
+                                   StartIcon="@Icons.Material.Filled.ArrowForward"
+                                   OnClick="GoBack">
+                            إلغاء والعودة
+                        </MudButton>
 
-                    <MudButton Variant="Variant.Text"
-                               Disabled="_saving"
-                               OnClick="GoBack">
-                        إلغاء
-                    </MudButton>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Save"
+                                   Disabled="_saving"
+                                   Class="rounded-xl px-5 font-bold shadow-sm"
+                                   OnClick="SaveAsync">
 
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.Save"
-                               Disabled="_saving"
-                               OnClick="SaveAsync">
+                            @if (_saving)
+                            {
+                                <MudProgressCircular Indeterminate="true"
+                                                     Size="Size.Small"
+                                                     Class="me-2" />
 
-                        @if (_saving)
-                        {
-                            <MudProgressCircular Indeterminate="true"
-                                                 Size="Size.Small"
-                                                 Class="me-2" />
+                                <span>جاري الحفظ...</span>
+                            }
+                            else
+                            {
+                                <span>@SaveButtonText</span>
+                            }
 
-                            <span>جاري الحفظ...</span>
-                        }
-                        else
-                        {
-                            <span>@SaveButtonText</span>
-                        }
+                        </MudButton>
+                    </div>
+                </div>
 
-                    </MudButton>
-
-                </MudStack>
-
-            </MudStack>
+            </div>
 
         </MudForm>
     }
+</div>
 
-</MudStack>
 
-
-@code {
+@code
+{
 
     // ============================================================
     // Parameters
@@ -517,9 +403,21 @@
             : "إضافة الدور";
 
 
+    private PageScaffold.CrumbItem[] ScaffoldCrumbs =>
+    [
+        new("إدارة الأدوار", "/admin/roles"),
+        new(PageTitleText)
+    ];
+
+
     // ============================================================
     // Permission summary
     // ============================================================
+
+    private int NoPermissionCount =>
+        _state.Permissions.Count(
+            x => x.Level == PermissionLevel.None);
+
 
     private int ReadPermissionCount =>
         _state.Permissions.Count(
@@ -533,6 +431,46 @@
 
     private int GrantedPermissionCount =>
         ReadPermissionCount + WritePermissionCount;
+
+
+    // ============================================================
+    // Number formatting (InvariantCulture — Latin digits)
+    // ============================================================
+
+    private static string FmtCount(int value) =>
+        value.ToString("N0", CultureInfo.InvariantCulture);
+
+
+    // ============================================================
+    // Bulk level selection
+    // ============================================================
+
+    /// <summary>يحدد مستوى دالة صريحًا للجميع، أو يجمع كل شيء إلى «لا شيء» عند تمرير null.</summary>
+    private void SetAllLevels(PermissionLevel? level)
+    {
+        if (_saving)
+        {
+            return;
+        }
+
+        foreach (RolePermissionEditorState permission in _state.Permissions)
+        {
+            permission.Level = level ?? PermissionLevel.None;
+        }
+
+        StateHasChanged();
+    }
+
+    private void SetLevel(RolePermissionEditorState permission, PermissionLevel level)
+    {
+        if (_saving)
+        {
+            return;
+        }
+
+        permission.Level = level;
+        StateHasChanged();
+    }
 
 
     // ============================================================
@@ -946,6 +884,63 @@
 
             _ =>
                 Icons.Material.Filled.Security
+        };
+    }
+
+
+    // ============================================================
+    // Feature tile tone (fixed color per feature, per template)
+    // ============================================================
+
+    private static string FeatureTone(
+        PermissionFeature feature)
+    {
+        return feature switch
+        {
+            PermissionFeature.Orders =>
+                "bg-blue-50 text-blue-600 border border-blue-100",
+
+            PermissionFeature.Documents =>
+                "bg-amber-50 text-amber-600 border border-amber-100",
+
+            PermissionFeature.Products =>
+                "bg-violet-50 text-violet-600 border border-violet-100",
+
+            PermissionFeature.Categories =>
+                "bg-emerald-50 text-emerald-600 border border-emerald-100",
+
+            PermissionFeature.Properties =>
+                "bg-cyan-50 text-cyan-600 border border-cyan-100",
+
+            PermissionFeature.Clients =>
+                "bg-rose-50 text-rose-600 border border-rose-100",
+
+            PermissionFeature.Suppliers =>
+                "bg-teal-50 text-teal-600 border border-teal-100",
+
+            PermissionFeature.Deliverymen =>
+                "bg-indigo-50 text-indigo-600 border border-indigo-100",
+
+            PermissionFeature.ShippingCarriers =>
+                "bg-sky-50 text-sky-600 border border-sky-100",
+
+            PermissionFeature.Cities =>
+                "bg-lime-50 text-lime-700 border border-lime-100",
+
+            PermissionFeature.PaymentMethods =>
+                "bg-green-50 text-green-600 border border-green-100",
+
+            PermissionFeature.Logs =>
+                "bg-orange-50 text-orange-600 border border-orange-100",
+
+            PermissionFeature.Users =>
+                "bg-red-50 text-red-600 border border-red-100",
+
+            PermissionFeature.Settings =>
+                "bg-zinc-50 text-zinc-600 border border-zinc-100",
+
+            _ =>
+                "bg-slate-50 text-slate-600 border border-slate-100"
         };
     }
 }
