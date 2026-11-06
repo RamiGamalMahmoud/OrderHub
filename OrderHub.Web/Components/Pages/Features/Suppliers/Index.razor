@@ -13,29 +13,81 @@
 
 <PageTitle>الموردون</PageTitle>
 
-<MudStack Spacing="3">
-    <MudStack Row
-              Wrap="Wrap.Wrap"
-              AlignItems="AlignItems.Center"
-              Justify="Justify.SpaceBetween">
-        <div>
-            <MudText Typo="Typo.h5">
-                الموردون
-            </MudText>
+<div class="space-y-5">
+    <PageScaffold Title="الموردون"
+                  Description="إدارة الموردين المتاحين في النظام"
+                  Crumbs="_scaffoldCrumbs"
+                  Count="@_suppliers.Count">
+        <Actions>
+            @if (CanCreate)
+            {
+                <SupplierEditorButton ButtonText="إضافة مورد"
+                                      Variant="Variant.Filled"
+                                      Color="Color.Primary"
+                                      Size="Size.Large"
+                                      Class="rounded-xl px-5 font-bold shadow-sm"
+                                      Disabled="IsBusy"
+                                      OnSaved="LoadAsync" />
+            }
+        </Actions>
+    </PageScaffold>
 
-            <MudText Typo="Typo.body2"
-                     Color="Color.Secondary">
-                إدارة الموردون المتاحة في النظام
-            </MudText>
-        </div>
+    @* placeholder: not wired to system data *@
+    <section aria-label="إحصائيات سريعة"
+             class="grid grid-cols-2 gap-4 xl:grid-cols-4">
 
-        @if (CanCreate)
-        {
-            <SupplierEditorButton OnSaved="LoadAsync"
-                ButtonText="إضافة مورد"
-                                  Disabled="IsBusy" />
-        }
-    </MudStack>
+        <article class="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between gap-4">
+                <div class="space-y-2">
+                    <p class="text-sm font-medium text-slate-500">إجمالي الموردين</p>
+                    <p class="text-3xl font-black tracking-tight text-slate-900">48</p>
+                    <p class="text-xs font-medium text-slate-500">موثقون في النظام</p>
+                </div>
+                <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+                    <MudIcon Icon="@Icons.Material.Filled.Storefront" aria-hidden="true" />
+                </span>
+            </div>
+        </article>
+
+        <article class="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between gap-4">
+                <div class="space-y-2">
+                    <p class="text-sm font-medium text-slate-500">موردون نشطون</p>
+                    <p class="text-3xl font-black tracking-tight text-slate-900">39</p>
+                    <p class="text-xs font-medium text-slate-500">ساعات عمل مفعّلة</p>
+                </div>
+                <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" aria-hidden="true" />
+                </span>
+            </div>
+        </article>
+
+        <article class="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between gap-4">
+                <div class="space-y-2">
+                    <p class="text-sm font-medium text-slate-500">منتجات مرتبطة</p>
+                    <p class="text-3xl font-black tracking-tight text-slate-900">61</p>
+                    <p class="text-xs font-medium text-slate-500">توفيرات مسجلة</p>
+                </div>
+                <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+                    <MudIcon Icon="@Icons.Material.Filled.Inventory2" aria-hidden="true" />
+                </span>
+            </div>
+        </article>
+
+        <article class="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between gap-4">
+                <div class="space-y-2">
+                    <p class="text-sm font-medium text-slate-500">طلبات هذا الشهر</p>
+                    <p class="text-3xl font-black tracking-tight text-slate-900">14</p>
+                    <p class="text-xs font-medium text-slate-500">عقود توريد فعلية</p>
+                </div>
+                <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                    <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" aria-hidden="true" />
+                </span>
+            </div>
+        </article>
+    </section>
 
     @if (_loading)
     {
@@ -43,40 +95,40 @@
                            Color="Color.Primary" />
 
         <MudText Typo="Typo.body2">
-            جاري تحميل الموردون...
+            جاري تحميل الموردين...
         </MudText>
     }
     else if (_error is not null)
     {
-        <MudAlert Severity="Severity.Error"
-                  Dense="true">
-            @_error
-        </MudAlert>
+        <div class="rounded-2xl border border-red-100 bg-red-50 p-5">
+            <MudAlert Severity="Severity.Error"
+                      Dense="true">
+                @_error
+            </MudAlert>
 
-        <MudButton Variant="Variant.Outlined"
-                   OnClick="LoadAsync">
-            إعادة المحاولة
-        </MudButton>
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Primary"
+                       Class="mt-3"
+                       OnClick="LoadAsync">
+                إعادة المحاولة
+            </MudButton>
+        </div>
     }
     else if (_suppliers.Count == 0)
     {
-        <MudPaper Outlined="true"
-                  Class="pa-4">
-            <MudText Typo="Typo.body1">
-                لم تتم إضافة موردين بعد.
-            </MudText>
-        </MudPaper>
+        <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+                <MudIcon Icon="@Icons.Material.Filled.Storefront" aria-hidden="true" />
+            </span>
+            <p class="text-base font-bold text-slate-900">لم تتم إضافة موردين بعد.</p>
+            <p class="mt-1 text-sm text-slate-500">أضف أول مورد ليظهر في الجدول أعلاه.</p>
+        </div>
     }
     else
     {
-        <MudTable T="SupplierListItem"
-                  Items="FilteredSuppliers"
-                  Dense="true"
-                  Hover="true"
-                  Outlined="true"
-                  Elevation="0"
-                  Breakpoint="Breakpoint.Sm">
-            <ToolBarContent>
+        <!-- Unified table card: toolbar (search + refresh) + table + unified footer -->
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
                 <MudTextField T="string"
                               @bind-Value="_searchTerm"
                               Placeholder="ابحث عن مورد..."
@@ -87,101 +139,133 @@
                               Margin="Margin.Dense"
                               Immediate="true"
                               Clearable="true"
-                              Style="max-width:320px" />
-            </ToolBarContent>
+                              Class="w-full max-w-xs" />
 
-            <HeaderContent>
-                <MudTh>
-                    اسم المورد
-                </MudTh>
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                               Variant="Variant.Text"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               Disabled="IsBusy"
+                               aria-label="تحديث القائمة"
+                               OnClick="LoadAsync"
+                               Class="rounded-lg" />
+            </div>
 
-                <MudTh>
-                    الهاتف
-                </MudTh>
-
-                <MudTh>
-                    العنوان
-                </MudTh>
-
-                @if (_canWrite)
-                {
-                    <MudTh>
-                        الإجراءات
+            <MudTable T="SupplierListItem"
+                      Items="FilteredSuppliers"
+                      Dense="true"
+                      Hover="true"
+                      Elevation="0"
+                      Square="true"
+                      Breakpoint="Breakpoint.Sm"
+                      @bind-CurrentPage="_currentPage"
+                      @bind-RowsPerPage="_rowsPerPage">
+                <HeaderContent>
+                    <MudTh Class="text-xs font-bold text-slate-500">
+                        اسم المورد
                     </MudTh>
-                }
-            </HeaderContent>
 
-            <RowTemplate Context="supplier">
-                <MudTd DataLabel="اسم المورد"
-                       Style="overflow-wrap:anywhere">
-                    @supplier.Name
-                </MudTd>
+                    <MudTh Class="text-xs font-bold text-slate-500">
+                        الهاتف
+                    </MudTh>
 
-                <MudTd DataLabel="الهاتف"
-                       Style="overflow-wrap:anywhere">
-                    @ContactText(supplier.PhoneNumber)
-                </MudTd>
+                    <MudTh Class="text-xs font-bold text-slate-500">
+                        العنوان
+                    </MudTh>
 
-                <MudTd DataLabel="العنوان"
-                       Style="overflow-wrap:anywhere">
-                    @ContactText(supplier.Address)
-                </MudTd>
+                    @if (_canWrite)
+                    {
+                        <MudTh Class="text-xs font-bold text-slate-500">
+                            الإجراءات
+                        </MudTh>
+                    }
+                </HeaderContent>
 
-                @if (_canWrite)
-                {
-                    <MudTd DataLabel="الإجراءات">
-                        <MudStack Row
-                                  Spacing="0">
-                            <SupplierEditorButton SupplierId="supplier.Id"
-                      Color="Color.Default"
-                      Variant="Variant.Text"
-                      StartIcon="@Icons.Material.Filled.Edit"
-                      Disabled="IsBusy"
-                      OnSaved="LoadAsync" />
-
-                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
-                                           Color="Color.Error"
-                                           Size="Size.Small"
-                                           Disabled="IsBusy"
-                                           aria-label="حذف المورد"
-                                           OnClick="@(() => ConfirmDeleteAsync(supplier))" />
-                        </MudStack>
+                <RowTemplate Context="supplier">
+                    <MudTd DataLabel="اسم المورد"
+                           Class="text-sm text-slate-700"
+                           Style="overflow-wrap:anywhere">
+                        @supplier.Name
                     </MudTd>
-                }
-            </RowTemplate>
 
-            <NoRecordsContent>
-                <MudText Typo="Typo.body2">
-                    لا توجد موردين تطابق البحث.
-                </MudText>
-            </NoRecordsContent>
+                    <MudTd DataLabel="الهاتف"
+                           Class="text-sm text-slate-700"
+                           Style="overflow-wrap:anywhere; direction:ltr">
+                        @ContactText(supplier.PhoneNumber)
+                    </MudTd>
 
-            <PagerContent>
-                @if (_suppliers.Count > 10)
-                {
-                    <MudTablePager PageSizeOptions="@(new[] { 10, 25, 50 })"
-                                   RowsPerPageString="موردين لكل صفحة"
-                                   InfoFormat="{first_item}-{last_item} من {all_items}" />
-                }
-            </PagerContent>
-        </MudTable>
+                    <MudTd DataLabel="العنوان"
+                           Class="text-sm text-slate-700"
+                           Style="overflow-wrap:anywhere">
+                        @ContactText(supplier.Address)
+                    </MudTd>
+
+                    @if (_canWrite)
+                    {
+                        <MudTd DataLabel="الإجراءات">
+                            <div class="flex items-center">
+                                <SupplierEditorButton SupplierId="supplier.Id"
+                                                      Variant="Variant.Text"
+                                                      Color="Color.Default"
+                                                      StartIcon="@Icons.Material.Filled.Edit"
+                                                      Disabled="IsBusy"
+                                                      OnSaved="LoadAsync" />
+
+                                <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                               Size="Size.Small"
+                                               Color="Color.Error"
+                                               Disabled="IsBusy"
+                                               aria-label="حذف المورد"
+                                               OnClick="@(() => ConfirmDeleteAsync(supplier))" />
+                            </div>
+                        </MudTd>
+                    }
+                </RowTemplate>
+
+                <NoRecordsContent>
+                    <div class="py-6 text-center text-sm text-slate-500">
+                        لا توجد موردين تطابق البحث.
+                    </div>
+                </NoRecordsContent>
+
+                <PagerContent>
+                    <TableFooter TotalItems="@(FilteredSuppliers.Count())"
+                                 CurrentPage="@FooterCurrentPage"
+                                 CurrentPageChanged="OnFooterPageChanged"
+                                 RowsPerPage="@_rowsPerPage"
+                                 RowsPerPageChanged="OnFooterRowsPerPageChanged" />
+                </PagerContent>
+            </MudTable>
+        </section>
     }
-</MudStack>
 
-@code {
+</div>
+
+@code
+{
     private IReadOnlyList<SupplierListItem> _suppliers = [];
     private string? _searchTerm;
     private string? _error;
     private bool _loading = true;
     private bool _canWrite;
-    private bool _dialogOpen;
     private bool _deleting;
+
+    private static readonly PageScaffold.CrumbItem[] _scaffoldCrumbs =
+    [
+        new("الموردون")
+    ];
+
+    private int _currentPage;
+    private int _rowsPerPage = 10;
+
+    /// <summary>مجدد PageScaffold (1-based) مقابل CurrentPage (0-based) في MudTable.</summary>
+    private int FooterCurrentPage => _currentPage + 1;
 
     private bool CanCreate =>
         _canWrite && !_loading && _error is null;
 
     private bool IsBusy =>
-        _loading || _dialogOpen || _deleting;
+        _loading || _deleting;
 
     private IEnumerable<SupplierListItem> FilteredSuppliers
     {
@@ -203,6 +287,19 @@
 
     private static string ContactText(string? value) =>
         string.IsNullOrWhiteSpace(value) ? "—" : value;
+
+    private Task OnFooterPageChanged(int page)
+    {
+        _currentPage = page - 1;
+        return Task.CompletedTask;
+    }
+
+    private Task OnFooterRowsPerPageChanged(int rowsPerPage)
+    {
+        _rowsPerPage = rowsPerPage;
+        _currentPage = 0;
+        return Task.CompletedTask;
+    }
 
     protected override Task OnInitializedAsync() => LoadAsync();
 

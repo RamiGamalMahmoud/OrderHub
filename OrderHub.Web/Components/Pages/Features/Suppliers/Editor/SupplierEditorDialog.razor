@@ -3,11 +3,34 @@
 @inject ISnackbar Snackbar
 @inject ILogger<SupplierEditorDialog> Logger
 
-<MudDialog>
+<MudDialog Class="flex max-h-[92vh] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-xl max-w-[40rem] w-full"
+           TitleClass="p-0"
+           ContentClass="p-0"
+           ActionsClass="p-0"
+           Gutters="false">
     <TitleContent>
-        <MudText Typo="Typo.h6">
-            @DialogTitle
-        </MudText>
+        <header class="flex items-center justify-between gap-3 border-b border-slate-100 p-5">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600">
+                    <MudIcon Icon="@(SupplierId.HasValue ? Icons.Material.Filled.Edit : Icons.Material.Filled.Storefront)"
+                             Size="Size.Small" />
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-bold leading-tight text-slate-900">@DialogTitle</h2>
+                    <p class="mt-1 text-xs font-medium text-slate-500">
+                        بيانات التواصل ومواعيد العمل والمنتجات المرتبطة بالمورد
+                    </p>
+                </div>
+            </div>
+
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Size="Size.Small"
+                           Color="Color.Default"
+                           Disabled="_saving"
+                           OnClick="Cancel"
+                           aria-label="إغلاق النافذة"
+                           Class="shrink-0 rounded-xl text-slate-400" />
+        </header>
     </TitleContent>
 
     <DialogContent>
@@ -16,211 +39,256 @@
             <MudProgressLinear Indeterminate="true"
                                Color="Color.Primary" />
 
-            <MudText Typo="Typo.body2"
-                     Class="mt-2">
+            <MudText Typo="Typo.body2" Class="p-6 text-sm text-slate-500">
                 جاري تحميل بيانات المورد...
             </MudText>
         }
         else if (_loadError is not null)
         {
-            <MudAlert Severity="Severity.Error"
-                      Dense="true">
-                @_loadError
-            </MudAlert>
+            <div class="space-y-3 p-6">
+                <MudAlert Severity="Severity.Error"
+                          Dense="true">
+                    @_loadError
+                </MudAlert>
 
-            <MudButton Variant="Variant.Text"
-                       OnClick="LoadAsync"
-                       Class="mt-2">
-                إعادة المحاولة
-            </MudButton>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           OnClick="LoadAsync">
+                    إعادة المحاولة
+                </MudButton>
+            </div>
         }
         else
         {
             <MudForm @ref="_form">
-                <MudStack Spacing="2"
-                          Class="pa-1">
-                    @if (_saveError is not null)
-                    {
-                        <MudAlert Severity="Severity.Error"
-                                  Dense="true">
-                            @_saveError
-                        </MudAlert>
-                    }
+                <div class="min-h-0 flex-1 space-y-5 overflow-y-auto bg-slate-50/70 p-5">
 
-                    <MudTextField T="string"
-                                  @bind-Value="_state.Name"
-                                  Label="اسم المورد"
-                                  Variant="Variant.Outlined"
-                                  Margin="Margin.Dense"
-                                  Required="true"
-                                  RequiredError="اسم المورد مطلوب."
-                                  MaxLength="100"
-                                  Validation="@(new Func<string, string?>(SupplierEditorState.ValidateName))"
-                                  Immediate="true"
-                                  Disabled="_saving" />
-                    @if (_cities.Count == 0)
-                    {
-                        <MudAlert Severity="Severity.Info"
-                                  Dense="true">
-                            لا توجد مدن متاحة. يرجى إضافة مدينة أولًا ثم إعادة المحاولة.
-                        </MudAlert>
+                    <section class="rounded-xl border border-slate-200/85 bg-white p-5 shadow-xs">
+                        <div class="mb-4 flex items-center gap-2.5">
+                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                                <MudIcon Icon="@Icons.Material.Filled.Storefront" Size="Size.Small" />
+                            </span>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-900">بيانات المورد</h3>
+                                <p class="mt-0.5 text-xs text-slate-500">بيانات التواصل وموقع المورد.</p>
+                            </div>
+                        </div>
 
-                        <MudButton OnClick="LoadAsync"
-                                   Disabled="_saving">
-                            إعادة المحاولة
-                        </MudButton>
-                    }
+                        <div class="space-y-4">
+                            @if (_saveError is not null)
+                            {
+                                <MudAlert Severity="Severity.Error"
+                                          Dense="true">
+                                    @_saveError
+                                </MudAlert>
+                            }
 
-                    <MudSelect T="int?"
-                               @bind-Value="_state.CityId"
-                               Label="المدينة"
-                               Variant="Variant.Outlined"
-                               Margin="Margin.Dense"
-                               Required="true"
-                               RequiredError="اختر المدينة."
-                               Disabled="_saving">
-                        @foreach (var city in _cities)
-                        {
-                            <MudSelectItem T="int?"
-                                           Value="@((int?)city.Id)">
-                                @city.Name
-                            </MudSelectItem>
-                        }
-                    </MudSelect>
-
-                    <MudTextField T="string"
-                                  @bind-Value="_state.Street"
-                                  Label="العنوان"
-                                  Variant="Variant.Outlined"
-                                  Margin="Margin.Dense"
-                                  Required="true"
-                                  RequiredError="العنوان مطلوب."
-                                  MaxLength="150"
-                                  Disabled="_saving" />
-
-                    <MudGrid Spacing="2">
-                        <MudItem xs="12"
-                                 sm="4">
                             <MudTextField T="string"
-                                          @bind-Value="_state.CountryCode"
-                                          Label="مفتاح الدولة"
-                                          Placeholder="+20 أو +966"
+                                          @bind-Value="_state.Name"
+                                          Label="اسم المورد"
                                           Variant="Variant.Outlined"
                                           Margin="Margin.Dense"
                                           Required="true"
-                                          RequiredError="مفتاح الدولة مطلوب."
-                                          MaxLength="4"
-                                          Validation="@(new Func<string, string?>(_state.ValidateCountryCode))"
+                                          RequiredError="اسم المورد مطلوب."
+                                          MaxLength="100"
+                                          Validation="@(new Func<string, string?>(SupplierEditorState.ValidateName))"
                                           Immediate="true"
                                           Disabled="_saving" />
-                        </MudItem>
 
-                        <MudItem xs="12"
-                                 sm="8">
+                            @if (_cities.Count == 0)
+                            {
+                                <MudAlert Severity="Severity.Info"
+                                          Dense="true">
+                                    لا توجد مدن متاحة. يرجى إضافة مدينة أولًا ثم إعادة المحاولة.
+                                </MudAlert>
+
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Primary"
+                                           OnClick="LoadAsync"
+                                           Disabled="_saving">
+                                    إعادة المحاولة
+                                </MudButton>
+                            }
+
+                            <MudSelect T="int?"
+                                       @bind-Value="_state.CityId"
+                                       Label="المدينة"
+                                       Variant="Variant.Outlined"
+                                       Margin="Margin.Dense"
+                                       Required="true"
+                                       RequiredError="اختر المدينة."
+                                       Disabled="_saving">
+                                @foreach (var city in _cities)
+                                {
+                                    <MudSelectItem T="int?"
+                                                   Value="@((int?)city.Id)">
+                                        @city.Name
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
+
                             <MudTextField T="string"
-                                          @bind-Value="_state.PhoneNumber"
-                                          Label="رقم الهاتف"
+                                          @bind-Value="_state.Street"
+                                          Label="العنوان"
                                           Variant="Variant.Outlined"
                                           Margin="Margin.Dense"
                                           Required="true"
-                                          RequiredError="رقم الهاتف مطلوب."
-                                          MaxLength="14"
-                                          Validation="@(new Func<string, string?>(_state.ValidatePhone))"
-                                          Immediate="true"
+                                          RequiredError="العنوان مطلوب."
+                                          MaxLength="150"
                                           Disabled="_saving" />
-                        </MudItem>
-                    </MudGrid>
 
-                    <MudText Typo="Typo.subtitle2">
-                        مواعيد العمل
-                    </MudText>
+                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                                <div class="sm:col-span-1">
+                                    <MudTextField T="string"
+                                                  @bind-Value="_state.CountryCode"
+                                                  Label="مفتاح الدولة"
+                                                  Placeholder="+20 أو +966"
+                                                  Variant="Variant.Outlined"
+                                                  Margin="Margin.Dense"
+                                                  Required="true"
+                                                  RequiredError="مفتاح الدولة مطلوب."
+                                                  MaxLength="4"
+                                                  Validation="@(new Func<string, string?>(_state.ValidateCountryCode))"
+                                                  Immediate="true"
+                                                  Disabled="_saving" />
+                                </div>
 
-                    <MudGrid Spacing="2">
-                        <MudItem xs="12"
-                                 sm="6">
+                                <div class="sm:col-span-3">
+                                    <MudTextField T="string"
+                                                  @bind-Value="_state.PhoneNumber"
+                                                  Label="رقم الهاتف"
+                                                  Variant="Variant.Outlined"
+                                                  Margin="Margin.Dense"
+                                                  Required="true"
+                                                  RequiredError="رقم الهاتف مطلوب."
+                                                  MaxLength="14"
+                                                  Validation="@(new Func<string, string?>(_state.ValidatePhone))"
+                                                  Immediate="true"
+                                                  Disabled="_saving" />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="rounded-xl border border-slate-200/85 bg-white p-5 shadow-xs">
+                        <div class="mb-4 flex items-center justify-between gap-2.5">
+                            <div class="flex items-center gap-2.5">
+                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                                    <MudIcon Icon="@Icons.Material.Filled.Work" Size="Size.Small" />
+                                </span>
+                                <div>
+                                    <h3 class="text-sm font-bold text-slate-900">مواعيد العمل</h3>
+                                    <p class="mt-0.5 text-xs text-slate-500">أوقات استقبال التوريدات.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <MudTimePicker @bind-Time="_state.OpenAt"
                                            Label="وقت الافتتاح"
                                            Variant="Variant.Outlined"
                                            Margin="Margin.Dense"
                                            Editable="true"
                                            Disabled="_saving" />
-                        </MudItem>
 
-                        <MudItem xs="12"
-                                 sm="6">
                             <MudTimePicker @bind-Time="_state.CloseAt"
                                            Label="وقت الإغلاق"
                                            Variant="Variant.Outlined"
                                            Margin="Margin.Dense"
                                            Editable="true"
                                            Disabled="_saving" />
-                        </MudItem>
-                    </MudGrid>
+                        </div>
+                    </section>
 
-                    <MudText Typo="Typo.subtitle2">
-                        المنتجات المرتبطة (@_state.ProductIds.Count)
-                    </MudText>
+                    <section class="rounded-xl border border-slate-200/85 bg-white p-5 shadow-xs">
+                        <div class="mb-4 flex items-center justify-between gap-2.5">
+                            <div class="flex items-center gap-2.5">
+                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                                    <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Small" />
+                                </span>
+                                <div>
+                                    <h3 class="text-sm font-bold text-slate-900">المنتجات المرتبطة</h3>
+                                    <p class="mt-0.5 text-xs text-slate-500">اختيار المنتجات اختياري؛ تبقى المنتجات المحددة مرتبطة بالمورد.</p>
+                                </div>
+                            </div>
 
-                    <MudTextField T="string"
-                                  @bind-Value="_productSearch"
-                                  Placeholder="ابحث عن منتج"
-                                  Variant="Variant.Outlined"
-                                  Adornment="Adornment.Start"
-                                  AdornmentIcon="@Icons.Material.Filled.Search"
-                                  Immediate="true"
-                                  Clearable="true"
-                                  Margin="Margin.Dense"
-                                  Disabled="_saving" />
+                            <span class="inline-flex shrink-0 items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
+                                @(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{_state.ProductIds.Count} منتج"))
+                            </span>
+                        </div>
 
-                    <MudGrid Spacing="1">
-                        @foreach (var product in VisibleProducts)
-                        {
-                            <MudItem xs="12">
-                                <MudCheckBox T="bool"
-                                             Value="@_state.ProductIds.Contains(product.Id)"
-                                             Class="checkbox-between"
-                                             Size="Size.Small"
-                                             ValueChanged="@(value => SetProduct(product.Id, value))"
-                                             Label="@product.Name"
-                                             Dense="true"
-                                             Disabled="_saving || _state.IsProductLocked(product.Id)" />
-                            </MudItem>
-                        }
-                    </MudGrid>
+                        <div class="space-y-3">
+                            <MudTextField T="string"
+                                          @bind-Value="_productSearch"
+                                          Placeholder="ابحث عن منتج"
+                                          Variant="Variant.Outlined"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Search"
+                                          Immediate="true"
+                                          Clearable="true"
+                                          Margin="Margin.Dense"
+                                          Disabled="_saving" />
 
-                    @if (_products.Count == 0)
-                    {
-                        <MudText Typo="Typo.body2">لا توجد منتجات متاحة.</MudText>
-                    }
+                            @if (_products.Count == 0)
+                            {
+                                <p class="py-2 text-sm text-slate-500">لا توجد منتجات متاحة.</p>
+                            }
 
-                    <MudText Typo="Typo.caption">اختيار المنتجات اختياري؛ تبقى المنتجات المحددة مرتبطة بالمورد.</MudText>
+                            <div class="divide-y divide-slate-100 rounded-lg border border-slate-100">
+                                @foreach (var product in VisibleProducts)
+                                {
+                                    <MudCheckBox T="bool"
+                                                 Value="@_state.ProductIds.Contains(product.Id)"
+                                                 Class="checkbox-between w-full p-3"
+                                                 Size="Size.Small"
+                                                 ValueChanged="@(value => SetProduct(product.Id, value))"
+                                                 Label="@product.Name"
+                                                 Dense="true"
+                                                 Disabled="_saving || _state.IsProductLocked(product.Id)" />
+                                }
+                            </div>
 
-                    @if (ProductPages > 1)
-                    {
-                        <MudPagination Count="ProductPages"
-                                       Rectangular="true"
-                                       Selected="_productPage"
-                                       SelectedChanged="SetProductPage"
-                                       Disabled="_saving" />
-                    }
-
-                </MudStack>
+                            @if (ProductPages > 1)
+                            {
+                                <MudPagination Count="ProductPages"
+                                               Rectangular="true"
+                                               Selected="_productPage"
+                                               SelectedChanged="SetProductPage"
+                                               Disabled="_saving"
+                                               Class="justify-center" />
+                            }
+                        </div>
+                    </section>
+                </div>
             </MudForm>
         }
     </DialogContent>
 
     <DialogActions>
-        <MudButton Disabled="_saving"
-                   OnClick="Cancel">
-            إلغاء
-        </MudButton>
+        <footer class="flex items-center justify-between gap-3 border-t border-slate-100 bg-white p-4">
+            <div class="flex items-center gap-2 text-xs font-medium text-slate-500">
+                <span class="inline-flex h-2.5 w-2.5 rounded-full @(SaveDisabled ? "bg-slate-300" : "bg-emerald-500")"></span>
+                <span>@(SaveDisabled ? "غير جاهز للحفظ" : "جاهز للحفظ")</span>
+            </div>
 
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   Disabled="SaveDisabled"
-                   OnClick="SaveAsync">
-            @SaveButtonText
-        </MudButton>
+            <div class="flex items-center gap-2">
+                <MudButton Disabled="_saving"
+                           OnClick="Cancel"
+                           Variant="Variant.Text"
+                           Class="rounded-xl text-slate-600">
+                    إلغاء
+                </MudButton>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Disabled="SaveDisabled"
+                           OnClick="SaveAsync"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Class="rounded-xl px-5 font-bold">
+                    @SaveButtonText
+                </MudButton>
+            </div>
+        </footer>
     </DialogActions>
 </MudDialog>
 
