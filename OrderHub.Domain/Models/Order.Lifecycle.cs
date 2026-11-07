@@ -38,6 +38,8 @@ public partial class Order
         return Result.Success();
     }
 
+    public IReadOnlyList<OrderDeliveryStep> ActiveSteps => _deliverySteps.Where(step => step.StepOrder > 0).ToList();
+
     public string DeliveryReadinessError()
     {
         if (!DeliveryMethod.HasValue || !Enum.IsDefined(DeliveryMethod.Value)) return "يجب تحديد طريقة التوصيل.";
@@ -45,11 +47,12 @@ public partial class Order
         if (DeliveryMethod == Enums.DeliveryMethod.ShippingCompany && ShippingCarrierId is not > 0) return "يجب تحديد شركة الشحن.";
         if (DeliveryMethod == Enums.DeliveryMethod.DeliveryChain)
         {
-            if (_deliverySteps.Count == 0) return "يجب إضافة خطوة توصيل واحدة على الأقل.";
-            if (_deliverySteps.Select(step => step.StepOrder).Distinct().Count() != _deliverySteps.Count)
+            var active = ActiveSteps;
+            if (active.Count == 0) return "يجب إضافة خطوة توصيل واحدة على الأقل.";
+            if (active.Select(step => step.StepOrder).Distinct().Count() != active.Count)
                 return "ترتيب خطوات التوصيل مكرر.";
-            foreach (var step in _deliverySteps.OrderBy(step => step.StepOrder))
-                if (step.StepOrder <= 0 || !ValidStepHandler(step))
+            foreach (var step in active.OrderBy(step => step.StepOrder))
+                if (!ValidStepHandler(step))
                     return $"جهة تنفيذ الخطوة {step.StepOrder} غير صالحة.";
         }
         return null;
@@ -96,6 +99,9 @@ public partial class Order
         if (!AllowedStatuses().Contains(target)) return Result.Failure("الانتقال المطلوب غير مسموح لطريقة التوصيل والحالة الحالية.");
         valid = ValidateReason(reason, target is OrderStatus.Cancelled or OrderStatus.DeliveryFailed);
         if (!valid.IsSuccess) return valid;
+        if (target == OrderStatus.Delivered && OrderStatus == OrderStatus.ReadyForPickup &&
+            DeliveryMethod == Enums.DeliveryMethod.Pickup)
+            return ConfirmPickup(operation);
 
         var source = target == OrderStatus.Cancelled ? OrderHistorySource.OrderCancellation
             : OrderStatus == OrderStatus.DeliveryFailed ? OrderHistorySource.Retry : OrderHistorySource.ManualAction;
@@ -119,8 +125,11 @@ public partial class Order
     public IReadOnlyList<DeliveryStatus> AllowedStepStatuses(OrderDeliveryStep step)
     {
         if (IsArchived || OrderStatus != OrderStatus.OutForDelivery || DeliveryMethod != Enums.DeliveryMethod.DeliveryChain ||
-            !_deliverySteps.Any(existing => ReferenceEquals(existing, step)) || !ValidStepHandler(step) ||
-            _deliverySteps.Any(previous => previous.StepOrder < step.StepOrder && previous.Status != DeliveryStatus.Completed)) return [];
+            !_deliverySteps.Any(existing => ReferenceEquals(existing, step)) || step.StepOrder <= 0 ||
+            !ValidStepHandler(step)) return [];
+        var predecessor = ActiveSteps.Where(previous => previous.StepOrder < step.StepOrder)
+            .OrderByDescending(previous => previous.StepOrder).FirstOrDefault();
+        if (predecessor is not null && predecessor.Status != DeliveryStatus.Completed) return [];
         return step.Status switch
         {
             DeliveryStatus.Pending or DeliveryStatus.Failed => [DeliveryStatus.InProgress],
@@ -135,6 +144,7 @@ public partial class Order
         if (!valid.IsSuccess) return valid;
         var step = _deliverySteps.SingleOrDefault(step => step.Id == stepId);
         if (step is null) return Result.Failure("خطوة التوصيل غير موجودة في الطلب.");
+        if (step.StepOrder <= 0) return Result.Failure("الخطوة ملغاة أو مستبدلة.");
         if (IsArchived || IsFinal) return Result.Failure("الطلب مغلق ولا يقبل تشغيل الخطوات.");
         if (step.Status == target) return Result.Success();
         if (!AllowedStepStatuses(step).Contains(target)) return Result.Failure("لا يمكن تنفيذ الخطوة قبل اكتمال السابقة أو من حالتها الحالية.");
@@ -155,7 +165,8 @@ public partial class Order
                 DeliveryStatus.Completed => WorkRecordStatus.Completed,
                 _ => WorkRecordStatus.Cancelled
             }, reason, operation.AtUtc);
-        if (_deliverySteps.Count > 0 && _deliverySteps.All(step => step.Status == DeliveryStatus.Completed))
+        var active = ActiveSteps;
+        if (active.Count > 0 && active.All(step => step.Status == DeliveryStatus.Completed))
             RecordOrder(OrderStatus.Delivered, operation, null, OrderHistorySource.LastStepCompleted);
         return Result.Success();
     }
@@ -170,7 +181,7 @@ public partial class Order
             return Result.Failure("التسليم المباشر غير متاح لهذا الطلب.");
         if (outcomes is null || outcomes.Any(item => item is null) || outcomes.Select(item => item.StepId).Distinct().Count() != outcomes.Count)
             return Result.Failure("نتائج الخطوات غير صالحة أو مكررة.");
-        var remaining = _deliverySteps.Where(step => step.Status != DeliveryStatus.Completed).ToList();
+        var remaining = ActiveSteps.Where(step => step.Status != DeliveryStatus.Completed).ToList();
         if (outcomes.Count != remaining.Count || outcomes.Any(item => !remaining.Any(step => step.Id == item.StepId)))
             return Result.Failure("يجب مراجعة جميع الخطوات غير المكتملة دون تغيير الخطوات المكتملة.");
         foreach (var outcome in outcomes)
@@ -274,6 +285,14 @@ public partial class Order
             var current = step.DeliveryTrips.LastOrDefault(record => record.Status == WorkRecordStatus.Pending);
             if (current is not null) current.TransitionTo(target, reason, atUtc);
         }
+    }
+
+    private Result ConfirmPickup(OrderOperation operation)
+    {
+        Version++;
+        RecordOrder(OrderStatus.Delivered, operation, null, OrderHistorySource.PickupConfirmed);
+        CloseDirectWorkRecord(WorkRecordStatus.Completed, null, operation.AtUtc);
+        return Result.Success();
     }
 
     private static bool ValidStepHandler(OrderDeliveryStep step) => step.DeliveryMethod switch

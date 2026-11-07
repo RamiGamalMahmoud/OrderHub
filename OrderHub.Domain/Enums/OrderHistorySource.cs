@@ -8,5 +8,7 @@ public enum OrderHistorySource
     LastStepCompleted,
     DirectDelivery,
     OrderCancellation,
-    LegacyMigration
+    LegacyMigration,
+    DeliveryRouteReassigned,
+    PickupConfirmed
 }
