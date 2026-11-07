@@ -92,22 +92,10 @@
                    Permissions
                    ================================================== *@
 
-                <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div class="mb-3 flex items-center gap-2.5">
-                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                            <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" />
-                        </span>
-                        <div>
-                            <h3 class="text-sm font-bold text-slate-900">الصلاحيات</h3>
-                            <p class="mt-0.5 text-xs text-slate-500">حدد مستوى الوصول لكل جزء من النظام</p>
-                        </div>
-                    </div>
-
-                    <RolePermissionCards Permissions="_state.Permissions"
-                                         Disabled="_saving"
-                                         ShowBulkActions="true"
-                                         OnChanged="StateHasChanged" />
-                </section>
+                <RolePermissionCards Permissions="_state.Permissions"
+                                     Disabled="_saving"
+                                     ShowBulkActions="true"
+                                     OnChanged="StateHasChanged" />
 
                 @* ==================================================
                    No permissions warning

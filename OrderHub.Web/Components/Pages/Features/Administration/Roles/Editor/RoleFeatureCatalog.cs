@@ -20,7 +20,7 @@ public static class RoleFeatureCatalog
                 "المنتجات",
 
             PermissionFeature.Categories =>
-                "الأقسام",
+                "الأقسام والتصنيفات",
 
             PermissionFeature.Properties =>
                 "خصائص المنتجات",
@@ -38,7 +38,7 @@ public static class RoleFeatureCatalog
                 "شركات الشحن",
 
             PermissionFeature.Cities =>
-                "المدن",
+                "المدن والمناطق",
 
             PermissionFeature.PaymentMethods =>
                 "طرق الدفع",
@@ -62,46 +62,46 @@ public static class RoleFeatureCatalog
         return feature switch
         {
             PermissionFeature.Orders =>
-                "عرض وإدارة الطلبات",
+                "عرض وإدارة الطلبات وسير العمل وتتبع حالات الدفع والتنفيذ",
 
             PermissionFeature.Documents =>
-                "عروض الأسعار والفواتير والمستندات",
+                "عروض الأسعار والفواتير والمستندات المالية والتقارير",
 
             PermissionFeature.Products =>
-                "عرض وإدارة المنتجات",
+                "عرض وإدارة كتالوج المنتجات والمخزون وتسعير البنود",
 
             PermissionFeature.Categories =>
-                "إدارة أقسام المنتجات",
+                "إدارة فئات وتصنيفات المنتجات والهيكل الشجري للأقسام",
 
             PermissionFeature.Properties =>
-                "إدارة خصائص وخيارات المنتجات",
+                "إدارة خصائص وخيارات المنتجات كالألوان والمقاسات",
 
             PermissionFeature.Clients =>
-                "عرض وإدارة بيانات العملاء",
+                "عرض وإدارة بيانات وحسابات العملاء وسجل المشتريات",
 
             PermissionFeature.Suppliers =>
-                "عرض وإدارة الموردين",
+                "عرض وإدارة الموردين وأوامر الشراء والحسابات الدائنة",
 
             PermissionFeature.Deliverymen =>
-                "عرض وإدارة المناديب",
+                "عرض وإدارة المناديب وتوزيع المهام الميدانية والتحصيل",
 
             PermissionFeature.ShippingCarriers =>
-                "عرض وإدارة شركات الشحن",
+                "عرض وإدارة شركات الشحن وبوالص التوصيل وتتبع الشحنات",
 
             PermissionFeature.Cities =>
-                "إدارة المدن",
+                "إدارة المدن والنطاقات الجغرافية وتكاليف التوصيل",
 
             PermissionFeature.PaymentMethods =>
-                "إدارة طرق الدفع",
+                "إدارة بوابات وطرق الدفع والرسوم والتحويلات البنكية",
 
             PermissionFeature.Logs =>
-                "عرض سجلات النظام",
+                "عرض سجلات التدقيق وتتبع حركات المستخدمين والأحداث",
 
             PermissionFeature.Users =>
-                "إدارة حسابات المستخدمين",
+                "إدارة حسابات المستخدمين وصلاحيات الدخول وتعيين الأدوار",
 
             PermissionFeature.Settings =>
-                "إدارة إعدادات النظام",
+                "إدارة الإعدادات العامة والربط البرمجي وتفضيلات التشغيل",
 
             _ => string.Empty
         };
@@ -165,49 +165,49 @@ public static class RoleFeatureCatalog
         return feature switch
         {
             PermissionFeature.Orders =>
-                "bg-blue-50 text-blue-600 border border-blue-100",
+                "bg-blue-50 text-blue-600",
 
             PermissionFeature.Documents =>
-                "bg-amber-50 text-amber-600 border border-amber-100",
+                "bg-amber-50 text-amber-600",
 
             PermissionFeature.Products =>
-                "bg-violet-50 text-violet-600 border border-violet-100",
+                "bg-emerald-50 text-emerald-600",
 
             PermissionFeature.Categories =>
-                "bg-emerald-50 text-emerald-600 border border-emerald-100",
+                "bg-indigo-50 text-indigo-600",
 
             PermissionFeature.Properties =>
-                "bg-cyan-50 text-cyan-600 border border-cyan-100",
+                "bg-teal-50 text-teal-600",
 
             PermissionFeature.Clients =>
-                "bg-rose-50 text-rose-600 border border-rose-100",
+                "bg-pink-50 text-pink-600",
 
             PermissionFeature.Suppliers =>
-                "bg-teal-50 text-teal-600 border border-teal-100",
+                "bg-orange-50 text-orange-600",
 
             PermissionFeature.Deliverymen =>
-                "bg-indigo-50 text-indigo-600 border border-indigo-100",
+                "bg-violet-50 text-violet-600",
 
             PermissionFeature.ShippingCarriers =>
-                "bg-sky-50 text-sky-600 border border-sky-100",
+                "bg-sky-50 text-sky-600",
 
             PermissionFeature.Cities =>
-                "bg-lime-50 text-lime-700 border border-lime-100",
+                "bg-emerald-50 text-emerald-600",
 
             PermissionFeature.PaymentMethods =>
-                "bg-green-50 text-green-600 border border-green-100",
+                "bg-green-50 text-green-600",
 
             PermissionFeature.Logs =>
-                "bg-orange-50 text-orange-600 border border-orange-100",
+                "bg-amber-50 text-amber-600",
 
             PermissionFeature.Users =>
-                "bg-red-50 text-red-600 border border-red-100",
+                "bg-blue-50 text-blue-600",
 
             PermissionFeature.Settings =>
-                "bg-zinc-50 text-zinc-600 border border-zinc-100",
+                "bg-rose-50 text-rose-600",
 
             _ =>
-                "bg-slate-50 text-slate-600 border border-slate-100"
+                "bg-slate-50 text-slate-600"
         };
     }
 }

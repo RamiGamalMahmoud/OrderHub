@@ -250,7 +250,7 @@
 
                                     <div class="flex items-center gap-1 rounded-lg border transition-all @(isSelected ? "border-brand-500 bg-brand-50 ring-1 ring-brand-500" : "border-slate-200 hover:border-brand-500 hover:bg-brand-50/50")">
                                         <button type="button"
-                                                class="flex min-w-0 flex-1 items-center gap-2 p-2 text-right disabled:cursor-not-allowed disabled:opacity-60"
+                                                class="flex min-w-0 flex-1 justify-start items-center gap-2 p-2 text-right disabled:cursor-not-allowed disabled:opacity-60"
                                                 disabled="@BrowserDisabled"
                                                 @onclick="@(() => SelectCategory(category))">
                                             <span class="h-2 w-2 shrink-0 rounded-full" style="background-color: @category.Color;"></span>
