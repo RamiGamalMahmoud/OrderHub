@@ -217,10 +217,10 @@
         return level switch
         {
             PermissionLevel.Read =>
-                "border-blue-700 bg-blue-50/40",
+                "border-blue-200 bg-blue-50/20 hover:border-blue-300",
 
             PermissionLevel.Write =>
-                "border-indigo-700 bg-indigo-50/40",
+                "border-red-200 bg-red-50/20 hover:border-red-300",
 
             _ =>
                 "border-slate-200/90 bg-white hover:border-slate-300"
@@ -264,10 +264,10 @@
         return option switch
         {
             PermissionLevel.Read =>
-                "bg-white font-bold text-blue-700 shadow-sm",
+                "bg-blue-50 border-blue-200 font-bold text-blue-700 shadow-sm",
 
             PermissionLevel.Write =>
-                "bg-white font-bold text-indigo-700 shadow-sm",
+                "bg-red-50 border-red-200 font-bold text-red-700 shadow-sm",
 
             _ =>
                 "bg-white font-bold text-slate-800 shadow-sm"
