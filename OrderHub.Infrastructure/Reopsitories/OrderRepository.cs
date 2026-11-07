@@ -2,6 +2,7 @@
 using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Application.Interfaces;
 using System.Data.Common;
+using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using System;
 using System.Linq;
@@ -48,12 +49,54 @@ internal class OrderRepository : IOrderRepository
 
     public Task<Order> GetForLifecycleAsync(int orderId, CancellationToken cancellationToken = default) =>
         _dbContext.Orders
+            .Include(order => order.Deliveryman)
+            .Include(order => order.ShippingCarrier)
             .Include(order => order.Shipments)
             .Include(order => order.DeliveryTrips)
+            .Include(order => order.DeliverySteps).ThenInclude(step => step.Deliveryman)
+            .Include(order => order.DeliverySteps).ThenInclude(step => step.ShippingCarrier)
             .Include(order => order.DeliverySteps).ThenInclude(step => step.Shipments)
             .Include(order => order.DeliverySteps).ThenInclude(step => step.DeliveryTrips)
             .AsSplitQuery()
             .SingleOrDefaultAsync(order => order.Id == orderId, cancellationToken);
+
+    public async Task<DeliveryParty> FindDeliveryPartyAsync(DeliveryMethod method, int partyId,
+        CancellationToken cancellationToken = default)
+    {
+        var name = method switch
+        {
+            DeliveryMethod.DeliveryMan => await _dbContext.Deliverymen.Where(party => party.Id == partyId)
+                .Select(party => party.Name.Value).SingleOrDefaultAsync(cancellationToken),
+            DeliveryMethod.ShippingCompany => await _dbContext.ShippingCarriers.Where(party => party.Id == partyId)
+                .Select(party => party.Name.Value).SingleOrDefaultAsync(cancellationToken),
+            _ => null
+        };
+        return string.IsNullOrWhiteSpace(name) ? null : new DeliveryParty(partyId, name);
+    }
+
+    public async Task TombstoneDeliveryStepAsync(OrderDeliveryStep step,
+        CancellationToken cancellationToken = default)
+    {
+        if (step.Id <= 0)
+            throw new InvalidOperationException("Tombstoning requires a persisted delivery step.");
+        if (_dbContext.Database.CurrentTransaction is null)
+            throw new InvalidOperationException("Delivery step reassignment requires a transaction.");
+        var rank = -step.Id;
+        try
+        {
+            await _dbContext.OrderDeliverySteps.Where(item => item.Id == step.Id)
+                .ExecuteUpdateAsync(update => update.SetProperty(item => item.StepOrder, rank), cancellationToken);
+        }
+        catch (DbException exception)
+        {
+            throw new PersistenceException(exception.Message, exception);
+        }
+        var property = _dbContext.Entry(step).Property(item => item.StepOrder);
+        // The row is already tombstoned; keep both tracked values in sync so EF does not
+        // rewrite the old positive rank and collide with the replacement at that rank.
+        property.OriginalValue = rank;
+        property.CurrentValue = rank;
+    }
 
     public async Task PrepareDeliveryStepReorderingAsync(Order order, CancellationToken cancellationToken = default)
     {

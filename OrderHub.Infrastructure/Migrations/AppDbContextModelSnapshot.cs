@@ -1013,6 +1013,144 @@ namespace OrderHub.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.OrderDeliveryMovement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ChangedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changed_at_utc");
+
+                    b.Property<int>("ChangedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("changed_by_user_id");
+
+                    b.Property<string>("ChangedByUserName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("changed_by_user_name");
+
+                    b.Property<int?>("DeliveryStepId")
+                        .HasColumnType("integer")
+                        .HasColumnName("delivery_step_id");
+
+                    b.Property<int?>("NewDeliveryTripId")
+                        .HasColumnType("integer")
+                        .HasColumnName("new_delivery_trip_id");
+
+                    b.Property<int?>("NewShipmentId")
+                        .HasColumnType("integer")
+                        .HasColumnName("new_shipment_id");
+
+                    b.Property<string>("NextMethod")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("next_method");
+
+                    b.Property<int?>("NextPartyId")
+                        .HasColumnType("integer")
+                        .HasColumnName("next_party_id");
+
+                    b.Property<string>("NextPartyName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("next_party_name");
+
+                    b.Property<int?>("OldDeliveryTripId")
+                        .HasColumnType("integer")
+                        .HasColumnName("old_delivery_trip_id");
+
+                    b.Property<int?>("OldShipmentId")
+                        .HasColumnType("integer")
+                        .HasColumnName("old_shipment_id");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_id");
+
+                    b.Property<int>("OrderVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_version");
+
+                    b.Property<int?>("OriginalStepRank")
+                        .HasColumnType("integer")
+                        .HasColumnName("original_step_rank");
+
+                    b.Property<string>("PreviousMethod")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("previous_method");
+
+                    b.Property<int?>("PreviousPartyId")
+                        .HasColumnType("integer")
+                        .HasColumnName("previous_party_id");
+
+                    b.Property<string>("PreviousPartyName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("previous_party_name");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reason");
+
+                    b.Property<int?>("ReplacementStepId")
+                        .HasColumnType("integer")
+                        .HasColumnName("replacement_step_id");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("source");
+
+                    b.HasKey("Id")
+                        .HasName("pk_order_delivery_movements");
+
+                    b.HasIndex("ChangedByUserId")
+                        .HasDatabaseName("ix_order_delivery_movements_changed_by_user_id");
+
+                    b.HasIndex("DeliveryStepId")
+                        .HasDatabaseName("ix_order_delivery_movements_delivery_step_id");
+
+                    b.HasIndex("NewDeliveryTripId")
+                        .HasDatabaseName("ix_order_delivery_movements_new_delivery_trip_id");
+
+                    b.HasIndex("NewShipmentId")
+                        .HasDatabaseName("ix_order_delivery_movements_new_shipment_id");
+
+                    b.HasIndex("OldDeliveryTripId")
+                        .HasDatabaseName("ix_order_delivery_movements_old_delivery_trip_id");
+
+                    b.HasIndex("OldShipmentId")
+                        .HasDatabaseName("ix_order_delivery_movements_old_shipment_id");
+
+                    b.HasIndex("ReplacementStepId")
+                        .HasDatabaseName("ix_order_delivery_movements_replacement_step_id");
+
+                    b.HasIndex("OrderId", "OrderVersion", "ChangedAtUtc")
+                        .HasDatabaseName("ix_order_delivery_movements_order_id_order_version_changed_at_");
+
+                    b.HasIndex("OrderId", "OrderVersion", "Id")
+                        .HasDatabaseName("ix_order_delivery_movements_order_id_order_version_id");
+
+                    b.ToTable("order_delivery_movements", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_movement_attribution", "changed_by_user_id IS NOT NULL AND changed_by_user_name IS NOT NULL AND length(trim(reason)) BETWEEN 1 AND 200");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.OrderDeliveryStep", b =>
                 {
                     b.Property<int>("Id")
@@ -2359,6 +2497,73 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("ShippingCarrier");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.OrderDeliveryMovement", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("ChangedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_order_delivery_movements_users_changed_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.OrderDeliveryStep", "DeliveryStep")
+                        .WithMany()
+                        .HasForeignKey("DeliveryStepId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_order_delivery_movements_order_delivery_steps_delivery_step");
+
+                    b.HasOne("OrderHub.Domain.Models.DeliveryTrip", "NewDeliveryTrip")
+                        .WithMany()
+                        .HasForeignKey("NewDeliveryTripId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_order_delivery_movements_delivery_trips_new_delivery_trip_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Shipment", "NewShipment")
+                        .WithMany()
+                        .HasForeignKey("NewShipmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_order_delivery_movements_shipments_new_shipment_id");
+
+                    b.HasOne("OrderHub.Domain.Models.DeliveryTrip", "OldDeliveryTrip")
+                        .WithMany()
+                        .HasForeignKey("OldDeliveryTripId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_order_delivery_movements_delivery_trips_old_delivery_trip_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Shipment", "OldShipment")
+                        .WithMany()
+                        .HasForeignKey("OldShipmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_order_delivery_movements_shipments_old_shipment_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
+                        .WithMany("DeliveryMovements")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_order_delivery_movements_orders_order_id");
+
+                    b.HasOne("OrderHub.Domain.Models.OrderDeliveryStep", "ReplacementStep")
+                        .WithMany()
+                        .HasForeignKey("ReplacementStepId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_order_delivery_movements_order_delivery_steps_replacement_s");
+
+                    b.Navigation("DeliveryStep");
+
+                    b.Navigation("NewDeliveryTrip");
+
+                    b.Navigation("NewShipment");
+
+                    b.Navigation("OldDeliveryTrip");
+
+                    b.Navigation("OldShipment");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("ReplacementStep");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.OrderDeliveryStep", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.Deliveryman", "Deliveryman")
@@ -2860,6 +3065,8 @@ namespace OrderHub.Infrastructure.Migrations
 
             modelBuilder.Entity("OrderHub.Domain.Models.Order", b =>
                 {
+                    b.Navigation("DeliveryMovements");
+
                     b.Navigation("DeliverySteps");
 
                     b.Navigation("DeliveryTrips");

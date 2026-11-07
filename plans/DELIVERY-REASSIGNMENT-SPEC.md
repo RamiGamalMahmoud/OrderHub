@@ -4,7 +4,7 @@
 
 This document specifies the approved behavior for cancelling an active delivery assignment and routing the order to a valid alternative. It is intended for AI agents implementing the feature in this repository.
 
-**Planning artifact only.** Do not treat this file as authorization to implement the feature. The user explicitly requested planning and has not authorized code changes. When implementation is authorized, follow this document and the repository `AGENTS.md`.
+**Implementation status (2026-11-07):** Phases A–C and the Phase F migration are implemented and green (Release build, xUnit, Node test). Delivered: domain lifecycle/movement + tests, `ReassignDeliveryStepCommand`/`ReassignDirectDeliveryCommand` + handlers, targeted tombstone repository operation, exists-only party lookup, `order_delivery_movements` EF configuration/immutability, and migration `20261107060700_AddDeliveryRouteMovementHistory`. **Remaining: Phase E (read models/history presentation) and Phase D (UI flow).** Follow §12 exactly when completing them.
 
 **Design gate RESOLVED (2026-11-07):** the owner answered the final persistence/behavior questions; §11 now carries the locked implementation decisions instead of open items. Phase A has only verification work left.
 

@@ -30,6 +30,7 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<WorkRecordStatusHistory> WorkRecordStatusHistories { get; set; }
     public DbSet<OrderStatusHistory> OrderStatusHistories { get; set; }
     public DbSet<DeliveryStepStatusHistory> DeliveryStepStatusHistories { get; set; }
+    public DbSet<OrderDeliveryMovement> OrderDeliveryMovements { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<PaymentMethod> PaymentMethods { get; set; }
     public DbSet<Property> Properties { get; set; }
@@ -62,7 +63,8 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
 
     private void ProtectHistory()
     {
-        if (ChangeTracker.Entries().Any(entry => entry.Entity is OrderStatusHistory or DeliveryStepStatusHistory or WorkRecordStatusHistory &&
+        if (ChangeTracker.Entries().Any(entry => entry.Entity is OrderStatusHistory or DeliveryStepStatusHistory
+            or WorkRecordStatusHistory or OrderDeliveryMovement &&
             entry.State is EntityState.Modified or EntityState.Deleted))
             throw new InvalidOperationException("سجل التشغيل محفوظ ولا يمكن تعديله أو حذفه.");
     }
