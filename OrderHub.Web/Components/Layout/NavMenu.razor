@@ -10,69 +10,160 @@
 
 @if (Variant == NavVariant.Desktop)
 {
-    @* حاسوب: صف من القوائم المنسدلة (مجموعة لكل قسم). القواعد عالمية في app.css
-       لأن محتوى القوائم يُرحّل إلى MudPopoverProvider خارج DOM المكوّن. *@
-    <div class="site-nav @Class">
-        @foreach (var group in Groups)
+    @* حاسوب: شريط قوائم منسدلة غنية (عنوان مجموعة + بطاقات روابط + زر إنشاء).
+       التنقل كله HTML عادي + Tailwind، والتوجيه يتولاه راوتر Blazor. *@
+    var desktopGroups = VisibleGroups;
+
+    <nav class="relative z-40 flex items-center gap-1 @Class" aria-label="التنقل الرئيسي">
+        @for (var index = 0; index < desktopGroups.Count; index++)
         {
-            if (GroupVisible(group))
-            {
-                <MudMenu Label="@group.Title"
-                         StartIcon="@group.Icon"
-                         Color="Color.Primary"
-                         Variant="@MudBlazor.Variant.Text"
-                         Dense="true"
-                         Class="@GetGroupClass(group)">
-                    @foreach (var item in VisibleItems(group))
+            var group = desktopGroups[index];
+            var isOpen = _openGroup == group.Title;
+            var panelId = $"nav-panel-{index}";
+
+            <div class="relative" @key="group.Title">
+                <button type="button"
+                        class="group @TriggerClass(group)"
+                        aria-haspopup="true"
+                        aria-expanded="@(isOpen ? "true" : "false")"
+                        aria-controls="@panelId"
+                        @onclick="() => ToggleGroupAsync(group.Title)">
+                    <MudIcon Icon="@group.Icon" Class="@TriggerIconClass(group)" />
+                    <span>@group.Title</span>
+                    @if (isOpen)
                     {
-                        <MudMenuItem Href="@item.Href"
-                                     Icon="@item.Icon"
-                                     IconColor="Color.Inherit">
-                            @item.Label
-                        </MudMenuItem>
+                        <MudIcon Icon="@Icons.Material.Filled.ExpandMore" Class="rotate-180 text-xs text-brand-600 transition-transform duration-150" />
                     }
-                </MudMenu>
-            }
+                </button>
+
+                @if (isOpen)
+                {
+                    <div id="@panelId"
+                         role="menu"
+                         class="oh-nav-panel absolute start-0 top-full z-50 mt-2.5 w-80 divide-y divide-slate-100 rounded-2xl border border-slate-200/90 bg-white py-2.5 shadow-menu">
+                        <div class="flex items-center justify-between px-4 py-2">
+                            <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">@group.Subtitle</span>
+                            <a href="@group.ViewAllHref"
+                               class="text-xs font-normal text-brand-600 hover:underline"
+                               @onclick="CloseAll">عرض الكل</a>
+                        </div>
+
+                        <div class="space-y-1 p-1.5">
+                            @foreach (var item in VisibleItems(group))
+                            {
+                                var isCurrent = IsItemActive(item);
+
+                                <a href="@item.Href"
+                                   role="menuitem"
+                                   class="group flex items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-slate-50 @(isCurrent ? "bg-brand-50/60" : string.Empty)"
+                                   @onclick="CloseAll">
+                                    <div class="@ItemTileClass(item.Tone)">
+                                        <MudIcon Icon="@item.Icon" Class="text-sm" />
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <p class="@ItemTitleClass(item)">@item.Label</p>
+                                            @if (isCurrent)
+                                            {
+                                                <span class="rounded bg-brand-50 px-1.5 py-0.5 text-[11px] font-bold text-brand-700">الحالية</span>
+                                            }
+                                        </div>
+                                        <p class="mt-0.5 truncate text-xs text-slate-500">@item.Description</p>
+                                    </div>
+                                </a>
+                            }
+                        </div>
+
+                        @if (group.Create is not null && IsAllowed(group.Create))
+                        {
+                            <div class="rounded-b-2xl bg-slate-50/70 p-2">
+                                <a href="@group.Create.Href"
+                                   class="flex w-full items-center justify-center gap-2 rounded-lg border border-brand-200 bg-white px-3 py-2 text-xs font-bold text-brand-600 shadow-sm transition-all hover:border-brand-600 hover:bg-brand-600 hover:text-white"
+                                   @onclick="CloseAll">
+                                    <MudIcon Icon="@Icons.Material.Filled.Add" Class="text-xs" />
+                                    <span>@group.Create.Label</span>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
         }
-    </div>
+    </nav>
+
+    @if (_openGroup is not null)
+    {
+        <div class="fixed inset-0 z-30" aria-hidden="true" @onclick="CloseAll"></div>
+    }
 }
 else
 {
-    @* هاتف: زر همبرغر يفتح قائمة واحدة مسطحة تملأ عرض الشاشة: عنوان المجموعة ثم
-        عناصرها، مع فاصل بين المجموعات، وتلوين كتلة المجموعة النشطة (العنوان والعناصر). *@
-    <MudMenu Icon="@Icons.Material.Filled.Menu"
-             AriaLabel="فتح قائمة التنقل"
-             Color="Color.Primary"
-             Variant="@MudBlazor.Variant.Text"
-             Dense="true"
-             PopoverFixed="true"
-             PopoverClass="site-nav-popover-mobile"
-             Class="@Class">
-        @{
-            var visibleGroups = Groups.Where(GroupVisible).ToList();
-        }
-        @for (var i = 0; i < visibleGroups.Count; i++)
+    @* هاتف: زر همبرغر يفتح لوحة بعرض الشاشة تحت الشريط، بنفس منطق تصميم القوائم. *@
+    <div class="relative z-40 @Class">
+        <button type="button"
+                class="flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 lg:hidden"
+                aria-label="فتح قائمة التنقل"
+                aria-haspopup="true"
+                aria-expanded="@(_mobileOpen ? "true" : "false")"
+                @onclick="ToggleMobileAsync">
+            <MudIcon Icon="@(_mobileOpen ? Icons.Material.Filled.Close : Icons.Material.Filled.Menu)" Class="text-xl" />
+        </button>
+
+        @if (_mobileOpen)
         {
-            var group = visibleGroups[i];
+            <div class="fixed inset-x-0 top-[72px] z-40 max-h-[calc(100dvh-72px)] overflow-y-auto border-b border-slate-200 bg-white shadow-menu">
+                <div class="divide-y divide-slate-100 px-4 py-3 sm:px-6">
+                    @foreach (var group in VisibleGroups)
+                    {
+                        var isGroupCurrent = IsGroupActive(group);
 
-            if (i > 0)
-            {
-                <MudDivider DividerType="DividerType.Inset" />
-            }
+                        <div class="py-3 first:pt-0 last:pb-0">
+                            <div class="@(isGroupCurrent ? "text-[11px] font-bold uppercase tracking-widest text-brand-600" : "text-[11px] font-bold uppercase tracking-widest text-slate-400")">
+                                @group.Title
+                            </div>
 
-            <div class="@GetGroupLabelClass(group)" role="presentation">@group.Title</div>
+                            <div class="mt-1.5 space-y-1">
+                                @foreach (var item in VisibleItems(group))
+                                {
+                                    var isCurrent = IsItemActive(item);
 
-            foreach (var item in VisibleItems(group))
-            {
-                <MudMenuItem Href="@item.Href"
-                             Icon="@item.Icon"
-                             IconColor="Color.Inherit"
-                             Class="@GetItemClass(item)">
-                    @item.Label
-                </MudMenuItem>
-            }
+                                    <a href="@item.Href"
+                                       class="group flex items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-slate-50 @(isCurrent ? "bg-brand-50/60" : string.Empty)"
+                                       @onclick="CloseAll">
+                                        <div class="@ItemTileClass(item.Tone)">
+                                            <MudIcon Icon="@item.Icon" Class="text-sm" />
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <p class="@ItemTitleClass(item)">@item.Label</p>
+                                                @if (isCurrent)
+                                                {
+                                                    <span class="rounded bg-brand-50 px-1.5 py-0.5 text-[11px] font-bold text-brand-700">الحالية</span>
+                                                }
+                                            </div>
+                                            <p class="mt-0.5 truncate text-xs text-slate-500">@item.Description</p>
+                                        </div>
+                                    </a>
+                                }
+                            </div>
+
+                            @if (group.Create is not null && IsAllowed(group.Create))
+                            {
+                                <a href="@group.Create.Href"
+                                   class="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-brand-200 bg-white px-3 py-2 text-xs font-bold text-brand-600 shadow-sm transition-all hover:border-brand-600 hover:bg-brand-600 hover:text-white"
+                                   @onclick="CloseAll">
+                                    <MudIcon Icon="@Icons.Material.Filled.Add" Class="text-xs" />
+                                    <span>@group.Create.Label</span>
+                                </a>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="fixed inset-0 z-30" aria-hidden="true" @onclick="CloseAll"></div>
         }
-        </MudMenu>
+    </div>
 }
 
 @code
@@ -82,7 +173,7 @@ else
         /// <summary>شريط تنقل علوي: صف قوائم منسدلة (للحاسوب).</summary>
         Desktop,
 
-        /// <summary>زر همبرغر يفتح قائمة مسطحة (للهاتف).</summary>
+        /// <summary>زر همبرغر يفتح لوحة بعرض الشاشة (للهاتف).</summary>
         Mobile
     }
 
@@ -91,13 +182,18 @@ else
         string Href,
         string Icon,
         PermissionFeature Feature,
+        string Tone,
+        string Description,
         PermissionLevel Level = PermissionLevel.Read,
         bool AdminOnly = false);
 
     private sealed record NavGroupModel(
         string Title,
         string Icon,
-        NavItemModel[] Items);
+        string Subtitle,
+        string ViewAllHref,
+        NavItemModel[] Items,
+        NavItemModel? Create = null);
 
     [Parameter]
     public NavVariant Variant { get; set; } = NavVariant.Desktop;
@@ -105,44 +201,69 @@ else
     [Parameter]
     public string? Class { get; set; }
 
+    /// <summary>يُستدعى عند فتح أي قائمة حتى يغلق صاحب التخطيط قوائمه الأخرى.</summary>
+    [Parameter]
+    public EventCallback OnMenuOpened { get; set; }
+
     /// <summary>مصدر واحد لعناصر التنقل؛ الترتيب من اليمين إلى اليسار في RTL.</summary>
     private static readonly NavGroupModel[] Groups =
     [
-        new("الطلبات", Icons.Material.Filled.ShoppingBag,
+        new("الطلبات", Icons.Material.Filled.ShoppingBag, "متابعة دورة حياة الطلبات", "/orders",
         [
-            new("الطلبات", "/orders", Icons.Material.Outlined.ShoppingBag, PermissionFeature.Orders),
-            new("إنشاء طلب", "/orders/create", Icons.Material.Filled.Add, PermissionFeature.Orders, PermissionLevel.Write)
+            new("الطلبات", "/orders", Icons.Material.Outlined.ShoppingBag, PermissionFeature.Orders, "blue",
+                "قائمة الطلبات الحالية والمؤرشفة"),
+            new("إنشاء طلب", "/orders/create", Icons.Material.Filled.Add, PermissionFeature.Orders, "emerald",
+                "بدء طلب جديد لعميل", PermissionLevel.Write)
+        ],
+        new("إنشاء طلب جديد", "/orders/create", Icons.Material.Filled.Add, PermissionFeature.Orders, "emerald",
+            "بدء طلب جديد لعميل", PermissionLevel.Write)),
+        new("المنتجات", Icons.Material.Filled.Inventory2, "إدارة المستودع والكتالوج", "/products",
+        [
+            new("المنتجات", "/products", Icons.Material.Outlined.Layers, PermissionFeature.Products, "blue",
+                "قائمة المنتجات والمخزون والأسعار"),
+            new("الأقسام", "/categories", Icons.Material.Outlined.Category, PermissionFeature.Categories, "emerald",
+                "إدارة التصنيفات الرئيسية والتفرعات"),
+            new("خصائص المنتجات", "/properties", Icons.Material.Outlined.Tune, PermissionFeature.Properties, "purple",
+                "الألوان والمقاسات والسمات المتغيرة")
+        ],
+        new("إضافة منتج جديد للكتالوج", "/products/create", Icons.Material.Filled.Add, PermissionFeature.Products, "blue",
+            "إضافة منتج جديد للكتالوج", PermissionLevel.Write)),
+        new("جهات التعامل", Icons.Material.Filled.Groups, "بيانات العملاء والموردين والتوصيل", "/clients",
+        [
+            new("العملاء", "/clients", Icons.Material.Outlined.Person, PermissionFeature.Clients, "blue",
+                "بيانات العملاء وأرقام التواصل"),
+            new("الموردون", "/suppliers", Icons.Material.Outlined.Storefront, PermissionFeature.Suppliers, "teal",
+                "الموردون وحالات التوريد"),
+            new("المناديب", "/deliverymen", Icons.Material.Outlined.Moped, PermissionFeature.Deliverymen, "amber",
+                "مندوبو التوصيل ومدنهم"),
+            new("شركات الشحن", "/shipping-carriers", Icons.Material.Outlined.LocalShipping, PermissionFeature.ShippingCarriers, "indigo",
+                "شركات الشحن وأتعاب التوصيل")
         ]),
-        new("المنتجات", Icons.Material.Filled.Inventory2,
+        new("المستندات والوثائق", Icons.Material.Filled.Description, "الفواتير وعروض الأسعار والوثائق", "/invoices",
         [
-            new("المنتجات", "/products", Icons.Material.Outlined.Layers, PermissionFeature.Products),
-            new("الأقسام", "/categories", Icons.Material.Outlined.Category, PermissionFeature.Categories),
-            new("خصائص المنتجات", "/properties", Icons.Material.Outlined.Tune, PermissionFeature.Properties)
+            new("الفواتير", "/invoices", Icons.Material.Outlined.ReceiptLong, PermissionFeature.Documents, "blue",
+                "فواتير المبيعات الصادرة"),
+            new("عروض الأسعار", "/quotations", Icons.Material.Outlined.RequestPage, PermissionFeature.Documents, "teal",
+                "عروض الأسعار المرسلة للعملاء"),
+            new("الفواتير الأولية", "/proforma-invoices", Icons.Material.Outlined.FactCheck, PermissionFeature.Documents, "indigo",
+                "فواتير أولية قبل الإصدار النهائي")
         ]),
-        new("جهات التعامل", Icons.Material.Filled.Groups,
+        new("الإدارة", Icons.Material.Filled.AdminPanelSettings, "إعدادات النظام والصلاحيات", "/cities",
         [
-            new("العملاء", "/clients", Icons.Material.Outlined.Person, PermissionFeature.Clients),
-            new("الموردون", "/suppliers", Icons.Material.Outlined.Storefront, PermissionFeature.Suppliers),
-            new("المناديب", "/deliverymen", Icons.Material.Outlined.Moped, PermissionFeature.Deliverymen),
-            new("شركات الشحن", "/shipping-carriers", Icons.Material.Outlined.LocalShipping, PermissionFeature.ShippingCarriers)
-        ]),
-        new("المستندات والوثائق", Icons.Material.Filled.Description,
-        [
-            new("الفواتير", "/invoices", Icons.Material.Outlined.ReceiptLong, PermissionFeature.Documents),
-            new("عروض الأسعار", "/quotations", Icons.Material.Outlined.RequestPage, PermissionFeature.Documents),
-            new("الفواتير الأولية", "/proforma-invoices", Icons.Material.Outlined.FactCheck, PermissionFeature.Documents)
-        ]),
-        new("الإدارة", Icons.Material.Filled.AdminPanelSettings,
-        [
-            new("المدن", "/cities", Icons.Material.Outlined.LocationOn, PermissionFeature.Cities),
-            new("المستخدمون", "/admin/users", Icons.Material.Outlined.PeopleOutline, PermissionFeature.Users, AdminOnly: true),
-            new("الصلاحيات", "/admin/roles", Icons.Material.Outlined.GppGood, PermissionFeature.Users, AdminOnly: true)
+            new("المدن", "/cities", Icons.Material.Outlined.LocationOn, PermissionFeature.Cities, "blue",
+                "المدن ومناطق التوصيل"),
+            new("المستخدمون", "/admin/users", Icons.Material.Outlined.PeopleOutline, PermissionFeature.Users, "indigo",
+                "حسابات المستخدمين وأدوارهم", AdminOnly: true),
+            new("الصلاحيات", "/admin/roles", Icons.Material.Outlined.GppGood, PermissionFeature.Users, "purple",
+                "أدوار النظام ومستويات الوصول", AdminOnly: true)
         ])
     ];
 
     private readonly HashSet<(PermissionFeature Feature, PermissionLevel Level)> _allowedPermissions = [];
     private bool _permissionsEvaluated;
     private bool _isAdmin;
+    private string? _openGroup;
+    private bool _mobileOpen;
 
     [CascadingParameter]
     private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
@@ -176,12 +297,16 @@ else
         _permissionsEvaluated = true;
     }
 
+    private List<NavGroupModel> VisibleGroups => Groups.Where(GroupVisible).ToList();
+
     private bool GroupVisible(NavGroupModel group) => VisibleItems(group).Any();
 
     private IEnumerable<NavItemModel> VisibleItems(NavGroupModel group) =>
-        group.Items.Where(item =>
-            (!item.AdminOnly || _isAdmin) &&
-            _allowedPermissions.Contains((item.Feature, item.Level)));
+        group.Items.Where(IsAllowed);
+
+    private bool IsAllowed(NavItemModel item) =>
+        (!item.AdminOnly || _isAdmin) &&
+        _allowedPermissions.Contains((item.Feature, item.Level));
 
     /// <summary>هل مجموعة القائمة تحتوي الصفحة الحالية؟ لتلوين زر المجموعة في الشريط العلوي.</summary>
     private bool IsGroupActive(NavGroupModel group)
@@ -219,19 +344,78 @@ else
         path.Equals(href, StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith(href + "/", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>حساب/كلاس قائمة مجموعة نشطة (يصدَر على نفسه قاعدة عالمية تصل زر المجموعة).</summary>
-    private string GetGroupClass(NavGroupModel group) =>
-        IsGroupActive(group) ? "site-nav-active" : string.Empty;
+    private string TriggerClass(NavGroupModel group)
+    {
+        if (_openGroup == group.Title)
+        {
+            return "flex items-center gap-2 rounded-lg border border-blue-200/70 bg-blue-50/80 px-3.5 py-2 text-sm font-bold text-brand-700 shadow-sm ring-2 ring-brand-500/20 outline-none transition-all duration-150";
+        }
 
-    /// <summary>كلاس عنوان مجموعة: عنوان المجموعة النشطة يُلوَّن وحده دون بقية عناصرها.</summary>
-    private string GetGroupLabelClass(NavGroupModel group) =>
-        IsGroupActive(group)
-            ? "site-nav-section-label site-nav-section-label-active"
-            : "site-nav-section-label";
+        if (IsGroupActive(group))
+        {
+            return "flex items-center gap-2 rounded-lg border border-blue-200/60 bg-blue-50/60 px-3.5 py-2 text-sm font-bold text-brand-700 outline-none transition-all duration-150 hover:bg-blue-50/80";
+        }
 
-    /// <summary>كلاس عنصر حالة الهاتف: العنصر المطابق للصفحة الحالية فقط يُلوَّن.</summary>
-    private string GetItemClass(NavItemModel item) =>
-        IsItemActive(item) ? "site-nav-active" : string.Empty;
+        return "flex items-center gap-2 rounded-lg border border-transparent px-3.5 py-2 text-sm font-semibold text-slate-700 outline-none transition-all duration-150 hover:bg-slate-50 hover:text-brand-600";
+    }
+
+    private string TriggerIconClass(NavGroupModel group) =>
+        _openGroup == group.Title || IsGroupActive(group)
+            ? "text-[15px] text-brand-600"
+            : "text-[15px] text-slate-400 transition-colors group-hover:text-brand-600";
+
+    private static string ItemTileClass(string tone) => tone switch
+    {
+        "emerald" => "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 shadow-sm transition-all duration-200 group-hover:bg-emerald-600 group-hover:text-white",
+        "teal" => "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-600 shadow-sm transition-all duration-200 group-hover:bg-teal-600 group-hover:text-white",
+        "indigo" => "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 shadow-sm transition-all duration-200 group-hover:bg-indigo-600 group-hover:text-white",
+        "purple" => "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 shadow-sm transition-all duration-200 group-hover:bg-purple-600 group-hover:text-white",
+        "amber" => "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 shadow-sm transition-all duration-200 group-hover:bg-amber-600 group-hover:text-white",
+        _ => "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-brand-600 shadow-sm transition-all duration-200 group-hover:bg-brand-600 group-hover:text-white"
+    };
+
+    private static string ItemTitleClass(NavItemModel item) => item.Tone switch
+    {
+        "emerald" => "text-sm font-bold text-slate-900 group-hover:text-emerald-700",
+        "teal" => "text-sm font-bold text-slate-900 group-hover:text-teal-700",
+        "indigo" => "text-sm font-bold text-slate-900 group-hover:text-indigo-700",
+        "purple" => "text-sm font-bold text-slate-900 group-hover:text-purple-700",
+        "amber" => "text-sm font-bold text-slate-900 group-hover:text-amber-700",
+        _ => "text-sm font-bold text-slate-900 group-hover:text-brand-700"
+    };
+
+    private async Task ToggleGroupAsync(string title)
+    {
+        _openGroup = _openGroup == title ? null : title;
+
+        if (_openGroup is not null)
+        {
+            await OnMenuOpened.InvokeAsync();
+        }
+    }
+
+    private async Task ToggleMobileAsync()
+    {
+        _mobileOpen = !_mobileOpen;
+
+        if (_mobileOpen)
+        {
+            await OnMenuOpened.InvokeAsync();
+        }
+    }
+
+    /// <summary>إغلاق كل قوائم هذا المكوّن (يُستدعى من الشريط عند فتح قائمة أخرى).</summary>
+    public void CloseAll()
+    {
+        if (_openGroup is null && !_mobileOpen)
+        {
+            return;
+        }
+
+        _openGroup = null;
+        _mobileOpen = false;
+        StateHasChanged();
+    }
 
     public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
 
@@ -241,6 +425,10 @@ else
         Navigation.LocationChanged += OnLocationChanged;
     }
 
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs args) =>
-        InvokeAsync(StateHasChanged);
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args)
+    {
+        _openGroup = null;
+        _mobileOpen = false;
+        _ = InvokeAsync(StateHasChanged);
+    }
 }

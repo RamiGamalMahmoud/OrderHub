@@ -86,101 +86,26 @@ h1:focus {
 }
 
 /* =====================================================================
-   Nav shell (redesign T1): top-bar dropdown nav + mobile hamburger menu
-   + user card menu. NOTE: MudMenu popovers render into the global
-   MudPopoverProvider, so these rules must stay global (never inside
-   component-scoped isolation).
+   Nav shell: the top-bar menus are plain HTML + Tailwind (no MudMenu),
+   so only the dropdown entrance animation lives here. Shadows come from
+   the Tailwind tokens shadow-nav / shadow-menu in Styles/app.css.
    ===================================================================== */
 
-/* Desktop: row of nav-group dropdown triggers */
-.site-nav {
-    display: flex;
-    align-items: stretch;
-    gap: 4px;
-    white-space: nowrap;
+.oh-nav-panel {
+    transform-origin: top center;
+    animation: oh-nav-dropdown 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Group button: full bar height, quiet by default, brand tone when its section is active */
-.site-nav .mud-menu-button-activator {
-    height: 100% !important;
-    min-height: 48px;
-    border-radius: 8px;
-    color: var(--mud-palette-text-primary) !important;
-    font-size: 0.95rem;
-    padding: 0 12px;
-    transition: background-color 0.15s ease;
-}
+@keyframes oh-nav-dropdown {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.98);
+    }
 
-.site-nav .mud-menu-button-activator:hover {
-    background-color: var(--mud-palette-action-default-hover) !important;
-}
-
-.site-nav .site-nav-active .mud-menu-button-activator {
-    color: var(--mud-palette-primary) !important;
-    font-weight: 700;
-}
-
-/* Small icons on group buttons */
-.site-nav .mud-menu-button-activator svg {
-    font-size: 18px !important;
-    width: 18px !important;
-    height: 18px !important;
-}
-
-/* Mobile flattened menu: group labels + highlighted block of the active group */
-.site-nav-section-label {
-    padding: 10px 20px 4px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    color: var(--mud-palette-text-secondary);
-    cursor: default;
-}
-
-.mud-menu-item.site-nav-active {
-    background-color: var(--mud-palette-primary);
-    color: var(--mud-palette-primary-text);
-    font-weight: 700;
-}
-
-.mud-menu-item.site-nav-active:hover {
-    background-color: var(--mud-palette-primary);
-}
-
-/* Mobile flattened menu: the dropdown panel spans the full viewport width and
-   the active group is painted as one continuous block (label + items). */
-.site-nav-popover-mobile {
-    left: 0 !important;
-    right: 0 !important;
-    width: auto !important;
-    max-width: 100vw !important;
-    border-radius: 0 0 16px 16px !important;
-    overflow-x: hidden;
-    overflow-y: auto;
-}
-
-.site-nav-popover-mobile .mud-menu-list-wrapper {
-    padding-inline: 0;
-}
-
-.site-nav-popover-mobile .mud-list {
-    padding-inline: 0 !important;
-}
-
-.site-nav-popover-mobile .mud-menu-item {
-    padding-inline: 20px;
-    border-radius: 0;
-}
-
-.site-nav-popover-mobile .site-nav-section-label-active {
-    background-color: var(--mud-palette-primary);
-    color: var(--mud-palette-primary-text);
-    padding-block: 10px 6px;
-}
-
-/* User card: keep the activator wrapper smooth/flex */
-.site-user-menu .mud-menu-activator {
-    display: flex;
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .tracking-tight {

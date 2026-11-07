@@ -1,8 +1,13 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @using OrderHub.Web.Components.Layout
+@using OrderHub.Web.Services
+@using OrderHub.Domain.Enums
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Routing
 @using System.Globalization
 @using System.Security.Claims
+@inject PermissionAccess PermissionAccess
+@inject NavigationManager Navigation
 
 <MudRTLProvider RightToLeft=true>
     @* تفعيل خيارات الثيم من مصدر واحد مشترك (OrderHubTheme) لدعم RTL والهوية البصرية الموحدة *@
@@ -13,69 +18,94 @@
 
     <MudLayout Class="min-h-dvh flex flex-col">
 
-        <!-- شريط علوي ثابت: الشعار يمين (RTL) + قوائم الحاسوب بالمنتصف + بطاقة المستخدم يسار -->
-        <header class="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
-            <div class="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
+        <!-- شريط علوي ثابت (72px): الشعار يمين (RTL) ثم قوائم التنقل، والبطاقة الحالية والإجراءات يسارًا -->
+        <header class="sticky top-0 z-50 border-b border-slate-200 bg-white shadow-nav">
+            <div class="mx-auto flex h-[72px] max-w-[1720px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
 
-                <!-- هاتف/تابلت: زر همبرغر يفتح قائمة تنقل مسطحة -->
-                <div class="lg:hidden">
-                    <NavMenu Variant="NavMenu.NavVariant.Mobile" />
+                <!-- الشعار + قوائم التنقل -->
+                <div class="flex min-w-0 items-center gap-4 xl:gap-8">
+                    <a href="/" class="group flex shrink-0 items-center gap-3" aria-label="الصفحة الرئيسية">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-brand-700 via-brand-600 to-blue-400 text-white shadow-md shadow-brand-500/20 transition-transform duration-200 group-hover:scale-105">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                 stroke-linejoin="round" stroke-linecap="round" class="h-5 w-5" aria-hidden="true">
+                                <path d="M12 2l9 5v10l-9 5-9-5V7l9-5z" />
+                                <path d="M12 22V12l9-5M12 12L3 7" />
+                            </svg>
+                        </span>
+                        <span class="flex flex-col">
+                            <span class="flex items-center gap-1.5">
+                                <span class="text-xl font-extrabold tracking-tight text-slate-900">Order<span class="text-brand-600">Hub</span></span>
+                            </span>
+                            <span class="-mt-0.5 hidden text-[11px] font-medium text-slate-400 sm:block">نظام إدارة العمليات والطلبات</span>
+                        </span>
+                    </a>
+
+                    <div class="hidden h-8 w-px bg-slate-200 xl:block"></div>
+
+                    <div class="hidden min-w-0 lg:block">
+                        <NavMenu @ref="_desktopNav"
+                                 Variant="NavMenu.NavVariant.Desktop"
+                                 OnMenuOpened="CloseUserMenu" />
+                    </div>
                 </div>
 
-                <!-- الشعار: مكعب أزرق + «OrderHub» بلونين، رابط إلى الرئيسية -->
-                <a href="/" class="flex items-center gap-3 shrink-0" aria-label="الصفحة الرئيسية">
-                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                             stroke-linejoin="round" stroke-linecap="round" class="w-5 h-5" aria-hidden="true">
-                            <path d="M12 2l9 5v10l-9 5-9-5V7l9-5z" />
-                            <path d="M12 22V12l9-5M12 12L3 7" />
-                        </svg>
-                    </span>
-                    <span class="text-lg font-black tracking-tight text-slate-900">Order<span class="text-brand-600">Hub</span></span>
-                </a>
+                <!-- الإجراءات: إنشاء طلب + بطاقة المستخدم + همبرغر الهاتف -->
+                <div class="flex shrink-0 items-center gap-2 sm:gap-3.5">
+                    @if (_canCreateOrder)
+                    {
+                        <a href="/orders/create"
+                           class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-3 py-2 text-xs font-bold text-white shadow-md shadow-brand-500/25 transition-all duration-150 hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-lg hover:shadow-brand-500/35 sm:px-4 sm:py-2.5 sm:text-sm">
+                            <MudIcon Icon="@Icons.Material.Filled.AddShoppingCart" Class="text-sm" />
+                            <span>إضافة طلب</span>
+                        </a>
+                    }
 
-                <!-- حاسوب: قوائم التنقل في منتصف الشريط -->
-                <div class="hidden lg:flex flex-1 justify-center items-stretch min-w-0">
-                    <NavMenu Variant="NavMenu.NavVariant.Desktop" />
-                </div>
+                    <div class="relative z-50">
+                        <button type="button"
+                                class="@UserChipClass"
+                                aria-haspopup="menu"
+                                aria-expanded="@(_userMenuOpen ? "true" : "false")"
+                                aria-label="قائمة المستخدم"
+                                @onclick="ToggleUserMenu">
+                            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-tr from-slate-700 to-slate-900 text-xs font-bold text-white shadow-inner">@_initials</span>
+                            <span class="hidden flex-col text-start leading-tight xl:flex">
+                                <span class="text-xs font-bold text-slate-900">@_displayName</span>
+                                <span class="text-xs font-medium text-slate-500">@(_isAdmin ? "مدير النظام" : "مستخدم")</span>
+                            </span>
+                            <MudIcon Icon="@Icons.Material.Filled.ExpandMore" Class="hidden text-[11px] text-slate-400 xl:inline" />
+                        </button>
 
-                <!-- بطاقة المستخدم: حرفا الاسم + الاسم + الدور، وقائمة تسجيل الخروج -->
-                <div class="shrink-0 ms-auto lg:ms-0">
-                    <MudMenu Dense="true"
-                             Class="site-user-menu">
-                        <ActivatorContent>
-                            <button type="button"
-                                    @onclick="@context.ToggleAsync"
-                                    class="flex items-center gap-2.5 rounded-full ps-1 pe-2.5 py-1 transition-colors hover:bg-slate-100"
-                                    aria-label="قائمة المستخدم">
-                                <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 border border-brand-200 text-sm font-bold text-brand-700">
-                                    @_initials
-                                </span>
-                                <span class="hidden max-w-[10rem] min-w-0 sm:flex flex-col items-start leading-tight">
-                                    <span class="w-full truncate text-sm font-bold text-slate-800">@_displayName</span>
-                                    <span class="text-[11px] text-slate-500">@(_isAdmin ? "مدير النظام" : "مستخدم")</span>
-                                </span>
-                            </button>
-                        </ActivatorContent>
-                        <ChildContent>
-                            <div role="presentation"
-                                 class="px-4 py-2.5 border-b border-slate-100 mb-1">
-                                <div class="text-xs text-slate-500 mb-0.5">مسجّل الدخول باسم</div>
-                                <div class="text-sm font-bold text-slate-800">@_displayName</div>
+                        @if (_userMenuOpen)
+                        {
+                            <div class="oh-nav-panel absolute end-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-menu">
+                                <div class="border-b border-slate-100 px-4 py-2.5">
+                                    <div class="text-xs text-slate-500">مسجّل الدخول باسم</div>
+                                    <div class="text-sm font-bold text-slate-800">@_displayName</div>
+                                </div>
+                                <div class="p-1.5">
+                                    <form method="post" action="/auth/logout">
+                                        <button type="submit"
+                                                class="oh-btn oh-btn--danger oh-btn--block">
+                                            تسجيل الخروج
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
-                            <div role="presentation" class="p-1.5">
-                                <form method="post" action="/auth/logout">
-                                    <button type="submit"
-                                            class="oh-btn oh-btn--danger oh-btn--block">
-                                        تسجيل الخروج
-                                    </button>
-                                </form>
-                            </div>
-                        </ChildContent>
-                    </MudMenu>
-                </div>
+                        }
+                    </div>
 
+                    <div class="lg:hidden">
+                        <NavMenu @ref="_mobileNav"
+                                 Variant="NavMenu.NavVariant.Mobile"
+                                 OnMenuOpened="CloseUserMenu" />
+                    </div>
+                </div>
             </div>
+
+            @if (_userMenuOpen)
+            {
+                <div class="fixed inset-0 z-40" aria-hidden="true" @onclick="CloseUserMenu"></div>
+            }
         </header>
 
         <!-- منطقة المحتوى الرئيسية مع خلفية ناعمة مريحة للعين لتبرز بداخلها الـ Cards -->
@@ -115,6 +145,10 @@
     private string _initials = "؟";
     private bool _isAdmin;
     private bool _identityResolved;
+    private bool _canCreateOrder;
+    private bool _userMenuOpen;
+    private NavMenu? _desktopNav;
+    private NavMenu? _mobileNav;
 
     [CascadingParameter]
     private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
@@ -136,9 +170,38 @@
                 "مستخدم";
             _initials = ComputeInitials(_displayName);
             _isAdmin = user.IsInRole("Admin");
+            _canCreateOrder = await PermissionAccess.IsAllowedAsync(PermissionFeature.Orders, PermissionLevel.Write);
         }
 
         _identityResolved = true;
+    }
+
+    private string UserChipClass =>
+        _userMenuOpen
+            ? "flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-100 py-1.5 pe-2 ps-1 transition-colors"
+            : "flex items-center gap-2.5 rounded-xl border border-transparent py-1.5 pe-2 ps-1 transition-colors hover:border-slate-200 hover:bg-slate-100";
+
+    /// <summary>فتح قائمة المستخدم يغلق أي قائمة تنقل مفتوحة (والعكس).</summary>
+    private void ToggleUserMenu()
+    {
+        if (!_userMenuOpen)
+        {
+            _desktopNav?.CloseAll();
+            _mobileNav?.CloseAll();
+        }
+
+        _userMenuOpen = !_userMenuOpen;
+    }
+
+    private void CloseUserMenu()
+    {
+        if (!_userMenuOpen)
+        {
+            return;
+        }
+
+        _userMenuOpen = false;
+        StateHasChanged();
     }
 
     /// <summary>حرفا الاعتماد في دائرة الأفاتار: أول حرف من أول كلمتين.</summary>
