@@ -3,6 +3,7 @@
 @using System.Globalization
 @using OrderHub.Application.Features.Orders.Lifecycle
 @using OrderHub.Application.Features.Orders.Archive
+@using OrderHub.Application.Features.Orders.Reassignment
 @using OrderHub.Domain.Common
 @using OrderHub.Domain.Models
 @using OrderHub.Application.Interfaces
@@ -165,7 +166,7 @@
                                    Class="@($"oh-btn oh-btn--sm {OrderWorkflowPresentation.Action("completed")}")"
                                    OnClick="DeliverDirectlyAsync">تأكيد التسليم المباشر</MudButton>
                     }
-                    @if (_state.AllowedStatuses.Contains(OrderStatus.Cancelled) || _state.CanArchive)
+                    @if (_state.AllowedStatuses.Contains(OrderStatus.Cancelled) || _state.CanArchive || _state.CanReassignDirectly)
                     {
                         <MudMenu AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
                             <ActivatorContent>
@@ -178,6 +179,10 @@
                                 </button>
                             </ActivatorContent>
                             <ChildContent>
+                                @if (_state.CanReassignDirectly)
+                                {
+                                    <MudMenuItem OnClick="ReassignDirectlyAsync">إلغاء التكليف وإعادة التوجيه</MudMenuItem>
+                                }
                                 @if (_state.AllowedStatuses.Contains(OrderStatus.Cancelled))
                                 {
                                     <MudMenuItem OnClick="@(() => ChangeStatusAsync(OrderStatus.Cancelled))">إلغاء الطلب</MudMenuItem>
@@ -261,7 +266,7 @@
                             </p>
                         }
 
-                        @if (_canWrite && step.AllowedStatuses.Count > 0)
+                        @if (_canWrite && (step.AllowedStatuses.Count > 0 || step.CanReassign))
                         {
                             <div class="mt-3 flex flex-wrap gap-2">
                                 @foreach (var target in step.AllowedStatuses)
@@ -269,6 +274,12 @@
                                     <MudButton Size="Size.Small" Disabled="_busy"
                                                Class="@($"oh-btn oh-btn--sm {OrderWorkflowPresentation.Action(target)}")"
                                                OnClick="@(() => ChangeStepAsync(step, target))">@OrderWorkflowPresentation.StepActionLabel(target, step.Status)</MudButton>
+                                }
+                                @if (step.CanReassign)
+                                {
+                                    <MudButton Size="Size.Small" Disabled="_busy"
+                                               Class="@($"oh-btn oh-btn--sm {OrderWorkflowPresentation.Action("failed")}")"
+                                               OnClick="@(() => ReassignStepAsync(step))">إلغاء التكليف وإعادة التوجيه</MudButton>
                                 }
                             </div>
                         }
@@ -440,6 +451,56 @@
     {
         Logger.LogError(exception, "Failed order operation {OrderId}", Id);
         Snackbar.Add("تعذر تنفيذ العملية. حدّث الحالة قبل إعادة المحاولة.", Severity.Error);
+    }
+
+    private Task ReassignDirectlyAsync() => _state is null ? Task.CompletedTask : ShowReassignAsync(_state, null);
+
+    private Task ReassignStepAsync(DeliveryStepWorkflowState step) => _state is null ? Task.CompletedTask : ShowReassignAsync(_state, step);
+
+    private async Task ShowReassignAsync(OrderWorkflowState snapshot, DeliveryStepWorkflowState? step)
+    {
+        if (_busy || !_canWrite || _state is null || _state.Version != snapshot.Version) return;
+        if (step is null ? !snapshot.CanReassignDirectly : !step.CanReassign) return;
+        _busy = true;
+        try
+        {
+            Func<DeliveryMethod, int?, string, Task<Result<OrderOperationReceipt>>> submit =
+                (method, partyId, reason) => SubmitReassignAsync(snapshot, step?.Id, method, partyId, reason);
+            var dialog = await Dialogs.ShowAsync<ReassignDeliveryDialog>("إلغاء التكليف وإعادة التوجيه",
+                new DialogParameters<ReassignDeliveryDialog>
+                {
+                    { value => value.OrderNumber, snapshot.OrderNumber },
+                    { value => value.ContextLabel, step is null ? "التكليف المباشر" : $"الخطوة {step.EffectiveRank.ToString(CultureInfo.InvariantCulture)}" },
+                    { value => value.CurrentMethod, step?.Method ?? snapshot.Method ?? DeliveryMethod.DeliveryMan },
+                    { value => value.CurrentPartyName, step?.HandlerName ?? snapshot.HandlerName },
+                    { value => value.Submit, submit }
+                },
+                new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = false, BackdropClick = false });
+            await dialog.Result;
+        }
+        catch (Exception exception) { ShowFailure(exception); }
+        finally { _busy = false; }
+    }
+
+    private async Task<Result<OrderOperationReceipt>> SubmitReassignAsync(OrderWorkflowState snapshot, int? stepId,
+        DeliveryMethod method, int? partyId, string reason)
+    {
+        if (_disposed || snapshot.Id != Id || _state?.Version != snapshot.Version)
+            return Result<OrderOperationReceipt>.Failure("تغيرت الشاشة؛ راجع بيانات الطلب الحالية.", "Conflict");
+        var result = stepId.HasValue
+            ? await Executor.ExecuteAsync(new ReassignDeliveryStepCommand(snapshot.Id, snapshot.Version, stepId.Value, method, partyId, reason))
+            : await Executor.ExecuteAsync(new ReassignDirectDeliveryCommand(snapshot.Id, snapshot.Version, method, partyId, reason));
+        if (result.IsSuccess)
+        {
+            Snackbar.Add("تم إلغاء التكليف وإعادة التوجيه بنجاح.", Severity.Success);
+            await LoadAsync();
+        }
+        else if (result.ErrorCode == "Conflict")
+        {
+            Snackbar.Add("تغيّرت حالة الطلب أثناء العملية؛ حُدّثت الشاشة. راجع الحالة الحالية قبل المحاولة مجددًا.", Severity.Warning);
+            await LoadAsync();
+        }
+        return result;
     }
 
     public void Dispose() { _disposed = true; _canWrite = false; _state = null; _generation++; _load?.Cancel(); _load?.Dispose(); }

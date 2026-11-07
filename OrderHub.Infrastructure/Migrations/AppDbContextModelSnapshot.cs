@@ -2180,7 +2180,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("CategoryId");
 
-                            b1.ToTable("categories");
+                            b1.ToTable("categories", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("CategoryId")
@@ -2213,7 +2213,7 @@ namespace OrderHub.Infrastructure.Migrations
                                 .IsUnique()
                                 .HasDatabaseName("ix_cities_name");
 
-                            b1.ToTable("cities");
+                            b1.ToTable("cities", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("CityId")
@@ -2254,7 +2254,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("ClientId");
 
-                            b1.ToTable("clients");
+                            b1.ToTable("clients", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ClientId")
@@ -2442,7 +2442,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("DeliverymanId");
 
-                            b1.ToTable("deliverymen");
+                            b1.ToTable("deliverymen", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("DeliverymanId")
@@ -2626,7 +2626,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("OrderItemId");
 
-                            b1.ToTable("order_items");
+                            b1.ToTable("order_items", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("OrderItemId")
@@ -2704,7 +2704,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("PhoneId");
 
-                            b1.ToTable("phones");
+                            b1.ToTable("phones", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("PhoneId")
@@ -2738,7 +2738,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("ProductId");
 
-                            b1.ToTable("products");
+                            b1.ToTable("products", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ProductId")
@@ -2757,7 +2757,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("ProductId");
 
-                            b1.ToTable("products");
+                            b1.ToTable("products", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ProductId")
@@ -2872,7 +2872,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("ShippingCarrierId");
 
-                            b1.ToTable("shipping_carriers");
+                            b1.ToTable("shipping_carriers", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ShippingCarrierId")
@@ -2891,7 +2891,7 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("ShippingCarrierId");
 
-                            b1.ToTable("shipping_carriers");
+                            b1.ToTable("shipping_carriers", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ShippingCarrierId")
@@ -2923,27 +2923,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_suppliers_phones_phone_id");
 
-                    b.OwnsOne("OrderHub.Domain.ValueObjects.EntityName", "Name", b1 =>
-                        {
-                            b1.Property<int>("SupplierId")
-                                .HasColumnType("integer")
-                                .HasColumnName("id");
-
-                            b1.Property<string>("Value")
-                                .IsRequired()
-                                .HasMaxLength(100)
-                                .HasColumnType("varchar(100)")
-                                .HasColumnName("name");
-
-                            b1.HasKey("SupplierId");
-
-                            b1.ToTable("suppliers");
-
-                            b1.WithOwner()
-                                .HasForeignKey("SupplierId")
-                                .HasConstraintName("fk_suppliers_suppliers_id");
-                        });
-
                     b.OwnsOne("OrderHub.Domain.ValueObjects.BusinessHours", "BusinessHours", b1 =>
                         {
                             b1.Property<int>("SupplierId")
@@ -2960,7 +2939,28 @@ namespace OrderHub.Infrastructure.Migrations
 
                             b1.HasKey("SupplierId");
 
-                            b1.ToTable("suppliers");
+                            b1.ToTable("suppliers", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("SupplierId")
+                                .HasConstraintName("fk_suppliers_suppliers_id");
+                        });
+
+                    b.OwnsOne("OrderHub.Domain.ValueObjects.EntityName", "Name", b1 =>
+                        {
+                            b1.Property<int>("SupplierId")
+                                .HasColumnType("integer")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("varchar(100)")
+                                .HasColumnName("name");
+
+                            b1.HasKey("SupplierId");
+
+                            b1.ToTable("suppliers", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("SupplierId")
