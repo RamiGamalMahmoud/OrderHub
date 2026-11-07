@@ -18,18 +18,18 @@
 
 <PageTitle>دورة الطلب</PageTitle>
 
-<div class="space-y-5">
+<div class="space-y-4">
     @if (_loading)
     {
-        <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <div class="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-xs">
             <MudProgressCircular Indeterminate="true" Color="Color.Primary" aria-label="تحميل دورة الطلب" />
-            <p class="mt-2 text-sm text-slate-500">جاري تحميل دورة الطلب...</p>
+            <p class="mt-2 text-xs text-slate-500">جاري تحميل دورة الطلب...</p>
         </div>
     }
     else if (_error is not null)
     {
-        <div class="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm">
-            <p class="text-sm font-bold text-red-800">@_error</p>
+        <div class="rounded-xl border border-rose-200 bg-rose-50 p-5">
+            <p class="text-xs font-bold text-rose-800">@_error</p>
             <button type="button"
                     class="@($"oh-btn oh-btn--sm mt-3 {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
                     @onclick="LoadAsync">إعادة المحاولة</button>
@@ -37,8 +37,8 @@
     }
     else if (_state is null)
     {
-        <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-            <p class="text-sm font-bold text-slate-700">الطلب غير موجود.</p>
+        <div class="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-xs">
+            <p class="text-xs font-bold text-slate-700">الطلب غير موجود.</p>
             <a href="/orders" class="oh-btn oh-btn--secondary oh-btn--sm mt-3">العودة إلى الطلبات</a>
         </div>
     }
@@ -47,67 +47,80 @@
         var completedSteps = _state.CompletedActiveStepCount;
         var totalSteps = _state.ActiveStepCount;
         var stepsPercent = totalSteps == 0 ? 0 : (int)Math.Round(completedSteps * 100.0 / totalSteps);
+        var attention = _state.Status == OrderStatus.DeliveryFailed;
 
         <PageScaffold Title="دورة الطلب"
                       Description="@_state.OrderNumber"
                       Crumbs="_crumbs">
             <Actions>
-                <MudButton Href="@($"/orders/{Id}")" Variant="Variant.Outlined" Class="oh-btn oh-btn--secondary">تفاصيل الطلب</MudButton>
-                <MudButton Disabled="_busy" OnClick="LoadAsync" Variant="Variant.Filled" Color="Color.Primary" Class="oh-btn oh-btn--primary">تحديث</MudButton>
+                <MudButton Href="@($"/orders/{Id}")" Variant="Variant.Outlined" Class="oh-btn oh-btn--secondary oh-btn--sm">تفاصيل الطلب</MudButton>
+                <MudButton Disabled="_busy" OnClick="LoadAsync" Variant="Variant.Filled" Color="Color.Primary" Class="oh-btn oh-btn--primary oh-btn--sm">تحديث</MudButton>
             </Actions>
         </PageScaffold>
 
         @* ============================================================
-           Overview: tags + stage strip + real KPIs
+           Overview: tags + stage strip + compact stat strip
            ============================================================ *@
-        <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div class="flex flex-wrap items-center gap-2">
-                <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(_state.Status)}")">@_state.Status.GetDescription()</span>
-                <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(OrderWorkflowPresentation.Neutral)}")">
-                    @(_state.Method.HasValue ? _state.Method.Value.GetDescription() : "طريقة التوصيل غير محددة")
-                </span>
-                @if (_state.IsArchived)
-                {
-                    <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(OrderWorkflowPresentation.Neutral)}")">مؤرشف — للقراءة فقط</span>
-                }
-                <span class="text-xs text-slate-500">جهة التنفيذ: <strong class="font-bold text-slate-700">@(_state.HandlerName ?? "غير محددة")</strong></span>
+        <section class="@OrderWorkflowPresentation.Card">
+            <header class="@OrderWorkflowPresentation.CardHeader">
+                <div class="flex items-center gap-2.5">
+                    <span class="@($"{OrderWorkflowPresentation.IconTileBase} {OrderWorkflowPresentation.IconTile(OrderWorkflowPresentation.StatusTone(_state.Status))}")">
+                        <MudIcon Icon="@Icons.Material.Outlined.Timeline" Class="text-[18px]" />
+                    </span>
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-800">ملخص التنفيذ</h2>
+                        <p class="text-[11px] text-slate-600">الحالة الحالية والمراحل التشغيلية للطلب</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(_state.Status)}")">@_state.Status.GetDescription()</span>
+                    <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(OrderWorkflowPresentation.Neutral)}")">
+                        @(_state.Method.HasValue ? _state.Method.Value.GetDescription() : "طريقة التوصيل غير محددة")
+                    </span>
+                    @if (_state.IsArchived)
+                    {
+                        <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(OrderWorkflowPresentation.Neutral)}")">مؤرشف — للقراءة فقط</span>
+                    }
+                </div>
+            </header>
+
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-slate-500">
+                <span>جهة التنفيذ: <strong class="font-bold text-slate-700">@(_state.HandlerName ?? "غير محددة")</strong></span>
+                <span aria-hidden="true" class="text-slate-300">•</span>
+                <span>آخر حدث تشغيلي: <strong class="font-bold text-slate-700"><UserLocalTime Value="_state.LastChangedAtUtc" /></strong></span>
             </div>
 
-            <OrderStageStrip State="_state" />
+            <div class="mt-3">
+                <OrderStageStrip State="_state" />
+            </div>
 
-            <p class="mt-3 text-xs text-slate-500">آخر حدث تشغيلي: <UserLocalTime Value="_state.LastChangedAtUtc" /></p>
             @if (_state.IsLegacy)
             {
-                <p class="mt-1 text-xs text-amber-700">آخر حالة ناتجة عن ترحيل بيانات قديمة؛ التوقيت لا يثبت وقت التنفيذ الفعلي.</p>
+                <p class="mt-2 text-[11px] font-medium text-amber-700">آخر حالة ناتجة عن ترحيل بيانات قديمة؛ التوقيت لا يثبت وقت التنفيذ الفعلي.</p>
             }
 
-            <div class="@($"mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 {(totalSteps > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4")}")">
-                <div class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">آخر تحديث</p>
-                    <p class="mt-1 text-sm font-black text-slate-900"><UserLocalTime Value="_state.LastChangedAtUtc" /></p>
+            <div class="@($"mt-4 grid grid-cols-2 gap-2 {(totalSteps > 0 ? "lg:grid-cols-4" : "sm:grid-cols-3")}")">
+                <div class="@OrderWorkflowPresentation.StatTile">
+                    <p class="text-[10px] font-bold text-slate-500">آخر تحديث</p>
+                    <p class="mt-0.5 text-xs font-bold text-slate-800"><UserLocalTime Value="_state.LastChangedAtUtc" /></p>
                 </div>
-                <div class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">المدة التشغيلية</p>
-                    <p class="mt-1 text-sm font-black text-slate-900">@OrderWorkflowPresentation.DurationLabel(_state.CreatedAt, _state.LastChangedAtUtc)</p>
-                    <p class="mt-0.5 text-[11px] text-slate-500">من إنشاء الطلب إلى آخر حدث</p>
+                <div class="@OrderWorkflowPresentation.StatTile">
+                    <p class="text-[10px] font-bold text-slate-500">المدة التشغيلية</p>
+                    <p class="mt-0.5 text-xs font-bold text-slate-800">@OrderWorkflowPresentation.DurationLabel(_state.CreatedAt, _state.LastChangedAtUtc)</p>
                 </div>
-                <div class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">جهة التنفيذ</p>
-                    <p class="mt-1 text-sm font-black text-slate-900">@(_state.HandlerName ?? "غير محددة")</p>
-                </div>
-                <div class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">إنشاء الطلب</p>
-                    <p class="mt-1 text-sm font-black text-slate-900"><UserLocalTime Value="_state.CreatedAt" /></p>
+                <div class="@OrderWorkflowPresentation.StatTile">
+                    <p class="text-[10px] font-bold text-slate-500">تاريخ الإنشاء</p>
+                    <p class="mt-0.5 text-xs font-bold text-slate-800"><UserLocalTime Value="_state.CreatedAt" /></p>
                 </div>
                 @if (totalSteps > 0)
                 {
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                        <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">الخطوات المكتملة</p>
-                        <p class="mt-1 text-sm font-black text-slate-900">
+                    <div class="@OrderWorkflowPresentation.StatTile">
+                        <p class="text-[10px] font-bold text-slate-500">الخطوات المكتملة</p>
+                        <p class="mt-0.5 text-xs font-bold text-slate-800">
                             @completedSteps.ToString(CultureInfo.InvariantCulture)
-                            <span class="text-xs font-bold text-slate-400">/ @totalSteps.ToString(CultureInfo.InvariantCulture)</span>
+                            <span class="font-medium text-slate-400">/ @totalSteps.ToString(CultureInfo.InvariantCulture)</span>
                         </p>
-                        <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                        <div class="mt-1.5 h-1 overflow-hidden rounded-full bg-slate-200">
                             <div class="h-full rounded-full bg-emerald-500" style="@($"width:{stepsPercent.ToString(CultureInfo.InvariantCulture)}%")"></div>
                         </div>
                     </div>
@@ -118,37 +131,42 @@
         @* ============================================================
            Required now
            ============================================================ *@
-        <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div class="flex items-center gap-2.5">
-                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-                    <MudIcon Icon="@Icons.Material.Filled.PlayCircleOutline" Size="Size.Small" />
-                </span>
-                <h2 class="text-sm font-black text-slate-900">المطلوب الآن</h2>
-            </div>
+        <section class="@OrderWorkflowPresentation.Card">
+            <header class="@OrderWorkflowPresentation.CardHeader">
+                <div class="flex items-center gap-2.5">
+                    <span class="@($"{OrderWorkflowPresentation.IconTileBase} {OrderWorkflowPresentation.IconTile(attention ? "failed" : OrderWorkflowPresentation.Neutral)}")">
+                        <MudIcon Icon="@(attention ? Icons.Material.Outlined.WarningAmber : Icons.Material.Outlined.PlayCircleOutline)" Class="text-[18px]" />
+                    </span>
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-800">المطلوب الآن</h2>
+                        <p class="text-[11px] text-slate-600">الخطوة التالية المتاحة لهذا الطلب</p>
+                    </div>
+                </div>
+                @if (!_canWrite)
+                {
+                    <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(OrderWorkflowPresentation.Neutral)}")">قراءة فقط</span>
+                }
+            </header>
 
-            <p class="mt-3 text-sm leading-7 text-slate-700">
+            <p class="text-xs leading-6 text-slate-600">
                 @(_state.IsArchived ? "الطلب مؤرشف؛ بياناته وسجله محفوظان، ولا يمكن تعديله أو تشغيله أو استعادته." : OrderWorkflowPresentation.Instruction(_state.Status, _state.Method))
             </p>
-            @if (!_canWrite)
-            {
-                <p class="mt-1 text-xs font-bold text-slate-500">العرض للقراءة فقط.</p>
-            }
             @if (_state.CanEdit && _state.ReadinessError is not null)
             {
-                <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">لا يمكن بدء التوصيل: @_state.ReadinessError</div>
+                <div class="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-bold text-amber-800">لا يمكن بدء التوصيل: @_state.ReadinessError</div>
             }
             @if (!_state.CanEdit && !_state.IsArchived && _state.Status is not (OrderStatus.Delivered or OrderStatus.Cancelled))
             {
-                <p class="mt-2 text-xs text-slate-500">بيانات الطلب مقفولة لأن التنفيذ بدأ. العمليات المتاحة أدناه تظل مسموحة.</p>
+                <p class="mt-1.5 text-[11px] text-slate-500">بيانات الطلب مقفولة لأن التنفيذ بدأ. العمليات المتاحة أدناه تظل مسموحة.</p>
             }
             @if (_state.Status == OrderStatus.DeliveryFailed)
             {
-                <div class="mt-3 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-bold text-orange-800">سبب التعذر: @_state.LatestReason</div>
+                <div class="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-bold text-amber-800">سبب التعذر: @_state.LatestReason</div>
             }
 
             @if (_canWrite && !_state.IsArchived)
             {
-                <div class="mt-4 flex flex-wrap items-center gap-2">
+                <div class="mt-3 flex flex-wrap items-center gap-1.5">
                     @if (_state.CanEdit)
                     {
                         <MudButton Href="@($"/orders/{Id}/edit")" Disabled="_busy" Size="Size.Small"
@@ -207,38 +225,40 @@
            ============================================================ *@
         @if (_state.Steps.Count > 0 || _state.Method == DeliveryMethod.DeliveryChain)
         {
-            <section class="space-y-3">
+            <section class="space-y-2">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                    <h2 class="text-lg font-black tracking-tight text-slate-900">خطوات التوصيل</h2>
-                    <span class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600">
-                        @completedSteps.ToString(CultureInfo.InvariantCulture) من @totalSteps.ToString(CultureInfo.InvariantCulture) مكتملة
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-sm font-bold text-slate-900">خطوات التوصيل</h2>
+                        <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                            @completedSteps.ToString(CultureInfo.InvariantCulture) من @totalSteps.ToString(CultureInfo.InvariantCulture) مكتملة
+                        </span>
+                    </div>
                 </div>
 
                 @if (_state.Steps.Count == 0)
                 {
-                    <div class="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-xs font-bold text-brand-700">لم تتم إضافة خطوات. أكمل خطة التوصيل قبل بدء السلسلة.</div>
+                    <div class="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-[11px] font-bold text-brand-700">لم تتم إضافة خطوات. أكمل خطة التوصيل قبل بدء السلسلة.</div>
                 }
                 @if (_state.Status == OrderStatus.Delivered && completedSteps != totalSteps)
                 {
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">تم تسليم الطلب مع خطوات غير مكتملة. حالاتها محفوظة، وأُغلق تنفيذها مع تسليم الطلب.</div>
+                    <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600">تم تسليم الطلب مع خطوات غير مكتملة. حالاتها محفوظة، وأُغلق تنفيذها مع تسليم الطلب.</div>
                 }
 
                 @foreach (var step in _state.Steps)
                 {
-                    var stepTone = OrderWorkflowPresentation.StatusTone(step.Status);
-                    <article class="@($"rounded-2xl border border-slate-200 border-s-4 bg-white p-4 shadow-sm {OrderWorkflowPresentation.Accent(stepTone)} {(!step.IsSuperseded ? "" : "opacity-90")}")" @key="step.Id">
-                        <header class="flex flex-wrap items-center gap-3">
-                            <span class="@($"inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {OrderWorkflowPresentation.IconTile(stepTone)}")">
-                                <MudIcon Icon="@(step.Status == DeliveryStatus.Completed ? Icons.Material.Filled.CheckCircle : step.Status == DeliveryStatus.Failed ? Icons.Material.Filled.Warning : step.IsSuperseded ? Icons.Material.Filled.CallSplit : step.AllowedStatuses.Count == 0 ? Icons.Material.Filled.Lock : Icons.Material.Filled.LocalShipping)" Size="Size.Small" />
+                    var stepTone = step.IsSuperseded ? OrderWorkflowPresentation.Neutral : OrderWorkflowPresentation.StatusTone(step.Status);
+                    <article class="@($"rounded-xl border border-slate-200/90 border-s-4 bg-white p-3.5 shadow-xs {OrderWorkflowPresentation.Accent(stepTone)} {(!step.IsSuperseded ? "" : "opacity-90")}")" @key="step.Id">
+                        <header class="flex flex-wrap items-center gap-2.5">
+                            <span class="@($"{OrderWorkflowPresentation.IconTileBase} {OrderWorkflowPresentation.IconTile(stepTone)}")">
+                                <MudIcon Icon="@(step.Status == DeliveryStatus.Completed ? Icons.Material.Filled.CheckCircle : step.Status == DeliveryStatus.Failed ? Icons.Material.Filled.Warning : step.IsSuperseded ? Icons.Material.Filled.CallSplit : step.AllowedStatuses.Count == 0 ? Icons.Material.Filled.Lock : Icons.Material.Filled.LocalShipping)" Class="text-[18px]" />
                             </span>
                             <div class="min-w-0 flex-1">
-                                <p class="text-sm font-black text-slate-900">الخطوة @step.EffectiveRank.ToString(CultureInfo.InvariantCulture) — @step.Method.GetDescription()</p>
-                                <p class="mt-0.5 text-xs text-slate-500">@(step.HandlerName ?? "جهة التنفيذ غير متوفرة")</p>
+                                <p class="text-xs font-bold text-slate-800">الخطوة @step.EffectiveRank.ToString(CultureInfo.InvariantCulture) — @step.Method.GetDescription()</p>
+                                <p class="mt-0.5 text-[11px] text-slate-500">@(step.HandlerName ?? "جهة التنفيذ غير متوفرة")</p>
                             </div>
                             @if (step.IsSuperseded)
                             {
-                                <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(step.Status)}")">ملغاة / مُعاد توجيهها</span>
+                                <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(OrderWorkflowPresentation.Neutral)}")">ملغاة / مُعاد توجيهها</span>
                             }
                             else
                             {
@@ -248,19 +268,19 @@
 
                         @if (step.BlockingReason is not null)
                         {
-                            <div class="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">بانتظار: @step.BlockingReason</div>
+                            <div class="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] text-slate-600">بانتظار: @step.BlockingReason</div>
                         }
                         @if (step.Status is DeliveryStatus.Failed or DeliveryStatus.Cancelled && step.LatestReason is not null)
                         {
-                            <div class="mt-3 rounded-lg border border-orange-100 bg-orange-50 px-3 py-2 text-xs font-bold text-orange-800">السبب: @step.LatestReason</div>
+                            <div class="mt-2 rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-1.5 text-[11px] font-bold text-amber-800">السبب: @step.LatestReason</div>
                         }
                         @if (step.IsLegacy)
                         {
-                            <p class="mt-2 text-xs text-amber-700">الحالة ناتجة عن ترحيل بيانات قديمة.</p>
+                            <p class="mt-1.5 text-[11px] text-amber-700">الحالة ناتجة عن ترحيل بيانات قديمة.</p>
                         }
                         @if (step.LastChangedAtUtc.HasValue)
                         {
-                            <p class="mt-2 text-xs text-slate-500">
+                            <p class="mt-1.5 text-[11px] text-slate-500">
                                 <UserLocalTime Value="step.LastChangedAtUtc" />
                                 @(!string.IsNullOrWhiteSpace(step.LastChangedBy) ? $"— سجّلها {step.LastChangedBy}" : "")
                             </p>
@@ -268,7 +288,7 @@
 
                         @if (_canWrite && (step.AllowedStatuses.Count > 0 || step.CanReassign || step.CanCancel))
                         {
-                            <div class="mt-3 flex flex-wrap gap-2">
+                            <div class="mt-2.5 flex flex-wrap gap-1.5">
                                 @foreach (var target in step.AllowedStatuses)
                                 {
                                     <MudButton Size="Size.Small" Disabled="_busy"
@@ -284,13 +304,15 @@
                                 @if (step.CanReassign)
                                 {
                                     <MudButton Size="Size.Small" Disabled="_busy"
-                                               Class="@($"oh-btn oh-btn--sm {OrderWorkflowPresentation.Action("failed")}")"
+                                               Class="@($"oh-btn oh-btn--sm {OrderWorkflowPresentation.Action("processing")}")"
                                                OnClick="@(() => ReassignStepAsync(step))">إلغاء التكليف وإعادة التوجيه</MudButton>
                                 }
                             </div>
                         }
 
-                        <OrderHistoryPanel OrderId="Id" StepId="step.Id" Version="_state.Version" />
+                        <div class="mt-2.5">
+                            <OrderHistoryPanel OrderId="Id" StepId="step.Id" Version="_state.Version" Nested="true" />
+                        </div>
                     </article>
                 }
             </section>
@@ -301,10 +323,10 @@
            ============================================================ *@
         @if (_state.IsArchived)
         {
-            <section class="rounded-2xl border border-slate-300 bg-slate-50 p-5 shadow-sm">
-                <h2 class="text-sm font-black text-slate-800">بيانات الأرشفة — لا توجد استعادة</h2>
-                <p class="mt-2 text-sm text-slate-700">السبب: @_state.ArchiveReason</p>
-                <p class="mt-1 text-xs text-slate-500"><UserLocalTime Value="_state.ArchivedAtUtc" /> — بواسطة @_state.ArchivedByUserName</p>
+            <section class="rounded-xl border border-slate-300 bg-slate-50 p-4 shadow-xs sm:p-5">
+                <h2 class="text-sm font-bold text-slate-800">بيانات الأرشفة — لا توجد استعادة</h2>
+                <p class="mt-1.5 text-xs text-slate-700">السبب: @_state.ArchiveReason</p>
+                <p class="mt-1 text-[11px] text-slate-500"><UserLocalTime Value="_state.ArchivedAtUtc" /> — بواسطة @_state.ArchivedByUserName</p>
             </section>
         }
 

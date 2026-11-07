@@ -4,7 +4,7 @@
 
 @if (State.Status != OrderStatus.Cancelled)
 {
-    <ol class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3" aria-label="مراحل الطلب">
+    <ol class="grid grid-cols-1 gap-2 sm:grid-cols-3" aria-label="مراحل الطلب">
         @for (var index = 0; index < _stages.Length; index++)
         {
             var stage = _stages[index];
@@ -16,25 +16,19 @@
                 ? State.Status == OrderStatus.DeliveryFailed ? "تحتاج مراجعة"
                 : State.Status == OrderStatus.Delivered ? "اكتملت دورة الطلب"
                 : "المرحلة الحالية"
-                : previous ? "مرحلة مكتملة" : "لم تبدأ";
-            <li class="@($"rounded-xl p-3 {(active ? "border-2 shadow-sm" : "border")} {OrderWorkflowPresentation.Surface(tone)}")" aria-current="@(active ? "step" : null)">
-                <div class="flex items-center gap-3">
-                    <span class="@($"inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-black {OrderWorkflowPresentation.IconTile(tone)}")">
-                        @(previous ? "✓" : (index + 1).ToString(CultureInfo.InvariantCulture))
-                    </span>
-                    <div class="min-w-0">
-                        <p class="text-sm font-bold text-slate-900">@stage.GetDescription()</p>
-                        <p class="text-[11px] font-medium text-slate-500">@caption</p>
-                    </div>
+                : previous ? "مكتملة" : "لم تبدأ";
+            <li class="@($"flex items-center gap-2.5 rounded-lg border p-2.5 {(active ? "border-2 shadow-sm" : "")} {(active || previous ? OrderWorkflowPresentation.Surface(tone) : "border-slate-200 bg-white")}")"
+                aria-current="@(active ? "step" : null)">
+                <span class="@($"inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[11px] font-black {OrderWorkflowPresentation.IconTile(tone)}")">
+                    @(previous ? "✓" : (index + 1).ToString(CultureInfo.InvariantCulture))
+                </span>
+                <div class="min-w-0">
+                    <p class="@($"truncate text-xs font-bold {(active ? "text-slate-900" : "text-slate-600")}")">@stage.GetDescription()</p>
+                    <p class="truncate text-[10px] font-medium text-slate-500">@caption</p>
                 </div>
-                @if (active && !previous)
-                {
-                    <p class="mt-2 text-[11px] text-slate-500">آخر تحديث: <UserLocalTime Value="State.LastChangedAtUtc" /></p>
-                }
             </li>
         }
     </ol>
-    <p class="mt-2 text-[11px] text-slate-500">التوقيتات التفصيلية لكل مرحلة متاحة في سجل حالات الطلب أدناه.</p>
 }
 
 @code {

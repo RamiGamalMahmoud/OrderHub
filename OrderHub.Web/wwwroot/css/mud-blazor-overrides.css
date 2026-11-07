@@ -142,3 +142,21 @@
     padding: 0;
     margin: 0;
 }
+
+/* ============ 10. Utility collisions ============ */
+
+/* MudBlazor 9.11 ships Tailwind-named utilities with !important:
+   `.rounded-lg = 8px`, `.rounded-xl = 24px`, `.border = 1px`, ….
+   Those out-rank our unlayered Tailwind utilities, so `.rounded-xl` would render
+   24px (rounder than the 16px `.rounded-2xl` page cards, against the design
+   language of 12px inner cards) and `.border-s-4` accents would collapse to 1px.
+   Restore the intended values here: the only !important rules in this file, and
+   they neutralize Mud rather than a Tailwind class. */
+.rounded-xl {
+    border-radius: 0.75rem !important;
+}
+
+.border-s-4 {
+    border-inline-start-width: 4px !important;
+}
+

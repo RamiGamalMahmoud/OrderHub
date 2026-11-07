@@ -8,110 +8,115 @@
 @inject PermissionAccess Permissions
 @inject ILogger<OrderInvoiceSection> Logger
 
-<section class="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-label="بيانات الفاتورة الإلكترونية">
+<section class="flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs sm:p-5" aria-label="الفاتورة الإلكترونية">
     <div>
-        <div class="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
-            <h3 class="flex items-center gap-2 text-sm font-bold text-slate-900">
-                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Class="text-[16px] text-emerald-600" />
-                <span>الفاتورة الضريبية المرتبطة</span>
-            </h3>
+        <header class="@OrderWorkflowPresentation.CardHeader">
+            <div class="flex items-center gap-2.5">
+                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 text-emerald-600">
+                    <MudIcon Icon="@Icons.Material.Outlined.ReceiptLong" Class="text-[18px]" />
+                </span>
+                <div>
+                    <h2 class="text-sm font-bold text-slate-800">الفاتورة الضريبية</h2>
+                    <p class="text-[11px] text-slate-600">المستند المرتبط بهذا الطلب</p>
+                </div>
+            </div>
             @if (_invoice is not null)
             {
-                <span class="rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-mono text-[11px] font-bold text-emerald-700" dir="ltr">
+                <span class="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-mono text-[11px] font-bold text-emerald-700" dir="ltr">
                     @_invoice.DocumentNumber
                 </span>
             }
-        </div>
+        </header>
 
         @if (_loading)
         {
-            <div class="py-3">
+            <div class="py-2">
                 <MudProgressLinear Indeterminate="true" Color="Color.Primary" aria-label="تحميل الفاتورة" />
-                <p class="mt-2 text-xs text-slate-500">جاري تحميل بيانات الفاتورة...</p>
+                <p class="mt-2 text-[11px] text-slate-500">جاري تحميل بيانات الفاتورة...</p>
             </div>
         }
         else if (_error is not null)
         {
-            <div class="space-y-3">
-                <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-800">@_error</div>
+            <div class="space-y-2">
+                <div class="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-bold text-rose-800">@_error</div>
                 <button type="button"
-                        class="oh-btn oh-btn--secondary w-full"
+                        class="oh-btn oh-btn--secondary oh-btn--sm oh-btn--block"
                         disabled="@_busy"
                         @onclick="LoadAsync">إعادة المحاولة</button>
             </div>
         }
         else if (_invoice is null)
         {
-            <div class="flex flex-1 items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-                <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+            <div class="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
+                <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
                     <MudIcon Icon="@Icons.Material.Outlined.ReceiptLong" Size="Size.Small" />
                 </span>
                 <div class="min-w-0">
-                    <p class="text-sm font-bold text-slate-700">لم تصدر فاتورة لهذا الطلب بعد.</p>
-                    <p class="mt-1 text-xs leading-5 text-slate-500">أنشئ الفاتورة لإتاحة ملف PDF للطباعة أو المشاركة.</p>
+                    <p class="text-xs font-bold text-slate-700">لم تصدر فاتورة لهذا الطلب بعد.</p>
+                    <p class="mt-0.5 text-[11px] leading-5 text-slate-500">أنشئ الفاتورة لإتاحة ملف PDF للطباعة أو المشاركة.</p>
                 </div>
             </div>
         }
         else
         {
-            <div class="space-y-3 text-xs">
-                <div class="flex items-center justify-between text-slate-600">
-                    <span>حالة الفوترة:</span>
-                    <span class="flex items-center gap-1 font-bold text-emerald-600">
+            <dl class="space-y-1.5 text-[11px]">
+                <div class="flex items-center justify-between">
+                    <dt class="text-slate-500">حالة الفوترة</dt>
+                    <dd class="flex items-center gap-1 font-bold text-emerald-600">
                         <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                         صادرة
-                    </span>
+                    </dd>
                 </div>
-                <div class="flex items-center justify-between text-slate-600">
-                    <span>تاريخ الإصدار:</span>
-                    <span class="font-bold text-slate-800"><UserLocalTime Value="_invoice.IssueDate" /></span>
+                <div class="flex items-center justify-between">
+                    <dt class="text-slate-500">تاريخ الإصدار</dt>
+                    <dd class="font-bold text-slate-800"><UserLocalTime Value="_invoice.IssueDate" /></dd>
                 </div>
-                <div class="flex items-center justify-between text-slate-600">
-                    <span>طريقة الدفع:</span>
-                    <span class="font-bold text-slate-800">@(string.IsNullOrWhiteSpace(PaymentMethod) ? "غير محددة" : PaymentMethod)</span>
+                <div class="flex items-center justify-between">
+                    <dt class="text-slate-500">طريقة الدفع</dt>
+                    <dd class="font-bold text-slate-800">@(string.IsNullOrWhiteSpace(PaymentMethod) ? "غير محددة" : PaymentMethod)</dd>
                 </div>
-                <div class="flex items-center justify-between text-slate-600">
-                    <span>قيمة الفاتورة:</span>
-                    <span class="font-mono font-bold text-slate-800">@_invoice.TotalAmount.ToString("N2", CultureInfo.InvariantCulture) ر.س</span>
+                <div class="flex items-center justify-between">
+                    <dt class="text-slate-500">قيمة الفاتورة</dt>
+                    <dd class="font-mono font-bold text-slate-800">@_invoice.TotalAmount.ToString("N2", CultureInfo.InvariantCulture) ر.س</dd>
                 </div>
-            </div>
+            </dl>
         }
     </div>
 
     @if (_invoice is not null || (!_loading && _error is null && _canWrite))
     {
-        <div class="mt-6 border-t border-slate-100 pt-3">
-        @if (_invoice is not null)
-        {
-            <div class="flex flex-col gap-2">
-                <a href="@InvoiceFileUrl"
-                   target="_blank"
-                   class="oh-btn oh-btn--secondary w-full">
-                    <MudIcon Icon="@Icons.Material.Outlined.Download" Class="text-[16px]" />
-                    <span>تنزيل الفاتورة الضريبية (PDF)</span>
-                </a>
-                @if (_canWrite)
-                {
-                    <button type="button"
-                            class="oh-btn oh-btn--secondary w-full"
-                            disabled="@_busy"
-                            @onclick="CreateOrRegenerateAsync">
-                        @(_busy ? "جارٍ التوليد..." : "إعادة توليد الفاتورة")
-                    </button>
-                }
-            </div>
-        }
-        else if (!_loading && _error is null && _canWrite)
-        {
-            <button type="button"
-                    class="oh-btn oh-btn--primary w-full"
-                    disabled="@_busy"
-                    @onclick="CreateOrRegenerateAsync">
-                <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Class="text-[16px]" />
-                <span>@(_busy ? "جارٍ الإنشاء..." : "إصدار الفاتورة")</span>
-            </button>
-        }
-    </div>
+        <div class="mt-3 border-t border-slate-100 pt-3">
+            @if (_invoice is not null)
+            {
+                <div class="flex flex-col gap-1.5">
+                    <a href="@InvoiceFileUrl"
+                       target="_blank"
+                       class="oh-btn oh-btn--secondary oh-btn--sm oh-btn--block">
+                        <MudIcon Icon="@Icons.Material.Outlined.Download" Class="text-[16px]" />
+                        <span>تنزيل الفاتورة (PDF)</span>
+                    </a>
+                    @if (_canWrite)
+                    {
+                        <button type="button"
+                                class="oh-btn oh-btn--secondary oh-btn--sm oh-btn--block"
+                                disabled="@_busy"
+                                @onclick="CreateOrRegenerateAsync">
+                            @(_busy ? "جارٍ التوليد..." : "إعادة توليد الفاتورة")
+                        </button>
+                    }
+                </div>
+            }
+            else if (!_loading && _error is null && _canWrite)
+            {
+                <button type="button"
+                        class="oh-btn oh-btn--secondary oh-btn--sm oh-btn--block"
+                        disabled="@_busy"
+                        @onclick="CreateOrRegenerateAsync">
+                    <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Class="text-[16px]" />
+                    <span>@(_busy ? "جارٍ الإنشاء..." : "إصدار الفاتورة")</span>
+                </button>
+            }
+        </div>
     }
 </section>
 

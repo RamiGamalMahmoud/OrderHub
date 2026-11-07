@@ -6,12 +6,26 @@
 @inject IRequestExecutor Executor
 @inject ILogger<OrderHistoryPanel> Logger
 
-<section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-    <header class="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-3">
-        <h3 class="text-sm font-black text-slate-900">@(StepId.HasValue ? "تاريخ الخطوة" : "سجل حالات الطلب")</h3>
+@{
+    var title = StepId.HasValue ? "تاريخ الخطوة" : "سجل حالات الطلب";
+    var shell = Nested
+        ? "rounded-lg border border-slate-200/80 bg-slate-50/50"
+        : "rounded-xl border border-slate-200/90 bg-white shadow-xs";
+    var headerClass = Nested
+        ? "flex flex-wrap items-center gap-2 px-3 py-2"
+        : "mb-3 flex flex-wrap items-center gap-2 border-b border-slate-100 px-4 pb-3 pt-4";
+    var bodyClass = Nested ? "px-3 pb-3" : "px-4 pb-4";
+    var entryClass = Nested
+        ? "mb-2 min-w-0 flex-1 rounded-lg border border-slate-200/80 bg-white p-2.5"
+        : "mb-3 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white p-3 shadow-xs";
+}
+
+<section class="@shell">
+    <header class="@headerClass">
+        <h3 class="@($"font-bold text-slate-800 {(Nested ? "text-[11px]" : "text-sm")}")">@title</h3>
         @if (_opened && _data is not null)
         {
-            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">
+            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
                 @_data.TotalCount.ToString(CultureInfo.InvariantCulture) حدث
             </span>
         }
@@ -25,14 +39,14 @@
 
     @if (_opened)
     {
-        <div class="px-4 py-3">
+        <div class="@bodyClass">
             @if (_loading)
             {
                 <MudProgressLinear Indeterminate="true" aria-label="تحميل السجل" />
             }
             @if (_error is not null)
             {
-                <p class="text-xs font-bold text-red-700">@_error</p>
+                <p class="text-xs font-bold text-rose-700">@_error</p>
                 <button type="button"
                         class="@($"oh-btn oh-btn--sm mt-2 {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
                         @onclick="ReloadAsync">إعادة المحاولة</button>
@@ -45,17 +59,17 @@
                 }
                 else
                 {
-                    <ol class="space-y-0" aria-label="@(StepId.HasValue ? "تاريخ الخطوة" : "سجل حالات الطلب")">
+                    <ol aria-label="@title">
                         @foreach (var entry in _data.Items)
                         {
                             var tone = OrderWorkflowPresentation.HistoryTone(entry.NewStatus, StepId.HasValue, entry.Source);
-                            <li class="flex gap-3" @key="entry.Key">
+                            <li class="flex gap-2.5" @key="entry.Key">
                                 <div class="flex flex-col items-center">
-                                    <span class="@($"mt-2 h-2.5 w-2.5 shrink-0 rounded-full {OrderWorkflowPresentation.Dot(tone)}")"></span>
+                                    <span class="@($"mt-2 h-2 w-2 shrink-0 rounded-full {OrderWorkflowPresentation.Dot(tone)}")"></span>
                                     <span class="mt-1 w-px flex-1 bg-slate-200"></span>
                                 </div>
-                                <div class="mb-3 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-                                    <div class="flex flex-wrap items-center gap-2">
+                                <div class="@entryClass">
+                                    <div class="flex flex-wrap items-center gap-1.5">
                                         <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(tone)}")">
                                             @(entry.DisplayTag ?? entry.NewStatus) @(entry.Source == OrderHistorySource.Retry ? "— إعادة محاولة" : "")
                                         </span>
@@ -66,50 +80,50 @@
                                     </div>
                                     @if (entry.DisplayDetail is not null)
                                     {
-                                        <p class="mt-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600">@entry.DisplayDetail</p>
+                                        <p class="mt-1.5 rounded-md bg-slate-50 px-2 py-1 text-[11px] text-slate-600">@entry.DisplayDetail</p>
                                     }
                                     else if (entry.DisplayTag is not null && entry.PreviousStatus is not null)
                                     {
-                                        <p class="mt-2 text-[11px] text-slate-500">من @entry.PreviousStatus إلى @entry.NewStatus</p>
+                                        <p class="mt-1 text-[11px] text-slate-500">من @entry.PreviousStatus إلى @entry.NewStatus</p>
                                     }
                                     @if (entry.Reason is not null)
                                     {
-                                        <p class="mt-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600">السبب: @entry.Reason</p>
+                                        <p class="mt-1.5 rounded-md bg-slate-50 px-2 py-1 text-[11px] text-slate-600">السبب: @entry.Reason</p>
                                     }
                                     @if (entry.Source == OrderHistorySource.LegacyMigration)
                                     {
-                                        <p class="mt-2 text-[11px] text-amber-700">سجل ترحيل بيانات قديمة؛ التوقيت لا يثبت وقت التنفيذ الفعلي. @(entry.OriginalStatus is not null ? $"الحالة الأصلية: {OrderWorkflowPresentation.LegacyStatusLabel(entry.OriginalStatus)}" : "")</p>
+                                        <p class="mt-1.5 text-[11px] text-amber-700">سجل ترحيل بيانات قديمة؛ التوقيت لا يثبت وقت التنفيذ الفعلي. @(entry.OriginalStatus is not null ? $"الحالة الأصلية: {OrderWorkflowPresentation.LegacyStatusLabel(entry.OriginalStatus)}" : "")</p>
                                     }
                                     else if (entry.Source == OrderHistorySource.DeliveryRouteReassigned)
                                     {
-                                        <p class="mt-2 text-[11px] text-slate-500">إعادة توجيه التوصيل — استُبدلت جهة التنفيذ السابقة بجهة جديدة.</p>
+                                        <p class="mt-1.5 text-[11px] text-slate-500">إعادة توجيه التوصيل — استُبدلت جهة التنفيذ السابقة بجهة جديدة.</p>
                                     }
                                     else if (entry.Source == OrderHistorySource.DeliveryStepCancelled)
                                     {
-                                        <p class="mt-2 text-[11px] text-slate-500">أُلغيت الخطوة دون إسناد بديل؛ استُكملت السلسلة بخطواتها التالية.</p>
+                                        <p class="mt-1.5 text-[11px] text-slate-500">أُلغيت الخطوة دون إسناد بديل؛ استُكملت السلسلة بخطواتها التالية.</p>
                                     }
                                     else if (entry.Source == OrderHistorySource.PickupConfirmed)
                                     {
-                                        <p class="mt-2 text-[11px] text-slate-500">تأكيد استلام العميل للطلب.</p>
+                                        <p class="mt-1.5 text-[11px] text-slate-500">تأكيد استلام العميل للطلب.</p>
                                     }
                                     else if (entry.Source == OrderHistorySource.DirectDelivery)
                                     {
-                                        <p class="mt-2 text-[11px] text-slate-500">ناتج عن تأكيد التسليم المباشر للطلب.</p>
+                                        <p class="mt-1.5 text-[11px] text-slate-500">ناتج عن تأكيد التسليم المباشر للطلب.</p>
                                     }
                                     else if (entry.Source == OrderHistorySource.OrderCancellation && StepId.HasValue)
                                     {
-                                        <p class="mt-2 text-[11px] text-slate-500">ناتج عن إلغاء الطلب.</p>
+                                        <p class="mt-1.5 text-[11px] text-slate-500">ناتج عن إلغاء الطلب.</p>
                                     }
                                     else if (entry.Source == OrderHistorySource.LastStepCompleted)
                                     {
-                                        <p class="mt-2 text-[11px] text-slate-500">ناتج عن اكتمال آخر خطوة توصيل.</p>
+                                        <p class="mt-1.5 text-[11px] text-slate-500">ناتج عن اكتمال آخر خطوة توصيل.</p>
                                     }
                                 </div>
                             </li>
                         }
                     </ol>
 
-                    <div class="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
+                    <div class="flex flex-wrap items-center gap-2 border-t border-slate-200/80 pt-2.5">
                         <button type="button"
                                 class="@($"oh-btn oh-btn--sm {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")"
                                 disabled="@(_loading || !_data.HasPreviousPage)"
@@ -133,6 +147,8 @@
     [Parameter] public int? StepId { get; set; }
     [Parameter] public int Version { get; set; }
     [Parameter] public bool AutoLoad { get; set; }
+    /// <summary>Renders as a soft inner block when the panel sits inside a step card.</summary>
+    [Parameter] public bool Nested { get; set; }
     private (int, int?, int)? _identity;
     private PagedResult<OrderHistoryEntry>? _data;
     private bool _opened, _loading, _disposed;
