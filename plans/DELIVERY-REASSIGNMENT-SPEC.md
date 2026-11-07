@@ -6,6 +6,8 @@ This document specifies the approved behavior for cancelling an active delivery 
 
 **Planning artifact only.** Do not treat this file as authorization to implement the feature. The user explicitly requested planning and has not authorized code changes. When implementation is authorized, follow this document and the repository `AGENTS.md`.
 
+**Design gate RESOLVED (2026-11-07):** the owner answered the final persistence/behavior questions; §11 now carries the locked implementation decisions instead of open items. Phase A has only verification work left.
+
 The feature must preserve existing order, delivery-step, work-record, history, numbering, and financial data. Do not delete or rewrite existing persisted delivery history.
 
 ## 2. Approved product decisions
@@ -86,10 +88,10 @@ Do not call repositories directly from Razor. Do not throw for expected invalid 
 ### Phase A — Inspect and decide the persistence model
 
 1. Trace all readers of `OrderStatusHistory`, `DeliveryStepStatusHistory`, `WorkRecordStatusHistory`, `Shipment`, `DeliveryTrip`, order summaries, and financial reports.
-2. Determine whether existing work-record histories can represent new-route assignment events. They currently describe work-record status; do not overload them with route changes unless the model remains unambiguous.
-3. Prefer a dedicated immutable delivery-assignment movement history if existing status history cannot capture previous/new method and party snapshots cleanly. A row should distinguish cancellation from assignment and link the related movement IDs (or use a shared operation/correlation ID).
-4. Decide the durable representation of pickup execution. Do not treat pickup as a carrier shipment or deliveryman trip. Reuse an existing pickup work-record type only if one exists and has the right lifecycle/audit semantics; otherwise add a narrowly scoped pickup record/history model.
-5. Design replacement-step ordering against the unique `(OrderId, StepOrder)` constraint. Old and replacement steps cannot simultaneously occupy the same unique rank. Define a transaction-safe rank strategy or a stable sequence/position model before coding. Preserve old rank in history and ensure readers choose the active replacement for progression.
+2. Trace whether existing work-record histories could represent new-route assignment events — verified answer: they cannot (pure status rows). Per **§11.6**, keep `DeliveryStepStatusHistory`/`WorkRecordStatusHistory` as pure status rows and store route movements in the new dedicated movement history table.
+3. ~~Prefer a dedicated immutable delivery-assignment movement history~~ — **Decided (§11.6):** add a dedicated movement history; `OrderHistorySource` gains exactly two new values (`DeliveryRouteReassigned`, `PickupConfirmed`); per-step/per-work-record status rows written in the same movement keep existing sources (genuine status changes); correlate by identical `OrderVersion` + `ChangedAtUtc`, no new schema-heavy correlation column.
+4. ~~Decide the durable representation of pickup execution~~ — **Decided (§11.4):** REUSE the order-level Pickup flow (`DeliveryMethod.Pickup` → `ReadyForPickup` → `Delivered`). No new work-record type, no numbering kind, no pickup table.
+5. ~~Design replacement-step ordering~~ — **Decided (§11.2):** tombstone rewrite. Inside the confirmed movement's transaction: the cancelled old step's `StepOrder` is rewritten to a persistent negative tombstone (`-<step.Id>` — collision-free under the unique `(OrderId, StepOrder)` index), the replacement takes the freed rank, and the original rank is preserved in the movement history row. Reuse the existing staging precedent `OrderRepository.PrepareDeliveryStepReorderingAsync`. One tombstone slot per cancellation — repeated reassignment repeats the cancel + replace operation, no pre-reserved spare ranks.
 6. Check current migrations and SQLite test model compatibility. Any new required FK/column must work with snake_case and SQLite constraints.
 
 ### Phase B — Implement domain behavior
@@ -99,12 +101,13 @@ Do not call repositories directly from Razor. Do not throw for expected invalid 
    - Reassigning a direct deliveryman order.
    - Confirming branch pickup.
 2. Validate that the order is active, not archived/final, in an execution state, and that the affected assignment has actually started. Prevent use on editable-but-not-started orders.
+   - **New requirement (§11.5):** add a dedicated `internal` lifecycle behavior on `Order` to change the active route (`DeliveryMethod`/`DeliverymanId`/`ShippingCarrierId`) after execution started — these fields are currently only reachable via `UpdateHeader` behind `EnsureEditable()`, so the reassignment flow must use this new validated mutator (Version bump included) and ordinary editing must stay locked.
 3. Require a nonblank reason within the existing 200-character reason limit.
 4. Validate the alternative method and party pairing. Deliveryman requires exactly one valid deliveryman ID; shipping company requires exactly one valid carrier ID; pickup requires neither.
 5. Close only the active old work record as `Cancelled`, preserving its number and party identity. Record the cancellation reason on its status history.
-6. Create a distinct replacement step/work record with pending status, at the same logical chain position or as the new direct order assignment. Never mutate the old step's party/method.
+6. Create a distinct replacement step/work record with pending status, at the same logical chain position or as the new direct order assignment. Never mutate the old step's party/method. **Chain variant (§11.2):** the old step is tombstoned — its `StepOrder` becomes `-<step.Id>` in the same transaction — and the replacement step occupies the freed old rank; the original rank is captured in the movement history row. **Pickup variant (§11.4):** no replacement step/work record — the order route becomes Pickup and the order transitions to `ReadyForPickup` within this same confirmed movement, auto-cancelling remaining non-completed chain steps as order-cancellation semantics already do.
 7. Increment order version once per confirmed operation; all related history rows use that version and operation timestamp.
-8. Ensure chain sequencing treats completed and properly replaced/cancelled positions according to the approved route. A replacement pending step blocks successors. A bare cancelled step without valid replacement must not progress.
+8. **Replace the completion predicate (§11.1):** `TransitionStep`'s current `_deliverySteps.All(step => step.Status == DeliveryStatus.Completed)` delivery check is retired. New active-position gate: ignoring tombstoned (cancelled/superseded) steps, delivery occurs when the remaining steps — ordered by effective rank — are all Completed. Legacy orders without tombstones keep identical behavior. **Also update `AllowedStepStatuses` (§11.3):** the predecessor filter must ignore tombstoned steps, otherwise a tombstoned step (rank below everything, status ≠ Completed) blocks every successor. Genuine pending/failed/in-progress steps — and a pending replacement — still block successors.
 9. Ensure an order becomes `Delivered` only through the normal last-stage completion or confirmed pickup; cancellation alone never delivers it.
 
 ### Phase C — Implement application commands and persistence
@@ -113,7 +116,7 @@ Do not call repositories directly from Razor. Do not throw for expected invalid 
 2. Check authenticated actor and `ExpectedVersion`; translate stale versions to error code `Conflict`.
 3. Validate referenced deliveryman/carrier existence and active/selectable status using application contracts/readers.
 4. Load order, delivery steps, work records, and relevant navigations through a dedicated lifecycle repository method/query.
-5. Persist route change, old work-record cancellation, new work/step records, and all movement history in a single unit-of-work transaction. The history remains multiple distinct rows.
+5. Persist route change, old work-record cancellation, new work/step records, and all movement history in a single unit-of-work transaction. The history remains multiple distinct rows: one movement row (new source) with full old/new snapshots + the genuine status rows with existing sources, all sharing the movement's version + timestamp.
 6. Catch persistence conflicts/failures using established `Result` patterns. On failure, guarantee no partial cancellation/reassignment is visible.
 7. Add a dedicated pickup confirmation command with expected-version protection and history.
 
@@ -134,7 +137,7 @@ Do not call repositories directly from Razor. Do not throw for expected invalid 
 
 1. Update `GetOrderWorkflowQuery` projection with replacement relationships, current active assignment, and pickup readiness.
 2. Update blocker text to explain whether a previous step is failed, cancelled with replacement pending, or completed. Keep legacy-history disclaimer intact.
-3. Ensure the order's general history query includes cancellation and replacement assignment events in descending chronological/version order.
+3. Ensure the order's general history feed merges the movement rows: `GetHistoryAsync` (stepId-less) unions `OrderStatusHistories` with the new movement history in version/chronological order so cancellation, reassignment, and pickup confirmation are discoverable in one audit feed (§11.7). Step panels keep per-step events. Legacy disclaimer handling unchanged.
 4. Ensure step history can show the cancelled old step even after a replacement becomes active. Do not collapse old and new step IDs into one row.
 5. Update order summary and details page to show the currently active route and to make the cancelled route discoverable in history.
 6. Ensure party names in old history use snapshots so later renames do not rewrite audit meaning.
@@ -177,6 +180,8 @@ Do not call repositories directly from Razor. Do not throw for expected invalid 
 ### History and financial safety
 
 - Each cancellation and new assignment is a distinct history event, visibly related and queryable from order history.
+- The general order history feed includes the movement events (merged feed per §11.7).
+- After a replacement step completes, the order delivers via the active-position gate (§11.1) — retained cancelled steps never block delivery.
 - Events include old/new route, party, reason, actor, timestamp, and order version as applicable.
 - Cancelled work cannot be counted as completed work for future financial entitlement.
 - Existing work-record numbers, parties, history rows, order history, and legacy-migration disclaimers remain unchanged.
@@ -186,9 +191,9 @@ Do not call repositories directly from Razor. Do not throw for expected invalid 
 
 Add focused tests in existing test areas, using SQLite in-memory with `EnsureCreated` and `UseSnakeCaseNamingConvention()` for persistence tests.
 
-1. Domain transition tests for valid/invalid cancellation, reason requirement, started-state requirement, all three alternatives, replacement blocking, no completion-on-cancel, and pickup confirmation.
+1. Domain transition tests for valid/invalid cancellation, reason requirement, started-state requirement, all three alternatives, replacement blocking, no completion-on-cancel, and pickup confirmation — plus the new active-position completion gate and the tombstone-aware predecessor gate (a tombstoned step must not block successors).
 2. Work-record tests proving old trip/shipment is cancelled with reason and retains numbering-party identity; new record belongs to the selected party.
-3. Persistence tests proving old steps, histories, trips, and shipments remain present after reassignment and replacement links/order position are correct.
+3. Persistence tests proving old steps, histories, trips, and shipments remain present after reassignment; the old step's `StepOrder` is tombstoned (`-<step.Id>`), the replacement occupies the freed rank, and the unique `(OrderId, StepOrder)` index survives via the reordering staging pathway.
 4. Handler tests for actor/auth, missing order/party, stale expected version, atomic persistence failure, and duplicate submission protection where applicable.
 5. Read-model/history tests proving events are visible in order history and old party snapshots remain stable.
 6. UI/component validation where existing test setup supports it; otherwise validate server command and render behavior manually during implementation.
@@ -203,12 +208,13 @@ Add focused tests in existing test areas, using SQLite in-memory with `EnsureCre
 - Do not change the behavior of administrative direct-delivery override except to ensure it remains compatible with new history and replacement state.
 - Do not add JavaScript, runtime font fetching, secrets, or unrelated UI redesign.
 
-## 11. Open implementation design gate
+## 11. Locked implementation decisions (owner answers, 2026-11-07)
 
-Before coding, inspect all financial/report consumers and settle the persistence details in Phase A, especially:
-
-1. The exact immutable history schema for route movements and correlation between cancellation and assignment rows.
-2. The pickup receipt record/lifecycle representation.
-3. A transaction-safe representation of an old cancelled chain step and its replacement at the same logical position while satisfying the unique `(OrderId, StepOrder)` database index.
-
-These are technical design choices, not unresolved product decisions. Preserve all approved behavior above while choosing the smallest model that fully supports auditability and existing-data compatibility.
+1. **Chain completion rule (active-position gate).** Delivery is decided by an active-position predicate, not the current `_deliverySteps.All(step => step.Status == DeliveryStatus.Completed)`: ignoring tombstoned (cancelled/superseded) steps, the order becomes Delivered when the remaining steps in execution order are all Completed. Orders without tombstones behave exactly as today.
+2. **Rank strategy = tombstone rewrite.** Inside the confirmed movement's transaction the cancelled old step's persistent `StepOrder` is rewritten to a negative tombstone (`-<step.Id>` — per-order collision-free under the unique `(OrderId, StepOrder)` index), the replacement step occupies the freed old rank, and the original rank is preserved in the movement history row. Reuse the transaction staging precedent `OrderRepository.PrepareDeliveryStepReorderingAsync` (negative-rank sweep + EF original-value sync) for conflict-free reordering. One tombstone per cancellation — no pre-reserved spare ranks; re-cancelling replacement #1 repeats the same cancel + replace operation.
+3. **Progression gate must be active-steps aware.** `AllowedStepStatuses` and its predecessor filter (`previous.StepOrder < step.StepOrder && previous.Status != Completed`) must ignore tombstoned steps; otherwise a tombstoned row (rank below everything, status ≠ Completed) blocks every successor forever. Genuine pending/failed/in-progress steps and a pending replacement still block successors.
+4. **Pickup = reuse the order-level Pickup flow.** No new `WorkRecordType`, no new `NumberSequenceKind`, no new table. Chain + pickup: tombstone + cancel the affected step, set the order route to `DeliveryMethod.Pickup`, transition the order to `ReadyForPickup` in the same confirmed movement, auto-cancelling remaining non-completed chain steps (mirroring today's order-cancellation semantics, including per-work-record cancellation). Direct + pickup: cancel the active work record, set the order route to Pickup; `ReadyForPickup` → explicit receipt confirmation → `Delivered` reuses the existing `TransitionTo` lifecycle, and the confirmation movement is recorded with the `PickupConfirmed` source.
+5. **Post-start route mutation via a dedicated internal domain behavior.** Order route fields are currently mutable only through `UpdateHeader` behind `EnsureEditable()`. The reassignment flow uses a new internal, fully validated mutator on `Order` (started-state, valid party pairing, Version bump) that is never exposed to ordinary editing.
+6. **Two new `OrderHistorySource` values: `DeliveryRouteReassigned` and `PickupConfirmed`.** The movement row (new source) carries the required reason plus old route type / old party id+name snapshot / old rank (chain) and the new route type / new party id+name snapshot. Step and work-record status rows written in the same movement keep their existing sources (genuine status transitions); correlation is by identical `OrderVersion` + `ChangedAtUtc` inside the movement — no new correlation column.
+7. **General history feed merges movement rows.** The stepId-less history query unions order-status history with the movement history so the full audit trail is discoverable in one feed; step panels keep per-step events. Never mislabel legacy rows.
+8. **UI wording.** Dialog title «إلغاء التكليف وإعادة التوجيه» — a single atomic movement (one submit). Success toast «تم إلغاء التكليف وإعادة التوجيه بنجاح». History display texts derive from the source descriptions (Arabic `[Description]` attributes).
