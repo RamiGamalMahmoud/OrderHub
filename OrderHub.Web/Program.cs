@@ -1,12 +1,11 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
-using MudBlazor.Services;
+using Microsoft.AspNetCore.Components.Server;
+using Microsoft.AspNetCore.Localization;
 using OrderHub.Application;
 using OrderHub.Infrastructure.DependencyInjection;
 using OrderHub.Infrastructure.Options;
 using OrderHub.Web.Components;
-using OrderHub.Web.Components.Pages.Features.Orders;
 using OrderHub.Web.Infrastructure.Authorization;
-using OrderHub.Web.Services;
+using OrderHub.Web.Infrastructure.DependencyInjection;
 using QuestPDF.Infrastructure;
 using TailwindBlazor;
 
@@ -21,18 +20,9 @@ QuestPDF.Settings.UseSystemFonts = true;
 
 builder.UseTailwind();
 
-builder.Services.AddScoped<OrdersListState>();
-
-builder.Services
-    .AddRazorComponents()
-    .AddInteractiveServerComponents();
-
-builder.Services.AddWindowsService(options =>
-{
-    options.ServiceName = "OrderHubWeb";
-});
-
+builder.Services.AddWebServices();
 builder.Services.AddApplication();
+
 string connectionString =
     builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException(
@@ -47,31 +37,11 @@ builder.Services.AddOptions<ApplicationDataOptions>()
 
 builder.Services.AddInfrastructure(connectionString);
 
-builder.Services.AddMudServices();
-
-builder.Services.AddControllers();
-builder.Services.AddHealthChecks();
-
-builder.Services
-    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/login";
-        options.LogoutPath = "/auth/logout";
-
-        options.Cookie.Name = "OrderHub.Auth";
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-
-        options.ExpireTimeSpan = TimeSpan.FromHours(8);
-        options.SlidingExpiration = true;
-    });
-
-builder.Services.AddPermissionAuthorization();
-builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddEditorServices();
-
+// Blazor circuits swallow exceptions by default; trace them fully while developing.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.Configure<CircuitOptions>(options => options.DetailedErrors = true);
+}
 
 // =========================
 // Build
@@ -84,13 +54,24 @@ var app = builder.Build();
 // HTTP Pipeline
 // =========================
 
+// Deliberate: HTTPS redirection is disabled for the offline/LAN Windows-service
+// deployment; see the SecurePolicy comment in AuthenticationRegistration.cs.
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
 }
 
-//app.UseHttpsRedirection();
+// Pin the request culture so digits/labels never depend on the OS culture of the
+// service account (local code formats Latin digits explicitly with InvariantCulture).
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture("ar"),
+    SupportedCultures = [new("ar")],
+    SupportedUICultures = [new("ar")],
+    // No request providers: every request deterministically uses the default culture.
+});
 
 app.UseStatusCodePagesWithReExecute("/not-found");
 
