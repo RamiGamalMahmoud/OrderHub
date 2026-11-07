@@ -65,7 +65,7 @@ public sealed class OrderWorkflowReadTests
         Assert.False(replacement.IsSuperseded);
         Assert.Equal(1, replacement.EffectiveRank);
         Assert.Equal(DeliveryStatus.Pending, replacement.Status);
-        Assert.False(replacement.CanReassign);
+        Assert.True(replacement.CanReassign);
         Assert.Equal(2, state.Steps[2].EffectiveRank);
         Assert.Equal(second.Id, state.Steps[2].Id);
 
@@ -80,6 +80,81 @@ public sealed class OrderWorkflowReadTests
         Assert.Equal("Moved", movement.Reason);
         Assert.Equal("Operator", movement.UserName);
         Assert.All(history.Items.Skip(1), entry => Assert.StartsWith("order:", entry.Key));
+    }
+
+    [Fact]
+    public async Task Pending_chain_steps_offer_reassignment_and_cancellation_before_execution()
+    {
+        using var connection = OpenConnection();
+        await using var context = new AppDbContext(Options(connection));
+        context.Database.EnsureCreated();
+        var order = NewChainOrder(7, 9);
+        context.Orders.Add(order);
+        await context.SaveChangesAsync();
+        Assert.True(order.TransitionTo(OrderStatus.OutForDelivery,
+            new OrderOperation(1, "Seed", AtUtc)).IsSuccess);
+        await context.SaveChangesAsync();
+
+        var state = await Reader(connection).GetWorkflowAsync(order.Id, CancellationToken.None);
+
+        Assert.Equal(2, state.Steps.Count);
+        Assert.All(state.Steps, step =>
+        {
+            Assert.Equal(DeliveryStatus.Pending, step.Status);
+            Assert.True(step.CanReassign);
+            Assert.True(step.CanCancel);
+        });
+    }
+
+    [Fact]
+    public async Task Cancelling_a_step_marks_it_superseded_and_shows_a_cancellation_row()
+    {
+        using var connection = OpenConnection();
+        await using var context = new AppDbContext(Options(connection));
+        context.Database.EnsureCreated();
+        var order = NewChainOrder(7, 9);
+        context.Orders.Add(order);
+        await context.SaveChangesAsync();
+        var first = order.DeliverySteps.OrderBy(step => step.StepOrder).First();
+        var second = order.DeliverySteps.OrderBy(step => step.StepOrder).Last();
+        var seed = new OrderOperation(1, "Seed", AtUtc);
+        Assert.True(order.TransitionTo(OrderStatus.OutForDelivery, seed).IsSuccess);
+        Assert.True(order.TransitionStep(first.Id, DeliveryStatus.InProgress, seed).IsSuccess);
+        ((IWorkRecord)first.DeliveryTrips.Single()).AssignWorkRecordNumber(7, 1, 2026, 11);
+        await context.SaveChangesAsync();
+
+        var operation = new OrderOperation(2, "Operator", AtUtc.AddMinutes(5));
+        Assert.True(order.CancelDeliveryStep(second.Id, "Second", operation, "Input error").IsSuccess);
+        var repository = new OrderRepository(context);
+        await using (var transaction = await context.Database.BeginTransactionAsync())
+        {
+            await repository.TombstoneDeliveryStepAsync(second, CancellationToken.None);
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+
+        var state = await Reader(connection).GetWorkflowAsync(order.Id, CancellationToken.None);
+
+        Assert.Equal(1, state.ActiveStepCount);
+        var cancelled = state.Steps.Single(step => step.Id == second.Id);
+        Assert.True(cancelled.IsSuperseded);
+        Assert.Equal(2, cancelled.EffectiveRank);
+        Assert.Equal(DeliveryStatus.Cancelled, cancelled.Status);
+        Assert.False(cancelled.CanReassign);
+        Assert.False(cancelled.CanCancel);
+        var running = state.Steps.Single(step => step.Id == first.Id);
+        Assert.True(running.CanReassign);
+        Assert.False(running.CanCancel);
+
+        var history = await Reader(connection).GetHistoryAsync(order.Id, null, 1, 50, CancellationToken.None);
+        var movement = history.Items.Single(entry => entry.Source == OrderHistorySource.DeliveryStepCancelled);
+        Assert.Equal("إلغاء خطوة", movement.DisplayTag);
+        Assert.Equal("مندوب توصيل — Second ← أُلغيت دون بديل", movement.DisplayDetail);
+        Assert.Equal("مندوب توصيل — Second", movement.PreviousStatus);
+        Assert.Null(movement.NewStatus);
+        Assert.Equal("Input error", movement.Reason);
+        Assert.Equal("Operator", movement.UserName);
+        Assert.Equal(history.Items.Count(), history.Items.Select(entry => entry.Key).Distinct().Count());
     }
 
     [Fact]

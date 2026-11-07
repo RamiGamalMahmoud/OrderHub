@@ -60,11 +60,14 @@ internal sealed partial class OrderReader
                     : "بانتظار إكمال الخطوة السابقة أو مراجعة جهة التنفيذ.";
                 var canReassign = !order.IsArchived && !order.IsFinal &&
                     order.DeliveryMethod == DeliveryMethod.DeliveryChain && !item.IsSuperseded &&
-                    step.Status is DeliveryStatus.InProgress or DeliveryStatus.Failed;
+                    step.Status is DeliveryStatus.Pending or DeliveryStatus.InProgress or DeliveryStatus.Failed;
+                var canCancel = canReassign && order.DeliverySteps.Any(other => other.Id != step.Id &&
+                    other.StepOrder > 0 && other.Status != DeliveryStatus.Cancelled);
                 return new DeliveryStepWorkflowState(step.Id, step.StepOrder, step.DeliveryMethod,
                     step.DeliveryMethod == DeliveryMethod.DeliveryMan ? step.Deliveryman?.Name.Value : step.ShippingCarrier?.Name.Value,
                     step.Status, allowed, blocker, last?.ChangedAtUtc, last?.ChangedByUserName, last?.Reason,
-                    last?.Source == OrderHistorySource.LegacyMigration, item.IsSuperseded, item.EffectiveRank, canReassign);
+                    last?.Source == OrderHistorySource.LegacyMigration, item.IsSuperseded, item.EffectiveRank,
+                    canReassign, canCancel);
             }).ToList();
 
         var latestStep = lastStepEvents.OrderByDescending(history => history.OrderVersion).ThenByDescending(history => history.ChangedAtUtc).FirstOrDefault();
@@ -133,7 +136,7 @@ internal sealed partial class OrderReader
                 PreviousStatus = null,
                 NewStatus = null,
                 PreviousMethod = movement.PreviousMethod.ToString(),
-                NextMethod = movement.NextMethod.ToString(),
+                NextMethod = movement.NextMethod == null ? null : movement.NextMethod.Value.ToString(),
                 PreviousPartyName = movement.PreviousPartyName,
                 NextPartyName = movement.NextPartyName,
                 UserName = movement.ChangedByUserName,
@@ -160,6 +163,7 @@ internal sealed partial class OrderReader
         var displayTag = source switch
         {
             OrderHistorySource.DeliveryRouteReassigned => "إعادة توجيه",
+            OrderHistorySource.DeliveryStepCancelled => "إلغاء خطوة",
             OrderHistorySource.PickupConfirmed => "تأكيد استلام",
             _ => null
         };
@@ -168,7 +172,16 @@ internal sealed partial class OrderReader
                 : ParseEnum<OrderStatus>(row.PreviousStatus)?.GetDescription(),
             isMovement ? RouteLabel(nextMethod, row.NextPartyName) : ParseEnum<OrderStatus>(row.NewStatus)?.GetDescription(),
             row.ChangedAtUtc, row.UserName, row.Reason, source, row.OrderVersion, row.OriginalStatus,
-            displayTag, isMovement ? $"{RouteLabel(previousMethod, row.PreviousPartyName)} ← {RouteLabel(nextMethod, row.NextPartyName)}" : null);
+            displayTag, isMovement ? MovementDetail(source, previousMethod, row.PreviousPartyName, nextMethod, row.NextPartyName) : null);
+    }
+
+    private static string MovementDetail(OrderHistorySource source, DeliveryMethod? previousMethod,
+        string previousPartyName, DeliveryMethod? nextMethod, string nextPartyName)
+    {
+        var previous = RouteLabel(previousMethod, previousPartyName);
+        return source == OrderHistorySource.DeliveryStepCancelled
+            ? $"{previous} ← أُلغيت دون بديل"
+            : $"{previous} ← {RouteLabel(nextMethod, nextPartyName)}";
     }
 
     private static T? ParseEnum<T>(string value) where T : struct, Enum =>

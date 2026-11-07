@@ -13,7 +13,7 @@ internal sealed class OrderDeliveryMovementConfiguration : IEntityTypeConfigurat
             "length(trim(reason)) BETWEEN 1 AND 200"));
         builder.HasKey(x => x.Id);
         builder.Property(x => x.PreviousMethod).HasConversion<string>().HasMaxLength(30).IsRequired();
-        builder.Property(x => x.NextMethod).HasConversion<string>().HasMaxLength(30).IsRequired();
+        builder.Property(x => x.NextMethod).HasConversion<string>().HasMaxLength(30);
         builder.Property(x => x.PreviousPartyName).HasMaxLength(100).IsRequired();
         builder.Property(x => x.NextPartyName).HasMaxLength(100);
         builder.Property(x => x.Reason).HasMaxLength(200).IsRequired();

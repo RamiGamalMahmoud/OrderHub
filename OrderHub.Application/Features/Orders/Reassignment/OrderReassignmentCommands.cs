@@ -11,5 +11,9 @@ public sealed record ReassignDeliveryStepCommand(int OrderId, int ExpectedVersio
     int? PartyId, string Reason) : IRequest<Result<OrderOperationReceipt>>;
 
 [RequirePermission(PermissionFeature.Orders, PermissionLevel.Write)]
+public sealed record CancelDeliveryStepCommand(int OrderId, int ExpectedVersion, int StepId, string Reason)
+    : IRequest<Result<OrderOperationReceipt>>;
+
+[RequirePermission(PermissionFeature.Orders, PermissionLevel.Write)]
 public sealed record ReassignDirectDeliveryCommand(int OrderId, int ExpectedVersion, DeliveryMethod Method,
     int? PartyId, string Reason) : IRequest<Result<OrderOperationReceipt>>;

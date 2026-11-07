@@ -14,7 +14,7 @@ public sealed record OrderWorkflowState(int Id, string OrderNumber, DateTime Cre
 public sealed record DeliveryStepWorkflowState(int Id, int StepOrder, DeliveryMethod Method, string HandlerName,
     DeliveryStatus Status, IReadOnlyList<DeliveryStatus> AllowedStatuses, string BlockingReason,
     DateTime? LastChangedAtUtc, string LastChangedBy, string LatestReason, bool IsLegacy,
-    bool IsSuperseded, int EffectiveRank, bool CanReassign = false);
+    bool IsSuperseded, int EffectiveRank, bool CanReassign = false, bool CanCancel = false);
 
 public sealed record OrderHistoryEntry(int Id, string Key, string PreviousStatus, string NewStatus,
     DateTime ChangedAtUtc, string UserName, string Reason, OrderHistorySource Source, int OrderVersion,

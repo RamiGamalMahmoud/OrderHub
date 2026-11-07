@@ -31,7 +31,7 @@ public partial class Order
         var step = _deliverySteps.SingleOrDefault(item => item.Id == stepId);
         if (step is null) return Result<DeliveryStepReassignment>.Failure("خطوة التوصيل غير موجودة في الطلب.");
         if (step.StepOrder <= 0) return Result<DeliveryStepReassignment>.Failure("الخطوة ملغاة أو مستبدلة.");
-        if (step.Status is not (DeliveryStatus.InProgress or DeliveryStatus.Failed))
+        if (step.Status is not (DeliveryStatus.Pending or DeliveryStatus.InProgress or DeliveryStatus.Failed))
             return Result<DeliveryStepReassignment>.Failure("لا يمكن إعادة توجيه الخطوة من حالتها الحالية.");
 
         var previousMethod = step.DeliveryMethod;
@@ -80,6 +80,46 @@ public partial class Order
             operation, reason, Version));
         UpdateModificationDate(operation.AtUtc);
         return new DeliveryStepReassignment(step, replacement);
+    }
+
+    public Result<OrderDeliveryStep> CancelDeliveryStep(int stepId, string previousPartyName,
+        OrderOperation operation, string reason)
+    {
+        var valid = ValidateOperation(operation);
+        if (!valid.IsSuccess) return Result<OrderDeliveryStep>.Failure(valid.ErrorMessage);
+        valid = ValidateReason(reason, true);
+        if (!valid.IsSuccess) return Result<OrderDeliveryStep>.Failure(valid.ErrorMessage);
+        if (IsArchived) return Result<OrderDeliveryStep>.Failure("الطلب مؤرشف ولا يقبل التشغيل.");
+        if (IsFinal) return Result<OrderDeliveryStep>.Failure("الطلب مغلق ولا يقبل إلغاء الخطوات.");
+        if (DeliveryMethod != Enums.DeliveryMethod.DeliveryChain)
+            return Result<OrderDeliveryStep>.Failure("إلغاء الخطوات متاح لسلسلة التوصيل فقط.");
+
+        var step = _deliverySteps.SingleOrDefault(item => item.Id == stepId);
+        if (step is null) return Result<OrderDeliveryStep>.Failure("خطوة التوصيل غير موجودة في الطلب.");
+        if (step.StepOrder <= 0) return Result<OrderDeliveryStep>.Failure("الخطوة ملغاة أو مستبدلة.");
+        if (step.Status is not (DeliveryStatus.Pending or DeliveryStatus.InProgress or DeliveryStatus.Failed))
+            return Result<OrderDeliveryStep>.Failure("لا يمكن إلغاء الخطوة من حالتها الحالية.");
+        if (string.IsNullOrWhiteSpace(previousPartyName) || previousPartyName.Trim().Length > 100)
+            return Result<OrderDeliveryStep>.Failure("بيانات جهة التوصيل الحالية غير صالحة.");
+        if (_deliverySteps.Count(item => item.StepOrder > 0 && !ReferenceEquals(item, step) &&
+                item.Status != DeliveryStatus.Cancelled) == 0)
+            return Result<OrderDeliveryStep>.Failure("لا يمكن إلغاء آخر خطوة متبقية في سلسلة التوصيل.");
+
+        var previousMethod = step.DeliveryMethod;
+        var previousPartyId = StepPartyId(step);
+        var originalRank = step.StepOrder;
+        var (oldShipment, oldTrip) = LatestStepRecord(step);
+
+        Version++;
+        RecordStep(step, DeliveryStatus.Cancelled, operation, reason, OrderHistorySource.ManualAction);
+        CloseStepWorkRecord(step, WorkRecordStatus.Cancelled, reason, operation.AtUtc);
+        _deliveryMovements.Add(new OrderDeliveryMovement(this, step, null,
+            oldShipment, oldTrip, null, null,
+            previousMethod, previousPartyId, previousPartyName.Trim(),
+            null, null, null, originalRank,
+            operation, reason, Version, OrderHistorySource.DeliveryStepCancelled));
+        UpdateModificationDate(operation.AtUtc);
+        return Result<OrderDeliveryStep>.Success(step);
     }
 
     public Result ReassignDirectDelivery(DeliveryMethod method, DeliveryParty target, string previousPartyName,

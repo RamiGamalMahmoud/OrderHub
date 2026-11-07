@@ -127,6 +127,41 @@ public sealed class OrderReassignmentHandlerTests
     }
 
     [Fact]
+    public async Task Cancelling_a_step_saves_the_tombstone_without_a_replacement()
+    {
+        using var connection = OpenConnection();
+        await using var context = new AppDbContext(Options(connection));
+        context.Database.EnsureCreated();
+        var (order, stepId, firstPartyId, _) = await SeedChainAsync(context);
+        var version = order.Version;
+
+        var result = await NewHandler(context).Handle(
+            new CancelDeliveryStepCommand(order.Id, version, stepId, "No replacement"), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(version + 1, result.Value.Version);
+        context.ChangeTracker.Clear();
+        var reloaded = await context.Orders.Include(item => item.DeliverySteps)
+            .ThenInclude(step => step.DeliveryTrips)
+            .SingleAsync(item => item.Id == order.Id);
+        var cancelled = reloaded.DeliverySteps.Single(step => step.Id == stepId);
+        Assert.Equal(-stepId, cancelled.StepOrder);
+        Assert.Equal(DeliveryStatus.Cancelled, cancelled.Status);
+        Assert.Equal(WorkRecordStatus.Cancelled, cancelled.DeliveryTrips.Single().Status);
+        Assert.Equal(2, await context.OrderDeliverySteps.CountAsync());
+        var movement = await context.OrderDeliveryMovements.AsNoTracking().SingleAsync();
+        Assert.Equal(stepId, movement.DeliveryStepId);
+        Assert.Null(movement.ReplacementStepId);
+        Assert.Null(movement.NextMethod);
+        Assert.Null(movement.NextPartyId);
+        Assert.Null(movement.NextPartyName);
+        Assert.Equal(firstPartyId, movement.PreviousPartyId);
+        Assert.Equal(1, movement.OriginalStepRank);
+        Assert.Equal(OrderHistorySource.DeliveryStepCancelled, movement.Source);
+        Assert.Equal(version + 1, movement.OrderVersion);
+    }
+
+    [Fact]
     public async Task Direct_reassignment_creates_a_record_for_the_new_party()
     {
         using var connection = OpenConnection();

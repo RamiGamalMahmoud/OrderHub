@@ -19,7 +19,7 @@
                     <MudIcon Icon="@Icons.Material.Filled.CallSplit" Size="Size.Small" />
                 </span>
                 <div class="min-w-0">
-                    <h2 class="text-lg font-bold leading-tight text-slate-900">إلغاء التكليف وإعادة التوجيه</h2>
+                    <h2 class="text-lg font-bold leading-tight text-slate-900">@(IsCancelOnly ? "إلغاء الخطوة" : "إلغاء التكليف وإعادة التوجيه")</h2>
                     <p class="mt-1 text-xs font-medium text-slate-500">@OrderNumber — @ContextLabel</p>
                 </div>
             </div>
@@ -41,9 +41,13 @@
             </div>
 
             <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold leading-6 text-amber-800">
-                سيُغلق التكليف الحالي ويُسجَّل في سجل الطلب، ويبدأ التكليف الجديد فورًا. لا تُحذف أي خطوات أو سجلات تشغيل سابقة.
+                @(IsCancelOnly
+                    ? "ستُلغى هذه الخطوة دون إسناد بديل، وتُستكمل السلسلة بالخطوات التالية. لا تُحذف أي سجلات تشغيل سابقة."
+                    : "سيُغلق التكليف الحالي ويُسجَّل في سجل الطلب، ويبدأ التكليف الجديد فورًا. لا تُحذف أي خطوات أو سجلات تشغيل سابقة.")
             </div>
 
+            @if (!IsCancelOnly)
+            {
             <MudSelect T="DeliveryMethod"
                        @bind-Value="Method"
                        Label="المسار البديل"
@@ -108,10 +112,11 @@
                 <span class="font-bold text-slate-800">المسار الجديد:</span>
                 @NewRouteLabel
             </div>
+            }
 
             <MudTextField T="string"
                           @bind-Value="_reason"
-                          Label="سبب إلغاء التكليف"
+                          Label="@(IsCancelOnly ? "سبب إلغاء الخطوة" : "سبب إلغاء التكليف")"
                           Required="true"
                           Immediate="true"
                           MaxLength="200"
@@ -132,7 +137,7 @@
             <MudButton Disabled="_submitting" OnClick="Cancel" Variant="Variant.Text" Class="oh-btn oh-btn--secondary">رجوع دون تغيير</MudButton>
             <MudButton Disabled="@(!CanConfirm())"
                        Class="@($"oh-btn {OrderWorkflowPresentation.Action("failed")}")"
-                       OnClick="ConfirmAsync">@(_submitting ? "جاري إعادة التوجيه…" : "تأكيد إعادة التوجيه")</MudButton>
+                       OnClick="ConfirmAsync">@(_submitting ? "جاري التنفيذ…" : IsCancelOnly ? "تأكيد إلغاء الخطوة" : "تأكيد إعادة التوجيه")</MudButton>
         </footer>
     </DialogActions>
 </MudDialog>
@@ -144,7 +149,8 @@
     [Parameter, EditorRequired] public string ContextLabel { get; set; } = null!;
     [Parameter, EditorRequired] public DeliveryMethod CurrentMethod { get; set; }
     [Parameter] public string? CurrentPartyName { get; set; }
-    [Parameter, EditorRequired] public Func<DeliveryMethod, int?, string, Task<Result<OrderOperationReceipt>>> Submit { get; set; } = null!;
+    [Parameter] public bool IsCancelOnly { get; set; }
+    [Parameter, EditorRequired] public Func<DeliveryMethod?, int?, string, Task<Result<OrderOperationReceipt>>> Submit { get; set; } = null!;
 
     private DeliveryMethod _method = DeliveryMethod.DeliveryMan;
     private DeliveryMethod Method
@@ -174,6 +180,11 @@
         _method = CurrentMethod is DeliveryMethod.DeliveryMan or DeliveryMethod.ShippingCompany
             ? CurrentMethod
             : DeliveryMethod.DeliveryMan;
+        if (IsCancelOnly)
+        {
+            _lookupsLoading = false;
+            return;
+        }
         await LoadPartiesAsync();
     }
 
@@ -224,8 +235,9 @@
 
     private bool CanConfirm()
     {
-        if (_submitting || _lookupsLoading || _lookupsError is not null) return false;
-        if (!Order.ValidateReason(_reason, true).IsSuccess) return false;
+        if (_submitting || !Order.ValidateReason(_reason, true).IsSuccess) return false;
+        if (IsCancelOnly) return true;
+        if (_lookupsLoading || _lookupsError is not null) return false;
         if (Method == DeliveryMethod.Pickup) return true;
         return _partyId is > 0 && _parties.Any(party => party.Id == _partyId.Value);
     }
@@ -236,14 +248,18 @@
     {
         if (_submitting || !CanConfirm())
         {
-            _error = "أكمل السبب واختر مسارًا وجهة مختلفة عن التكليف الحالي.";
+            _error = IsCancelOnly
+                ? "أدخل سبب إلغاء الخطوة."
+                : "أكمل السبب واختر مسارًا وجهة مختلفة عن التكليف الحالي.";
             return;
         }
         _error = null;
         _submitting = true;
         try
         {
-            var result = await Submit(Method, Method == DeliveryMethod.Pickup ? null : _partyId, _reason!.Trim());
+            var result = IsCancelOnly
+                ? await Submit(null, null, _reason!.Trim())
+                : await Submit(Method, Method == DeliveryMethod.Pickup ? null : _partyId, _reason!.Trim());
             if (result.IsSuccess) Dialog.Close(DialogResult.Ok(result.Value));
             else if (result.ErrorCode == "Conflict") Dialog.Cancel();
             else _error = result.ErrorMessage;

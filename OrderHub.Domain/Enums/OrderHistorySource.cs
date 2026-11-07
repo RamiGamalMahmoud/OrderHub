@@ -21,5 +21,7 @@ public enum OrderHistorySource
     [Description("إعادة توجيه التوصيل")]
     DeliveryRouteReassigned,
     [Description("تأكيد استلام")]
-    PickupConfirmed
+    PickupConfirmed,
+    [Description("إلغاء خطوة توصيل")]
+    DeliveryStepCancelled
 }

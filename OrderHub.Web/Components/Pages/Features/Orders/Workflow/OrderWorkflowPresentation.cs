@@ -63,6 +63,7 @@ public static class OrderWorkflowPresentation
     public static string HistoryTone(string label, bool step, OrderHistorySource source) => source switch
     {
         OrderHistorySource.DeliveryRouteReassigned => "processing",
+        OrderHistorySource.DeliveryStepCancelled => "cancelled",
         OrderHistorySource.PickupConfirmed => "completed",
         _ => HistoryTone(label, step)
     };

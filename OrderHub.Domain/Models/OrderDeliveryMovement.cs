@@ -10,8 +10,9 @@ public sealed class OrderDeliveryMovement
     internal OrderDeliveryMovement(Order order, OrderDeliveryStep deliveryStep, OrderDeliveryStep replacementStep,
         Shipment oldShipment, DeliveryTrip oldDeliveryTrip, Shipment newShipment, DeliveryTrip newDeliveryTrip,
         DeliveryMethod previousMethod, int? previousPartyId, string previousPartyName,
-        DeliveryMethod nextMethod, int? nextPartyId, string nextPartyName, int? originalStepRank,
-        OrderOperation operation, string reason, int version)
+        DeliveryMethod? nextMethod, int? nextPartyId, string nextPartyName, int? originalStepRank,
+        OrderOperation operation, string reason, int version,
+        OrderHistorySource source = OrderHistorySource.DeliveryRouteReassigned)
     {
         Order = order;
         OrderId = order.Id;
@@ -35,7 +36,7 @@ public sealed class OrderDeliveryMovement
         ChangedByUserId = operation.UserId;
         ChangedByUserName = operation.UserName.Trim();
         Reason = reason?.Trim();
-        Source = OrderHistorySource.DeliveryRouteReassigned;
+        Source = source;
         OrderVersion = version;
     }
 
@@ -65,7 +66,7 @@ public sealed class OrderDeliveryMovement
     public int? PreviousPartyId { get; private set; }
     public string PreviousPartyName { get; private set; }
 
-    public DeliveryMethod NextMethod { get; private set; }
+    public DeliveryMethod? NextMethod { get; private set; }
     public int? NextPartyId { get; private set; }
     public string NextPartyName { get; private set; }
 

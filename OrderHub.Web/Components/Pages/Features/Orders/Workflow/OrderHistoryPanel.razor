@@ -84,6 +84,10 @@
                                     {
                                         <p class="mt-2 text-[11px] text-slate-500">إعادة توجيه التوصيل — استُبدلت جهة التنفيذ السابقة بجهة جديدة.</p>
                                     }
+                                    else if (entry.Source == OrderHistorySource.DeliveryStepCancelled)
+                                    {
+                                        <p class="mt-2 text-[11px] text-slate-500">أُلغيت الخطوة دون إسناد بديل؛ استُكملت السلسلة بخطواتها التالية.</p>
+                                    }
                                     else if (entry.Source == OrderHistorySource.PickupConfirmed)
                                     {
                                         <p class="mt-2 text-[11px] text-slate-500">تأكيد استلام العميل للطلب.</p>

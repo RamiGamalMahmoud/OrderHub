@@ -16,6 +16,7 @@ namespace OrderHub.Application.Features.Orders.Reassignment;
 internal sealed class OrderReassignmentHandlers(IOrderRepository repository, IUnitOfWork unitOfWork,
     ICurrentUser user, TimeProvider clock) :
     IRequestHandler<ReassignDeliveryStepCommand, Result<OrderOperationReceipt>>,
+    IRequestHandler<CancelDeliveryStepCommand, Result<OrderOperationReceipt>>,
     IRequestHandler<ReassignDirectDeliveryCommand, Result<OrderOperationReceipt>>
 {
     public async Task<Result<OrderOperationReceipt>> Handle(ReassignDeliveryStepCommand request,
@@ -33,6 +34,23 @@ internal sealed class OrderReassignmentHandlers(IOrderRepository repository, IUn
         return await PersistAsync(order, async token =>
         {
             await repository.TombstoneDeliveryStepAsync(changed.Value.CancelledStep, token);
+            await unitOfWork.SaveChangesAsync(token);
+        }, cancellationToken);
+    }
+
+    public async Task<Result<OrderOperationReceipt>> Handle(CancelDeliveryStepCommand request,
+        CancellationToken cancellationToken)
+    {
+        var (order, failure) = await LoadAsync(request.OrderId, request.ExpectedVersion, cancellationToken);
+        if (failure is not null) return failure;
+        var step = order.DeliverySteps.SingleOrDefault(item => item.Id == request.StepId);
+        if (step is null) return Failure("خطوة التوصيل غير موجودة في الطلب.");
+        var changed = order.CancelDeliveryStep(request.StepId, PreviousStepPartyName(step),
+            Operation(), request.Reason);
+        if (!changed.IsSuccess) return Failure(changed.ErrorMessage);
+        return await PersistAsync(order, async token =>
+        {
+            await repository.TombstoneDeliveryStepAsync(changed.Value, token);
             await unitOfWork.SaveChangesAsync(token);
         }, cancellationToken);
     }

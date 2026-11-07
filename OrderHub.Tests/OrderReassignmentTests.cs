@@ -130,12 +130,34 @@ public sealed class OrderReassignmentTests
         Assert.False(pickupWithParty.IsSuccess);
         Assert.Contains("استلام", pickupWithParty.ErrorMessage);
 
-        var pendingStep = order.ReassignDeliveryStep(steps[1].Id, DeliveryMethod.DeliveryMan,
-            new DeliveryParty(8, "Other"), "Other deliveryman", operation, "Move");
-        Assert.False(pendingStep.IsSuccess);
-
         Assert.Equal(version, order.Version);
         Assert.Empty(order.DeliveryMovements);
+    }
+
+    [Fact]
+    public void Pending_chain_step_can_be_reassigned_before_execution_starts()
+    {
+        var (order, steps, operation) = NewChain((DeliveryMethod.DeliveryMan, 7), (DeliveryMethod.DeliveryMan, 9));
+        var version = order.Version;
+
+        var result = order.ReassignDeliveryStep(steps[1].Id, DeliveryMethod.ShippingCompany,
+            new DeliveryParty(20, "Carrier"), "Second deliveryman", operation, "Plan correction");
+
+        Assert.True(result.IsSuccess);
+        Tombstone(steps[1]);
+        Assert.Equal(version + 1, order.Version);
+        Assert.Equal(DeliveryStatus.Cancelled, steps[1].Status);
+        Assert.Empty(steps[1].DeliveryTrips);
+        var replacement = result.Value.ReplacementStep;
+        Assert.Equal(2, replacement.StepOrder);
+        Assert.Equal(DeliveryStatus.Pending, replacement.Status);
+        Assert.Equal(20, replacement.ShippingCarrierId);
+        var movement = Assert.Single(order.DeliveryMovements);
+        Assert.Equal(9, movement.PreviousPartyId);
+        Assert.Equal(DeliveryMethod.ShippingCompany, movement.NextMethod);
+        Assert.Equal(20, movement.NextPartyId);
+        Assert.Null(movement.OldDeliveryTripId);
+        Assert.Null(order.DeliveryReadinessError());
     }
 
     [Fact]
@@ -208,6 +230,91 @@ public sealed class OrderReassignmentTests
         Assert.Equal(version, order.Version);
         Assert.Empty(order.DeliveryMovements);
         Assert.Single(order.DeliveryTrips);
+    }
+
+    [Fact]
+    public void Cancelling_a_chain_step_without_replacement_records_the_movement_and_keeps_the_chain_moving()
+    {
+        var (order, steps, operation) = NewChain((DeliveryMethod.DeliveryMan, 7),
+            (DeliveryMethod.ShippingCompany, 20), (DeliveryMethod.DeliveryMan, 9));
+        Assert.True(order.TransitionStep(steps[0].Id, DeliveryStatus.InProgress, operation).IsSuccess);
+
+        var result = order.CancelDeliveryStep(steps[1].Id, "Carrier", operation, "Wrong route");
+
+        Assert.True(result.IsSuccess);
+        Tombstone(steps[1]);
+        Assert.Same(steps[1], result.Value);
+        Assert.Equal(DeliveryStatus.Cancelled, steps[1].Status);
+        Assert.Empty(order.AllowedStepStatuses(steps[2]));
+        Assert.True(order.TransitionStep(steps[0].Id, DeliveryStatus.Completed, operation).IsSuccess);
+        Assert.Equal(new[] { DeliveryStatus.InProgress }, order.AllowedStepStatuses(steps[2]));
+        Assert.Equal(OrderStatus.OutForDelivery, order.OrderStatus);
+        Assert.Equal(DeliveryMethod.DeliveryChain, order.DeliveryMethod);
+        var movement = Assert.Single(order.DeliveryMovements);
+        Assert.Null(movement.ReplacementStep);
+        Assert.Null(movement.NextMethod);
+        Assert.Null(movement.NextPartyId);
+        Assert.Null(movement.NextPartyName);
+        Assert.Equal(2, movement.OriginalStepRank);
+        Assert.Equal(DeliveryMethod.ShippingCompany, movement.PreviousMethod);
+        Assert.Equal(20, movement.PreviousPartyId);
+        Assert.Equal("Carrier", movement.PreviousPartyName);
+        Assert.Equal(OrderHistorySource.DeliveryStepCancelled, movement.Source);
+        Assert.Null(order.DeliveryReadinessError());
+    }
+
+    [Fact]
+    public void Cancelling_an_in_progress_step_closes_its_record_and_unlocks_the_next_step()
+    {
+        var (order, steps, operation) = NewChain((DeliveryMethod.DeliveryMan, 7), (DeliveryMethod.DeliveryMan, 9));
+        Assert.True(order.TransitionStep(steps[0].Id, DeliveryStatus.InProgress, operation).IsSuccess);
+        var trip = steps[0].DeliveryTrips.Single();
+        Persist(trip, 81);
+        var version = order.Version;
+
+        var result = order.CancelDeliveryStep(steps[0].Id, "First deliveryman", operation, "Customer collected");
+
+        Assert.True(result.IsSuccess);
+        Tombstone(steps[0]);
+        Assert.Equal(version + 1, order.Version);
+        Assert.Equal(DeliveryStatus.Cancelled, steps[0].Status);
+        Assert.Equal(WorkRecordStatus.Cancelled, trip.Status);
+        Assert.Equal(new[] { DeliveryStatus.InProgress }, order.AllowedStepStatuses(steps[1]));
+        Assert.Equal(OrderStatus.OutForDelivery, order.OrderStatus);
+        Assert.Single(order.StatusHistory);
+        var movement = Assert.Single(order.DeliveryMovements);
+        Assert.Null(movement.ReplacementStep);
+        Assert.Null(movement.NextMethod);
+        Assert.Equal(1, movement.OriginalStepRank);
+        Assert.Equal(81, movement.OldDeliveryTripId);
+        Assert.Null(movement.NewDeliveryTrip);
+        Assert.Equal(OrderHistorySource.DeliveryStepCancelled, movement.Source);
+    }
+
+    [Fact]
+    public void Cancelling_a_step_rejects_completed_last_and_invalid_input()
+    {
+        var (single, singleSteps, singleOperation) = NewChain((DeliveryMethod.DeliveryMan, 7));
+        var last = single.CancelDeliveryStep(singleSteps[0].Id, "Only", singleOperation, "Remove");
+        Assert.False(last.IsSuccess);
+        Assert.Contains("آخر خطوة", last.ErrorMessage);
+        Assert.Empty(single.DeliveryMovements);
+
+        var (order, steps, operation) = NewChain((DeliveryMethod.DeliveryMan, 7), (DeliveryMethod.DeliveryMan, 9));
+        Assert.True(order.TransitionStep(steps[0].Id, DeliveryStatus.InProgress, operation).IsSuccess);
+        Assert.True(order.TransitionStep(steps[0].Id, DeliveryStatus.Completed, operation).IsSuccess);
+        var completed = order.CancelDeliveryStep(steps[0].Id, "First", operation, "Remove");
+        Assert.False(completed.IsSuccess);
+        Assert.Contains("حالتها الحالية", completed.ErrorMessage);
+
+        var blankReason = order.CancelDeliveryStep(steps[1].Id, "Second", operation, "   ");
+        Assert.False(blankReason.IsSuccess);
+        Assert.Empty(order.DeliveryMovements);
+
+        var (directOrder, directOperation) = NewDirect(DeliveryMethod.DeliveryMan, 7);
+        var direct = directOrder.CancelDeliveryStep(1, "First", directOperation, "Remove");
+        Assert.False(direct.IsSuccess);
+        Assert.Contains("سلسلة التوصيل", direct.ErrorMessage);
     }
 
     [Fact]
