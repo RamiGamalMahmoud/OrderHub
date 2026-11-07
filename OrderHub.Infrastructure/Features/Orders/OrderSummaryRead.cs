@@ -28,29 +28,46 @@ internal sealed partial class OrderReader
             .SingleOrDefaultAsync(x => x.Id == orderId, cancellationToken);
         if (order is null) return null;
 
-        var steps = order.DeliverySteps.OrderBy(x => x.StepOrder).ToList();
+        // Only currently accountable parties are copyable; aborted assignments stay in the audit feed.
+        var steps = order.DeliverySteps
+            .Where(step => step.StepOrder > 0 && step.Status != DeliveryStatus.Cancelled)
+            .OrderBy(step => step.StepOrder).ToList();
         string StepParty(OrderDeliveryStep step) => step.DeliveryMethod == DeliveryMethod.DeliveryMan
             ? step.Deliveryman?.Name.Value : step.ShippingCarrier?.Name.Value;
-        var partyRecords = order.DeliveryTrips.Select(record => new PartySummaryRecord(
+        var orderPartyId = order.DeliveryMethod switch
+        {
+            DeliveryMethod.DeliveryMan => order.DeliverymanId,
+            DeliveryMethod.ShippingCompany => order.ShippingCarrierId,
+            _ => null
+        };
+        var partyRecords = order.DeliveryTrips
+            .Where(record => record.Status != WorkRecordStatus.Cancelled && record.NumberingPartyId == orderPartyId)
+            .Select(record => new PartySummaryRecord(
                 "مشوار", record.NumberingPartyId, record.WorkRecordNumber, record.SequenceYear, record.SequenceMonth,
                 order.Deliveryman?.Name.Value,
                 null, null, order.Client.Name.Value))
-            .Concat(order.Shipments.Select(record => new PartySummaryRecord(
-                "شحنة", record.NumberingPartyId, record.WorkRecordNumber, record.SequenceYear, record.SequenceMonth,
-                order.ShippingCarrier?.Name.Value,
-                null, null, order.Client.Name.Value))).ToList();
+            .Concat(order.Shipments
+                .Where(record => record.Status != WorkRecordStatus.Cancelled && record.NumberingPartyId == orderPartyId)
+                .Select(record => new PartySummaryRecord(
+                    "شحنة", record.NumberingPartyId, record.WorkRecordNumber, record.SequenceYear, record.SequenceMonth,
+                    order.ShippingCarrier?.Name.Value,
+                    null, null, order.Client.Name.Value))).ToList();
 
-        foreach (var step in steps)
+        for (var index = 0; index < steps.Count; index++)
         {
-            var index = steps.IndexOf(step);
+            var step = steps[index];
             var from = index > 0 ? StepParty(steps[index - 1]) : null;
             var to = index + 1 < steps.Count ? StepParty(steps[index + 1]) : order.Client.Name.Value;
-            partyRecords.AddRange(step.DeliveryTrips.Select(record => new PartySummaryRecord(
-                "مشوار", step.DeliverymanId.Value, record.WorkRecordNumber, record.SequenceYear, record.SequenceMonth,
-                step.Deliveryman?.Name.Value, step.StepOrder, from, to)));
-            partyRecords.AddRange(step.Shipments.Select(record => new PartySummaryRecord(
-                "شحنة", step.ShippingCarrierId.Value, record.WorkRecordNumber, record.SequenceYear, record.SequenceMonth,
-                step.ShippingCarrier?.Name.Value, step.StepOrder, from, to)));
+            partyRecords.AddRange(step.DeliveryTrips
+                .Where(record => record.Status != WorkRecordStatus.Cancelled && record.NumberingPartyId == step.DeliverymanId)
+                .Select(record => new PartySummaryRecord(
+                    "مشوار", record.NumberingPartyId, record.WorkRecordNumber, record.SequenceYear, record.SequenceMonth,
+                    step.Deliveryman?.Name.Value, step.StepOrder, from, to)));
+            partyRecords.AddRange(step.Shipments
+                .Where(record => record.Status != WorkRecordStatus.Cancelled && record.NumberingPartyId == step.ShippingCarrierId)
+                .Select(record => new PartySummaryRecord(
+                    "شحنة", record.NumberingPartyId, record.WorkRecordNumber, record.SequenceYear, record.SequenceMonth,
+                    step.ShippingCarrier?.Name.Value, step.StepOrder, from, to)));
         }
 
         var supplies = await db.Supplies.AsNoTracking().Where(x => x.OrderId == orderId)

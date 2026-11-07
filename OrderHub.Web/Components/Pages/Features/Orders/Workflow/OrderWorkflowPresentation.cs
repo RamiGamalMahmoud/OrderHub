@@ -59,6 +59,14 @@ public static class OrderWorkflowPresentation
         ? System.Enum.GetValues<DeliveryStatus>().Where(status => status.GetDescription() == label).Select(status => StatusTone(status)).FirstOrDefault() ?? Neutral
         : System.Enum.GetValues<OrderStatus>().Where(status => status.GetDescription() == label).Select(status => StatusTone(status)).FirstOrDefault() ?? Neutral;
 
+    /// <summary>Source-driven tone wins over the status text for movement-style history rows.</summary>
+    public static string HistoryTone(string label, bool step, OrderHistorySource source) => source switch
+    {
+        OrderHistorySource.DeliveryRouteReassigned => "processing",
+        OrderHistorySource.PickupConfirmed => "completed",
+        _ => HistoryTone(label, step)
+    };
+
     /// <summary>Static tag classes (a full literal set per tone so Tailwind can detect them).</summary>
     public static string Tag(string tone) => tone switch
     {

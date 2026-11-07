@@ -40,7 +40,7 @@
             {
                 <div class="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-800" @key="step.Id">
                     <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
-                    <span class="font-semibold">الخطوة @step.StepOrder.ToString(CultureInfo.InvariantCulture) — @step.HandlerName — مكتملة سابقًا، دون تغيير</span>
+                    <span class="font-semibold">الخطوة @step.EffectiveRank.ToString(CultureInfo.InvariantCulture) — @step.HandlerName — مكتملة سابقًا، دون تغيير</span>
                 </div>
             }
 
@@ -53,7 +53,7 @@
             {
                 <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm" @key="outcome.Step.Id">
                     <div class="flex flex-wrap items-center gap-2">
-                        <p class="text-sm font-bold text-slate-900">الخطوة @outcome.Step.StepOrder.ToString(CultureInfo.InvariantCulture) — @outcome.Step.HandlerName</p>
+                        <p class="text-sm font-bold text-slate-900">الخطوة @outcome.Step.EffectiveRank.ToString(CultureInfo.InvariantCulture) — @outcome.Step.HandlerName</p>
                         <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(outcome.Step.Status)}")">الحالة الحالية: @outcome.Step.Status.GetDescription()</span>
                     </div>
 
@@ -134,7 +134,7 @@
     {
         if (_initializedId == State.Id) return;
         _initializedId = State.Id;
-        _outcomes = State.Steps.Where(step => step.Status != DeliveryStatus.Completed).Select(step => new OutcomeEditor(step)).ToList();
+        _outcomes = State.Steps.Where(step => !step.IsSuperseded && step.Status != DeliveryStatus.Completed).Select(step => new OutcomeEditor(step)).ToList();
     }
     private sealed class OutcomeEditor(DeliveryStepWorkflowState step)
     {
@@ -156,7 +156,7 @@
         {
             var reason = outcome.NeedsReason ? outcome.UseCommonReason ? _reason : outcome.Reason : null;
             valid = Order.ValidateReason(reason, outcome.NeedsReason);
-            if (!valid.IsSuccess) { _error = $"الخطوة {outcome.Step.StepOrder.ToString(CultureInfo.InvariantCulture)}: {valid.ErrorMessage}"; return; }
+            if (!valid.IsSuccess) { _error = $"الخطوة {outcome.Step.EffectiveRank.ToString(CultureInfo.InvariantCulture)}: {valid.ErrorMessage}"; return; }
             results.Add(new(outcome.Step.Id, outcome.Status, reason?.Trim()));
         }
         _submitting = true;

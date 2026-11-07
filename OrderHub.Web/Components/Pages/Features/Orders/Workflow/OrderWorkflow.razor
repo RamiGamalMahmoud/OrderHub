@@ -43,8 +43,8 @@
     }
     else
     {
-        var completedSteps = _state.Steps.Count(step => step.Status == DeliveryStatus.Completed);
-        var totalSteps = _state.Steps.Count;
+        var completedSteps = _state.CompletedActiveStepCount;
+        var totalSteps = _state.ActiveStepCount;
         var stepsPercent = totalSteps == 0 ? 0 : (int)Math.Round(completedSteps * 100.0 / totalSteps);
 
         <PageScaffold Title="دورة الطلب"
@@ -200,7 +200,7 @@
         @* ============================================================
            Delivery steps
            ============================================================ *@
-        @if (_state.Method == DeliveryMethod.DeliveryChain)
+        @if (_state.Steps.Count > 0 || _state.Method == DeliveryMethod.DeliveryChain)
         {
             <section class="space-y-3">
                 <div class="flex flex-wrap items-center justify-between gap-2">
@@ -210,7 +210,7 @@
                     </span>
                 </div>
 
-                @if (totalSteps == 0)
+                @if (_state.Steps.Count == 0)
                 {
                     <div class="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-xs font-bold text-brand-700">لم تتم إضافة خطوات. أكمل خطة التوصيل قبل بدء السلسلة.</div>
                 }
@@ -222,16 +222,23 @@
                 @foreach (var step in _state.Steps)
                 {
                     var stepTone = OrderWorkflowPresentation.StatusTone(step.Status);
-                    <article class="@($"rounded-2xl border border-slate-200 border-s-4 bg-white p-4 shadow-sm {OrderWorkflowPresentation.Accent(stepTone)}")" @key="step.Id">
+                    <article class="@($"rounded-2xl border border-slate-200 border-s-4 bg-white p-4 shadow-sm {OrderWorkflowPresentation.Accent(stepTone)} {(!step.IsSuperseded ? "" : "opacity-90")}")" @key="step.Id">
                         <header class="flex flex-wrap items-center gap-3">
                             <span class="@($"inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {OrderWorkflowPresentation.IconTile(stepTone)}")">
-                                <MudIcon Icon="@(step.Status == DeliveryStatus.Completed ? Icons.Material.Filled.CheckCircle : step.Status == DeliveryStatus.Failed ? Icons.Material.Filled.Warning : step.AllowedStatuses.Count == 0 ? Icons.Material.Filled.Lock : Icons.Material.Filled.LocalShipping)" Size="Size.Small" />
+                                <MudIcon Icon="@(step.Status == DeliveryStatus.Completed ? Icons.Material.Filled.CheckCircle : step.Status == DeliveryStatus.Failed ? Icons.Material.Filled.Warning : step.IsSuperseded ? Icons.Material.Filled.CallSplit : step.AllowedStatuses.Count == 0 ? Icons.Material.Filled.Lock : Icons.Material.Filled.LocalShipping)" Size="Size.Small" />
                             </span>
                             <div class="min-w-0 flex-1">
-                                <p class="text-sm font-black text-slate-900">الخطوة @step.StepOrder.ToString(CultureInfo.InvariantCulture) — @step.Method.GetDescription()</p>
+                                <p class="text-sm font-black text-slate-900">الخطوة @step.EffectiveRank.ToString(CultureInfo.InvariantCulture) — @step.Method.GetDescription()</p>
                                 <p class="mt-0.5 text-xs text-slate-500">@(step.HandlerName ?? "جهة التنفيذ غير متوفرة")</p>
                             </div>
-                            <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(step.Status)}")">@step.Status.GetDescription()</span>
+                            @if (step.IsSuperseded)
+                            {
+                                <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(step.Status)}")">ملغاة / مُعاد توجيهها</span>
+                            }
+                            else
+                            {
+                                <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(step.Status)}")">@step.Status.GetDescription()</span>
+                            }
                         </header>
 
                         @if (step.BlockingReason is not null)
@@ -347,7 +354,7 @@
             if (target is OrderStatus.Cancelled or OrderStatus.DeliveryFailed)
             {
                 var effects = target == OrderStatus.Cancelled
-                    ? $"لن يمكن تشغيل الطلب بعد الإلغاء. {_state.Steps.Count(step => step.Status == DeliveryStatus.Completed)} خطوة مكتملة محفوظة، و{_state.Steps.Count(step => step.Status is not (DeliveryStatus.Completed or DeliveryStatus.Cancelled))} خطوة غير مكتملة ستُلغى."
+                    ? $"لن يمكن تشغيل الطلب بعد الإلغاء. {_state.CompletedActiveStepCount} خطوة مكتملة محفوظة، و{_state.ActiveStepCount - _state.CompletedActiveStepCount} خطوة غير مكتملة ستُلغى."
                     : "سيُسجل سبب تعذر المحاولة، ويمكن إعادة المحاولة لاحقًا.";
                 await AskAndSubmitAsync(OrderWorkflowPresentation.ActionLabel(target, snapshot.Status), effects,
                     reason => SubmitSnapshotAsync(snapshot, () => Executor.ExecuteAsync(new ChangeOrderStatusCommand(snapshot.Id, snapshot.Version, target, reason))), OrderWorkflowPresentation.StatusTone(target));

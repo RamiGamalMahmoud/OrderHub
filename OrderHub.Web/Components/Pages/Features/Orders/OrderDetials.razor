@@ -262,12 +262,12 @@
                                 {
                                     <p class="text-xs font-medium text-amber-700">آخر حالة ناتجة عن ترحيل بيانات قديمة؛ التوقيت لا يثبت وقت التنفيذ الفعلي.</p>
                                 }
-                                @if (_workflow.Method == DeliveryMethod.DeliveryChain)
+                                @if (_workflow.Steps.Count > 0)
                                 {
                                     <p class="text-xs text-slate-600">
-                                        @_workflow.Steps.Count(step => step.Status == DeliveryStatus.Completed) من @_workflow.Steps.Count خطوات مكتملة
+                                        @_workflow.CompletedActiveStepCount من @_workflow.ActiveStepCount خطوات مكتملة
                                     </p>
-                                    @if (_workflow.Steps.Any(step => step.Status == DeliveryStatus.Failed))
+                                    @if (_workflow.Steps.Any(step => !step.IsSuperseded && step.Status == DeliveryStatus.Failed))
                                     {
                                         <div class="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-bold text-orange-800">توجد خطوة متعذر تنفيذها؛ راجع دورة الطلب.</div>
                                     }

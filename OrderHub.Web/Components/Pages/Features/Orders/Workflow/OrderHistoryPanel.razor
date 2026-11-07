@@ -48,8 +48,8 @@
                     <ol class="space-y-0" aria-label="@(StepId.HasValue ? "تاريخ الخطوة" : "سجل حالات الطلب")">
                         @foreach (var entry in _data.Items)
                         {
-                            var tone = OrderWorkflowPresentation.HistoryTone(entry.NewStatus, StepId.HasValue);
-                            <li class="flex gap-3" @key="entry.Id">
+                            var tone = OrderWorkflowPresentation.HistoryTone(entry.NewStatus, StepId.HasValue, entry.Source);
+                            <li class="flex gap-3" @key="entry.Key">
                                 <div class="flex flex-col items-center">
                                     <span class="@($"mt-2 h-2.5 w-2.5 shrink-0 rounded-full {OrderWorkflowPresentation.Dot(tone)}")"></span>
                                     <span class="mt-1 w-px flex-1 bg-slate-200"></span>
@@ -57,13 +57,21 @@
                                 <div class="mb-3 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(tone)}")">
-                                            @entry.NewStatus @(entry.Source == OrderHistorySource.Retry ? "— إعادة محاولة" : "")
+                                            @(entry.DisplayTag ?? entry.NewStatus) @(entry.Source == OrderHistorySource.Retry ? "— إعادة محاولة" : "")
                                         </span>
                                         <span class="text-[11px] text-slate-500">
                                             <UserLocalTime Value="entry.ChangedAtUtc" />
                                             @(!string.IsNullOrWhiteSpace(entry.UserName) ? $" — بواسطة {entry.UserName}" : "")
                                         </span>
                                     </div>
+                                    @if (entry.DisplayDetail is not null)
+                                    {
+                                        <p class="mt-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600">@entry.DisplayDetail</p>
+                                    }
+                                    else if (entry.DisplayTag is not null && entry.PreviousStatus is not null)
+                                    {
+                                        <p class="mt-2 text-[11px] text-slate-500">من @entry.PreviousStatus إلى @entry.NewStatus</p>
+                                    }
                                     @if (entry.Reason is not null)
                                     {
                                         <p class="mt-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600">السبب: @entry.Reason</p>
@@ -71,6 +79,14 @@
                                     @if (entry.Source == OrderHistorySource.LegacyMigration)
                                     {
                                         <p class="mt-2 text-[11px] text-amber-700">سجل ترحيل بيانات قديمة؛ التوقيت لا يثبت وقت التنفيذ الفعلي. @(entry.OriginalStatus is not null ? $"الحالة الأصلية: {OrderWorkflowPresentation.LegacyStatusLabel(entry.OriginalStatus)}" : "")</p>
+                                    }
+                                    else if (entry.Source == OrderHistorySource.DeliveryRouteReassigned)
+                                    {
+                                        <p class="mt-2 text-[11px] text-slate-500">إعادة توجيه التوصيل — استُبدلت جهة التنفيذ السابقة بجهة جديدة.</p>
+                                    }
+                                    else if (entry.Source == OrderHistorySource.PickupConfirmed)
+                                    {
+                                        <p class="mt-2 text-[11px] text-slate-500">تأكيد استلام العميل للطلب.</p>
                                     }
                                     else if (entry.Source == OrderHistorySource.DirectDelivery)
                                     {
