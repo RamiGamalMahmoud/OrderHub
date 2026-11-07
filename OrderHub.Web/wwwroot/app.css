@@ -127,9 +127,9 @@ h1:focus {
     height: 18px !important;
 }
 
-/* Mobile flattened menu: group labels + highlighted items of the active group */
+/* Mobile flattened menu: group labels + highlighted block of the active group */
 .site-nav-section-label {
-    padding: 10px 16px 4px;
+    padding: 10px 20px 4px;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.05em;
@@ -145,6 +145,37 @@ h1:focus {
 
 .mud-menu-item.site-nav-active:hover {
     background-color: var(--mud-palette-primary);
+}
+
+/* Mobile flattened menu: the dropdown panel spans the full viewport width and
+   the active group is painted as one continuous block (label + items). */
+.site-nav-popover-mobile {
+    left: 0 !important;
+    right: 0 !important;
+    width: auto !important;
+    max-width: 100vw !important;
+    border-radius: 0 0 16px 16px !important;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.site-nav-popover-mobile .mud-menu-list-wrapper {
+    padding-inline: 0;
+}
+
+.site-nav-popover-mobile .mud-list {
+    padding-inline: 0 !important;
+}
+
+.site-nav-popover-mobile .mud-menu-item {
+    padding-inline: 20px;
+    border-radius: 0;
+}
+
+.site-nav-popover-mobile .site-nav-section-label-active {
+    background-color: var(--mud-palette-primary);
+    color: var(--mud-palette-primary-text);
+    padding-block: 10px 6px;
 }
 
 /* User card: keep the activator wrapper smooth/flex */

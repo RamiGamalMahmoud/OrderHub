@@ -38,13 +38,15 @@
 }
 else
 {
-    @* هاتف: زر همبرغر يفتح قائمة واحدة مسطحة: عنوان المجموعة (غير فعّال) ثم عناصرها
-        مع فاصل بين المجموعات، وتلوين عناصر المجموعة النشطة (الصفحة الحالية داخلها). *@
+    @* هاتف: زر همبرغر يفتح قائمة واحدة مسطحة تملأ عرض الشاشة: عنوان المجموعة ثم
+        عناصرها، مع فاصل بين المجموعات، وتلوين كتلة المجموعة النشطة (العنوان والعناصر). *@
     <MudMenu Icon="@Icons.Material.Filled.Menu"
              AriaLabel="فتح قائمة التنقل"
              Color="Color.Primary"
              Variant="@MudBlazor.Variant.Text"
              Dense="true"
+             PopoverFixed="true"
+             PopoverClass="site-nav-popover-mobile"
              Class="@Class">
         @{
             var visibleGroups = Groups.Where(GroupVisible).ToList();
@@ -58,14 +60,14 @@ else
                 <MudDivider DividerType="DividerType.Inset" />
             }
 
-            <div class="site-nav-section-label" role="presentation">@group.Title</div>
+            <div class="@GetGroupLabelClass(group)" role="presentation">@group.Title</div>
 
             foreach (var item in VisibleItems(group))
             {
                 <MudMenuItem Href="@item.Href"
                              Icon="@item.Icon"
                              IconColor="Color.Inherit"
-                             Class="@GetItemClass(group)">
+                             Class="@GetItemClass(item)">
                     @item.Label
                 </MudMenuItem>
             }
@@ -191,18 +193,45 @@ else
             return false;
         }
 
-        return group.Items.Any(item =>
-            path.Equals(item.Href, StringComparison.OrdinalIgnoreCase) ||
-            path.StartsWith(item.Href + "/", StringComparison.OrdinalIgnoreCase));
+        return group.Items.Any(item => IsPathWithin(path, item.Href));
     }
+
+    /// <summary>هل هذا العنصر هو الصفحة الحالية نفسها؟ يُلوَّن العنصر المطابق فقط.</summary>
+    private bool IsItemActive(NavItemModel item)
+    {
+        var path = new Uri(Navigation.Uri).AbsolutePath;
+
+        if (path.Equals(item.Href, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        // A sibling item matching the path exactly wins over a broader parent
+        // match (e.g. /orders/create is not also «الطلبات»).
+        var exactSibling = Groups
+            .SelectMany(group => group.Items)
+            .Any(candidate => path.Equals(candidate.Href, StringComparison.OrdinalIgnoreCase));
+
+        return !exactSibling && IsPathWithin(path, item.Href);
+    }
+
+    private static bool IsPathWithin(string path, string href) =>
+        path.Equals(href, StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith(href + "/", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>حساب/كلاس قائمة مجموعة نشطة (يصدَر على نفسه قاعدة عالمية تصل زر المجموعة).</summary>
     private string GetGroupClass(NavGroupModel group) =>
         IsGroupActive(group) ? "site-nav-active" : string.Empty;
 
-    /// <summary>كلاس عنصر حالة الهاتف: عنصر تابع لمجموعة نشطة يُلوَّن.</summary>
-    private string GetItemClass(NavGroupModel group) =>
-        IsGroupActive(group) ? "site-nav-active" : string.Empty;
+    /// <summary>كلاس عنوان مجموعة: عنوان المجموعة النشطة يُلوَّن وحده دون بقية عناصرها.</summary>
+    private string GetGroupLabelClass(NavGroupModel group) =>
+        IsGroupActive(group)
+            ? "site-nav-section-label site-nav-section-label-active"
+            : "site-nav-section-label";
+
+    /// <summary>كلاس عنصر حالة الهاتف: العنصر المطابق للصفحة الحالية فقط يُلوَّن.</summary>
+    private string GetItemClass(NavItemModel item) =>
+        IsItemActive(item) ? "site-nav-active" : string.Empty;
 
     public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
 
