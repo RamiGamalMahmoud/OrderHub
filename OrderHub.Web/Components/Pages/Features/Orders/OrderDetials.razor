@@ -51,9 +51,9 @@
             <Actions>
                 <button type="button"
                         class="oh-btn oh-btn--secondary oh-btn--sm"
-                        disabled="@(_summaries.Count == 0)"
+                        disabled="@(_summaryData is null)"
                         @onclick="OpenSummariesAsync">
-                    <MudIcon Icon="@Icons.Material.Outlined.Print" Class="text-[16px]" />
+                    <MudIcon Icon="@Icons.Material.Outlined.Description" Class="text-[16px]" />
                     <span>ملخص الطلب</span>
                 </button>
                 <a href="@($"/orders/{Id}/workflow")" class="oh-btn oh-btn--secondary oh-btn--sm">
@@ -81,7 +81,7 @@
                     </ActivatorContent>
                     <ChildContent>
                         <MudMenuItem OnClick="OrderNumberClicked">نسخ رقم الطلب</MudMenuItem>
-                        @if (_summaries.Count > 0)
+                        @if (_summaryData is not null)
                         {
                             <MudMenuItem OnClick="OpenSummariesAsync">ملخص الطلب</MudMenuItem>
                         }
@@ -362,7 +362,7 @@
     private OrderDetails? _order;
     private OrderWorkflowState? _workflow;
     private IReadOnlyList<OrderDetailsLine> _items = [];
-    private IReadOnlyList<OrderSummaryText> _summaries = [];
+    private OrderSummaryData? _summaryData;
     private bool _canReadDocuments;
     private bool _loading;
     private string? _error;
@@ -394,7 +394,7 @@
         _order = null;
         _workflow = null;
         _items = [];
-        _summaries = [];
+        _summaryData = null;
         _canReadDocuments = false;
         try
         {
@@ -411,7 +411,7 @@
             _order = order;
             _workflow = workflow;
             _items = order?.Items.ToList() ?? [];
-            _summaries = summaryData is null ? [] : OrderSummaryTextBuilder.Build(summaryData);
+            _summaryData = summaryData;
             _canReadDocuments = canReadDocuments;
             _crumbs = order is null
                 ? [new("الطلبات", "/orders")]
@@ -450,12 +450,18 @@
 
     private async Task OpenSummariesAsync()
     {
-        if (_summaries.Count == 0) return;
+        if (_summaryData is null) return;
         var parameters = new DialogParameters<OrderSummaryDialog>
         {
-            { dialog => dialog.Summaries, _summaries }
+            { dialog => dialog.Data, _summaryData }
         };
-        await DialogService.ShowAsync<OrderSummaryDialog>("ملخص الطلب", parameters,
-            new DialogOptions { CloseButton = false, FullWidth = true, MaxWidth = MaxWidth.Medium });
+        await DialogService.ShowAsync<OrderSummaryDialog>("ملخص الطلب المخصص للإرسال", parameters,
+            new DialogOptions
+            {
+                CloseButton = false,
+                FullWidth = true,
+                MaxWidth = MaxWidth.Medium,
+                BackgroundClass = "bg-slate-900/60 backdrop-blur-sm"
+            });
     }
 }

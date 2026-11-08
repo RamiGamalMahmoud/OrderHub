@@ -1,150 +1,517 @@
+@using System.Globalization
 @using OrderHub.Application.Features.Orders.GetSummaries
 @using QRCoder
 @inject IJSRuntime JS
-@inject ISnackbar Snackbar
 
-<MudDialog Class="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-xl"
+<MudDialog Class="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white p-0 shadow-modal"
            TitleClass="p-0"
            ContentClass="p-0"
            ActionsClass="p-0"
            Gutters="false">
     <TitleContent>
-        <header class="flex items-start justify-between gap-3 border-b border-slate-100 p-5">
+        <header class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white px-6 py-4">
             <div class="flex min-w-0 items-center gap-3">
-                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-                    <MudIcon Icon="@Icons.Material.Outlined.ReceiptLong" />
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-dispatch-600 shadow-xs">
+                    <MudIcon Icon="@Icons.Material.Outlined.Description" />
                 </span>
                 <div class="min-w-0">
-                    <h2 class="text-lg font-bold leading-tight text-slate-900">ملخص الطلب</h2>
-                    <p class="mt-1 text-xs font-medium text-slate-500">اختر الجهة لعرض الملخص المخصص لها.</p>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-lg font-bold leading-tight text-slate-900">ملخص الطلب المخصص للإرسال</h2>
+                        <span class="rounded-full border border-slate-200/80 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">@Data.OrderNumber</span>
+                    </div>
+                    <p class="mt-0.5 text-xs text-slate-500">قالب رسالة واتساب مخصص بحسب الجهة المختارة، ويعرض بياناتها فقط دون بيانات بقية الأطراف</p>
                 </div>
             </div>
-            <MudIconButton Icon="@Icons.Material.Filled.Close"
-                           Size="Size.Small"
-                           Color="Color.Default"
-                           OnClick="Cancel"
-                           aria-label="إغلاق النافذة"
-                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+            <button type="button"
+                    class="rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                    title="إغلاق"
+                    aria-label="إغلاق النافذة"
+                    @onclick="Cancel">
+                <MudIcon Icon="@Icons.Material.Filled.Close" />
+            </button>
         </header>
     </TitleContent>
 
     <DialogContent>
-        <div class="space-y-4 bg-slate-50/70 p-5">
-            <div>
-                <p class="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">الجهات المشتركة في الطلب</p>
-                <div class="flex flex-wrap gap-2">
-                    @foreach (var audience in Audiences)
-                    {
-                        <button type="button"
-                                class="@AudienceClass(audience)"
-                                aria-pressed="@(_selectedAudience == audience)"
-                                @onclick="() => SelectAudience(audience)">@audience.Label</button>
-                    }
-                </div>
+        <nav class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 px-6 py-3.5" aria-label="اختيار الجهة المستلمة">
+            <div class="custom-scroll flex max-w-full items-center gap-2 overflow-x-auto py-1">
+                <span class="ms-0 me-1 shrink-0 text-xs font-semibold text-slate-500">الجهة المستلمة:</span>
+                @foreach (var audience in _audiences)
+                {
+                    <button type="button"
+                            class="@TabClass(audience)"
+                            aria-pressed="@Aria(IsActive(audience))"
+                            @onclick="() => SelectAudience(audience)">
+                        <MudIcon Icon="@AudienceIcon(audience.AudienceType)" Class="@TabIconClass(audience)" />
+                        <span>@AudienceTabLabel(audience)</span>
+                        <span class="@TabChipClass(audience)">@audience.Name</span>
+                    </button>
+                }
             </div>
 
-            @if (CurrentRecords.Count > 1)
+            @if (ShowRecordSelector)
             {
-                <MudSelect T="OrderSummaryText" Value="_selectedRecord" ValueChanged="SelectRecord"
-                           Label="السجل" Variant="Variant.Outlined" ToStringFunc="@(record => record?.Title ?? string.Empty)">
-                    @foreach (var record in CurrentRecords)
+                <div class="flex items-center gap-2 text-xs">
+                    <label class="font-semibold text-slate-500" for="summary-record">سجل المهمة:</label>
+                    <select id="summary-record"
+                            class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 shadow-xs focus:border-dispatch-500 focus:ring-1 focus:ring-dispatch-500"
+                            @onchange="OnRecordChanged">
+                        @for (var index = 0; index < _audience!.Records.Count; index++)
+                        {
+                            var optionIndex = index;
+                            <option value="@optionIndex" selected="@(optionIndex == _recordIndex)">@_audience.Records[optionIndex].Title</option>
+                        }
+                    </select>
+                </div>
+            }
+        </nav>
+
+        <main class="grid grid-cols-1 gap-5 bg-slate-50/40 p-6 lg:grid-cols-12">
+            <section class="flex flex-col lg:col-span-7" aria-label="معاينة رسالة واتساب">
+                <div class="flex flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <div class="flex shrink-0 items-center justify-between gap-3 bg-whatsapp-dark px-4 py-2.5 text-white">
+                        <div class="flex min-w-0 items-center gap-2.5">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700 ring-2 ring-emerald-300/40">@Initials</span>
+                            <div class="min-w-0">
+                                <h3 class="truncate text-xs font-bold text-white">@HeaderTitle</h3>
+                                <p class="truncate text-xs text-emerald-200">@HeaderSubtitle</p>
+                            </div>
+                        </div>
+                        <div class="flex shrink-0 items-center gap-1 rounded-lg bg-whatsapp-deep p-0.5 text-xs">
+                            <button type="button"
+                                    class="@ModeButtonClass(SummaryMode.Preview)"
+                                    aria-pressed="@Aria(_mode == SummaryMode.Preview)"
+                                    @onclick="() => SetMode(SummaryMode.Preview)">معاينة مباشرة</button>
+                            <button type="button"
+                                    class="@ModeButtonClass(SummaryMode.Edit)"
+                                    aria-pressed="@Aria(_mode == SummaryMode.Edit)"
+                                    @onclick="() => SetMode(SummaryMode.Edit)">تعديل النص</button>
+                        </div>
+                    </div>
+
+                    @if (_mode == SummaryMode.Preview)
                     {
-                        <MudSelectItem Value="@record">@record.Title</MudSelectItem>
+                        <div class="wa-bg-pattern custom-scroll flex min-h-[340px] max-h-[380px] flex-1 flex-col justify-end overflow-y-auto p-4">
+                            <div class="max-w-[92%] self-start whitespace-pre-wrap rounded-2xl rounded-tr-none border border-slate-200/60 bg-white p-3.5 text-xs leading-relaxed text-slate-800 shadow-xs">
+                                @foreach (var segment in Segments)
+                                {
+                                    if (segment.Kind == WhatsAppSegmentKind.Bold)
+                                    {
+                                        <strong class="font-bold text-slate-900">@segment.Text</strong>
+                                    }
+                                    else if (segment.Kind == WhatsAppSegmentKind.Italic)
+                                    {
+                                        <em class="italic text-slate-700">@segment.Text</em>
+                                    }
+                                    else if (segment.Kind == WhatsAppSegmentKind.Strike)
+                                    {
+                                        <s>@segment.Text</s>
+                                    }
+                                    else if (segment.Kind == WhatsAppSegmentKind.Link)
+                                    {
+                                        <a href="@segment.Text" target="_blank" rel="noopener noreferrer" class="break-all font-mono text-xs text-blue-600 underline">@segment.Text</a>
+                                    }
+                                    else
+                                    {
+                                        <span>@segment.Text</span>
+                                    }
+                                }
+                            </div>
+                            <div class="mt-1 flex items-center gap-1 self-start px-1 text-xs text-slate-500">
+                                <span>@ClockLabel</span>
+                                <MudIcon Icon="@Icons.Material.Filled.DoneAll" Class="text-[16px] text-blue-500" />
+                            </div>
+                        </div>
                     }
-                </MudSelect>
-            }
+                    else if (_mode == SummaryMode.Edit)
+                    {
+                        <div class="flex min-h-[340px] max-h-[380px] flex-1 flex-col overflow-y-auto border-t border-slate-200 bg-slate-50 p-3">
+                            <textarea @bind="_draft"
+                                      @bind:event="oninput"
+                                      rows="12"
+                                      aria-label="نص رسالة واتساب"
+                                      class="custom-scroll w-full resize-none rounded-lg border border-slate-300 bg-white p-3 font-mono text-xs leading-relaxed text-slate-800 focus:border-dispatch-500 focus:ring-2 focus:ring-dispatch-500"></textarea>
+                            <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                                <span>يدعم ماركداون واتساب: *عريض* ، _مائل_ ، ~مشطوب~</span>
+                                <button type="button"
+                                        class="font-semibold text-dispatch-600 hover:underline"
+                                        @onclick="ResetTemplate">استعادة القالب الافتراضي</button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="custom-scroll flex min-h-[340px] max-h-[380px] flex-1 flex-col items-center justify-center gap-3 overflow-y-auto bg-slate-50 p-4">
+                            @if (_qrData is not null)
+                            {
+                                <img src="@_qrData" alt="QR code يحتوي على نص الرسالة"
+                                     class="h-auto w-full max-w-[260px] rounded-lg border border-slate-200 bg-white p-2" />
+                            }
+                            <p class="text-center text-xs text-slate-500">امسح الرمز بكاميرا الهاتف لقراءة نص الرسالة الحالي.</p>
+                            <button type="button"
+                                    class="font-semibold text-dispatch-600 hover:underline"
+                                    @onclick="() => SetMode(SummaryMode.Preview)">العودة إلى المعاينة</button>
+                        </div>
+                    }
 
-            @if (_selectedRecord is not null)
-            {
-                <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs" dir="rtl">
-                    <h3 class="text-sm font-black text-slate-900">@_selectedRecord.Title</h3>
-                    <div class="my-3 h-px bg-slate-100"></div>
-                    <p class="whitespace-pre-line break-words text-sm leading-7 text-slate-700">@_selectedRecord.Text</p>
-                </section>
-            }
+                    <div class="flex shrink-0 items-center justify-between border-t border-slate-200/80 bg-slate-100/90 px-4 py-2 text-xs text-slate-500">
+                        <div class="flex items-center gap-1.5">
+                            <span class="@StatusDotClass"></span>
+                            <span>@StatusText</span>
+                        </div>
+                        <span class="font-mono text-slate-600">@CharacterCount حرف</span>
+                    </div>
+                </div>
+            </section>
 
-            @if (_qrData is not null)
-            {
-                <section class="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-xs">
-                    <img src="@_qrData" alt="QR code يحتوي على نص الملخص"
-                         class="mx-auto block h-auto w-full max-w-[360px] rounded-lg border border-slate-200" />
-                    <p class="mt-2 text-xs text-slate-500">امسح الرمز بكاميرا الهاتف لقراءة الملخص.</p>
-                </section>
-            }
+            <section class="flex flex-col gap-4 lg:col-span-5" aria-label="بيانات الوجهة والمتغيرات">
+                @if (_audience is not null)
+                {
+                    <div class="rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs">
+                        <div class="mb-3 flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                            <span class="text-xs font-bold text-slate-700">بيانات الوجهة المختارة</span>
+                            <span class="rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">@_audience.BadgeLabel</span>
+                        </div>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex items-center justify-between gap-3 text-slate-600">
+                                <span class="shrink-0 text-slate-400">الاسم:</span>
+                                <span class="truncate font-bold text-slate-800">@_audience.Name</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-3 text-slate-600">
+                                <span class="shrink-0 text-slate-400">الهاتف / واتساب:</span>
+                                <span class="truncate font-mono text-xs font-semibold text-slate-800" dir="ltr">@PhoneDisplay</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-3 text-slate-600">
+                                <span class="shrink-0 text-slate-400">الوجهة:</span>
+                                <span class="truncate text-end font-medium text-slate-800">@_audience.Destination</span>
+                            </div>
+                            @if (_audience.CollectionLabel is not null)
+                            {
+                                <div class="flex items-center justify-between gap-3 text-slate-600">
+                                    <span class="shrink-0 text-slate-400">طريقة التحصيل:</span>
+                                    <span class="rounded bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                                        @CollectionText(_audience)
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
 
-            @if (_error is not null)
-            {
-                <MudAlert Severity="Severity.Warning" Dense="true">@_error</MudAlert>
-            }
-        </div>
+                <div class="rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs">
+                    <div class="mb-2 flex items-center justify-between gap-2">
+                        <span class="text-xs font-bold text-slate-700">متغيرات سريعة للإدراج</span>
+                        <span class="text-xs text-slate-400">انقر لإضافتها للنص</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" class="@VariableChipClass" @onclick="InsertCustomerName">+ اسم العميل</button>
+                        <button type="button" class="@VariableChipClass"
+                                disabled="@(!HasLocation)"
+                                title="@LocationTitle"
+                                @onclick="InsertLocation">+ لوكيشن الخريطة</button>
+                        <button type="button" class="@VariableChipClass" @onclick="InsertInspection">+ تنبيه الفحص</button>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50/70 p-3">
+                    <MudIcon Icon="@Icons.Material.Outlined.Lock" Class="mt-0.5 shrink-0 text-[16px] text-dispatch-600" />
+                    <p class="text-xs leading-relaxed text-slate-600">
+                        <span class="font-bold text-slate-800">البيانات مفلترة حسب الجهة:</span>
+                        لا يُشارَك اسم العميل أو رقمه مع المورد، ولا تُعرض الأسعار للمندوب أو شركة الشحن.
+                    </p>
+                </div>
+            </section>
+        </main>
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div class="border-t border-rose-100 bg-rose-50 px-6 py-2 text-xs font-medium text-rose-700">@_error</div>
+        }
     </DialogContent>
 
     <DialogActions>
-        <footer class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 bg-white p-4">
-            <MudButton OnClick="Cancel" Variant="Variant.Text" Class="oh-btn oh-btn--secondary">إغلاق</MudButton>
-            <MudButton StartIcon="@Icons.Material.Outlined.QrCode2" OnClick="ShowQrCode"
-                       Disabled="_selectedRecord is null" Variant="Variant.Outlined"
-                       Class="oh-btn oh-btn--secondary">QR Code</MudButton>
-            <MudButton StartIcon="@Icons.Material.Outlined.Share" OnClick="ShareAsync"
-                       Disabled="_selectedRecord is null" Variant="Variant.Outlined"
-                       Class="oh-btn oh-btn--secondary">مشاركة</MudButton>
-            <MudButton StartIcon="@Icons.Material.Outlined.ContentCopy" OnClick="CopyAsync"
-                       Disabled="_selectedRecord is null" Color="Color.Primary" Variant="Variant.Filled"
-                       Class="oh-btn oh-btn--primary">نسخ</MudButton>
+        <footer class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-white px-6 py-4">
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button"
+                        class="@CopyButtonClass"
+                        @onclick="CopyAsync">
+                    <MudIcon Icon="@Icons.Material.Outlined.ContentCopy" Class="text-[16px]" />
+                    <span>@(_copied ? "تم النسخ بنجاح!" : "نسخ النص")</span>
+                </button>
+                <button type="button"
+                        class="@(FooterOutlineClass)"
+                        aria-pressed="@Aria(_mode == SummaryMode.Qr)"
+                        @onclick="ToggleQr">
+                    <MudIcon Icon="@Icons.Material.Outlined.QrCode2" Class="text-[16px]" />
+                    <span>QR Code</span>
+                </button>
+                <button type="button"
+                        class="@FooterOutlineClass"
+                        @onclick="ShareAsync">
+                    <MudIcon Icon="@Icons.Material.Outlined.Share" Class="text-[16px]" />
+                    <span>مشاركة</span>
+                </button>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-end gap-2">
+                <button type="button"
+                        class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                        @onclick="Cancel">إغلاق</button>
+
+                <a href="@PickerUrl"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs transition-colors hover:border-emerald-300 hover:text-emerald-700">
+                    <MudIcon Icon="@Icons.Custom.Brands.WhatsApp" Class="text-[16px] text-[#25D366]" />
+                    <span>فتح واتساب واختيار المستلم</span>
+                </a>
+
+                @if (DirectUrl is not null)
+                {
+                    <a href="@DirectUrl"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="inline-flex items-center gap-2 rounded-xl bg-whatsapp px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:bg-whatsapp-hover hover:scale-[1.01] active:scale-[0.99]">
+                        <MudIcon Icon="@Icons.Custom.Brands.WhatsApp" Class="text-[16px]" />
+                        <span>إرسال عبر واتساب إلى @PhoneDisplay</span>
+                    </a>
+                }
+                else
+                {
+                    <button type="button"
+                            disabled
+                            title="لا يوجد رقم واتساب صالح لهذه الجهة — يمكنك اختيار المستلم يدوياً"
+                            class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl bg-slate-200 px-5 py-2.5 text-xs font-bold text-slate-500">
+                        <MudIcon Icon="@Icons.Custom.Brands.WhatsApp" Class="text-[16px]" />
+                        <span>إرسال عبر واتساب</span>
+                    </button>
+                }
+            </div>
         </footer>
     </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
-    [Parameter, EditorRequired] public IReadOnlyList<OrderSummaryText> Summaries { get; set; } = [];
+    [Parameter, EditorRequired] public OrderSummaryData Data { get; set; } = null!;
 
-    private AudienceChoice? _selectedAudience;
-    private OrderSummaryText? _selectedRecord;
+    private IReadOnlyList<OrderSummaryAudience> _audiences = [];
+    private OrderSummaryAudience? _audience;
+    private int _recordIndex;
+    private string _draft = string.Empty;
+    private SummaryMode _mode = SummaryMode.Preview;
     private string? _qrData;
     private string? _error;
+    private bool _copied;
+    private int _copyToken;
 
-    private IReadOnlyList<AudienceChoice> Audiences => Summaries
-        .GroupBy(summary => (summary.AudienceType, summary.PartyId))
-        .Select(group => group.First())
-        .Select(summary => new AudienceChoice(summary.AudienceType, summary.PartyId, AudienceLabel(summary)))
-        .ToList();
-
-    private List<OrderSummaryText> CurrentRecords => _selectedAudience is null ? [] : Summaries
-        .Where(summary => summary.AudienceType == _selectedAudience.Type && summary.PartyId == _selectedAudience.PartyId)
-        .ToList();
-
-    private string AudienceClass(AudienceChoice audience) => _selectedAudience == audience
-        ? "rounded-full border border-brand-200 bg-brand-50 px-3.5 py-1.5 text-xs font-bold text-brand-700"
-        : "rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100";
-
-    protected override void OnInitialized() => SelectAudience(Audiences.FirstOrDefault());
-
-    private void SelectAudience(AudienceChoice? audience)
+    private enum SummaryMode
     {
-        _selectedAudience = audience;
-        _selectedRecord = audience is null ? null : Summaries.FirstOrDefault(summary =>
-            summary.AudienceType == audience.Type && summary.PartyId == audience.PartyId);
+        Preview,
+        Edit,
+        Qr
+    }
+
+    private const string VariableChipClass =
+        "rounded-lg border border-slate-200/70 bg-slate-100 px-2.5 py-1 text-[11px] text-slate-600 transition-colors hover:bg-blue-50 hover:text-dispatch-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-slate-100 disabled:hover:text-slate-600";
+
+    private const string FooterOutlineClass =
+        "inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs transition-colors hover:border-slate-300";
+
+    private OrderSummaryText? CurrentRecord => _audience is null || _audience.Records.Count == 0
+        ? null
+        : _audience.Records[Math.Clamp(_recordIndex, 0, _audience.Records.Count - 1)];
+
+    private bool ShowRecordSelector => _audience?.AudienceType == "deliveryman" && _audience.Records.Count > 1;
+
+    private IReadOnlyList<WhatsAppSegment> Segments => WhatsAppMarkdown.Parse(_draft);
+
+    private string? DirectUrl => WhatsAppPhone.BuildDirectUrl(_audience?.Phone, _draft);
+    private string PickerUrl => WhatsAppPhone.BuildPickerUrl(_draft);
+    private string PhoneDisplay => WhatsAppPhone.Format(_audience?.Phone);
+    private bool HasLocation => !string.IsNullOrWhiteSpace(Data.CustomerLocation);
+    private string? LocationTitle => HasLocation ? null : "لا يوجد رابط موقع محفوظ لهذا العميل";
+
+    private string HeaderTitle => _audience is null ? string.Empty : $"{_audience.Name} ({_audience.RoleLabel})";
+    private string HeaderSubtitle => DirectUrl is null
+        ? "رقم غير متاح — يمكنك اختيار المستلم يدوياً"
+        : $"جاهز للإرسال • {PhoneDisplay}";
+
+    private string Initials
+    {
+        get
+        {
+            var words = (_audience?.Name ?? string.Empty)
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (words.Length == 0) return "؟";
+            return words.Length == 1
+                ? words[0][..Math.Min(2, words[0].Length)]
+                : string.Join('.', words.Take(2).Select(word => word[0]));
+        }
+    }
+
+    private string CharacterCount => _draft.Length.ToString("N0", CultureInfo.InvariantCulture);
+
+    private string StatusDotClass => DirectUrl is null
+        ? "h-2 w-2 rounded-full bg-amber-500"
+        : "h-2 w-2 animate-pulse rounded-full bg-emerald-500";
+
+    private string StatusText => DirectUrl is null
+        ? "لا يوجد رقم واتساب صالح — انسخ النص أو اختر المستلم يدوياً"
+        : "القالب جاهز للإرسال عبر واتساب";
+
+    private string ClockLabel
+    {
+        get
+        {
+            var now = DateTime.Now;
+            var hour = now.Hour % 12 == 0 ? 12 : now.Hour % 12;
+            return $"{hour.ToString(CultureInfo.InvariantCulture)}:{now.Minute.ToString("00", CultureInfo.InvariantCulture)} {(now.Hour >= 12 ? "م" : "ص")}";
+        }
+    }
+
+    private string CopyButtonClass => _copied
+        ? "inline-flex items-center gap-1.5 rounded-xl bg-emerald-100 px-3.5 py-2 text-xs font-bold text-emerald-800 shadow-xs transition-colors"
+        : "inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3.5 py-2 text-xs font-bold text-slate-700 shadow-xs transition-colors hover:bg-slate-200";
+
+    protected override void OnInitialized()
+    {
+        _audiences = OrderSummaryTextBuilder.Build(Data);
+        SelectAudience(_audiences.FirstOrDefault());
+    }
+
+    private bool IsActive(OrderSummaryAudience audience) =>
+        _audience is not null && _audience.AudienceType == audience.AudienceType && _audience.PartyId == audience.PartyId;
+
+    private string TabClass(OrderSummaryAudience audience) => IsActive(audience)
+        ? "inline-flex shrink-0 items-center gap-2 rounded-xl bg-dispatch-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm ring-2 ring-dispatch-600/20 transition-all"
+        : "inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-600 transition-all hover:border-dispatch-500 hover:text-dispatch-600";
+
+    private string TabIconClass(OrderSummaryAudience audience) => IsActive(audience)
+        ? "text-[14px] text-white"
+        : "text-[14px] text-slate-400";
+
+    private string TabChipClass(OrderSummaryAudience audience) => IsActive(audience)
+        ? "max-w-[9rem] truncate rounded bg-white/20 px-1.5 py-0.5 text-[11px] text-white"
+        : "max-w-[9rem] truncate text-[11px] text-slate-400";
+
+    private static string AudienceTabLabel(OrderSummaryAudience audience) => audience.AudienceType switch    {
+        "customer" => "العميل",
+        "deliveryman" => "المندوب",
+        "supplier" => "المورد",
+        "shipping" => "شركة الشحن",
+        _ => audience.RoleLabel
+    };
+
+    private static string AudienceIcon(string audienceType) => audienceType switch
+    {
+        "customer" => Icons.Material.Outlined.PersonOutline,
+        "deliveryman" => Icons.Material.Outlined.Moped,
+        "supplier" => Icons.Material.Outlined.Storefront,
+        "shipping" => Icons.Material.Outlined.LocalShipping,
+        _ => Icons.Material.Outlined.Person
+    };
+
+    private string ModeButtonClass(SummaryMode mode) => _mode == mode
+        ? "rounded bg-white px-2.5 py-1 text-xs font-medium text-slate-800 shadow-xs"
+        : "rounded px-2.5 py-1 text-xs font-medium text-slate-200 hover:text-white";
+
+    private static string Aria(bool value) => value ? "true" : "false";
+
+    private static string CollectionText(OrderSummaryAudience audience) => audience.CollectionAmount is { } amount
+        ? $"{audience.CollectionLabel} ({amount.ToString("N2", CultureInfo.InvariantCulture)} ر.س)"
+        : audience.CollectionLabel ?? string.Empty;
+
+    private void SelectAudience(OrderSummaryAudience? audience)
+    {
+        _audience = audience;
+        _recordIndex = 0;
+        ResetDraft();
+    }
+
+    private void ResetDraft()
+    {
+        _draft = CurrentRecord?.Text ?? string.Empty;
+        _mode = SummaryMode.Preview;
         _qrData = null;
         _error = null;
     }
 
-    private void SelectRecord(OrderSummaryText record)
+    private void OnRecordChanged(ChangeEventArgs args)
     {
-        _selectedRecord = record;
+        if (!int.TryParse(args.Value?.ToString(), out var index)) return;
+        _recordIndex = index;
+        ResetDraft();
+    }
+
+    private void SetMode(SummaryMode mode)
+    {
+        if (mode == SummaryMode.Qr)
+        {
+            _error = null;
+            if (!TryBuildQr()) return;
+        }
+
+        _mode = mode;
+    }
+
+    private void ToggleQr() =>
+        SetMode(_mode == SummaryMode.Qr ? SummaryMode.Preview : SummaryMode.Qr);
+
+    private bool TryBuildQr()
+    {
+        try
+        {
+            using var qrData = QRCodeGenerator.GenerateQrCode(_draft,
+                QRCodeGenerator.ECCLevel.M, forceUtf8: true, eciMode: QRCodeGenerator.EciMode.Utf8);
+            using var renderer = new PngByteQRCode(qrData);
+            _qrData = $"data:image/png;base64,{Convert.ToBase64String(renderer.GetGraphic(8))}";
+            return true;
+        }
+        catch (QRCoder.Exceptions.DataTooLongException)
+        {
+            _qrData = null;
+            _error = "محتوى الرسالة أطول من سعة رمز QR. استخدم النسخ أو المشاركة.";
+            return false;
+        }
+    }
+
+    private void ResetTemplate()
+    {
+        _draft = CurrentRecord?.Text ?? string.Empty;
         _qrData = null;
         _error = null;
     }
+
+    private void InsertVariable(string snippet)
+    {
+        var addition = snippet.TrimStart('\n');
+        _draft = string.IsNullOrWhiteSpace(_draft) ? addition : _draft.TrimEnd() + "\n" + addition;
+    }
+
+    private void InsertCustomerName() => InsertVariable($"*اسم العميل:* {Data.CustomerName}");
+
+    private void InsertLocation()
+    {
+        if (HasLocation) InsertVariable($"📍 *رابط الموقع:* {Data.CustomerLocation}");
+    }
+
+    private void InsertInspection() => InsertVariable("⚠️ يُرجى التأكد من فحص الطرود قبل التوقيع");
 
     private void Cancel() => Dialog.Cancel();
 
     private async Task CopyAsync()
     {
-        if (_selectedRecord is null) return;
         try
         {
-            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _selectedRecord.Text);
-            Snackbar.Add("تم نسخ الملخص.", Severity.Success);
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _draft);
+            _copied = true;
+            _error = null;
+            var token = ++_copyToken;
+            StateHasChanged();
+            await Task.Delay(2000);
+            if (token != _copyToken) return;
+            _copied = false;
         }
         catch (JSException)
         {
@@ -154,44 +521,13 @@
 
     private async Task ShareAsync()
     {
-        if (_selectedRecord is null) return;
         try
         {
-            await JS.InvokeVoidAsync("navigator.share", new { title = _selectedRecord.Title, text = _selectedRecord.Text });
+            await JS.InvokeVoidAsync("navigator.share", new { title = $"ملخص طلب {Data.OrderNumber}", text = _draft });
         }
         catch (JSException)
         {
-            _error = "المشاركة المباشرة غير متاحة في هذا المتصفح. يمكنك نسخ الملخص.";
+            _error = "المشاركة المباشرة غير متاحة في هذا المتصفح. يمكنك نسخ الرسالة أو فتح واتساب.";
         }
     }
-
-    private void ShowQrCode()
-    {
-        if (_selectedRecord is null) return;
-        try
-        {
-            using var qrData = QRCodeGenerator.GenerateQrCode(_selectedRecord.Text,
-                QRCodeGenerator.ECCLevel.M, forceUtf8: true, eciMode: QRCodeGenerator.EciMode.Utf8);
-            using var renderer = new PngByteQRCode(qrData);
-            _qrData = $"data:image/png;base64,{Convert.ToBase64String(renderer.GetGraphic(8))}";
-            _error = null;
-        }
-        catch (QRCoder.Exceptions.DataTooLongException)
-        {
-            _qrData = null;
-            _error = "محتوى الملخص أطول من سعة رمز QR. استخدم النسخ أو المشاركة.";
-        }
-    }
-
-    private static string AudienceLabel(OrderSummaryText summary) => summary.AudienceType switch
-    {
-        "order" => "الطلب",
-        "customer" => "العميل",
-        "deliveryman" => $"المندوب — {summary.AudienceName}",
-        "shipping" => $"شركة الشحن — {summary.AudienceName}",
-        "supplier" => $"المورد — {summary.AudienceName}",
-        _ => summary.AudienceName
-    };
-
-    private sealed record AudienceChoice(string Type, int PartyId, string Label);
 }
