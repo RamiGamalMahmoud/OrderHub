@@ -6,4 +6,5 @@ using OrderHub.Domain.Common;
 namespace OrderHub.Application.Features.Administration.Roles.Delete;
 
 [RequirePermission(PermissionFeature.Users, PermissionLevel.Write)]
+[RequireHigherManager]
 public sealed record DeleteRoleCommand(int RoleId) : IRequest<Result>;

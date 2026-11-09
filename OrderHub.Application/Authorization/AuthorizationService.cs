@@ -13,7 +13,8 @@ internal sealed class AuthorizationService(ICurrentUser currentUser, IUserPermis
         if (!currentUser.IsAuthenticated || currentUser.Id is not > 0)
             return false;
 
-        if (!Enum.IsDefined(feature) || requiredLevel is not (PermissionLevel.Read or PermissionLevel.Write))
+        if (!Enum.IsDefined(feature) ||
+            requiredLevel is not (PermissionLevel.Read or PermissionLevel.Write or PermissionLevel.Approve))
             return false;
 
         if (currentUser.IsAdmin)
@@ -22,9 +23,16 @@ internal sealed class AuthorizationService(ICurrentUser currentUser, IUserPermis
         var actual = await reader.GetPermissionLevelAsync(currentUser.Id.Value, feature, cancellationToken);
         return requiredLevel switch
         {
-            PermissionLevel.Read => actual is PermissionLevel.Read or PermissionLevel.Write,
-            PermissionLevel.Write => actual == PermissionLevel.Write,
+            PermissionLevel.Read => actual is PermissionLevel.Read or PermissionLevel.Write or PermissionLevel.Approve,
+            PermissionLevel.Write => actual is PermissionLevel.Write or PermissionLevel.Approve,
+            PermissionLevel.Approve => actual is PermissionLevel.Approve,
             _ => false
         };
     }
+
+    public Task<bool> IsHigherManagerAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(
+            currentUser.IsAuthenticated &&
+            currentUser.Id is > 0 &&
+            currentUser.IsAdmin);
 }

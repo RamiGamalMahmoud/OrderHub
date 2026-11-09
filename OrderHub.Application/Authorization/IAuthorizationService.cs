@@ -7,4 +7,6 @@ namespace OrderHub.Application.Authorization;
 public interface IAuthorizationService
 {
     Task<bool> IsAllowedAsync(PermissionFeature feature, PermissionLevel requiredLevel, CancellationToken cancellationToken = default);
+
+    Task<bool> IsHigherManagerAsync(CancellationToken cancellationToken = default);
 }

@@ -1687,6 +1687,12 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<bool>("IsSealed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_sealed");
+
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
@@ -1697,12 +1703,21 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("varchar(100)")
                         .HasColumnName("name");
 
+                    b.Property<string>("RoleKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("role_key");
+
                     b.HasKey("Id")
                         .HasName("pk_roles");
 
                     b.HasIndex("Name")
                         .IsUnique()
                         .HasDatabaseName("ix_roles_name");
+
+                    b.HasIndex("RoleKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_roles_role_key");
 
                     b.ToTable("roles", (string)null);
                 });

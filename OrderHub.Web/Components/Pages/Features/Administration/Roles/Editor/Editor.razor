@@ -13,7 +13,7 @@
 @using OrderHub.Application.Interfaces
 @using OrderHub.Domain.Enums
 
-@attribute [Authorize(Roles = "Admin")]
+@attribute [HigherManagerAuthorize]
 
 @inject IRequestExecutor RequestExecutor
 @inject NavigationManager NavigationManager
@@ -47,12 +47,24 @@
             <div>
                 <div class="flex items-center gap-2.5">
                     <h1 class="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">@PageTitleText</h1>
-                    <span class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold tracking-wider text-blue-700">
-                        <MudIcon Icon="@Icons.Material.Filled.Security"
-                                 Class="text-[12px]"
-                                 aria-hidden="true" />
-                        RBAC
-                    </span>
+                    @if (_isSealed)
+                    {
+                        <span class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700">
+                            <MudIcon Icon="@Icons.Material.Filled.Lock"
+                                     Class="text-[12px]"
+                                     aria-hidden="true" />
+                            دور جاهز
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold tracking-wider text-blue-700">
+                            <MudIcon Icon="@Icons.Material.Filled.Security"
+                                     Class="text-[12px]"
+                                     aria-hidden="true" />
+                            RBAC
+                        </span>
+                    }
                 </div>
                 <p class="mt-1 text-xs text-slate-500 sm:text-sm">@PageDescription</p>
             </div>
@@ -114,6 +126,22 @@
     {
         <div class="space-y-5">
 
+            @if (_isSealed)
+            {
+                <div class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900"
+                     role="status">
+                    <MudIcon Icon="@Icons.Material.Filled.Lock"
+                             Class="mt-0.5 shrink-0 text-[18px]"
+                             aria-hidden="true" />
+                    <div>
+                        <p class="text-sm font-bold">دور جاهز — للعرض فقط</p>
+                        <p class="mt-0.5 text-xs">
+                            الأدوار الجاهزة تُدار من النظام ولا يمكن تعديل اسمها أو صلاحياتها.
+                        </p>
+                    </div>
+                </div>
+            }
+
             @* ==================================================
                Role basic info
                ================================================== *@
@@ -156,7 +184,7 @@
                                    maxlength="100"
                                    placeholder="مثال: مسؤول مبيعات، مدير عمليات، محاسب مالي..."
                                    class="block w-full rounded-lg border border-slate-200 py-2 pl-3.5 pr-10 text-xs text-slate-800 placeholder-slate-400 transition-colors focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                   disabled="@_saving"
+                                   disabled="@(_saving || _isSealed)"
                                    @bind="RoleName"
                                    @bind:event="oninput" />
                         </div>
@@ -179,7 +207,7 @@
                ================================================== *@
 
             <RolePermissionCards Permissions="_state.Permissions"
-                                 Disabled="_saving"
+                                 Disabled="@(_saving || _isSealed)"
                                  OnChanged="StateHasChanged" />
 
 
@@ -194,7 +222,7 @@
                                  Class="text-[14px]"
                                  aria-hidden="true" />
                     </div>
-                    <div class="grid w-full grid-cols-1 gap-3 text-xs md:grid-cols-3">
+                    <div class="grid w-full grid-cols-1 gap-3 text-xs md:grid-cols-4">
                         <div class="rounded-lg border border-blue-100/60 bg-white/80 p-2.5">
                             <div class="flex items-center gap-1.5 font-bold text-slate-800">
                                 <span class="h-2 w-2 rounded-full bg-slate-400"></span>
@@ -220,8 +248,18 @@
                                 <span class="h-2 w-2 rounded-full bg-indigo-600"></span>
                                 <span>كتابة (صلاحية كاملة)</span>
                             </div>
-                            <p class="mt-1 text-[11px] leading-relaxed text-slate-600">
+                            <p class="mt-1 text-xs leading-relaxed text-slate-600">
                                 تشمل القراءة بالإضافة إلى عمليات الإضافة، التعديل، الحذف، والعمليات التنفيذية.
+                            </p>
+                        </div>
+
+                        <div class="rounded-lg border border-emerald-100 bg-white/80 p-2.5">
+                            <div class="flex items-center gap-1.5 font-bold text-emerald-700">
+                                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                                <span>اعتماد (أعلى مستوى)</span>
+                            </div>
+                            <p class="mt-1 text-xs leading-relaxed text-slate-600">
+                                يشمل كل صلاحيات الكتابة، ويُستخدم لاعتماد العمليات الحساسة.
                             </p>
                         </div>
                     </div>
@@ -261,6 +299,11 @@
                             <span>كتابة:</span>
                             <span class="font-bold">@FmtCount(WritePermissionCount)</span>
                         </div>
+
+                        <div class="inline-flex items-center gap-1.5 rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                            <span>اعتماد:</span>
+                            <span class="font-bold">@FmtCount(ApprovePermissionCount)</span>
+                        </div>
                     </div>
                 </div>
 
@@ -294,25 +337,28 @@
                 </div>
 
                 <div class="order-1 flex w-full items-center justify-end gap-2.5 sm:order-2 sm:w-auto">
-                    <button type="button"
-                            class="flex w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-5 py-2 text-xs font-bold text-white shadow-sm shadow-blue-500/20 transition-colors hover:bg-blue-700 active:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-                            disabled="@_saving"
-                            @onclick="SaveAsync">
-                        @if (_saving)
-                        {
-                            <MudProgressCircular Indeterminate="true"
-                                                 Size="Size.Small"
-                                                 Color="Color.Inherit" />
-                            <span>جاري الحفظ...</span>
-                        }
-                        else
-                        {
-                            <MudIcon Icon="@Icons.Material.Filled.Check"
-                                     Class="text-[16px]"
-                                     aria-hidden="true" />
-                            <span>@SaveButtonText</span>
-                        }
-                    </button>
+                    @if (!_isSealed)
+                    {
+                        <button type="button"
+                                class="flex w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-5 py-2 text-xs font-bold text-white shadow-sm shadow-blue-500/20 transition-colors hover:bg-blue-700 active:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                                disabled="@_saving"
+                                @onclick="SaveAsync">
+                            @if (_saving)
+                            {
+                                <MudProgressCircular Indeterminate="true"
+                                                     Size="Size.Small"
+                                                     Color="Color.Inherit" />
+                                <span>جاري الحفظ...</span>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Check"
+                                         Class="text-[16px]"
+                                         aria-hidden="true" />
+                                <span>@SaveButtonText</span>
+                            }
+                        </button>
+                    }
                 </div>
             </section>
 
@@ -344,6 +390,8 @@
 
     private bool _roleFound;
 
+    private bool _isSealed;
+
     private string? _nameError;
 
 
@@ -371,15 +419,19 @@
 
 
     private string PageTitleText =>
-        IsEditMode
-            ? "تعديل الدور"
-            : "إضافة دور جديد";
+        _isSealed
+            ? "عرض الدور"
+            : IsEditMode
+                ? "تعديل الدور"
+                : "إضافة دور جديد";
 
 
     private string PageDescription =>
-        IsEditMode
-            ? "تعديل بيانات الدور وصلاحيات الوصول الخاصة به"
-            : "إنشاء وتخصيص مستويات صلاحيات الوصول لأقسام ووحدات النظام بدقة وسلاسة";
+        _isSealed
+            ? "عرض صلاحيات دور جاهز — غير قابل للتعديل"
+            : IsEditMode
+                ? "تعديل بيانات الدور وصلاحيات الوصول الخاصة به"
+                : "إنشاء وتخصيص مستويات صلاحيات الوصول لأقسام ووحدات النظام بدقة وسلاسة";
 
 
     private string SaveButtonText =>
@@ -411,8 +463,13 @@
             x => x.Level == PermissionLevel.Write);
 
 
+    private int ApprovePermissionCount =>
+        _state.Permissions.Count(
+            x => x.Level == PermissionLevel.Approve);
+
+
     private int GrantedPermissionCount =>
-        ReadPermissionCount + WritePermissionCount;
+        ReadPermissionCount + WritePermissionCount + ApprovePermissionCount;
 
 
     // ============================================================
@@ -444,6 +501,7 @@
         try
         {
             _state = new RoleEditorState();
+            _isSealed = false;
             _nameError = null;
 
             if (!IsEditMode)
@@ -489,6 +547,7 @@
         }
 
         _state.Name = role.Name;
+        _isSealed = role.IsSealed;
 
         ApplyPermissions(role.Permissions);
 
@@ -531,7 +590,7 @@
 
     private async Task SaveAsync()
     {
-        if (_saving)
+        if (_saving || _isSealed)
             return;
 
         if (string.IsNullOrWhiteSpace(_state.Name))

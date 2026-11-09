@@ -30,6 +30,7 @@ public static class ServiceCollectionExtensions
         services.AddUserReadService();
         services.AddRoleReadService();
         services.AddScoped<IUserPermissionReader, UserPermissionReader>();
+        services.AddScoped<IUserAdminReader, UserAdminReader>();
 
 
         return services;

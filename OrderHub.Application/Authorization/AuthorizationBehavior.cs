@@ -15,6 +15,11 @@ internal sealed class AuthorizationBehavior<TRequest, TResponse>(IAuthorizationS
             !await authorization.IsAllowedAsync(requirement.Feature, requirement.RequiredLevel, cancellationToken))
             throw new AuthorizationDeniedException();
 
+        var higherManagerRequirement = request.GetType().GetCustomAttribute<RequireHigherManagerAttribute>();
+        if (higherManagerRequirement is not null &&
+            !await authorization.IsHigherManagerAsync(cancellationToken))
+            throw new AuthorizationDeniedException();
+
         return await next();
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using OrderHub.Domain.Enums;
 using OrderHub.Application.Features.Administration.Roles.GetRole;
 using OrderHub.Application.Features.Administration.Roles.GetRoles;
 using System.Collections.Generic;
@@ -27,11 +28,16 @@ internal sealed class RoleReadService :
 
         return await dbContext.Roles
             .AsNoTracking()
-            .OrderBy(role => role.Name)
+            .OrderByDescending(role => role.IsSealed)
+            .ThenBy(role => role.Name)
             .Select(role => new RoleListItem(
                 role.Id,
                 role.Name,
-                role.Permissions.Count))
+                role.IsSealed,
+                role.RoleKey,
+                role.Permissions.Count(permission => permission.Level == PermissionLevel.Read),
+                role.Permissions.Count(permission => permission.Level == PermissionLevel.Write),
+                role.Permissions.Count(permission => permission.Level == PermissionLevel.Approve)))
             .ToListAsync(cancellationToken);
     }
 
@@ -47,6 +53,8 @@ internal sealed class RoleReadService :
             .Select(role => new GetRoleResponse(
                 role.Id,
                 role.Name,
+                role.IsSealed,
+                role.RoleKey,
                 role.Permissions
                     .Select(permission => new RolePermissionItem(
                         permission.Feature,

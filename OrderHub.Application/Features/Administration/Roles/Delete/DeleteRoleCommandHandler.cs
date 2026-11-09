@@ -24,6 +24,9 @@ internal sealed class DeleteRoleCommandHandler : IRequestHandler<DeleteRoleComma
         if (role is null)
             return Result.Failure("الدور غير موجود.");
 
+        if (role.IsSealed)
+            return Result.Failure("لا يمكن حذف دور جاهز؛ الأدوار الجاهزة جزء من النظام.");
+
         if (await _roleRepository.IsAssignedToUsersAsync(request.RoleId, cancellationToken))
             return Result.Failure("لا يمكن حذف الدور لأنه مرتبط بمستخدمين.");
 

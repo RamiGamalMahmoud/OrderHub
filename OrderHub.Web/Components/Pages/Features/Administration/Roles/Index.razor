@@ -8,7 +8,7 @@
 @using OrderHub.Application.Interfaces
 @using OrderHub.Domain.Common
 
-@attribute [Authorize(Roles = "Admin")]
+@attribute [HigherManagerAuthorize]
 
 @inject IRequestExecutor RequestExecutor
 @inject NavigationManager NavigationManager
@@ -113,6 +113,12 @@
                             @FirstLetter(role.Name)
                         </span>
                         <span class="text-sm font-bold text-slate-900">@role.Name</span>
+                        @if (role.IsSealed)
+                        {
+                            <span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                                دور جاهز
+                            </span>
+                        }
                     </div>
                 </MudTd>
 
@@ -131,24 +137,38 @@
 
                 <MudTd DataLabel="الإجراءات">
                     <div class="flex items-center justify-end gap-1.5">
-                        <MudTooltip Text="تعديل الدور">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                           Size="Size.Small"
-                                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost"
-                                           aria-label="تعديل الدور"
-                                           OnClick="@(() => EditRole(role.Id))"
-                                           Disabled="IsBusy" />
-                        </MudTooltip>
+                        @if (role.IsSealed)
+                        {
+                            <MudTooltip Text="عرض صلاحيات الدور">
+                                <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                               Size="Size.Small"
+                                               Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost"
+                                               aria-label="عرض صلاحيات الدور"
+                                               OnClick="@(() => EditRole(role.Id))"
+                                               Disabled="IsBusy" />
+                            </MudTooltip>
+                        }
+                        else
+                        {
+                            <MudTooltip Text="تعديل الدور">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Size="Size.Small"
+                                               Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost"
+                                               aria-label="تعديل الدور"
+                                               OnClick="@(() => EditRole(role.Id))"
+                                               Disabled="IsBusy" />
+                            </MudTooltip>
 
-                        <MudTooltip Text="حذف الدور">
-                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
-                                           Color="Color.Error"
-                                           Size="Size.Small"
-                                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost oh-btn--danger"
-                                           aria-label="حذف الدور"
-                                           OnClick="@(() => ConfirmDeleteAsync(role))"
-                                           Disabled="IsBusy" />
-                        </MudTooltip>
+                            <MudTooltip Text="حذف الدور">
+                                <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                               Color="Color.Error"
+                                               Size="Size.Small"
+                                               Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost oh-btn--danger"
+                                               aria-label="حذف الدور"
+                                               OnClick="@(() => ConfirmDeleteAsync(role))"
+                                               Disabled="IsBusy" />
+                            </MudTooltip>
+                        }
                     </div>
                 </MudTd>
             </RowTemplate>

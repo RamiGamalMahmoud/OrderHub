@@ -35,6 +35,7 @@ internal sealed class UserReadService :
                 user.IsAdmin,
                 user.RoleId,
                 user.Role != null ? user.Role.Name : null,
+                user.Role != null && user.Role.IsSealed,
                 user.CreatedAt))
             .ToListAsync(cancellationToken);
     }

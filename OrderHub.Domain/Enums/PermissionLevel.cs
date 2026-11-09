@@ -11,5 +11,8 @@ public enum PermissionLevel
     Read,
 
     [Description("كتابة")]
-    Write
+    Write,
+
+    [Description("اعتماد")]
+    Approve
 }

@@ -288,11 +288,7 @@ else
             }
         }
 
-        if (AuthenticationStateTask is not null)
-        {
-            var user = (await AuthenticationStateTask).User;
-            _isAdmin = user?.IsInRole("Admin") ?? false;
-        }
+        _isAdmin = await PermissionAccess.IsHigherManagerAsync();
 
         _permissionsEvaluated = true;
     }

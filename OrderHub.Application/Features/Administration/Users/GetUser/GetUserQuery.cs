@@ -6,6 +6,7 @@ using System;
 namespace OrderHub.Application.Features.Administration.Users.GetUser;
 
 [RequirePermission(PermissionFeature.Users, PermissionLevel.Read)]
+[RequireHigherManager]
 public sealed record GetUserQuery(int UserId)
     : IRequest<GetUserResponse>;
 

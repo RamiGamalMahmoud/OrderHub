@@ -6,4 +6,5 @@ using OrderHub.Domain.Common;
 namespace OrderHub.Application.Features.Administration.Roles.Update;
 
 [RequirePermission(PermissionFeature.Users, PermissionLevel.Write)]
+[RequireHigherManager]
 public record UpdateRoleCommand(int RoleId, UpdateRoleRequest Request) : IRequest<Result>;

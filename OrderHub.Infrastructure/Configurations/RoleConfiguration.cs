@@ -20,6 +20,17 @@ internal sealed class RoleConfiguration : ModelConfigurationBase<Role>
         builder.HasIndex(x => x.Name)
             .IsUnique();
 
+        builder.Property(x => x.IsSealed)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(x => x.RoleKey)
+            .HasColumnType("varchar(100)")
+            .HasMaxLength(100);
+
+        builder.HasIndex(x => x.RoleKey)
+            .IsUnique();
+
         builder.HasMany(x => x.Permissions)
             .WithOne(x => x.Role)
             .HasForeignKey(x => x.RoleId)

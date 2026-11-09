@@ -1,6 +1,7 @@
 using MediatR;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Repositories;
+using OrderHub.Domain.Authorization;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using System.Linq;
@@ -26,7 +27,14 @@ internal sealed class UpdateRoleCommandHandler : IRequestHandler<UpdateRoleComma
         if (role is null)
             return Result.Failure("الدور غير موجود.");
 
+        if (role.IsSealed)
+            return Result.Failure("لا يمكن تعديل دور جاهز؛ الأدوار الجاهزة محمية من التعديل.");
+
         var input = request.Request;
+
+        if (SealedRolePresets.IsReservedName(input.Name))
+            return Result.Failure("هذا الاسم محجوز لأحد الأدوار الجاهزة.");
+
         bool nameExists = await _roleRepository.NameExistsAsync(
             input.Name?.Trim(),
             request.RoleId,

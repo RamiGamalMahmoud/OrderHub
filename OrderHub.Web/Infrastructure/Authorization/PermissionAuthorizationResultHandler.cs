@@ -15,7 +15,8 @@ internal sealed class PermissionAuthorizationResultHandler
         PolicyAuthorizationResult result)
     {
         if (result.Forbidden &&
-            policy.Requirements.OfType<PermissionRequirement>().Any())
+            policy.Requirements.Any(requirement =>
+                requirement is PermissionRequirement or HigherManagerRequirement))
         {
             var isController = context.GetEndpoint()?.Metadata.GetMetadata<Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor>() is not null;
             if (!isController && context.Request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase))

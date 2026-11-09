@@ -6,4 +6,5 @@ using OrderHub.Domain.Common;
 namespace OrderHub.Application.Features.Administration.Roles.Create;
 
 [RequirePermission(PermissionFeature.Users, PermissionLevel.Write)]
+[RequireHigherManager]
 public record CreateRoleCommand(CreateRoleRequest Request) : IRequest<Result<int>>;

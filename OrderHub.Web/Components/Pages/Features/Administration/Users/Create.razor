@@ -11,7 +11,7 @@
 @using OrderHub.Domain.Common
 @using OrderHub.Web.Components.Pages.Features.Administration.Roles.Editor
 
-@attribute [Authorize(Roles = "Admin")]
+@attribute [HigherManagerAuthorize]
 
 @inject IRequestExecutor RequestExecutor
 @inject NavigationManager NavigationManager
@@ -171,14 +171,32 @@
                                        Variant="Variant.Outlined"
                                        Margin="Margin.Dense"
                                        Clearable="true"
-                                       Disabled="_saving">
+                                       Disabled="@(_saving || _model.IsAdmin)">
 
-                                @foreach (RoleListItem role in _roles)
+                                @if (SealedRoles.Count > 0)
                                 {
-                                    <MudSelectItem T="int?"
-                                                   Value="@role.Id">
-                                        @role.Name
-                                    </MudSelectItem>
+                                    <MudListSubheader>أدوار جاهزة</MudListSubheader>
+
+                                    @foreach (RoleListItem role in SealedRoles)
+                                    {
+                                        <MudSelectItem T="int?"
+                                                       Value="@role.Id">
+                                            @role.Name
+                                        </MudSelectItem>
+                                    }
+                                }
+
+                                @if (CustomRoles.Count > 0)
+                                {
+                                    <MudListSubheader>أدوار مخصصة</MudListSubheader>
+
+                                    @foreach (RoleListItem role in CustomRoles)
+                                    {
+                                        <MudSelectItem T="int?"
+                                                       Value="@role.Id">
+                                            @role.Name
+                                        </MudSelectItem>
+                                    }
                                 }
 
                             </MudSelect>
@@ -196,17 +214,49 @@
                             <p class="mt-1 text-xs text-slate-500">
                                 المستخدم بدون دور لا يحصل على صلاحيات الدور.
                             </p>
+
+                            <div class="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                <p class="text-xs font-bold text-slate-700">ملخص صلاحيات الدور</p>
+
+                                @if (_model.IsAdmin)
+                                {
+                                    <p class="mt-1 text-xs text-slate-600">
+                                        وصول كامل — يتجاوز جميع الصلاحيات.
+                                    </p>
+                                }
+                                else if (SelectedRole is null)
+                                {
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        لم يتم تحديد دور؛ لا توجد صلاحيات.
+                                    </p>
+                                }
+                                else
+                                {
+                                    <p class="mt-1 text-xs text-slate-600">
+                                        @SelectedRole.Name —
+                                        @(SelectedRole.IsSealed ? "دور جاهز" : "دور مخصص")
+                                    </p>
+                                    <p class="mt-1 text-xs font-medium text-slate-700">
+                                        قراءة @SelectedRole.ReadCount ·
+                                        كتابة @SelectedRole.WriteCount ·
+                                        اعتماد @SelectedRole.ApproveCount
+                                    </p>
+                                    <p class="mt-0.5 text-xs text-slate-500">
+                                        الإجمالي: @SelectedRole.PermissionCount صلاحية
+                                    </p>
+                                }
+                            </div>
                         </div>
 
                         <div class="space-y-1">
                             <MudSwitch T="bool"
                                        @bind-Value="_model.IsAdmin"
-                                       Label="مدير النظام"
+                                       Label="مدير أعلى"
                                        Color="Color.Error"
                                        Disabled="_saving" />
 
                             <p class="text-xs text-slate-500">
-                                مدير النظام يمتلك وصولًا كاملًا ولا يعتمد وصوله على صلاحيات الدور.
+                                مدير أعلى يمتلك وصولًا كاملًا ولا يعتمد وصوله على صلاحيات الدور.
                             </p>
                         </div>
 
@@ -228,14 +278,14 @@
                         <div class="mt-4 flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm text-blue-800">
                             <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" class="mt-0.5 shrink-0" />
                             <p>
-                                هذا المستخدم مدير للنظام، لذلك يمتلك وصولًا كاملًا
+                                هذا المستخدم مدير أعلى، لذلك يمتلك وصولًا كاملًا
                                 بغض النظر عن الدور المحدد.
 
                                 @if (_model.RoleId.HasValue)
                                 {
                                     <span>
-                                        سيظل الدور محفوظًا ويمكن استخدامه إذا أزيلت
-                                        صلاحية مدير النظام لاحقًا.
+                                        سيظل الدور محفوظًا ويُطبَّق تلقائيًا إذا أُزيلت
+                                        صفة مدير أعلى لاحقًا.
                                     </span>
                                 }
                             </p>
@@ -246,9 +296,7 @@
                         <div class="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-100 bg-amber-50 p-3 text-sm text-amber-800">
                             <MudIcon Icon="@Icons.Material.Filled.WarningAmber" Size="Size.Small" class="mt-0.5 shrink-0" />
                             <p>
-                                لم يتم تحديد دور لهذا المستخدم.
-                                سيتم إنشاء الحساب بدون صلاحيات وصول إلى الميزات
-                                المحمية بالصلاحيات.
+                                لن يحصل هذا المستخدم على أي صلاحيات حتى يتم تعيين دور له.
                             </p>
                         </div>
                     }
@@ -319,6 +367,17 @@
     private readonly UserFormModel _model = new();
 
     private IReadOnlyList<RoleListItem> _roles = [];
+
+    private IReadOnlyList<RoleListItem> SealedRoles =>
+        _roles.Where(role => role.IsSealed).ToList();
+
+    private IReadOnlyList<RoleListItem> CustomRoles =>
+        _roles.Where(role => !role.IsSealed).ToList();
+
+    private RoleListItem? SelectedRole =>
+        _model.RoleId.HasValue
+            ? _roles.FirstOrDefault(role => role.Id == _model.RoleId.Value)
+            : null;
 
     private bool _loading = true;
 

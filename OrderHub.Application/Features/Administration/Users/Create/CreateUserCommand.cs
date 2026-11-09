@@ -5,6 +5,7 @@ using OrderHub.Domain.Common;
 
 namespace OrderHub.Application.Features.Administration.Users.Create;
 [RequirePermission(PermissionFeature.Users, PermissionLevel.Write)]
+[RequireHigherManager]
 public record CreateUserCommand(CreateUserRequest Request) : IRequest<Result>;
 
 public record CreateUserRequest(

@@ -6,4 +6,5 @@ using System.Collections.Generic;
 namespace OrderHub.Application.Features.Administration.Roles.GetRoles;
 
 [RequirePermission(PermissionFeature.Users, PermissionLevel.Read)]
+[RequireHigherManager]
 public sealed record GetRolesQuery : IRequest<IReadOnlyList<RoleListItem>>;

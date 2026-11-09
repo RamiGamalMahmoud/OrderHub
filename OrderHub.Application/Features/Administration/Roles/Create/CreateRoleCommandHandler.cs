@@ -1,6 +1,7 @@
 using MediatR;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Repositories;
+using OrderHub.Domain.Authorization;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Models;
 using System.Threading;
@@ -22,6 +23,10 @@ internal sealed class CreateRoleCommandHandler : IRequestHandler<CreateRoleComma
     public async Task<Result<int>> Handle(CreateRoleCommand request, CancellationToken cancellationToken)
     {
         var input = request.Request;
+
+        if (SealedRolePresets.IsReservedName(input.Name))
+            return Result<int>.Failure("هذا الاسم محجوز لأحد الأدوار الجاهزة.");
+
         bool nameExists = await _roleRepository.NameExistsAsync(
             input.Name?.Trim(),
             cancellationToken: cancellationToken);

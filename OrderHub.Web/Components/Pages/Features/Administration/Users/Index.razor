@@ -1,6 +1,6 @@
 @page "/admin/users"
 @attribute [PermissionAuthorize(PermissionFeature.Users, PermissionLevel.Read)]
-@attribute [Authorize(Roles = "Admin")]
+@attribute [HigherManagerAuthorize]
 
 @using Microsoft.AspNetCore.Authorization
 @using System.Globalization
@@ -69,9 +69,9 @@
         <article class="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div class="flex items-center justify-between gap-4">
                 <div class="space-y-2">
-                    <p class="text-sm font-medium text-slate-500">مديرو النظام</p>
+                    <p class="text-sm font-medium text-slate-500">مديرون أعلى</p>
                     <p class="text-3xl font-black tracking-tight text-slate-900">@Fmt(AdminUsers)</p>
-                    <p class="text-xs font-medium text-slate-500">حسابات بصلاحية المدير</p>
+                    <p class="text-xs font-medium text-slate-500">حسابات بوصول كامل</p>
                 </div>
                 <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
                     <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" aria-hidden="true" />
@@ -82,9 +82,11 @@
         <article class="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div class="flex items-center justify-between gap-4">
                 <div class="space-y-2">
-                    <p class="text-sm font-medium text-slate-500">الأدوار المخصصة</p>
+                    <p class="text-sm font-medium text-slate-500">الأدوار المستخدمة</p>
                     <p class="text-3xl font-black tracking-tight text-slate-900">@Fmt(RoleCount)</p>
-                    <p class="text-xs font-medium text-slate-500">أدوار مستخدمة في النظام</p>
+                    <p class="text-xs font-medium text-slate-500">
+                        @Fmt(SealedRoleCount) جاهزة · @Fmt(CustomRoleCount) مخصصة
+                    </p>
                 </div>
                 <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
                     <MudIcon Icon="@Icons.Material.Filled.Workspaces" aria-hidden="true" />
@@ -208,13 +210,27 @@
                 <MudTd DataLabel="الدور">
                     @if (user.RoleId.HasValue)
                     {
-                        <span class="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
-                            @user.RoleName
+                        <span class="inline-flex items-center gap-1.5">
+                            <span class="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
+                                @user.RoleName
+                            </span>
+                            @if (user.IsRoleSealed)
+                            {
+                                <span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                                    جاهز
+                                </span>
+                            }
                         </span>
+                    }
+                    else if (user.IsAdmin)
+                    {
+                        <span class="text-sm text-slate-400">—</span>
                     }
                     else
                     {
-                        <span class="text-sm text-slate-400">بدون دور</span>
+                        <span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">
+                            بدون دور — لا صلاحيات
+                        </span>
                     }
                 </MudTd>
 
@@ -223,7 +239,7 @@
                     {
                         <span class="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700">
                             <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" />
-                            مدير النظام
+                            مدير أعلى
                         </span>
                     }
                     else
@@ -377,6 +393,20 @@
     private int RoleCount =>
         _users
             .Where(user => user.RoleId.HasValue)
+            .Select(user => user.RoleId!.Value)
+            .Distinct()
+            .Count();
+
+    private int SealedRoleCount =>
+        _users
+            .Where(user => user.RoleId.HasValue && user.IsRoleSealed)
+            .Select(user => user.RoleId!.Value)
+            .Distinct()
+            .Count();
+
+    private int CustomRoleCount =>
+        _users
+            .Where(user => user.RoleId.HasValue && !user.IsRoleSealed)
             .Select(user => user.RoleId!.Value)
             .Distinct()
             .Count();

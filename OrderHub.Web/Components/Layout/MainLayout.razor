@@ -70,7 +70,7 @@
                             <span class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-tr from-slate-700 to-slate-900 text-xs font-bold text-white shadow-inner">@_initials</span>
                             <span class="hidden flex-col text-start leading-tight xl:flex">
                                 <span class="text-xs font-bold text-slate-900">@_displayName</span>
-                                <span class="text-xs font-medium text-slate-500">@(_isAdmin ? "مدير النظام" : "مستخدم")</span>
+                                <span class="text-xs font-medium text-slate-500">@(_isAdmin ? "مدير أعلى" : "مستخدم")</span>
                             </span>
                             <MudIcon Icon="@Icons.Material.Filled.ExpandMore" Class="hidden text-[11px] text-slate-400 xl:inline" />
                         </button>
@@ -169,7 +169,7 @@
                 user.Identity.Name ??
                 "مستخدم";
             _initials = ComputeInitials(_displayName);
-            _isAdmin = user.IsInRole("Admin");
+            _isAdmin = await PermissionAccess.IsHigherManagerAsync();
             _canCreateOrder = await PermissionAccess.IsAllowedAsync(PermissionFeature.Orders, PermissionLevel.Write);
         }
 

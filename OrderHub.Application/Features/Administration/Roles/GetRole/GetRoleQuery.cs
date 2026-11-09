@@ -5,4 +5,5 @@ using MediatR;
 namespace OrderHub.Application.Features.Administration.Roles.GetRole;
 
 [RequirePermission(PermissionFeature.Users, PermissionLevel.Read)]
+[RequireHigherManager]
 public sealed record GetRoleQuery(int RoleId) : IRequest<GetRoleResponse>;

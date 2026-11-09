@@ -8,4 +8,7 @@ public sealed class PermissionAccess(IRequestExecutor executor)
 {
     public Task<bool> IsAllowedAsync(PermissionFeature feature, PermissionLevel level, CancellationToken cancellationToken = default) =>
         executor.ExecuteAsync(new CheckPermissionQuery(feature, level), cancellationToken);
+
+    public Task<bool> IsHigherManagerAsync(CancellationToken cancellationToken = default) =>
+        executor.ExecuteAsync(new CheckHigherManagerQuery(), cancellationToken);
 }
