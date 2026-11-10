@@ -115,7 +115,8 @@
                         <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-black text-brand-600">
                             @FirstLetter(deliveryman.Name)
                         </span>
-                        <span class="text-sm font-bold text-slate-900">@deliveryman.Name</span>
+                        <a href="@($"/deliverymen/{deliveryman.Id}")"
+                           class="text-sm font-bold text-slate-900 hover:text-brand-700 hover:underline">@deliveryman.Name</a>
                     </div>
                 </MudTd>
 

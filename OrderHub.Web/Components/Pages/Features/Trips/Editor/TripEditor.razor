@@ -1,0 +1,536 @@
+@page "/trips/create"
+@page "/trips/{TripId:int}/edit"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.Trips,
+    PermissionLevel.Write)]
+
+@inject IRequestExecutor RequestExecutor
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject ILogger<TripEditor> Logger
+
+<PageTitle>@PageTitle</PageTitle>
+
+<div class="space-y-4">
+    @if (_loading)
+    {
+        <div class="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-xs">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" aria-label="تحميل بيانات المشوار" />
+            <p class="mt-2 text-xs text-slate-500">جاري تحميل بيانات المشوار...</p>
+        </div>
+    }
+    else if (_loadError is not null)
+    {
+        <PageScaffold Title="@PageTitle" Crumbs="_crumbs">
+        </PageScaffold>
+
+        <div class="rounded-xl border border-rose-200 bg-rose-50 p-5">
+            <p class="text-sm font-bold text-rose-800">@_loadError</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+                @if (TripId is > 0 && !_notEditable)
+                {
+                    <button type="button" class="oh-btn oh-btn--secondary oh-btn--sm" @onclick="LoadEditAsync">
+                        إعادة المحاولة
+                    </button>
+                }
+                <a href="@BackHref" class="oh-btn oh-btn--ghost oh-btn--sm">العودة</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <PageScaffold Title="@PageTitle"
+                      Description="@PageDescription"
+                      Crumbs="_crumbs">
+            <Actions>
+                <a href="@BackHref" class="oh-btn oh-btn--secondary oh-btn--sm">إلغاء</a>
+            </Actions>
+        </PageScaffold>
+
+        @if (_error is not null)
+        {
+            <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+                <p class="text-sm font-bold text-rose-800">@_error</p>
+                @if (_conflict)
+                {
+                    <button type="button" class="oh-btn oh-btn--secondary oh-btn--sm" @onclick="LoadEditAsync">
+                        إعادة تحميل البيانات
+                    </button>
+                }
+            </div>
+        }
+
+        <div class="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/80 p-4" role="alert">
+            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Class="text-[18px]" />
+            </span>
+            <p class="text-xs font-bold leading-6 text-amber-900">
+                أكمل الحقول المطلوبة أدناه المميزة بالنجمة (<span class="font-black text-rose-600">*</span>) لتفعيل زر الحفظ وإسناد المشوار للمندوب.
+            </p>
+        </div>
+
+        @* ============================================================
+           Deliveryman
+           ============================================================ *@
+        <section class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-6" aria-label="المندوب">
+            <header class="mb-4 flex items-center gap-3 border-b border-slate-100 pb-4">
+                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                    <MudIcon Icon="@Icons.Material.Filled.ManageAccounts" Class="text-[20px]" />
+                </span>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">المندوب المسند</h2>
+                    <p class="text-xs text-slate-500">المندوب المسؤول عن تنفيذ واستلام المشوار</p>
+                </div>
+            </header>
+
+            <div class="max-w-3xl">
+                <MudAutocomplete T="TripLookupItem"
+                                 Value="_selectedDeliveryman"
+                                 ValueChanged="DeliverymanChangedAsync"
+                                 SearchFunc="SearchDeliverymenAsync"
+                                 ToStringFunc="item => item?.Name"
+                                 Label="المندوب *"
+                                 Required="true"
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
+                                 Clearable="true"
+                                 Strict="false"
+                                 ResetValueOnEmptyText="true"
+                                 CoerceText="false"
+                                 Disabled="_saving"
+                                 Class="w-full" />
+
+                @if (_state.IsReassignment)
+                {
+                    <p class="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-800">
+                        سيُسجَّل تغيير المندوب كعملية إعادة إسناد، ولن تُسجَّل التغييرات الأخرى حقلاً بحقل.
+                    </p>
+                }
+            </div>
+        </section>
+
+        @* ============================================================
+           Basic information
+           ============================================================ *@
+        <section class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-6" aria-label="بيانات المشوار">
+            <header class="mb-4 flex items-center gap-3 border-b border-slate-100 pb-4">
+                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                    <MudIcon Icon="@Icons.Material.Outlined.Notes" Class="text-[20px]" />
+                </span>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">بيانات المشوار</h2>
+                    <p class="text-xs text-slate-500">عنوان المشوار، الوصف، وجدولة الموعد</p>
+                </div>
+            </header>
+
+            <div class="space-y-5">
+                <MudTextField T="string"
+                              Value="_state.Title"
+                              ValueChanged="@(value => _state.Title = value)"
+                              Label="عنوان المشوار *"
+                              Required="true"
+                              Immediate="true"
+                              MaxLength="150"
+                              HelperText="حتى 150 حرف"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Disabled="_saving" />
+
+                <MudTextField T="string"
+                              Value="_state.Description"
+                              ValueChanged="@(value => _state.Description = value)"
+                              Label="الوصف (اختياري)"
+                              Immediate="true"
+                              MaxLength="1000"
+                              Lines="3"
+                              HelperText="حتى 1000 حرف"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Disabled="_saving" />
+
+                <div>
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-1.5 block text-xs font-semibold text-slate-700" for="trip-scheduled-date">تاريخ الجدولة</label>
+                            <input id="trip-scheduled-date"
+                                   type="date"
+                                   value="@_state.ScheduledDate"
+                                   disabled="@_saving"
+                                   class="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-xs font-medium text-slate-800 focus:border-brand-500 focus:outline-none disabled:bg-slate-50"
+                                   @onchange="ScheduledDateChangedAsync" />
+                        </div>
+                        <div>
+                            <label class="mb-1.5 block text-xs font-semibold text-slate-700" for="trip-scheduled-time">وقت الجدولة (بتوقيت الرياض)</label>
+                            <input id="trip-scheduled-time"
+                                   type="time"
+                                   value="@_state.ScheduledTime"
+                                   disabled="@_saving"
+                                   class="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-xs font-medium text-slate-800 focus:border-brand-500 focus:outline-none disabled:bg-slate-50"
+                                   @onchange="ScheduledTimeChangedAsync" />
+                        </div>
+                    </div>
+                    <p class="mt-2 text-xs text-slate-500">
+                        اترك التاريخ والوقت فارغين إن لم يكن للمشوار موعد محدد، وسيُعامل كقابل للتنفيذ الفوري. يُفسَّر الوقت المدخل بتوقيت الرياض.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        @* ============================================================
+           Origin & destination
+           ============================================================ *@
+        <section class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-6" aria-label="مسار المشوار والأطراف">
+            <header class="mb-4 flex items-center gap-3 border-b border-slate-100 pb-4">
+                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                    <MudIcon Icon="@Icons.Material.Outlined.Place" Class="text-[20px]" />
+                </span>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">مسار المشوار والأطراف</h2>
+                    <p class="text-xs text-slate-500">تحديد نقطة الانطلاق (من) ونقطة الوصول والتسليم (إلى)</p>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                <TripPartyEditor Label="من" Party="_state.From" Disabled="_saving" OnChanged="StateHasChanged" />
+                <TripPartyEditor Label="إلى" Party="_state.To" Disabled="_saving" OnChanged="StateHasChanged" />
+            </div>
+        </section>
+
+        @* ============================================================
+           Edit note / reassignment reason
+           ============================================================ *@
+        @if (_state.IsEdit && !_state.IsReassignment)
+        {
+            <section class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-6" aria-label="ملاحظة التعديل">
+                <header class="mb-4 flex items-center gap-3 border-b border-slate-100 pb-4">
+                    <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                        <MudIcon Icon="@Icons.Material.Filled.EditNote" Class="text-[20px]" />
+                    </span>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">ملاحظة التعديل</h2>
+                        <p class="text-xs text-slate-500">تُسجَّل مع عملية التعديل في سجل المشوار</p>
+                    </div>
+                </header>
+
+                <MudTextField T="string"
+                              Value="_state.EditNote"
+                              ValueChanged="@(value => _state.EditNote = value)"
+                              Label="ملاحظة التعديل (اختياري)"
+                              Immediate="true"
+                              MaxLength="200"
+                              HelperText="حتى 200 حرف"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Disabled="_saving" />
+            </section>
+        }
+
+        @if (_state.IsReassignment)
+        {
+            <section class="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-xs sm:p-6" aria-label="إعادة الإسناد">
+                <div class="mb-3 flex items-start gap-2">
+                    <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" Class="mt-0.5 text-[18px] text-amber-700" />
+                    <p class="text-xs font-bold leading-6 text-amber-800">
+                        سيُسجَّل تغيير المندوب كعملية إعادة إسناد، ولن تُسجَّل التغييرات الأخرى حقلاً بحقل.
+                    </p>
+                </div>
+
+                <MudTextField T="string"
+                              Value="_state.ReassignReason"
+                              ValueChanged="@(value => _state.ReassignReason = value)"
+                              Label="سبب إعادة الإسناد *"
+                              Required="true"
+                              Immediate="true"
+                              MaxLength="200"
+                              Lines="2"
+                              HelperText="مطلوب — حتى 200 حرف"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Disabled="_saving" />
+            </section>
+        }
+
+        @* ============================================================
+           Bottom action bar
+           ============================================================ *@
+        <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs sm:p-5">
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+                <MudIcon Icon="@Icons.Material.Filled.VerifiedUser" Class="text-[16px] text-emerald-600" />
+                <span>جميع البيانات المدخلة ستوثق بسجل العمليات التلقائي لنظام OrderHub</span>
+            </div>
+            <div class="flex w-full flex-wrap items-center justify-end gap-2.5 sm:w-auto">
+                <a href="@BackHref" class="oh-btn oh-btn--secondary oh-btn--sm">إلغاء</a>
+                <button type="button"
+                        class="oh-btn oh-btn--primary"
+                        aria-busy="@_saving"
+                        disabled="@(_saving || !_state.IsValid)"
+                        @onclick="SaveAsync">
+                    <MudIcon Icon="@Icons.Material.Filled.Save" Class="text-[16px]" />
+                    <span>@(_saving ? "جاري الحفظ..." : (IsEdit ? "حفظ التعديلات" : "حفظ المشوار"))</span>
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int? TripId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "deliverymanId")]
+    public int? PrefilledDeliverymanId { get; set; }
+
+    private TripEditorState _state = TripEditorState.ForCreate();
+    private TripLookupItem? _selectedDeliveryman;
+    private string? _loadedRouteKey;
+    private string? _loadError;
+    private string? _error;
+    private bool _loading = true;
+    private bool _saving;
+    private bool _notEditable;
+    private bool _conflict;
+
+    private bool IsEdit => TripId is > 0;
+
+    private string PageTitle => IsEdit ? "تعديل المشوار" : "إنشاء مشوار";
+
+    private string PageDescription => IsEdit
+        ? "تعديل بيانات مشوار مستقل قبل بدء محاولته الأولى"
+        : "إنشاء مشوار مستقل لمندوب خارج نطاق الطلبات";
+
+    private string BackHref => IsEdit ? $"/trips/{TripId}" : "/trips";
+
+    private PageScaffold.CrumbItem[] _crumbs =>
+    [
+        new("المشاوير", "/trips"),
+        new(IsEdit ? "تعديل مشوار" : "إنشاء مشوار")
+    ];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        string routeKey = $"{TripId?.ToString(CultureInfo.InvariantCulture) ?? "create"}:{PrefilledDeliverymanId?.ToString(CultureInfo.InvariantCulture)}";
+
+        if (_loadedRouteKey == routeKey)
+        {
+            return;
+        }
+
+        _loadedRouteKey = routeKey;
+
+        if (IsEdit)
+        {
+            await LoadEditAsync();
+        }
+        else
+        {
+            await InitializeCreateAsync();
+        }
+    }
+
+    private async Task InitializeCreateAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        _state = TripEditorState.ForCreate();
+        _selectedDeliveryman = null;
+
+        try
+        {
+            if (PrefilledDeliverymanId is > 0)
+            {
+                _state.DeliverymanId = PrefilledDeliverymanId;
+
+                try
+                {
+                    DeliverymanListItem? deliveryman = await RequestExecutor.ExecuteAsync(
+                        new GetDeliverymanByIdQuery(PrefilledDeliverymanId.Value));
+
+                    if (deliveryman is not null)
+                    {
+                        _state.DeliverymanName = deliveryman.Name;
+                        _selectedDeliveryman = new TripLookupItem(
+                            deliveryman.Id,
+                            deliveryman.Name,
+                            deliveryman.CityName);
+                    }
+                }
+                catch (AuthorizationDeniedException)
+                {
+                    // Prefill is a convenience; the picker below still works without Deliverymen permission.
+                }
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadEditAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        _notEditable = false;
+        _error = null;
+        _conflict = false;
+
+        try
+        {
+            var result = await RequestExecutor.ExecuteAsync(new GetTripEditorQuery(TripId!.Value));
+
+            if (!result.IsSuccess)
+            {
+                _loadError = result.ErrorMessage;
+                return;
+            }
+
+            if (!result.Value.IsEditable)
+            {
+                _notEditable = true;
+                _loadError = "لا يمكن تعديل المشوار بعد بدء المحاولة الأولى.";
+                return;
+            }
+
+            _state = TripEditorState.ForEdit(result.Value);
+            _selectedDeliveryman = new TripLookupItem(
+                result.Value.DeliverymanId,
+                result.Value.DeliverymanName,
+                null);
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load trip editor for {TripId}.", TripId);
+            _loadError = "تعذر تحميل بيانات المشوار. حاول مرة أخرى.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Task DeliverymanChangedAsync(TripLookupItem? deliveryman)
+    {
+        _selectedDeliveryman = deliveryman;
+        _state.DeliverymanId = deliveryman?.Id;
+        _state.DeliverymanName = deliveryman?.Name;
+
+        return Task.CompletedTask;
+    }
+
+    private async Task<IEnumerable<TripLookupItem>> SearchDeliverymenAsync(string value, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await RequestExecutor.ExecuteAsync(
+                new GetTripLookupsQuery(TripLookupKind.Deliveryman, value, 20),
+                cancellationToken);
+        }
+        catch (AuthorizationDeniedException)
+        {
+            return [];
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to search deliverymen for trip editor");
+            return [];
+        }
+    }
+
+    private Task ScheduledDateChangedAsync(ChangeEventArgs args)
+    {
+        _state.ScheduledDate = args.Value?.ToString();
+        return Task.CompletedTask;
+    }
+
+    private Task ScheduledTimeChangedAsync(ChangeEventArgs args)
+    {
+        _state.ScheduledTime = args.Value?.ToString();
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_saving)
+        {
+            return;
+        }
+
+        var validation = _state.Validate();
+
+        if (!validation.IsSuccess)
+        {
+            _error = validation.ErrorMessage;
+            return;
+        }
+
+        _saving = true;
+        _error = null;
+        _conflict = false;
+
+        try
+        {
+            if (_state.IsEdit)
+            {
+                var result = await RequestExecutor.ExecuteAsync(new UpdateTripCommand(
+                    _state.TripId,
+                    _state.Version,
+                    _state.DeliverymanId!.Value,
+                    _state.Title,
+                    _state.Description,
+                    _state.From.ToInput(),
+                    _state.To.ToInput(),
+                    _state.ScheduledAtUtc,
+                    _state.IsReassignment ? null : _state.EditNote,
+                    _state.IsReassignment ? _state.ReassignReason : null));
+
+                if (!result.IsSuccess)
+                {
+                    _error = result.ErrorMessage;
+                    _conflict = result.ErrorCode == "Conflict";
+                    return;
+                }
+
+                Snackbar.Add("تم حفظ تعديلات المشوار.", Severity.Success);
+                Navigation.NavigateTo($"/trips/{_state.TripId}");
+                return;
+            }
+
+            var receipt = await RequestExecutor.ExecuteAsync(new CreateTripCommand(
+                _state.DeliverymanId!.Value,
+                _state.Title,
+                _state.Description,
+                _state.From.ToInput(),
+                _state.To.ToInput(),
+                _state.ScheduledAtUtc));
+
+            if (!receipt.IsSuccess)
+            {
+                _error = receipt.ErrorMessage;
+                return;
+            }
+
+            Snackbar.Add(
+                $"تم إنشاء المشوار {TripPresentation.FormatTripNumber(receipt.Value.TripNumber, receipt.Value.SequenceYear, receipt.Value.SequenceMonth)}.",
+                Severity.Success);
+
+            Navigation.NavigateTo($"/trips/{receipt.Value.Id}");
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to save trip. TripId: {TripId}", TripId);
+            _error = "تعذر حفظ المشوار. حاول مرة أخرى.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

@@ -1949,6 +1949,284 @@ namespace OrderHub.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.Trips.StandaloneTrip", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("DeliverymanId")
+                        .HasColumnType("integer")
+                        .HasColumnName("deliveryman_id");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<DateTime?>("ScheduledAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("scheduled_at_utc");
+
+                    b.Property<int>("SequenceMonth")
+                        .HasColumnType("integer")
+                        .HasColumnName("sequence_month");
+
+                    b.Property<int>("SequenceYear")
+                        .HasColumnType("integer")
+                        .HasColumnName("sequence_year");
+
+                    b.Property<DateTime?>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at_utc");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("StatusChangedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("status_changed_at_utc");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("title");
+
+                    b.Property<long>("TripNumber")
+                        .HasColumnType("bigint")
+                        .HasColumnName("trip_number");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_standalone_trips");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_standalone_trips_created");
+
+                    b.HasIndex("DeliverymanId", "CreatedAt")
+                        .HasDatabaseName("ix_standalone_trips_deliveryman_created");
+
+                    b.HasIndex("DeliverymanId", "SequenceYear", "SequenceMonth", "TripNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_standalone_trips_number");
+
+                    b.ToTable("standalone_trips", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_standalone_trips_external_party", "(from_party_type <> 'External' OR (from_party_id IS NULL AND from_name IS NOT NULL AND from_phone IS NOT NULL AND from_address IS NOT NULL)) AND (to_party_type <> 'External' OR (to_party_id IS NULL AND to_name IS NOT NULL AND to_phone IS NOT NULL AND to_address IS NOT NULL))");
+
+                            t.HasCheckConstraint("ck_standalone_trips_known_party", "(from_party_type = 'External' OR from_party_id > 0) AND (to_party_type = 'External' OR to_party_id > 0)");
+
+                            t.HasCheckConstraint("ck_standalone_trips_numbers", "trip_number > 0 AND sequence_year > 0 AND sequence_month BETWEEN 1 AND 12");
+
+                            t.HasCheckConstraint("ck_standalone_trips_status", "status IN ('Pending', 'Completed', 'Cancelled', 'Failed')");
+
+                            t.HasCheckConstraint("ck_standalone_trips_title_length", "length(trim(title)) BETWEEN 1 AND 150");
+                        });
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.Trips.StandaloneTripAttempt", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AttemptNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt_number");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTime?>("EndedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ended_at_utc");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTime?>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at_utc");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("TripId")
+                        .HasColumnType("integer")
+                        .HasColumnName("trip_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_standalone_trip_attempts");
+
+                    b.HasIndex("TripId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_standalone_trip_attempts_open")
+                        .HasFilter("status = 'Pending'");
+
+                    b.HasIndex("TripId", "AttemptNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_standalone_trip_attempts_number");
+
+                    b.HasIndex("TripId", "Status")
+                        .HasDatabaseName("ix_standalone_trip_attempts_status");
+
+                    b.ToTable("standalone_trip_attempts", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_standalone_trip_attempts_completed_started", "status NOT IN ('Completed', 'Failed') OR started_at_utc IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_standalone_trip_attempts_number", "attempt_number > 0");
+
+                            t.HasCheckConstraint("ck_standalone_trip_attempts_pending_no_end", "status <> 'Pending' OR ended_at_utc IS NULL");
+
+                            t.HasCheckConstraint("ck_standalone_trip_attempts_reason", "status NOT IN ('Failed', 'Cancelled') OR (reason IS NOT NULL AND length(trim(reason)) BETWEEN 1 AND 200)");
+
+                            t.HasCheckConstraint("ck_standalone_trip_attempts_status", "status IN ('Pending', 'Completed', 'Cancelled', 'Failed')");
+
+                            t.HasCheckConstraint("ck_standalone_trip_attempts_terminal_has_end", "status = 'Pending' OR ended_at_utc IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_standalone_trip_attempts_timing", "ended_at_utc IS NULL OR started_at_utc IS NULL OR ended_at_utc >= started_at_utc");
+                        });
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.Trips.StandaloneTripHistoryEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AttemptNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt_number");
+
+                    b.Property<DateTime>("ChangedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changed_at_utc");
+
+                    b.Property<int>("ChangedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("changed_by_user_id");
+
+                    b.Property<string>("ChangedByUserName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("changed_by_user_name");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("event_type");
+
+                    b.Property<int?>("NewDeliverymanId")
+                        .HasColumnType("integer")
+                        .HasColumnName("new_deliveryman_id");
+
+                    b.Property<string>("NewDeliverymanName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("new_deliveryman_name");
+
+                    b.Property<string>("NewStatus")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("new_status");
+
+                    b.Property<long?>("NewTripNumber")
+                        .HasColumnType("bigint")
+                        .HasColumnName("new_trip_number");
+
+                    b.Property<int?>("PreviousDeliverymanId")
+                        .HasColumnType("integer")
+                        .HasColumnName("previous_deliveryman_id");
+
+                    b.Property<string>("PreviousDeliverymanName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("previous_deliveryman_name");
+
+                    b.Property<string>("PreviousStatus")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("previous_status");
+
+                    b.Property<long?>("PreviousTripNumber")
+                        .HasColumnType("bigint")
+                        .HasColumnName("previous_trip_number");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("source");
+
+                    b.Property<int>("TripId")
+                        .HasColumnType("integer")
+                        .HasColumnName("trip_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_standalone_trip_histories");
+
+                    b.HasIndex("ChangedByUserId")
+                        .HasDatabaseName("ix_standalone_trip_histories_changed_by_user_id");
+
+                    b.HasIndex("NewDeliverymanId")
+                        .HasDatabaseName("ix_standalone_trip_histories_new_deliveryman");
+
+                    b.HasIndex("PreviousDeliverymanId")
+                        .HasDatabaseName("ix_standalone_trip_histories_prev_deliveryman");
+
+                    b.HasIndex("TripId", "Id")
+                        .HasDatabaseName("ix_standalone_trip_histories_trip");
+
+                    b.ToTable("standalone_trip_histories", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_standalone_trip_histories_event_type", "event_type IN ('Created', 'AttemptStarted', 'Completed', 'Failed', 'Cancelled', 'Retried', 'Reassigned', 'Edited')");
+
+                            t.HasCheckConstraint("ck_standalone_trip_histories_reason", "event_type NOT IN ('Failed', 'Cancelled', 'Reassigned') OR (reason IS NOT NULL AND length(trim(reason)) BETWEEN 1 AND 200)");
+
+                            t.HasCheckConstraint("ck_standalone_trip_histories_reassignment", "event_type <> 'Reassigned' OR (previous_deliveryman_id > 0 AND new_deliveryman_id > 0 AND previous_deliveryman_name IS NOT NULL AND new_deliveryman_name IS NOT NULL AND previous_trip_number > 0 AND new_trip_number > 0)");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -3012,6 +3290,143 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Supplier");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.Trips.StandaloneTrip", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Deliveryman", "Deliveryman")
+                        .WithMany()
+                        .HasForeignKey("DeliverymanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_standalone_trips_deliverymen_deliveryman_id");
+
+                    b.OwnsOne("OrderHub.Domain.Models.Trips.TripParty", "From", b1 =>
+                        {
+                            b1.Property<int>("StandaloneTripId")
+                                .HasColumnType("integer")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Address")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("from_address");
+
+                            b1.Property<string>("Location")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("from_location");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("from_name");
+
+                            b1.Property<int?>("PartyId")
+                                .HasColumnType("integer")
+                                .HasColumnName("from_party_id");
+
+                            b1.Property<string>("PartyType")
+                                .IsRequired()
+                                .HasMaxLength(30)
+                                .HasColumnType("character varying(30)")
+                                .HasColumnName("from_party_type");
+
+                            b1.Property<string>("Phone")
+                                .HasMaxLength(30)
+                                .HasColumnType("character varying(30)")
+                                .HasColumnName("from_phone");
+
+                            b1.HasKey("StandaloneTripId");
+
+                            b1.ToTable("standalone_trips");
+
+                            b1.WithOwner()
+                                .HasForeignKey("StandaloneTripId")
+                                .HasConstraintName("fk_standalone_trips_standalone_trips_id");
+                        });
+
+                    b.OwnsOne("OrderHub.Domain.Models.Trips.TripParty", "To", b1 =>
+                        {
+                            b1.Property<int>("StandaloneTripId")
+                                .HasColumnType("integer")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Address")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("to_address");
+
+                            b1.Property<string>("Location")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("to_location");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("to_name");
+
+                            b1.Property<int?>("PartyId")
+                                .HasColumnType("integer")
+                                .HasColumnName("to_party_id");
+
+                            b1.Property<string>("PartyType")
+                                .IsRequired()
+                                .HasMaxLength(30)
+                                .HasColumnType("character varying(30)")
+                                .HasColumnName("to_party_type");
+
+                            b1.Property<string>("Phone")
+                                .HasMaxLength(30)
+                                .HasColumnType("character varying(30)")
+                                .HasColumnName("to_phone");
+
+                            b1.HasKey("StandaloneTripId");
+
+                            b1.ToTable("standalone_trips");
+
+                            b1.WithOwner()
+                                .HasForeignKey("StandaloneTripId")
+                                .HasConstraintName("fk_standalone_trips_standalone_trips_id");
+                        });
+
+                    b.Navigation("Deliveryman");
+
+                    b.Navigation("From")
+                        .IsRequired();
+
+                    b.Navigation("To")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.Trips.StandaloneTripAttempt", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Trips.StandaloneTrip", null)
+                        .WithMany("Attempts")
+                        .HasForeignKey("TripId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_standalone_trip_attempts_standalone_trips_trip_id");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.Trips.StandaloneTripHistoryEntry", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("ChangedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_standalone_trip_histories_users_changed_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Trips.StandaloneTrip", null)
+                        .WithMany("History")
+                        .HasForeignKey("TripId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_standalone_trip_histories_standalone_trips_trip_id");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.User", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.Role", "Role")
@@ -3121,6 +3536,13 @@ namespace OrderHub.Infrastructure.Migrations
             modelBuilder.Entity("OrderHub.Domain.Models.Role", b =>
                 {
                     b.Navigation("Permissions");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.Trips.StandaloneTrip", b =>
+                {
+                    b.Navigation("Attempts");
+
+                    b.Navigation("History");
                 });
 #pragma warning restore 612, 618
         }

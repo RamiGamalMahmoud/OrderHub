@@ -7,10 +7,14 @@ using System.Threading.Tasks;
 using OrderHub.Application.Features.Setup.Suppliers;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Features.Setup.Suppliers.Contracts;
+using OrderHub.Domain.Enums;
 
 namespace OrderHub.Application.Features.Setup.Suppliers;
 
-internal sealed class DeleteSupplierCommandHandler(ISupplierRepository repository, IUnitOfWork unitOfWork) : IRequestHandler<DeleteSupplierCommand, Result>
+internal sealed class DeleteSupplierCommandHandler(
+    ISupplierRepository repository,
+    IUnitOfWork unitOfWork,
+    ITripUsageReader tripUsageReader) : IRequestHandler<DeleteSupplierCommand, Result>
 {
     public async Task<Result> Handle(DeleteSupplierCommand request, CancellationToken cancellationToken)
     {
@@ -30,6 +34,13 @@ internal sealed class DeleteSupplierCommandHandler(ISupplierRepository repositor
         if (await repository.IsUsedByProductsAsync(request.Id, cancellationToken))
         {
             return Result.Failure("لا يمكن حذف المورد لأنه مرتبط بمنتجات.");
+        }
+
+        if (await tripUsageReader.HasPartyTripsAsync(TripPartyType.Supplier, request.Id, cancellationToken))
+        {
+            return Result.Failure(
+                "لا يمكن حذف المورد لارتباطه بمشاوير مستقلة. أغلق المشاوير أولاً ثم أعد المحاولة.",
+                "Conflict");
         }
 
         try

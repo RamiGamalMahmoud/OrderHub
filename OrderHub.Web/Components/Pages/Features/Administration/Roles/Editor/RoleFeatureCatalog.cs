@@ -37,6 +37,9 @@ public static class RoleFeatureCatalog
             PermissionFeature.ShippingCarriers =>
                 "شركات الشحن",
 
+            PermissionFeature.Trips =>
+                "المشاوير",
+
             PermissionFeature.Cities =>
                 "المدن والمناطق",
 
@@ -87,6 +90,9 @@ public static class RoleFeatureCatalog
 
             PermissionFeature.ShippingCarriers =>
                 "عرض وإدارة شركات الشحن وبوالص التوصيل وتتبع الشحنات",
+
+            PermissionFeature.Trips =>
+                "عرض جميع مشاوير المناديب وإدارة المشاوير المستقلة",
 
             PermissionFeature.Cities =>
                 "إدارة المدن والنطاقات الجغرافية وتكاليف التوصيل",
@@ -139,6 +145,9 @@ public static class RoleFeatureCatalog
             PermissionFeature.ShippingCarriers =>
                 Icons.Material.Filled.LocalShipping,
 
+            PermissionFeature.Trips =>
+                Icons.Material.Filled.DirectionsBike,
+
             PermissionFeature.Cities =>
                 Icons.Material.Filled.LocationCity,
 
@@ -190,6 +199,9 @@ public static class RoleFeatureCatalog
 
             PermissionFeature.ShippingCarriers =>
                 "bg-sky-50 text-sky-600",
+
+            PermissionFeature.Trips =>
+                "bg-cyan-50 text-cyan-600",
 
             PermissionFeature.Cities =>
                 "bg-emerald-50 text-emerald-600",

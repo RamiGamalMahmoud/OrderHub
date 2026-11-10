@@ -5,10 +5,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Features.Setup.Clients.Contracts;
+using OrderHub.Domain.Enums;
 
 namespace OrderHub.Application.Features.Setup.Clients;
 
-internal sealed class DeleteClientCommandHandler(IClientRepository repository, IUnitOfWork unitOfWork) : IRequestHandler<DeleteClientCommand, Result>
+internal sealed class DeleteClientCommandHandler(
+    IClientRepository repository,
+    IUnitOfWork unitOfWork,
+    ITripUsageReader tripUsageReader) : IRequestHandler<DeleteClientCommand, Result>
 {
     public async Task<Result> Handle(DeleteClientCommand request, CancellationToken cancellationToken)
     {
@@ -21,6 +25,13 @@ internal sealed class DeleteClientCommandHandler(IClientRepository repository, I
         if (await repository.HasBusinessReferencesAsync(request.Id, cancellationToken))
         {
             return Result.Failure("لا يمكن حذف العميل لأنه مرتبط بطلبات أو مسودات طلبات.");
+        }
+
+        if (await tripUsageReader.HasPartyTripsAsync(TripPartyType.Client, request.Id, cancellationToken))
+        {
+            return Result.Failure(
+                "لا يمكن حذف العميل لارتباطه بمشاوير مستقلة. أغلق المشاوير أولاً ثم أعد المحاولة.",
+                "Conflict");
         }
 
         repository.Remove(client);

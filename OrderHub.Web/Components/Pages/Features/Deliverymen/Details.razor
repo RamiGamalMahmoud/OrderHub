@@ -1,0 +1,658 @@
+@page "/deliverymen/{Id:int}"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.Deliverymen,
+    PermissionLevel.Read)]
+
+@using System.Globalization
+@using OrderHub.Application.Common.Extensions
+@using OrderHub.Application.Features.Setup.Deliverymen
+@using OrderHub.Application.Features.Setup.Deliverymen.Contracts
+@using OrderHub.Application.Features.Trips.Contracts
+@using OrderHub.Application.Features.Trips.GetDeliverymanOrderBoundTrips
+@using OrderHub.Application.Features.Trips.GetDeliverymanStandaloneTrips
+@using OrderHub.Application.Features.Trips.GetDeliverymanTripsSummary
+@using OrderHub.Web.Components.Pages.Features.Deliverymen.Editor
+@using OrderHub.Web.Components.Pages.Features.Trips
+@using OrderHub.Web.Components.Pages.Features.Orders.Workflow
+
+@inject IRequestExecutor RequestExecutor
+@inject OrderHub.Web.Services.PermissionAccess PermissionAccess
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject TripActions TripActions
+@inject ISnackbar Snackbar
+@inject OrderHub.Web.Services.TripsViewPreferences ViewPreferences
+@inject ILogger<Details> Logger
+
+<PageTitle>@( _deliveryman?.Name ?? "المندوب" )</PageTitle>
+
+<div class="space-y-4">
+    @if (_loading)
+    {
+        <div class="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-xs">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" aria-label="تحميل المندوب" />
+            <p class="mt-2 text-xs text-slate-500">جاري تحميل بيانات المندوب...</p>
+        </div>
+    }
+    else if (_error is not null)
+    {
+        <div class="rounded-xl border border-rose-200 bg-rose-50 p-5">
+            <p class="text-xs font-bold text-rose-800">@_error</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+                <button type="button" class="oh-btn oh-btn--secondary oh-btn--sm" @onclick="LoadAsync">
+                    إعادة المحاولة
+                </button>
+                <a href="/deliverymen" class="oh-btn oh-btn--ghost oh-btn--sm">العودة إلى المناديب</a>
+            </div>
+        </div>
+    }
+    else if (_deliveryman is null)
+    {
+        <div class="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-xs">
+            <p class="text-xs font-bold text-slate-700">المندوب غير موجود.</p>
+            <a href="/deliverymen" class="oh-btn oh-btn--secondary oh-btn--sm mt-3">العودة إلى المناديب</a>
+        </div>
+    }
+    else
+    {
+        <PageScaffold Title="@_deliveryman.Name"
+                      Description="@ContactSummary"
+                      Crumbs="_crumbs">
+            <Actions>
+                @if (_canWriteTrips)
+                {
+                    <a href="@($"/trips/create?deliverymanId={Id}")" class="oh-btn oh-btn--primary oh-btn--sm">
+                        <MudIcon Icon="@Icons.Material.Filled.Add" Class="text-[16px]" />
+                        <span>إنشاء مشوار لهذا المندوب</span>
+                    </a>
+                }
+
+                <button type="button" class="oh-btn oh-btn--secondary oh-btn--sm" @onclick="OpenEditorAsync">
+                    <MudIcon Icon="@Icons.Material.Filled.Edit" Class="text-[16px]" />
+                    <span>تعديل بيانات المندوب</span>
+                </button>
+
+                <a href="/deliverymen" class="oh-btn oh-btn--ghost oh-btn--sm">العودة إلى القائمة</a>
+            </Actions>
+        </PageScaffold>
+
+        <section class="rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs sm:p-5" aria-label="بيانات المندوب">
+            <header class="mb-3 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-amber-100 bg-amber-50 text-amber-600">
+                    <MudIcon Icon="@Icons.Material.Outlined.Moped" Class="text-[18px]" />
+                </span>
+                <div>
+                    <h2 class="text-sm font-bold text-slate-800">بيانات المندوب</h2>
+                    <p class="text-[11px] text-slate-600">الاسم والمدينة ورقم التواصل</p>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <div class="@OrderWorkflowPresentation.StatTile">
+                    <p class="text-[10px] font-bold text-slate-500">الاسم</p>
+                    <p class="mt-0.5 text-xs font-bold text-slate-800" style="overflow-wrap:anywhere">@_deliveryman.Name</p>
+                </div>
+                <div class="@OrderWorkflowPresentation.StatTile">
+                    <p class="text-[10px] font-bold text-slate-500">المدينة</p>
+                    <p class="mt-0.5 text-xs font-bold text-slate-800">@Display(_deliveryman.CityName)</p>
+                </div>
+                <div class="@OrderWorkflowPresentation.StatTile">
+                    <p class="text-[10px] font-bold text-slate-500">الهاتف</p>
+                    <p class="mt-0.5 font-mono text-xs font-bold text-slate-800" dir="ltr">@Display(_deliveryman.PhoneNumber)</p>
+                </div>
+            </div>
+        </section>
+
+        @if (!_canReadTrips)
+        {
+            <p class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-600">
+                لا تملك صلاحية عرض مشاوير المناديب.
+            </p>
+        }
+        else if (_summary is not null)
+        {
+            <section class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5" aria-label="ملخص مشاوير المندوب">
+                <div class="rounded-xl border border-brand-100 bg-brand-50 px-3 py-2.5">
+                    <p class="text-[10px] font-bold text-brand-700">مفتوحة</p>
+                    <p class="mt-0.5 text-lg font-black text-brand-700">@_summary.OpenCount.ToString(CultureInfo.InvariantCulture)</p>
+                </div>
+                <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+                    <p class="text-[10px] font-bold text-amber-800">فاشلة</p>
+                    <p class="mt-0.5 text-lg font-black text-amber-800">@_summary.FailedCount.ToString(CultureInfo.InvariantCulture)</p>
+                </div>
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+                    <p class="text-[10px] font-bold text-emerald-700">مكتملة</p>
+                    <p class="mt-0.5 text-lg font-black text-emerald-700">@_summary.CompletedCount.ToString(CultureInfo.InvariantCulture)</p>
+                </div>
+                <div class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5">
+                    <p class="text-[10px] font-bold text-rose-700">ملغاة</p>
+                    <p class="mt-0.5 text-lg font-black text-rose-700">@_summary.CancelledCount.ToString(CultureInfo.InvariantCulture)</p>
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                    <p class="text-[10px] font-bold text-slate-600">الإجمالي</p>
+                    <p class="mt-0.5 text-lg font-black text-slate-800">@_summary.TotalCount.ToString(CultureInfo.InvariantCulture)</p>
+                </div>
+            </section>
+
+            @* ========================================================
+               Standalone trips
+               ======================================================== *@
+            <section class="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-xs" aria-label="المشاوير المستقلة للمندوب">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 sm:px-5">
+                    <div class="flex items-center gap-2.5">
+                        <span class="@($"inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border {OrderWorkflowPresentation.IconTile("processing")}")">
+                            <MudIcon Icon="@Icons.Material.Outlined.Route" Class="text-[18px]" />
+                        </span>
+                        <div>
+                            <h2 class="text-sm font-bold text-slate-800">المشاوير المستقلة</h2>
+                            <p class="text-[11px] text-slate-600">مشاوير هذا المندوب خارج نطاق الطلبات</p>
+                        </div>
+                    </div>
+                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">
+                        @_summary.TotalCount.ToString(CultureInfo.InvariantCulture) مشوار
+                    </span>
+                </div>
+
+                <MudTable T="DeliverymanTripListItem"
+                          @ref="_standaloneTable"
+                          ServerData="LoadStandaloneAsync"
+                          RowsPerPage="@_standalonePageSize"
+                          Dense="true"
+                          Hover="true"
+                          Elevation="0"
+                          Square="true"
+                          Breakpoint="Breakpoint.Lg"
+                          OnRowClick="OnStandaloneRowClick"
+                          aria-label="جدول مشاوير المندوب المستقلة">
+                    <HeaderContent>
+                        <MudTh Class="text-xs font-bold text-slate-500">رقم المشوار</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">العنوان</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">المسار</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">الحالة</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">المحاولات</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">الجدولة</MudTh>
+                        @if (_canWriteTrips)
+                        {
+                            <MudTh Class="w-16 text-xs font-bold text-slate-500">
+                                <span class="sr-only">الإجراءات</span>
+                            </MudTh>
+                        }
+                    </HeaderContent>
+
+                    <RowTemplate Context="trip">
+                        @{
+                            var chip = TripPresentation.GetStatusChip(trip.DisplayState);
+                            var allowedActions = TripPresentation.GetAllowedActions(trip.DisplayState, _canWriteTrips);
+                        }
+
+                        <MudTd DataLabel="رقم المشوار">
+                            <a href="@($"/trips/{trip.Id}")"
+                               class="whitespace-nowrap font-mono text-xs font-bold text-brand-700 hover:underline"
+                               dir="ltr">@TripPresentation.FormatTripNumber(trip.TripNumber, trip.SequenceYear, trip.SequenceMonth)</a>
+                        </MudTd>
+                        <MudTd DataLabel="العنوان" Style="overflow-wrap:anywhere">
+                            <span class="text-sm font-bold text-slate-900">@trip.Title</span>
+                        </MudTd>
+                        <MudTd DataLabel="المسار" Style="overflow-wrap:anywhere">
+                            <span class="text-xs text-slate-700">@trip.FromName</span>
+                            <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Class="mx-1 text-[12px] text-slate-400" />
+                            <span class="text-xs text-slate-700">@trip.ToName</span>
+                        </MudTd>
+                        <MudTd DataLabel="الحالة">
+                            <span class="@($"inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px] font-bold {OrderWorkflowPresentation.Tag(chip.Tone)}")">
+                                <span class="@($"h-1.5 w-1.5 rounded-full {OrderWorkflowPresentation.Dot(chip.Tone)}")"></span>
+                                @chip.Label
+                            </span>
+                        </MudTd>
+                        <MudTd DataLabel="المحاولات" Class="whitespace-nowrap text-center text-xs font-bold text-slate-700">
+                            <span dir="ltr">@TripPresentation.AttemptProgress(trip.CurrentAttemptNumber, trip.AttemptCount)</span>
+                        </MudTd>
+                        <MudTd DataLabel="الجدولة" Class="whitespace-nowrap text-xs font-semibold text-slate-600">
+                            @if (trip.ScheduledAtUtc.HasValue)
+                            {
+                                <UserLocalTime Value="trip.ScheduledAtUtc" />
+                            }
+                            else
+                            {
+                                <span class="text-slate-400">—</span>
+                            }
+                        </MudTd>
+                        @if (_canWriteTrips)
+                        {
+                            <MudTd DataLabel="الإجراءات">
+                                <div class="flex items-center justify-end" @onclick:stopPropagation="true">
+                                    <MudMenu AnchorOrigin="Origin.BottomLeft"
+                                             TransformOrigin="Origin.TopLeft"
+                                             Dense="true"
+                                             Icon="@Icons.Material.Filled.MoreVert"
+                                             AriaLabel="إجراءات المشوار">
+                                        <MudMenuItem OnClick="@(() => Navigation.NavigateTo($"/trips/{trip.Id}"))">فتح التفاصيل</MudMenuItem>
+                                        @if (trip.IsEditable)
+                                        {
+                                            <MudMenuItem OnClick="@(() => Navigation.NavigateTo($"/trips/{trip.Id}/edit"))">تعديل المشوار</MudMenuItem>
+                                        }
+                                        @foreach (var action in allowedActions.Where(candidate => candidate != TripPresentation.ActionEdit))
+                                        {
+                                            <MudMenuItem OnClick="@(() => OpenActionAsync(trip, action))">
+                                                @TripPresentation.ActionLabel(action)
+                                            </MudMenuItem>
+                                        }
+                                    </MudMenu>
+                                </div>
+                            </MudTd>
+                        }
+                    </RowTemplate>
+
+                    <NoRecordsContent>
+                        <p class="py-8 text-center text-xs text-slate-500">لا توجد مشاوير مستقلة لهذا المندوب.</p>
+                    </NoRecordsContent>
+
+                    <LoadingContent>
+                        <div class="flex flex-col items-center gap-2 py-8">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                            <p class="text-sm text-slate-500">جاري تحميل المشاوير...</p>
+                        </div>
+                    </LoadingContent>
+
+                    <PagerContent>
+                        <TableFooter TotalItems="@_standaloneTotal"
+                                     CurrentPage="_standalonePage"
+                                     CurrentPageChanged="OnStandalonePageChanged"
+                                     RowsPerPage="_standalonePageSize"
+                                     RowsPerPageChanged="OnStandaloneRowsPerPageChanged" />
+                    </PagerContent>
+                </MudTable>
+            </section>
+
+            @* ========================================================
+               Order-bound trips
+               ======================================================== *@
+            <section class="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-xs" aria-label="مشاوير الطلبات للمندوب">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 sm:px-5">
+                    <div class="flex items-center gap-2.5">
+                        <span class="@($"inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border {OrderWorkflowPresentation.IconTile("completed")}")">
+                            <MudIcon Icon="@Icons.Material.Outlined.LocalShipping" Class="text-[18px]" />
+                        </span>
+                        <div>
+                            <h2 class="text-sm font-bold text-slate-800">مشاوير الطلبات</h2>
+                            <p class="text-[11px] text-slate-600">مشاوير التوصيل المرتبطة بطلبات (للقراءة فقط)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <MudTable T="OrderBoundTripListItem"
+                          @ref="_orderTable"
+                          ServerData="LoadOrderBoundAsync"
+                          RowsPerPage="@_orderBoundPageSize"
+                          Dense="true"
+                          Hover="true"
+                          Elevation="0"
+                          Square="true"
+                          Breakpoint="Breakpoint.Md"
+                          aria-label="جدول مشاوير الطلبات للمندوب">
+                    <HeaderContent>
+                        <MudTh Class="text-xs font-bold text-slate-500">رقم المشوار</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">الطلب</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">حالة الطلب</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">حالة المشوار</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">تاريخ الإنشاء</MudTh>
+                    </HeaderContent>
+
+                    <RowTemplate Context="trip">
+                        @{
+                            var tripChip = TripPresentation.GetWorkRecordStatusChip(trip.Status);
+                        }
+                        <MudTd DataLabel="رقم المشوار">
+                            <span class="whitespace-nowrap font-mono text-xs font-bold text-slate-700" dir="ltr">
+                                @TripPresentation.FormatTripNumber(trip.WorkRecordNumber, trip.SequenceYear, trip.SequenceMonth)
+                            </span>
+                        </MudTd>
+                        <MudTd DataLabel="الطلب">
+                            @if (trip.OrderNumber is null)
+                            {
+                                <span class="text-xs text-slate-400">—</span>
+                            }
+                            else if (_canReadOrders && trip.OrderId is { } orderId)
+                            {
+                                <a href="@($"/orders/{orderId}")"
+                                   class="whitespace-nowrap font-mono text-xs font-bold text-brand-700 hover:underline"
+                                   dir="ltr">@trip.OrderNumber</a>
+                            }
+                            else
+                            {
+                                <span class="whitespace-nowrap font-mono text-xs font-bold text-slate-700" dir="ltr">@trip.OrderNumber</span>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="حالة الطلب" Class="whitespace-nowrap text-xs font-semibold text-slate-700">
+                            @(trip.OrderStatus?.GetDescription() ?? "—")
+                        </MudTd>
+                        <MudTd DataLabel="حالة المشوار">
+                            <span class="@($"inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px] font-bold {OrderWorkflowPresentation.Tag(tripChip.Tone)}")">
+                                <span class="@($"h-1.5 w-1.5 rounded-full {OrderWorkflowPresentation.Dot(tripChip.Tone)}")"></span>
+                                @tripChip.Label
+                            </span>
+                        </MudTd>
+                        <MudTd DataLabel="تاريخ الإنشاء" Class="whitespace-nowrap text-xs font-semibold text-slate-600">
+                            <UserLocalTime Value="trip.CreatedAt" />
+                        </MudTd>
+                    </RowTemplate>
+
+                    <NoRecordsContent>
+                        <p class="py-8 text-center text-xs text-slate-500">لا توجد مشاوير طلبات لهذا المندوب.</p>
+                    </NoRecordsContent>
+
+                    <LoadingContent>
+                        <div class="flex flex-col items-center gap-2 py-8">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                            <p class="text-sm text-slate-500">جاري تحميل مشاوير الطلبات...</p>
+                        </div>
+                    </LoadingContent>
+
+                    <PagerContent>
+                        <TableFooter TotalItems="@_orderBoundTotal"
+                                     CurrentPage="_orderBoundPage"
+                                     CurrentPageChanged="OnOrderBoundPageChanged"
+                                     RowsPerPage="_orderBoundPageSize"
+                                     RowsPerPageChanged="OnOrderBoundRowsPerPageChanged" />
+                    </PagerContent>
+                </MudTable>
+            </section>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private DeliverymanListItem? _deliveryman;
+    private DeliverymanTripsSummary? _summary;
+    private PageScaffold.CrumbItem[] _crumbs = [];
+    private string? _error;
+    private bool _loading = true;
+    private bool _canReadTrips;
+    private bool _canWriteTrips;
+    private bool _canReadOrders;
+    private int _loadedId;
+
+    private MudTable<DeliverymanTripListItem>? _standaloneTable;
+    private MudTable<OrderBoundTripListItem>? _orderTable;
+    private int _standalonePage = 1;
+    private int _standalonePageSize = 10;
+    private int _standaloneTotal;
+    private int _orderBoundPage = 1;
+    private int _orderBoundPageSize = 10;
+    private int _orderBoundTotal;
+
+    private string ContactSummary =>
+        _deliveryman is null
+            ? string.Empty
+            : string.Join(
+                " · ",
+                new[] { _deliveryman.CityName, _deliveryman.PhoneNumber }
+                    .Where(value => !string.IsNullOrWhiteSpace(value)));
+
+    private static string Display(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "—" : value;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedId == Id)
+        {
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        _summary = null;
+
+        try
+        {
+            _deliveryman = await RequestExecutor.ExecuteAsync(new GetDeliverymanByIdQuery(Id));
+
+            if (_deliveryman is null)
+            {
+                _loadedId = Id;
+                return;
+            }
+
+            _crumbs =
+            [
+                new("المناديب", "/deliverymen"),
+                new(_deliveryman.Name)
+            ];
+
+            _canReadTrips = await PermissionAccess.IsAllowedAsync(PermissionFeature.Trips, PermissionLevel.Read);
+
+            if (_canReadTrips)
+            {
+                _canWriteTrips = await PermissionAccess.IsAllowedAsync(PermissionFeature.Trips, PermissionLevel.Write);
+                _canReadOrders = await PermissionAccess.IsAllowedAsync(PermissionFeature.Orders, PermissionLevel.Read);
+                _summary = await RequestExecutor.ExecuteAsync(new GetDeliverymanTripsSummaryQuery(Id));
+            }
+            else
+            {
+                _canWriteTrips = false;
+                _canReadOrders = false;
+            }
+
+            _standalonePageSize = OrderHub.Web.Services.TripsViewPreferences.Normalize(
+                ViewPreferences.DeliverymanStandalonePageSize,
+                10);
+            _orderBoundPageSize = OrderHub.Web.Services.TripsViewPreferences.Normalize(
+                ViewPreferences.DeliverymanOrderBoundPageSize,
+                10);
+
+            _loadedId = Id;
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load deliveryman details {DeliverymanId}.", Id);
+            _error = "تعذر تحميل بيانات المندوب. حاول مرة أخرى.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenEditorAsync()
+    {
+        if (_deliveryman is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var parameters = new DialogParameters<DeliverymanEditorDialog>
+            {
+                { dialog => dialog.DeliverymanId, _deliveryman.Id }
+            };
+
+            var dialog = await DialogService.ShowAsync<DeliverymanEditorDialog>(
+                "تعديل المندوب",
+                parameters,
+                new DialogOptions
+                {
+                    MaxWidth = MaxWidth.Small,
+                    FullWidth = true,
+                    CloseButton = false,
+                    CloseOnEscapeKey = false,
+                    BackdropClick = false
+                });
+
+            var result = await dialog.Result;
+
+            if (result is { Canceled: false, Data: true })
+            {
+                _loadedId = 0;
+                await LoadAsync();
+            }
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to open deliveryman editor for {DeliverymanId}.", Id);
+            Snackbar.Add("تعذر فتح بيانات المندوب. حاول مرة أخرى.", Severity.Error);
+        }
+    }
+
+    private async Task<TableData<DeliverymanTripListItem>> LoadStandaloneAsync(TableState state, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await RequestExecutor.ExecuteAsync(
+                new GetDeliverymanStandaloneTripsQuery(Id, _standalonePage, _standalonePageSize),
+                cancellationToken);
+
+            _standaloneTotal = result.TotalCount;
+
+            return new TableData<DeliverymanTripListItem>
+            {
+                Items = result.Items.ToList(),
+                TotalItems = result.TotalCount
+            };
+        }
+        catch (AuthorizationDeniedException)
+        {
+            return new TableData<DeliverymanTripListItem> { Items = Array.Empty<DeliverymanTripListItem>(), TotalItems = 0 };
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load standalone trips for deliveryman {DeliverymanId}.", Id);
+            return new TableData<DeliverymanTripListItem> { Items = Array.Empty<DeliverymanTripListItem>(), TotalItems = 0 };
+        }
+    }
+
+    private async Task<TableData<OrderBoundTripListItem>> LoadOrderBoundAsync(TableState state, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await RequestExecutor.ExecuteAsync(
+                new GetDeliverymanOrderBoundTripsQuery(Id, _orderBoundPage, _orderBoundPageSize),
+                cancellationToken);
+
+            _orderBoundTotal = result.TotalCount;
+
+            return new TableData<OrderBoundTripListItem>
+            {
+                Items = result.Items.ToList(),
+                TotalItems = result.TotalCount
+            };
+        }
+        catch (AuthorizationDeniedException)
+        {
+            return new TableData<OrderBoundTripListItem> { Items = Array.Empty<OrderBoundTripListItem>(), TotalItems = 0 };
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load order-bound trips for deliveryman {DeliverymanId}.", Id);
+            return new TableData<OrderBoundTripListItem> { Items = Array.Empty<OrderBoundTripListItem>(), TotalItems = 0 };
+        }
+    }
+
+    private void OnStandaloneRowClick(TableRowClickEventArgs<DeliverymanTripListItem> args)
+    {
+        if (args.Item is null)
+        {
+            return;
+        }
+
+        Navigation.NavigateTo($"/trips/{args.Item.Id}");
+    }
+
+    private Task ReloadStandaloneAsync() =>
+        _standaloneTable is null ? Task.CompletedTask : _standaloneTable.ReloadServerData();
+
+    private Task ReloadOrderBoundAsync() =>
+        _orderTable is null ? Task.CompletedTask : _orderTable.ReloadServerData();
+
+    private async Task OnStandalonePageChanged(int page)
+    {
+        _standalonePage = Math.Max(1, page);
+        await ReloadStandaloneAsync();
+    }
+
+    private async Task OnStandaloneRowsPerPageChanged(int rowsPerPage)
+    {
+        _standalonePageSize = OrderHub.Web.Services.TripsViewPreferences.Normalize(rowsPerPage, 10);
+        ViewPreferences.DeliverymanStandalonePageSize = _standalonePageSize;
+        _standalonePage = 1;
+        await ReloadStandaloneAsync();
+    }
+
+    private async Task OnOrderBoundPageChanged(int page)
+    {
+        _orderBoundPage = Math.Max(1, page);
+        await ReloadOrderBoundAsync();
+    }
+
+    private async Task OnOrderBoundRowsPerPageChanged(int rowsPerPage)
+    {
+        _orderBoundPageSize = OrderHub.Web.Services.TripsViewPreferences.Normalize(rowsPerPage, 10);
+        ViewPreferences.DeliverymanOrderBoundPageSize = _orderBoundPageSize;
+        _orderBoundPage = 1;
+        await ReloadOrderBoundAsync();
+    }
+
+    private async Task OpenActionAsync(DeliverymanTripListItem trip, string action)
+    {
+        if (action == TripPresentation.ActionEdit)
+        {
+            Navigation.NavigateTo($"/trips/{trip.Id}/edit");
+            return;
+        }
+
+        TripActionOutcome? outcome = await TripActions.ShowAsync(
+            trip.Id,
+            trip.Version,
+            trip.DisplayState,
+            action);
+
+        if (outcome is null)
+        {
+            return;
+        }
+
+        if (outcome.ReloadRequired)
+        {
+            Snackbar.Add("تم تحديث بيانات المشوار بعد تعارض النسخة.", Severity.Warning);
+        }
+        else
+        {
+            Snackbar.Add(TripPresentation.SuccessMessage(action), Severity.Success);
+        }
+
+        await RefreshSummaryAsync();
+        await ReloadStandaloneAsync();
+    }
+
+    private async Task RefreshSummaryAsync()
+    {
+        try
+        {
+            _summary = await RequestExecutor.ExecuteAsync(new GetDeliverymanTripsSummaryQuery(Id));
+        }
+        catch (AuthorizationDeniedException)
+        {
+            _canReadTrips = false;
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to refresh trip summary for deliveryman {DeliverymanId}.", Id);
+        }
+    }
+}

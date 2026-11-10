@@ -8,6 +8,7 @@ using OrderHub.Infrastructure.Features.Documents;
 using OrderHub.Infrastructure.Features.Orders;
 using OrderHub.Infrastructure.Features.Products;
 using OrderHub.Infrastructure.Features.Setup;
+using OrderHub.Infrastructure.Features.Trips;
 using OrderHub.Infrastructure.Reopsitories;
 using OrderHub.Application.Authorization;
 
@@ -24,6 +25,7 @@ public static class ServiceCollectionExtensions
         services.AddDrafts();
         services.AddSetupPersistence();
         services.AddCatalogPersistence();
+        services.AddTripsFeature();
 
         services.AddServices();
 

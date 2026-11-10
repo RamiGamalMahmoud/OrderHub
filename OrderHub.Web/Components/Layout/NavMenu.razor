@@ -239,6 +239,13 @@ else
             new("شركات الشحن", "/shipping-carriers", Icons.Material.Outlined.LocalShipping, PermissionFeature.ShippingCarriers, "indigo",
                 "شركات الشحن وأتعاب التوصيل")
         ]),
+        new("المشاوير", Icons.Material.Outlined.Route, "مشاوير المناديب", "/trips",
+        [
+            new("كل المشاوير", "/trips", Icons.Material.Outlined.Route, PermissionFeature.Trips, "amber",
+                "كل مشاوير المناديب، المستقلة والمرتبطة بالطلبات")
+        ],
+        new("إنشاء مشوار", "/trips/create", Icons.Material.Filled.Add, PermissionFeature.Trips, "amber",
+            "إنشاء مشوار مستقل لمندوب", PermissionLevel.Write)),
         new("المستندات والوثائق", Icons.Material.Filled.Description, "الفواتير وعروض الأسعار والوثائق", "/invoices",
         [
             new("الفواتير", "/invoices", Icons.Material.Outlined.ReceiptLong, PermissionFeature.Documents, "blue",
@@ -276,7 +283,7 @@ else
         }
 
         var combinations = Groups
-            .SelectMany(group => group.Items)
+            .SelectMany(group => group.Items.Concat(group.Create is not null ? [group.Create] : []))
             .Select(item => (item.Feature, item.Level))
             .Distinct();
 

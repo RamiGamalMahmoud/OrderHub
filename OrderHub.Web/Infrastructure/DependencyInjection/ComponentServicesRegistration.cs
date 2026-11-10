@@ -10,6 +10,8 @@ internal static class ComponentServicesRegistration
     public static IServiceCollection AddComponents(this IServiceCollection services)
     {
         services.AddScoped<OrdersListState>();
+        services.AddScoped<TripsViewPreferences>();
+        services.AddScoped<TripActions>();
 
         services
             .AddRazorComponents()

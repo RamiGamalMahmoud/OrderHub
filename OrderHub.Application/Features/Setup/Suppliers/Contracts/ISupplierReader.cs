@@ -13,5 +13,6 @@ public interface ISupplierReader
     Task<IEnumerable<SupplierListItem>> GetAllSuppliersAsync(CancellationToken cancellationToken);
     Task<SupplierEdit> GetSupplierForEditAsync(int id, CancellationToken cancellationToken);
     Task<IEnumerable<SupplierInfo>> GetSuppliersInfoAsync(CancellationToken cancellationToken);
+    Task<IEnumerable<SupplierListItem>> GetSuppliersByNameAsync(string searchTerm, int take, CancellationToken cancellationToken);
     Task<IEnumerable<ProductInfo>> GetSupplierEditorProductsAsync(CancellationToken cancellationToken);
 }

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Features.Setup.Suppliers.Contracts;
+using OrderHub.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,6 +62,37 @@ internal sealed class SupplierReader(AppDbContextFactory contextFactory) : ISupp
         };
 
         return supplier;
+    }
+
+    public async Task<IEnumerable<SupplierListItem>> GetSuppliersByNameAsync(string searchTerm, int take, CancellationToken cancellationToken)
+    {
+        await using var context = contextFactory.CreateDbContext();
+
+        IQueryable<Domain.Models.Supplier> query = context.Suppliers.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            string term = searchTerm.Trim();
+            query = query.Where(supplier =>
+                supplier.Name.Value.Contains(term) ||
+                (supplier.Phone != null &&
+                    (supplier.Phone.Number.CountryCode + " - " + supplier.Phone.Number.NationalNumber).Contains(term)) ||
+                (supplier.Address != null &&
+                    (supplier.Address.Street.Contains(term) || supplier.Address.City.Name.Value.Contains(term))));
+        }
+
+        return await query
+            .OrderBy(supplier => supplier.Name.Value)
+            .ThenBy(supplier => supplier.Id)
+            .Take(take)
+            .Select(supplier => new SupplierListItem(
+                supplier.Id,
+                supplier.Name.Value,
+                supplier.BusinessHours != null ? supplier.BusinessHours.OpenAt : default,
+                supplier.BusinessHours != null ? supplier.BusinessHours.CloseAt : default,
+                supplier.Address != null ? supplier.Address.City.Name.Value + " - " + supplier.Address.Street : "",
+                supplier.Phone != null ? supplier.Phone.Number.CountryCode + " - " + supplier.Phone.Number.NationalNumber : ""))
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<IEnumerable<SupplierInfo>> GetSuppliersInfoAsync(CancellationToken cancellationToken)

@@ -9,7 +9,10 @@ using OrderHub.Application.Features.Setup.Deliverymen.Contracts;
 
 namespace OrderHub.Application.Features.Setup.Deliverymen;
 
-internal sealed class DeleteDeliverymanCommandHandler(IDeliverymanRepository repository, IUnitOfWork unitOfWork) : IRequestHandler<DeleteDeliverymanCommand, Result>
+internal sealed class DeleteDeliverymanCommandHandler(
+    IDeliverymanRepository repository,
+    IUnitOfWork unitOfWork,
+    ITripUsageReader tripUsageReader) : IRequestHandler<DeleteDeliverymanCommand, Result>
 {
     public async Task<Result> Handle(DeleteDeliverymanCommand request, CancellationToken cancellationToken)
     {
@@ -29,6 +32,13 @@ internal sealed class DeleteDeliverymanCommandHandler(IDeliverymanRepository rep
         if (await repository.IsUsedByOrderDeliveryStepsAsync(request.Id, cancellationToken))
         {
             return Result.Failure("لا يمكن حذف المندوب لأنه مستخدم في سلسلة التوصيل.");
+        }
+
+        if (await tripUsageReader.HasDeliverymanTripsAsync(request.Id, cancellationToken))
+        {
+            return Result.Failure(
+                "لا يمكن حذف المندوب لارتباطه بمشاوير مستقلة. أغلق المشاوير أولاً ثم أعد المحاولة.",
+                "Conflict");
         }
 
         repository.Remove(deliveryman);

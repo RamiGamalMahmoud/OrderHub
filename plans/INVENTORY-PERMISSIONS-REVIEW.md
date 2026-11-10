@@ -1,7 +1,7 @@
 # Inventory × Roles & Permissions — Integration Review
 
-- **Version:** 1.0 (review only — no code, no amendments applied yet)
-- **Date:** 2026-11-08
+- **Version:** 1.2 (review complete — all decisions locked; spec v1.3 written)
+- **Date:** 2026-11-09 · revision 1.2 locks the six default decisions
 - **Inputs:** `plans/INVENTORY-MANAGEMENT-SPEC.md` v1.2 · `plans/roles-and-permissions-plan.md` · `plans/roles-and-permissions-study.md` · `AGENTS.md`
 - **Scope:** verify the inventory spec's permission assumptions against the planned roles redesign and the code as it exists today; produce the permission model and the build-order dependency. **Implementation is explicitly out of scope.**
 
@@ -9,14 +9,32 @@
 
 ## 0. Verdict
 
-The stock ledger, reservation, issue-order and reversal mechanics in the inventory spec are internally sound. Its **permission layer (§7, D9, D20) predates the roles redesign** and cannot be implemented as written:
+**Revision 1.1:** the roles redesign is now implemented (Approve level, 4 sealed presets, Higher Manager gates). The earlier silent-deny item is resolved; the remaining blockers are inventory-specific.
 
-- Two gates would **silently deny** if written against `Approve` before the roles work lands.
-- Two gates would **over-privilege** if written only at feature level, because `Approve` satisfies `Write` in the new hierarchy.
-- The sealed preset matrix has no rows for the two new features, so **every preset role starts with zero inventory access** — including the ones the spec assumes will use it.
-- There is **no keeper role**, and the user directory needed to assign keepers is gated by `Users.Read`, which the redesigned Manager no longer has.
+The stock ledger, reservation, issue-order and reversal mechanics are internally sound. The permission layer still needs the amendments in §5:
 
-With the amendments in §5 and the decisions in §8 this fits the roles model cleanly. **Recommended order: roles redesign (at least Phases 1–3) before inventory slice A1.**
+- `Approve` satisfies `Write`, so a feature gate alone **over-privileges** execution unless the keeper-binding check runs in the handlers.
+- The sealed presets have **no rows** for the two new features → every preset role starts with zero inventory access.
+- There is **no keeper/storekeeper role**; keepers would need custom roles or the over-privileged Manager preset.
+- Keeper assignment needs a user directory, and `GetUsersQuery` is gated by `Users.Read`, which Manager does not have.
+
+All ten decisions (D-RP1–D-RP10) are now locked, and `plans/INVENTORY-MANAGEMENT-SPEC.md` **v1.3** carries them. Inventory A1 is ready to start; the roles prerequisite (R0) is complete.
+
+### 0.1 Post-implementation delta (verified 2026-11-09)
+
+| Item | Status | Evidence |
+|---|---|---|
+| `Approve` level | **Implemented** | `PermissionLevel.cs:16` |
+| Approve guard-line + hierarchy | **Implemented** (Read←R/W/A, Write←W/A, Approve←A) | `AuthorizationService.cs:16` |
+| Policies for Approve | **Implemented** (loops all non-None levels) | Web authorization registration |
+| Sealed roles + `RoleKey` | **Implemented** — 4 presets, 31 cells | `Role.cs:23`, `20261108214724_SeedSealedRoles` |
+| Higher Manager gate | **Implemented** | `HigherManagerAuthorizeAttribute`, `IsHigherManagerAsync` |
+| Inventory features | **Not present** — enum still 14 | `PermissionFeature.cs` |
+| Storekeeper preset | **Not present** | `SealedRolePresets.cs` |
+| `User.Phone` | **Not present** | `User.cs` |
+| Inventory code | **Not present** | repo-wide grep |
+
+Consequence: **F1 is resolved; F2–F16 remain.** The seed is now frozen as `SealedRoleSeedSql.V1` with tests asserting 4 roles / 31 cells — inventory must add a **V2** seed (new migration, new SQL constant) and update `SealedRolePresets`, never edit V1.
 
 ---
 
@@ -24,10 +42,11 @@ With the amendments in §5 and the decisions in §8 this fits the roles model cl
 
 | Claim in the plans | Reality in the code | Evidence |
 |---|---|---|
-| `Approve` level exists | **Not implemented.** `None / Read / Write` only | `OrderHub.Domain/Enums/PermissionLevel.cs:5` |
-| `Approve` can be checked | **Silently denied.** Guard whitelists `Read`/`Write` | `OrderHub.Application/Authorization/AuthorizationService.cs:16` |
-| Policies exist for `Approve` | Factory registers only `Read`/`Write` | `OrderHub.Web/Infrastructure/Authorization/ServiceCollectionExtensions.cs:17` |
-| Sealed preset roles exist | **Not implemented.** No `IsSealed`, no `RoleKey`, no seed | `OrderHub.Domain/Models/Role.cs:19` |
+| `Approve` level exists | **Implemented** (`None / Read / Write / Approve`) | `OrderHub.Domain/Enums/PermissionLevel.cs:16` |
+| `Approve` can be checked | **Implemented** — guard and hierarchy include Approve | `AuthorizationService.cs:16` |
+| Policies exist for `Approve` | **Implemented** — loops all non-None levels | `ServiceCollectionExtensions.cs:18` |
+| Sealed preset roles exist | **Implemented** — 4 presets, 31 permission cells | `Role.cs:23`, `20261108214724_SeedSealedRoles` |
+| Higher Manager gate exists | **Implemented** | `HigherManagerAuthorizeAttribute`, `IsHigherManagerAsync` |
 | A keeper/storekeeper role exists | **No such preset.** Only the 4 planned presets | `plans/roles-and-permissions-plan.md:20` |
 | `PermissionFeature` has inventory entries | 14 features, none for stock | `OrderHub.Domain/Enums/PermissionFeature.cs:5` |
 | Adding a feature is UI-complete | Editor enumerates the enum automatically, but names/descriptions/icons/tones are a hard-coded switch | `RoleEditorState.cs:11`, `RoleFeatureCatalog.cs:8` |
@@ -62,12 +81,12 @@ Severity: **BLOCKER** = fails at implementation as written · **SECURITY** = wro
 
 | # | Sev | Finding | Consequence | Required amendment |
 |---|---|---|---|---|
-| F1 | BLOCKER | Spec D9/§7 say "admin" approves reversals; roles plan introduces `Approve` for exactly this | If implemented with `IsAdmin`, Manager can never approve (he has no Admin claim); the new level stays unused | Gate approval with `Inventory + Approve`; Higher Manager passes via bypass |
+| F1 | RESOLVED | Spec D9/§7 say "admin" approves reversals; roles plan introduces `Approve` for exactly this | Roles now implements Approve end-to-end (verified 2026-11-09) | Still gate approval with `Inventory + Approve`; Higher Manager passes via bypass |
 | F2 | SECURITY | D20 (keeper-only execution) is written as a feature permission, but `Approve` ≥ `Write` | A Manager (Approve) would pass the `Inventory.Write` gate and could execute/cancel any warehouse's issue order | Feature gate is only the outer gate; add a mandatory handler-level **keeper-binding** check (`IsAdmin || warehouse.KeeperUserId == user.Id`) |
-| F3 | BLOCKER | No keeper/storekeeper role exists, and §7 says "keeper + admins" | Keepers must either get `Manager` (over-privileged, includes system-ish control) or a hand-made custom role per person — reopening the pain the redesign removes | Add a 5th sealed preset `storekeeper` («أمين مخزن») in the inventory migration (owner approval) |
+| F3 | BLOCKER | No keeper/storekeeper role exists, and §7 says "keeper + admins" | Keepers must either get `Manager` (over-privileged, includes system-ish control) or a hand-made custom role per person — reopening the pain the redesign removes | Add a 5th sealed preset `storekeeper` («أمين مخزن») in the inventory migration — **LOCKED 2026-11-09** |
 | F4 | BLOCKER | Sealed presets would have **no rows** for `Warehouses`/`Inventory` | Sales cannot see availability; purchasing cannot record stock-in; manager cannot approve; every preset behaves as `None` | Add a new migration inserting the two feature rows per preset (idempotent, `role_key`-keyed) and update the drift test |
-| F5 | BLOCKER | Keeper assignment needs a user list; `GetUsersQuery` requires `Users.Read`; Manager has `Users = None` | If Manager may manage warehouses, the keeper dropdown is denied/dead | Add a minimal `GetWarehouseKeeperCandidatesQuery` gated by `Warehouses.Write` returning `Id, DisplayName, IsActive, HasInventoryWrite` only |
-| F6 | DECISION | Roles plan sets Manager = `Approve` on **all** operational features; Warehouse CRUD has no approval flow | Semantically odd, and makes "Manager can create warehouses" implicit | Set Manager `Warehouses` explicitly (recommend `Write`) and `Inventory` (recommend `Approve`) |
+| F5 | BLOCKER | Keeper assignment needs a user list; `GetUsersQuery` requires `Users.Read`; Manager has `Users = None` | Manager **will** manage warehouses (locked), so the keeper dropdown would be denied/dead | Add a minimal `GetWarehouseKeeperCandidatesQuery` gated by `Warehouses.Write` returning `Id, DisplayName, IsActive, HasInventoryWrite` only — **LOCKED 2026-11-09** |
+| F6 | DECISION | Roles plan sets Manager = `Approve` on **all** operational features; Warehouse CRUD has no approval flow | Semantically odd, and makes "Manager can create warehouses" implicit | **LOCKED:** Manager `Warehouses=Write`, `Inventory=Approve` (2026-11-09) |
 | F7 | BLOCKER | Reversal approval listed among admin pages would inherit `[Authorize(Roles = "Admin")]` | Manager (Approve) would be locked out of the page entirely | Host reversal approval under `/inventory/reversals`, **not** under `/admin` |
 | F8 | SECURITY | No separation-of-duties rule for reversals | A keeper who is also a Manager/approver can approve their own reversal | Enforce `ApproverUserId != RequestedByUserId` in the handler; add test |
 | F9 | DECISION | D20 binds execution to the keeper, but issue orders snapshot `AssignedUserId` | After a keeper transfer, pending orders are stuck with the old user; the new keeper cannot act | Evaluate against the **current** `Warehouse.KeeperUserId` at action time; keep `AssignedUserId` as request-time audit only |
@@ -82,6 +101,17 @@ Severity: **BLOCKER** = fails at implementation as written · **SECURITY** = wro
 ---
 
 ## 4. Proposed inventory permission model
+
+### 4.0 Locked owner decisions (2026-11-09)
+
+| # | Decision | Locked answer |
+|---|---|---|
+| D-RP1 | Keeper access | **Add a 5th sealed preset** `storekeeper` («أمين مخزن») |
+| D-RP2 | Manager & warehouses | **Manager `Warehouses=Write` + `Inventory=Approve`**; minimal `Warehouses.Write`-gated keeper-candidate query (no `Users` access) |
+| D-RP3 | Reversal approval | **`Inventory=Approve`** (Manager + Higher Manager); requester ≠ approver |
+| D-RP4 | Manager execution | **Keeper/admin only** — a Manager with `Approve` is rejected unless he is that warehouse's current keeper |
+
+These four supersede the corresponding recommendations in §8. `D-RP5`–`D-RP10` remain proposed defaults.
 
 ### 4.1 Features
 
@@ -111,12 +141,12 @@ Only the two new columns; all other cells follow `roles-and-permissions-plan.md`
 | مبيعات `sales` | Read | Read | Sees per-warehouse availability while sourcing order items |
 | مشتريات `purchasing` | Read | Write | Records stock-in purchases |
 | إدخال البيانات `data-entry` | — | — | No stock responsibility |
-| مدير `manager` | **Write** (rec.) | **Approve** | Operational warehouse control; reversal approval |
-| أمين مخزن `storekeeper` **(new, sealed)** | Read | Write | Executes/cancels issue orders, records stock-in/returns for his warehouse |
+| مدير `manager` | **Write** ✅ | **Approve** ✅ | Operational warehouse control; reversal approval |
+| أمين مخزن `storekeeper` **(new, sealed)** ✅ | Read | Write | Executes/cancels issue orders, records stock-in/returns for his warehouse |
 | مدير أعلى `IsAdmin` | bypass | bypass | Unchanged |
 | Existing custom roles | — | — | Additive default `None`; owner grants manually |
 
-`storekeeper` full preset recommendation: `Warehouses=Read`, `Inventory=Write`, `Products=Read`, `Orders=Read`, everything else `None`. (Orders read so the issue-order page can link to the originating order; Products read for the stock-in picker.)
+`storekeeper` locked preset: `Warehouses=Read`, `Inventory=Write`, `Products=Read`, `Orders=Read`, everything else `None`. (Orders read so the issue-order page can link to the originating order; Products read for the stock-in picker.)
 
 ### 4.4 Action → gate matrix
 
@@ -160,9 +190,9 @@ allowed = currentUser.IsAdmin
 5. **§8** — place reversal approval under `/inventory/reversals`; never under an `[Authorize(Roles = "Admin")]` page.
 6. **§3** — correct "row-level authz via `PermissionAccess`" to distinguish feature-level checks from warehouse-binding checks.
 7. **§12** — insert **R0: roles prerequisite** before A1 (see §6); move the preset/catalog/nav wiring into A1.
-8. **New D22** — sealed `storekeeper` preset (if approved).
-9. **New D23** — Manager warehouse rights + minimal keeper-candidate query (if approved).
-10. **New D24** — returns actor (`Inventory.Write` + keeper binding), if approved.
+8. **New D22 (LOCKED 2026-11-09)** — sealed `storekeeper` preset: `Warehouses=Read`, `Inventory=Write`, `Products=Read`, `Orders=Read`.
+9. **New D23 (LOCKED 2026-11-09)** — Manager `Warehouses=Write`, `Inventory=Approve`; minimal `Warehouses.Write`-gated keeper-candidate query.
+10. **New D24 (LOCKED default 2026-11-09)** — returns actor: `Inventory.Write` + keeper binding.
 11. **§13** — add risks R17–R22 from §7 below.
 12. **§10** — note that `Products.Read` is a documented prerequisite for stock-in, and `Orders.Read` for the `storekeeper` preset.
 
@@ -171,12 +201,12 @@ allowed = currentUser.IsAdmin
 ## 6. Revised build order
 
 ```
-R0 — Roles & Permissions redesign
-     Phase 1 Domain (Approve, IsSealed, RoleKey)
-     Phase 2 Application (guard-line fix, policy factory, command guards)
-     Phase 3 Infrastructure (migration + 4 preset seed)
-     Phase 4 Web (4-segment matrix, sealed read-only, user account type)
-     Phase 5 Tests (authorization matrix, drift assertion)
+R0 — Roles & Permissions redesign  ✅ DONE (2026-11-09)
+     Domain: Approve, IsSealed, RoleKey
+     Application: guard-line + Approve hierarchy, policy factory, command guards
+     Infrastructure: 20261108214724_SeedSealedRoles (4 presets, 31 cells)
+     Web: 4-segment matrix, sealed read-only, Higher Manager gates
+     Tests: authorization matrix, sealed guards, seed drift
             │
             ▼
 Inventory Phase A
@@ -200,7 +230,7 @@ Inventory Phase B
      B3  Rebuild tool (Higher Manager) + aggregate reporting
 ```
 
-**Hard sequencing rule:** inventory A1 must not add a second migration touching `roles`/`role_permissions` before the roles seed migration exists. Timestamp the inventory migration **after** `20261108000000_SeedSealedRoles` and make every insert idempotent (`WHERE NOT EXISTS` by `role_key` + feature).
+**Hard sequencing rule:** the roles seed now exists as `20261108214724_SeedSealedRoles` with **frozen** `SealedRoleSeedSql.V1` (tests assert 4 roles / 31 cells). Timestamp the inventory migration **after** it, add a new `V2` SQL constant + migration, extend `SealedRolePresets` (Domain), and update the seed tests' counts. Make every insert idempotent (`WHERE NOT EXISTS` by `role_key` + feature). **Do not edit V1.**
 
 **Parallelism:** roles Phase 4 (users pages) and inventory A1 (warehouses) touch different files; they can run concurrently only after roles Phase 3.
 
@@ -221,18 +251,20 @@ Inventory Phase B
 
 ## 8. Owner decisions required before implementation
 
-| # | Decision | Recommendation | If different |
+| # | Decision | Recommendation / status | Note |
 |---|---|---|---|
-| D-RP1 | Add a 5th sealed preset `storekeeper`? | **Yes** — otherwise keepers need custom roles | Keepers use custom roles; document the setup burden |
-| D-RP2 | Manager level on `Warehouses` and who assigns keepers | `Warehouses=Write`, `Inventory=Approve`; minimal candidate query | `Warehouses` Higher-Manager-only → no candidate query needed, but keeper changes become a Higher-Manager task |
-| D-RP3 | Reversal approval authority | `Inventory=Approve` (Manager + Higher Manager), approver ≠ requester | Admin-only → Manager excluded; `Approve` remains unused |
-| D-RP4 | May a Manager execute/cancel issue orders? | **No** unless bound as that warehouse's keeper | Allow Manager cancel (not execute) with mandatory reason |
-| D-RP5 | Separation of duties on reversals | Enforce even for Higher Manager | Allow Higher Manager self-approval (not recommended) |
-| D-RP6 | Order editor when the user lacks `Inventory.Read` | Hide availability, disable stock sourcing, Arabic hint, supplier-only path | Require `Inventory.Read` for `Orders.Write` (role-editor coupling) |
-| D-RP7 | Stock-in product picker gate | Require `Products.Read`; include it in `storekeeper` | Gate the picker by `Inventory.Write` through a purpose-specific query |
-| D-RP8 | Keeper transfer vs pending issue orders | Authority follows current keeper; snapshot stays audit-only | Reassign pending orders explicitly on transfer |
-| D-RP9 | Reversal approval page location | `/inventory/reversals` (no Admin claim) | `/admin/inventory-reversals` (then Manager is locked out) |
-| D-RP10 | Who records customer returns (phase B) | `Inventory.Write` + keeper binding | Order creators with `Orders.Write` may record them |
+| D-RP1 | Add a 5th sealed preset `storekeeper`? | ✅ **LOCKED: Yes** (2026-11-09) | Extends `SealedRolePresets`, the V2 seed, and the seed-test counts |
+| D-RP2 | Manager level on `Warehouses` and who assigns keepers | ✅ **LOCKED:** `Warehouses=Write`, `Inventory=Approve`; minimal candidate query | No `Users` access needed for Manager |
+| D-RP3 | Reversal approval authority | ✅ **LOCKED:** `Inventory=Approve` (Manager + Higher Manager), approver ≠ requester | Higher Manager passes via `IsAdmin` bypass |
+| D-RP4 | May a Manager execute/cancel issue orders? | ✅ **LOCKED: No** unless bound as that warehouse's keeper | Handler returns `Result.Failure`; test required |
+| D-RP5 | Separation of duties on reversals | ✅ **LOCKED (default): Enforce** — even for Higher Manager | Approver ≠ requester |
+| D-RP6 | Order editor when the user lacks `Inventory.Read` | ✅ **LOCKED (default):** hide availability, disable stock sourcing, Arabic hint, supplier-only | Handler rejects any stock portion |
+| D-RP7 | Stock-in product picker gate | ✅ **LOCKED (default):** require `Products.Read`; included in `storekeeper` | `Inventory.Write` alone does not expose the catalog |
+| D-RP8 | Keeper transfer vs pending issue orders | ✅ **LOCKED (default):** authority follows current keeper; snapshot audit-only | No bulk reassignment |
+| D-RP9 | Reversal approval page location | ✅ **LOCKED (default):** `/inventory/reversals` (no Admin claim) | Manager remains eligible |
+| D-RP10 | Who records customer returns (phase B) | ✅ **LOCKED (default):** `Inventory.Write` + keeper binding | Sales cannot post returns |
+
+All ten decisions are locked; the six defaults were accepted on 2026-11-09 and written into `INVENTORY-MANAGEMENT-SPEC.md` v1.3.
 
 ---
 

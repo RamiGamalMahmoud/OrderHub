@@ -36,6 +36,9 @@ public enum PermissionFeature
     [Description("شركات الشحن")]
     ShippingCarriers,
 
+    [Description("المشاوير")]
+    Trips,
+
     // Reference Data
     [Description("المدن")]
     Cities,

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OrderHub.Domain.Models;
 using OrderHub.Domain.Models.CommercialDocuments;
+using OrderHub.Domain.Models.Trips;
 using OrderHub.Infrastructure.Configurations;
 using OrderHub.Infrastructure.Models;
 using System;
@@ -48,6 +49,9 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<DraftRecord> DraftRecords { get; set; }
     public DbSet<Role> Roles { get; set; }
     public DbSet<NumberSequence> NumberSequences { get; set; }
+    public DbSet<StandaloneTrip> StandaloneTrips { get; set; }
+    public DbSet<StandaloneTripAttempt> StandaloneTripAttempts { get; set; }
+    public DbSet<StandaloneTripHistoryEntry> StandaloneTripHistoryEntries { get; set; }
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
@@ -64,7 +68,7 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     private void ProtectHistory()
     {
         if (ChangeTracker.Entries().Any(entry => entry.Entity is OrderStatusHistory or DeliveryStepStatusHistory
-            or WorkRecordStatusHistory or OrderDeliveryMovement &&
+            or WorkRecordStatusHistory or OrderDeliveryMovement or StandaloneTripHistoryEntry &&
             entry.State is EntityState.Modified or EntityState.Deleted))
             throw new InvalidOperationException("سجل التشغيل محفوظ ولا يمكن تعديله أو حذفه.");
     }

@@ -1,0 +1,790 @@
+@page "/trips"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.Trips,
+    PermissionLevel.Read)]
+
+@inject IRequestExecutor RequestExecutor
+@inject OrderHub.Web.Services.PermissionAccess PermissionAccess
+@inject NavigationManager Navigation
+@inject TripActions TripActions
+@inject ISnackbar Snackbar
+@inject OrderHub.Web.Services.TripsViewPreferences ViewPreferences
+@inject ILogger<Index> Logger
+
+<PageTitle>المشاوير</PageTitle>
+
+<div class="space-y-5">
+    <PageScaffold Title="المشاوير"
+                  Description="كل مشاوير المناديب، المستقلة والمرتبطة بالطلبات"
+                  Crumbs="_scaffoldCrumbs"
+                  Count="@BadgeCount">
+        <Actions>
+            <button type="button" class="oh-btn oh-btn--secondary" @onclick="RefreshAsync">
+                <MudIcon Icon="@Icons.Material.Filled.Refresh" Class="text-[16px]" />
+                <span>تحديث</span>
+            </button>
+            @if (_canWrite)
+            {
+                <a href="/trips/create" class="oh-btn oh-btn--primary">
+                    <MudIcon Icon="@Icons.Material.Filled.Add" Class="text-[18px]" />
+                    <span>إنشاء مشوار</span>
+                </a>
+            }
+        </Actions>
+    </PageScaffold>
+
+    @if (_stats is { } stats)
+    {
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="ملخص المشاوير">
+            <div class="rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-500">إجمالي المشاوير</span>
+                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                        <MudIcon Icon="@Icons.Material.Filled.Assignment" Class="text-[18px]" aria-hidden="true" />
+                    </span>
+                </div>
+                <div class="mt-2 flex items-baseline gap-2">
+                    <span class="text-2xl font-black text-slate-900">@stats.TotalCount.ToString(CultureInfo.InvariantCulture)</span>
+                    <span class="text-xs font-semibold text-slate-500">مشوار مسجل</span>
+                </div>
+                <p class="mt-3 text-xs text-slate-500">المستقلة والمرتبطة بالطلبات</p>
+            </div>
+
+            <div class="rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-500">المشاوير المكتملة</span>
+                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Class="text-[18px]" aria-hidden="true" />
+                    </span>
+                </div>
+                <div class="mt-2 flex items-baseline gap-2">
+                    <span class="text-2xl font-black text-slate-900">@stats.CompletedCount.ToString(CultureInfo.InvariantCulture)</span>
+                    <span class="text-xs font-bold rounded-md bg-emerald-50 px-2 py-0.5 text-emerald-700">@CompletedShare(stats)</span>
+                </div>
+                <p class="mt-3 text-xs text-slate-500">تم التسليم بنجاح</p>
+            </div>
+
+            <div class="rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-500">قيد التنفيذ والجديدة</span>
+                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                        <MudIcon Icon="@Icons.Material.Filled.Schedule" Class="text-[18px]" aria-hidden="true" />
+                    </span>
+                </div>
+                <div class="mt-2 flex items-baseline gap-2">
+                    <span class="text-2xl font-black text-slate-900">@stats.ActiveCount.ToString(CultureInfo.InvariantCulture)</span>
+                    <span class="text-xs font-bold rounded-md bg-amber-50 px-2 py-0.5 text-amber-700">لم تُغلَق</span>
+                </div>
+                <p class="mt-3 text-xs text-slate-500">جديدة أو بانتظار البدء أو قيد التنفيذ حالياً</p>
+            </div>
+
+            <div class="rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-500">تعذر / ملغي</span>
+                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+                        <MudIcon Icon="@Icons.Material.Filled.ReportProblem" Class="text-[18px]" aria-hidden="true" />
+                    </span>
+                </div>
+                <div class="mt-2 flex items-baseline gap-2">
+                    <span class="text-2xl font-black text-slate-900">@((stats.FailedCount + stats.CancelledCount).ToString(CultureInfo.InvariantCulture))</span>
+                    <span class="text-xs font-bold rounded-md bg-rose-50 px-2 py-0.5 text-rose-700">مطلوب متابعة</span>
+                </div>
+                <p class="mt-3 text-xs text-slate-500">مشاوير فاشلة أو ملغاة</p>
+            </div>
+        </div>
+    }
+
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="border-b border-slate-100 px-4 py-3">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+                <MudTextField T="string"
+                              Value="_searchTerm"
+                              ValueChanged="SearchChangedAsync"
+                              Placeholder="ابحث برقم المشوار، رقم الطلب، اسم المندوب، عنوان المشوار أو الجهة"
+                              aria-label="البحث في المشاوير"
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Margin="Margin.Dense"
+                              Immediate="true"
+                              Clearable="true"
+                              Class="w-full lg:flex-1" />
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <select value="@StatusValue"
+                            aria-label="تصفية حسب الحالة"
+                            class="h-10 w-32 rounded-lg border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700 hover:border-slate-400 focus:border-brand-500 focus:outline-none"
+                            @onchange="StatusChangedAsync">
+                        <option value="">جميع الحالات</option>
+                        <option value="@((int)TripDisplayState.New)">جديد</option>
+                        <option value="@((int)TripDisplayState.InProgress)">قيد التنفيذ</option>
+                        <option value="@((int)TripDisplayState.Failed)">فشل</option>
+                        <option value="@((int)TripDisplayState.Completed)">مكتمل</option>
+                        <option value="@((int)TripDisplayState.Cancelled)">ملغي</option>
+                    </select>
+
+                    <div class="w-44">
+                        <MudAutocomplete T="TripLookupItem"
+                                         Value="_deliverymanFilter"
+                                         ValueChanged="DeliverymanFilterChangedAsync"
+                                         SearchFunc="SearchDeliverymenAsync"
+                                         ToStringFunc="item => item?.Name"
+                                         Label="كل المناديب"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Clearable="true"
+                                         Strict="false"
+                                         ResetValueOnEmptyText="true"
+                                         CoerceText="false"
+                                         Class="w-full" />
+                    </div>
+
+                    <select value="@PartyTypeValue"
+                            aria-label="تصفية حسب نوع الجهة"
+                            class="h-10 w-32 rounded-lg border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700 hover:border-slate-400 focus:border-brand-500 focus:outline-none"
+                            @onchange="PartyTypeChangedAsync">
+                        <option value="">كل الجهات</option>
+                        <option value="@((int)TripPartyType.Client)">عميل</option>
+                        <option value="@((int)TripPartyType.Supplier)">مورد</option>
+                        <option value="@((int)TripPartyType.ShippingCarrier)">شركة شحن</option>
+                        <option value="@((int)TripPartyType.External)">خارجي</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                <div>
+                    <label class="mb-1 block text-xs font-bold text-slate-500">الجدولة من</label>
+                    <input type="date"
+                           value="@_scheduledFromText"
+                           aria-label="الجدولة من تاريخ"
+                           class="h-10 w-full rounded-lg border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700 focus:border-brand-500 focus:outline-none"
+                           @onchange="ScheduledFromChangedAsync" />
+                </div>
+
+                <div>
+                    <label class="mb-1 block text-xs font-bold text-slate-500">الجدولة إلى</label>
+                    <input type="date"
+                           value="@_scheduledToText"
+                           aria-label="الجدولة إلى تاريخ"
+                           class="h-10 w-full rounded-lg border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700 focus:border-brand-500 focus:outline-none"
+                           @onchange="ScheduledToChangedAsync" />
+                </div>
+
+                <div>
+                    <label class="mb-1 block text-xs font-bold text-slate-500">الإنشاء من</label>
+                    <input type="date"
+                           value="@_createdFromText"
+                           aria-label="تاريخ الإنشاء من"
+                           class="h-10 w-full rounded-lg border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700 focus:border-brand-500 focus:outline-none"
+                           @onchange="CreatedFromChangedAsync" />
+                </div>
+
+                <div>
+                    <label class="mb-1 block text-xs font-bold text-slate-500">الإنشاء إلى</label>
+                    <input type="date"
+                           value="@_createdToText"
+                           aria-label="تاريخ الإنشاء إلى"
+                           class="h-10 w-full rounded-lg border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700 focus:border-brand-500 focus:outline-none"
+                           @onchange="CreatedToChangedAsync" />
+                </div>
+
+                <div class="flex items-end">
+                    <button type="button"
+                            class="oh-btn oh-btn--ghost oh-btn--sm"
+                            @onclick="ResetFiltersAsync"
+                            disabled="@(ActiveFilterCount == 0 && string.IsNullOrWhiteSpace(_searchTerm))">
+                        <MudIcon Icon="@Icons.Material.Filled.RestartAlt" Class="text-[16px]" />
+                        <span>إعادة تعيين الفلاتر</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @if (_error is not null)
+        {
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-red-100 bg-red-50 px-4 py-3">
+                <p class="text-sm font-bold text-red-800">@_error</p>
+                <button type="button" class="oh-btn oh-btn--secondary oh-btn--sm" @onclick="RefreshAsync">
+                    <MudIcon Icon="@Icons.Material.Filled.Refresh" Class="text-[14px]" />
+                    إعادة المحاولة
+                </button>
+            </div>
+        }
+
+        <MudTable T="TripListItem"
+                  @ref="_table"
+                  ServerData="LoadServerDataAsync"
+                  RowsPerPage="@_pageSize"
+                  Dense="true"
+                  Hover="true"
+                  Elevation="0"
+                  Square="true"
+                  Breakpoint="Breakpoint.Sm"
+                  OnRowClick="OnRowClick"
+                  aria-label="جدول المشاوير">
+            <HeaderContent>
+                <MudTh Class="text-xs font-bold text-slate-500">رقم المشوار</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">عنوان المشوار</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">المندوب</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">من</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">إلى</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">الحالة</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">المحاولات</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">تاريخ الإنشاء</MudTh>
+                <MudTh Class="w-16 text-xs font-bold text-slate-500">
+                    <span class="sr-only">الإجراءات</span>
+                </MudTh>
+            </HeaderContent>
+
+            <RowTemplate Context="trip">
+                @{
+                    var chip = trip.Source == TripSource.OrderBound
+                        ? TripPresentation.GetWorkRecordStatusChip(trip.Status)
+                        : TripPresentation.GetStatusChip(trip.DisplayState);
+                    var allowedActions = TripPresentation.GetAllowedActions(trip.DisplayState, _canWrite);
+                }
+
+                <MudTd DataLabel="رقم المشوار">
+                    @if (trip.Source == TripSource.Standalone)
+                    {
+                        <a href="@($"/trips/{trip.Id}")"
+                           class="whitespace-nowrap font-mono text-xs font-bold text-brand-700 hover:underline"
+                           dir="ltr">@TripPresentation.FormatTripNumber(trip.TripNumber, trip.SequenceYear, trip.SequenceMonth)</a>
+                    }
+                    else
+                    {
+                        <span class="whitespace-nowrap font-mono text-xs font-bold text-slate-700"
+                              dir="ltr">@TripPresentation.FormatTripNumber(trip.TripNumber, trip.SequenceYear, trip.SequenceMonth)</span>
+                    }
+                </MudTd>
+
+                <MudTd DataLabel="عنوان المشوار" Style="overflow-wrap:anywhere">
+                    @if (trip.Source == TripSource.OrderBound)
+                    {
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="@($"inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold {OrderWorkflowPresentation.Tag("neutral")}")">
+                                طلب
+                            </span>
+                            @if (_canReadOrders && trip.OrderId is { } orderId && trip.OrderNumber is not null)
+                            {
+                                <a href="@($"/orders/{orderId}")"
+                                   class="whitespace-nowrap font-mono text-xs font-bold text-brand-700 hover:underline"
+                                   dir="ltr">@trip.OrderNumber</a>
+                            }
+                            else
+                            {
+                                <span class="whitespace-nowrap font-mono text-xs font-bold text-slate-700"
+                                      dir="ltr">@(trip.OrderNumber ?? "—")</span>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="text-sm font-bold text-slate-900">@trip.Title</span>
+                    }
+                </MudTd>
+
+                <MudTd DataLabel="المندوب" Class="whitespace-nowrap">
+                    <div class="flex items-center gap-2">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">
+                            @TripPresentation.Initials(trip.DeliverymanName)
+                        </span>
+                        <span class="text-sm font-semibold text-slate-700">@trip.DeliverymanName</span>
+                    </div>
+                </MudTd>
+
+                <MudTd DataLabel="من" Style="overflow-wrap:anywhere">
+                    @if (trip.FromName is null)
+                    {
+                        <span class="text-slate-400">—</span>
+                    }
+                    else
+                    {
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="text-sm text-slate-700">@trip.FromName</span>
+                            @if (trip.FromType is { } fromType)
+                            {
+                                <span class="@($"inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold {OrderWorkflowPresentation.Tag(TripPresentation.PartyTypeTone(fromType))}")">
+                                    @TripPresentation.PartyTypeLabel(fromType)
+                                </span>
+                            }
+                        </div>
+                    }
+                </MudTd>
+
+                <MudTd DataLabel="إلى" Style="overflow-wrap:anywhere">
+                    @if (trip.ToName is null)
+                    {
+                        <span class="text-slate-400">—</span>
+                    }
+                    else
+                    {
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="text-sm text-slate-700">@trip.ToName</span>
+                            @if (trip.ToType is { } toType)
+                            {
+                                <span class="@($"inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold {OrderWorkflowPresentation.Tag(TripPresentation.PartyTypeTone(toType))}")">
+                                    @TripPresentation.PartyTypeLabel(toType)
+                                </span>
+                            }
+                        </div>
+                    }
+                </MudTd>
+
+                <MudTd DataLabel="الحالة">
+                    <span class="@($"inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px] font-bold {OrderWorkflowPresentation.Tag(chip.Tone)}")">
+                        <span class="@($"h-1.5 w-1.5 rounded-full {OrderWorkflowPresentation.Dot(chip.Tone)}")"></span>
+                        @chip.Label
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="المحاولات" Class="whitespace-nowrap text-center text-xs font-bold text-slate-700">
+                    @if (trip.Source == TripSource.Standalone)
+                    {
+                        <span dir="ltr">@TripPresentation.AttemptProgress(trip.CurrentAttemptNumber, trip.AttemptCount)</span>
+                    }
+                    else
+                    {
+                        <span class="text-slate-400">—</span>
+                    }
+                </MudTd>
+
+                <MudTd DataLabel="تاريخ الإنشاء" Class="whitespace-nowrap text-xs font-semibold text-slate-600">
+                    <UserLocalTime Value="trip.CreatedAt" />
+                </MudTd>
+
+                <MudTd DataLabel="الإجراءات">
+                    <div class="flex items-center justify-end" @onclick:stopPropagation="true">
+                        @if (CanOpen(trip))
+                        {
+                            <MudTooltip Text="تفاصيل المشوار">
+                                <MudIconButton Icon="@Icons.Material.Outlined.Visibility"
+                                               OnClick="@(() => OpenTrip(trip))"
+                                               aria-label="تفاصيل المشوار"
+                                               Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+                            </MudTooltip>
+                        }
+
+                        @if (trip.Source == TripSource.OrderBound)
+                        {
+                            @if (_canReadOrders && trip.OrderId is { } orderBoundId)
+                            {
+                                <MudMenu AnchorOrigin="Origin.BottomLeft"
+                                         TransformOrigin="Origin.TopLeft"
+                                         Dense="true"
+                                         Icon="@Icons.Material.Filled.MoreVert"
+                                         AriaLabel="إجراءات المشوار"
+                                         Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost">
+                                    <MudMenuItem OnClick="@(() => Navigation.NavigateTo($"/orders/{orderBoundId}"))">فتح الطلب</MudMenuItem>
+                                </MudMenu>
+                            }
+                        }
+                        else if (_canWrite)
+                        {
+                            <MudMenu AnchorOrigin="Origin.BottomLeft"
+                                     TransformOrigin="Origin.TopLeft"
+                                     Dense="true"
+                                     Icon="@Icons.Material.Filled.MoreVert"
+                                     AriaLabel="إجراءات المشوار"
+                                     Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost">
+                                <MudMenuItem OnClick="@(() => Navigation.NavigateTo($"/trips/{trip.Id}"))">فتح التفاصيل</MudMenuItem>
+                                @if (trip.IsEditable)
+                                {
+                                    <MudMenuItem OnClick="@(() => Navigation.NavigateTo($"/trips/{trip.Id}/edit"))">تعديل المشوار</MudMenuItem>
+                                }
+                                @foreach (var action in allowedActions.Where(candidate => candidate != TripPresentation.ActionEdit))
+                                {
+                                    <MudMenuItem OnClick="@(() => OpenActionAsync(trip, action))">
+                                        @TripPresentation.ActionLabel(action)
+                                    </MudMenuItem>
+                                }
+                            </MudMenu>
+                        }
+                    </div>
+                </MudTd>
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <div class="py-8 text-center">
+                    <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+                        <MudIcon Icon="@Icons.Material.Outlined.Route" aria-hidden="true" />
+                    </span>
+                    <p class="text-base font-bold text-slate-900">@EmptyTitle</p>
+                    <p class="mt-1 text-sm text-slate-500">@EmptyHint</p>
+                </div>
+            </NoRecordsContent>
+
+            <LoadingContent>
+                <div class="flex flex-col items-center gap-2 py-8">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                    <p class="text-sm text-slate-500">جاري تحميل المشاوير...</p>
+                </div>
+            </LoadingContent>
+
+            <PagerContent>
+                <TableFooter TotalItems="@_totalCount"
+                             CurrentPage="_pageIndex"
+                             CurrentPageChanged="OnFooterPageChanged"
+                             RowsPerPage="@_pageSize"
+                             RowsPerPageChanged="OnFooterRowsPerPageChanged" />
+            </PagerContent>
+        </MudTable>
+    </section>
+</div>
+
+@code {
+    private static readonly PageScaffold.CrumbItem[] _scaffoldCrumbs = [new("المشاوير")];
+
+    private MudTable<TripListItem>? _table;
+    private TripsStatistics? _stats;
+    private TripDisplayState? _statusFilter;
+    private TripLookupItem? _deliverymanFilter;
+    private TripPartyType? _partyTypeFilter;
+    private string? _searchTerm;
+    private string? _scheduledFromText;
+    private string? _scheduledToText;
+    private string? _createdFromText;
+    private string? _createdToText;
+    private string? _error;
+    private int _pageIndex = 1;
+    private int _pageSize = 25;
+    private int _totalCount;
+    private bool _canWrite;
+    private bool _canReadOrders;
+
+    private int? BadgeCount => _error is null ? _totalCount : null;
+
+    private int ActiveFilterCount =>
+        (_statusFilter is null ? 0 : 1) +
+        (_deliverymanFilter is null ? 0 : 1) +
+        (_partyTypeFilter is null ? 0 : 1) +
+        (string.IsNullOrEmpty(_scheduledFromText) ? 0 : 1) +
+        (string.IsNullOrEmpty(_scheduledToText) ? 0 : 1) +
+        (string.IsNullOrEmpty(_createdFromText) ? 0 : 1) +
+        (string.IsNullOrEmpty(_createdToText) ? 0 : 1);
+
+    private string StatusValue => _statusFilter is null
+        ? string.Empty
+        : ((int)_statusFilter.Value).ToString(CultureInfo.InvariantCulture);
+
+    private string PartyTypeValue => _partyTypeFilter is null
+        ? string.Empty
+        : ((int)_partyTypeFilter.Value).ToString(CultureInfo.InvariantCulture);
+
+    private string EmptyTitle => _error is not null
+        ? "تعذر تحميل المشاوير."
+        : ActiveFilterCount > 0 || !string.IsNullOrWhiteSpace(_searchTerm)
+            ? "لا توجد نتائج مطابقة"
+            : "لا توجد مشاوير بعد.";
+
+    private string EmptyHint => _error is not null
+        ? "حدّث القائمة أو حاول مرة أخرى."
+        : ActiveFilterCount > 0 || !string.IsNullOrWhiteSpace(_searchTerm)
+            ? "جرّب تعديل البحث أو إعادة تعيين الفلاتر."
+            : "ستظهر هنا مشاوير المناديب فور إنشائها.";
+
+    private static string CompletedShare(TripsStatistics stats) =>
+        string.Format(
+            CultureInfo.InvariantCulture,
+            "{0:0.#}% إنجاز",
+            stats.TotalCount == 0
+                ? 0m
+                : Math.Round(100m * stats.CompletedCount / stats.TotalCount, 1, MidpointRounding.AwayFromZero));
+
+    private bool CanOpen(TripListItem trip) => trip.Source == TripSource.Standalone
+        || (_canReadOrders && trip.OrderId is not null);
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageSize = OrderHub.Web.Services.TripsViewPreferences.Normalize(ViewPreferences.ListPageSize, 25);
+
+        try
+        {
+            _canWrite = await PermissionAccess.IsAllowedAsync(PermissionFeature.Trips, PermissionLevel.Write);
+            _canReadOrders = await PermissionAccess.IsAllowedAsync(PermissionFeature.Orders, PermissionLevel.Read);
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+
+        await ReloadStatisticsAsync();
+    }
+
+    private async Task<TableData<TripListItem>> LoadServerDataAsync(TableState state, CancellationToken cancellationToken)
+    {
+        _error = null;
+
+        try
+        {
+            var result = await RequestExecutor.ExecuteAsync(
+                new GetTripsPageQuery(BuildCriteria(), _pageIndex, _pageSize),
+                cancellationToken);
+
+            var items = result.Items.ToList();
+            _totalCount = result.TotalCount;
+
+            if (items.Count == 0 && _totalCount > 0 && _pageIndex > 1)
+            {
+                _pageIndex = Math.Max(1, result.TotalPages);
+                result = await RequestExecutor.ExecuteAsync(
+                    new GetTripsPageQuery(BuildCriteria(), _pageIndex, _pageSize),
+                    cancellationToken);
+
+                items = result.Items.ToList();
+                _totalCount = result.TotalCount;
+            }
+
+            return new TableData<TripListItem>
+            {
+                Items = items,
+                TotalItems = _totalCount
+            };
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+            return new TableData<TripListItem> { Items = Array.Empty<TripListItem>(), TotalItems = 0 };
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load trips page");
+            _error = "تعذر تحميل المشاوير. يرجى المحاولة مرة أخرى.";
+            return new TableData<TripListItem> { Items = Array.Empty<TripListItem>(), TotalItems = 0 };
+        }
+    }
+
+    private TripSearchCriteria BuildCriteria()
+    {
+        var states = new List<TripDisplayState>();
+
+        if (_statusFilter is { } statusFilter)
+        {
+            states.Add(statusFilter);
+
+            if (statusFilter == TripDisplayState.InProgress)
+            {
+                states.Add(TripDisplayState.AwaitingRetryStart);
+            }
+        }
+
+        return new TripSearchCriteria(
+            Search: string.IsNullOrWhiteSpace(_searchTerm) ? null : _searchTerm.Trim(),
+            DisplayStates: states.Count == 0 ? null : states,
+            DeliverymanId: _deliverymanFilter?.Id,
+            PartyType: _partyTypeFilter,
+            ScheduledFrom: ParseDate(_scheduledFromText),
+            ScheduledTo: ParseDate(_scheduledToText),
+            CreatedFrom: ParseDate(_createdFromText),
+            CreatedTo: ParseDate(_createdToText));
+    }
+
+    private static DateOnly? ParseDate(string? value) =>
+        DateOnly.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
+            ? date
+            : null;
+
+    private async Task RefreshAsync()
+    {
+        _pageIndex = 1;
+        await ReloadTableAsync();
+        await ReloadStatisticsAsync();
+    }
+
+    private Task ReloadTableAsync() =>
+        _table is null ? Task.CompletedTask : _table.ReloadServerData();
+
+    private async Task ReloadStatisticsAsync()
+    {
+        try
+        {
+            _stats = await RequestExecutor.ExecuteAsync(
+                new GetTripsStatisticsQuery(),
+                CancellationToken.None);
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load trips statistics");
+            _stats = null;
+        }
+    }
+
+    private async Task SearchChangedAsync(string? value)
+    {
+        _searchTerm = value;
+        await ReloadListFromStartAsync();
+    }
+
+    private async Task StatusChangedAsync(ChangeEventArgs args)
+    {
+        _statusFilter = int.TryParse(
+            args.Value?.ToString(),
+            NumberStyles.Integer,
+            CultureInfo.InvariantCulture,
+            out var status)
+            ? (TripDisplayState)status
+            : null;
+
+        await ReloadListFromStartAsync();
+    }
+
+    private Task DeliverymanFilterChangedAsync(TripLookupItem? item)
+    {
+        _deliverymanFilter = item;
+        return ReloadListFromStartAsync();
+    }
+
+    private Task PartyTypeChangedAsync(ChangeEventArgs args)
+    {
+        _partyTypeFilter = int.TryParse(
+            args.Value?.ToString(),
+            NumberStyles.Integer,
+            CultureInfo.InvariantCulture,
+            out var value)
+            ? (TripPartyType)value
+            : null;
+
+        return ReloadListFromStartAsync();
+    }
+
+    private Task ScheduledFromChangedAsync(ChangeEventArgs args)
+    {
+        _scheduledFromText = args.Value?.ToString();
+        return ReloadListFromStartAsync();
+    }
+
+    private Task ScheduledToChangedAsync(ChangeEventArgs args)
+    {
+        _scheduledToText = args.Value?.ToString();
+        return ReloadListFromStartAsync();
+    }
+
+    private Task CreatedFromChangedAsync(ChangeEventArgs args)
+    {
+        _createdFromText = args.Value?.ToString();
+        return ReloadListFromStartAsync();
+    }
+
+    private Task CreatedToChangedAsync(ChangeEventArgs args)
+    {
+        _createdToText = args.Value?.ToString();
+        return ReloadListFromStartAsync();
+    }
+
+    private async Task ResetFiltersAsync()
+    {
+        _statusFilter = null;
+        _deliverymanFilter = null;
+        _partyTypeFilter = null;
+        _scheduledFromText = null;
+        _scheduledToText = null;
+        _createdFromText = null;
+        _createdToText = null;
+        _searchTerm = null;
+
+        await ReloadListFromStartAsync();
+    }
+
+    private async Task ReloadListFromStartAsync()
+    {
+        _pageIndex = 1;
+        await ReloadTableAsync();
+    }
+
+    private async Task OnFooterPageChanged(int page)
+    {
+        _pageIndex = Math.Max(1, page);
+        await ReloadTableAsync();
+    }
+
+    private async Task OnFooterRowsPerPageChanged(int rowsPerPage)
+    {
+        _pageSize = OrderHub.Web.Services.TripsViewPreferences.Normalize(rowsPerPage, 25);
+        ViewPreferences.ListPageSize = _pageSize;
+        _pageIndex = 1;
+
+        await ReloadTableAsync();
+    }
+
+    private void OpenTrip(TripListItem trip)
+    {
+        if (trip.Source == TripSource.OrderBound)
+        {
+            if (_canReadOrders && trip.OrderId is { } orderId)
+            {
+                Navigation.NavigateTo($"/orders/{orderId}");
+            }
+
+            return;
+        }
+
+        Navigation.NavigateTo($"/trips/{trip.Id}");
+    }
+
+    private void OnRowClick(TableRowClickEventArgs<TripListItem> args)
+    {
+        if (args.Item is null)
+        {
+            return;
+        }
+
+        OpenTrip(args.Item);
+    }
+
+    private async Task<IEnumerable<TripLookupItem>> SearchDeliverymenAsync(string value, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await RequestExecutor.ExecuteAsync(
+                new GetTripLookupsQuery(TripLookupKind.Deliveryman, value, 20),
+                cancellationToken);
+        }
+        catch (AuthorizationDeniedException)
+        {
+            return [];
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to search deliverymen for trips filter");
+            return [];
+        }
+    }
+
+    private async Task OpenActionAsync(TripListItem trip, string action)
+    {
+        if (action == TripPresentation.ActionEdit)
+        {
+            Navigation.NavigateTo($"/trips/{trip.Id}/edit");
+            return;
+        }
+
+        TripActionOutcome? outcome = await TripActions.ShowAsync(
+            trip.Id,
+            trip.Version,
+            trip.DisplayState,
+            action);
+
+        if (outcome is null)
+        {
+            return;
+        }
+
+        if (outcome.ReloadRequired)
+        {
+            Snackbar.Add("تم تحديث القائمة بعد تعارض النسخة.", Severity.Warning);
+        }
+        else
+        {
+            Snackbar.Add(TripPresentation.SuccessMessage(action), Severity.Success);
+        }
+
+        await ReloadTableAsync();
+        await ReloadStatisticsAsync();
+    }
+}
