@@ -13,7 +13,7 @@
                 </span>
                 <div>
                     <h2 class="text-base font-bold leading-tight text-slate-900">إضافة منتج إلى الطلب</h2>
-                    <p class="text-xs text-slate-400">ابحث عن الصنف بالاسم أو الكود وحدده لإدراجه</p>
+                    <p class="text-xs text-slate-400">ابحث بالاسم أو الكود، أو اختر من قائمة المنتجات</p>
                 </div>
             </div>
 
@@ -58,14 +58,17 @@
 
             @if (_isSearching)
             {
-                <MudProgressLinear Indeterminate="true" Class="rounded" aria-label="جارٍ البحث" />
+                <MudProgressLinear Indeterminate="true" Class="rounded" aria-label="جارٍ تحميل المنتجات" />
             }
             else if (!_isSearching
                      && string.IsNullOrWhiteSpace(_searchError)
-                     && !string.IsNullOrWhiteSpace(_searchTerm)
                      && _products.Count == 0)
             {
-                <p class="py-6 text-center text-xs text-slate-500">لا توجد منتجات مطابقة للبحث.</p>
+                <p class="py-6 text-center text-xs text-slate-500">
+                    @(string.IsNullOrWhiteSpace(_searchTerm)
+                        ? "لا توجد منتجات في النظام."
+                        : "لا توجد منتجات مطابقة للبحث.")
+                </p>
             }
 
             @* Results *@
@@ -93,7 +96,37 @@
                         </span>
                     </button>
                 }
+
+                @if (_isLoadingMore)
+                {
+                    <div class="flex items-center justify-center gap-2 py-2" aria-label="جارٍ تحميل المزيد">
+                        <MudProgressLinear Indeterminate="true" Class="w-24 rounded" />
+                        <span class="text-[11px] font-bold text-slate-500">جارٍ تحميل المزيد…</span>
+                    </div>
+                }
             </div>
+
+            @if (_loadMoreError is not null)
+            {
+                <MudAlert Severity="Severity.Error" role="alert">
+                    @_loadMoreError
+                    <MudButton OnClick="LoadMoreAsync"
+                               Disabled="_isAdding"
+                               Class="oh-btn oh-btn--secondary oh-btn--sm mt-2">
+                        إعادة المحاولة
+                    </MudButton>
+                </MudAlert>
+            }
+
+            @if (ShowLoadMoreButton)
+            {
+                <button type="button"
+                        class="oh-btn oh-btn--secondary oh-btn--sm w-full justify-center"
+                        disabled="@_isAdding"
+                        @onclick="LoadMoreAsync">
+                    تحميل المزيد (@DisplayedCountText)
+                </button>
+            }
 
             @if (_addError is not null)
             {

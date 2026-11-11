@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using OrderHub.Application.Common;
 using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Features.Products.Create;
 using OrderHub.Application.Features.Products.Get;
@@ -94,18 +95,36 @@ internal sealed partial class ProductReader(AppDbContextFactory contextFactory) 
             .ToListAsync(cancellationToken: cancellationToken);
     }
 
-    public async Task<IEnumerable<ProductLookupItem>> GetProductsByName(string name, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<ProductLookupItem>> GetProductsByName(
+        string name,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
     {
         using AppDbContext dbContext = contextFactory.CreateDbContext();
 
         string searchTerm = name.Trim();
 
-        if (string.IsNullOrEmpty(searchTerm)) return Enumerable.Empty<ProductLookupItem>();
-
-        return await dbContext
+        IQueryable<Product> productsQuery = dbContext
             .Products
-            .AsNoTracking()
-            .Where(p => p.Name.Value.Contains(searchTerm) || p.Suppliers.Any(s => s.Name.Value.Contains(searchTerm)))
+            .AsNoTracking();
+
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            productsQuery = productsQuery.Where(p =>
+                p.Name.Value.Contains(searchTerm) ||
+                p.Suppliers.Any(s => s.Name.Value.Contains(searchTerm)));
+        }
+
+        int totalCount = await productsQuery.CountAsync(cancellationToken);
+
+        int normalizedPage = Math.Max(page, 1);
+        int normalizedPageSize = Math.Max(pageSize, 1);
+
+        List<ProductLookupItem> items = await productsQuery
+            .OrderBy(p => p.Name.Value)
+            .Skip((normalizedPage - 1) * normalizedPageSize)
+            .Take(normalizedPageSize)
             .Select(p => new ProductLookupItem(
                 p.Id,
                 p.Name.Value,
@@ -114,6 +133,12 @@ internal sealed partial class ProductReader(AppDbContextFactory contextFactory) 
                 p.Category.Name.Value,
                 p.Suppliers.Select(s => new ProductLookupSupplier(s.Id, s.Name.Value)).ToImmutableList()))
             .ToListAsync(cancellationToken: cancellationToken);
+
+        return new PagedResult<ProductLookupItem>(
+            items,
+            totalCount,
+            normalizedPage,
+            normalizedPageSize);
     }
 
     public async Task<IEnumerable<ProductInfo>> GetProductsInfoAsync(CancellationToken cancellationToken)

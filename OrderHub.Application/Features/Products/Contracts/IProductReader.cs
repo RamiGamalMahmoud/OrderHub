@@ -19,6 +19,10 @@ public interface IProductReader
     Task<IEnumerable<ProductListItem>> GetListProductsAsync(CancellationToken cancellationToken = default);
     Task<ProductDetails> GetProductAsync(int id, CancellationToken cancellationToken = default);
     Task<IEnumerable<ProductLookupItem>> GetProductByCategoryAsync(int categoryId, CancellationToken cancellationToken = default);
-    Task<IEnumerable<ProductLookupItem>> GetProductsByName(string name, CancellationToken cancellationToken = default);
+    Task<PagedResult<ProductLookupItem>> GetProductsByName(
+        string name,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default);
     Task<IEnumerable<ProductInfo>> GetProductsInfoAsync(CancellationToken cancellationToken);
 }
