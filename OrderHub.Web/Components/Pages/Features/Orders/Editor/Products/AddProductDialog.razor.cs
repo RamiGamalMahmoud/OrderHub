@@ -28,7 +28,7 @@ public partial class AddProductDialog : IDisposable
     private IReadOnlyList<ProductLookupItem> _products = [];
 
     private const int SEARCH_DEBOUNCE_MILLISECONDS = 300;
-    private const int PAGE_SIZE = 10;
+    private const int PAGE_SIZE = 50;
 
     private CancellationTokenSource? _searchCancellation;
     private bool _isDisposed;
@@ -58,15 +58,20 @@ public partial class AddProductDialog : IDisposable
     private string DisplayedCountText =>
         $"أُعرض {_products.Count.ToString("N0", CultureInfo.InvariantCulture)} من {_totalCount.ToString("N0", CultureInfo.InvariantCulture)}";
 
+    // التحميل الأولي لجميع المنتجات عند فتح النافذة. إتمام
+    // OnInitializedAsync يُعيد الرسم تلقائيًا فتظهر القائمة
+    // وزر «تحميل المزيد» معًا دون انتظار أي تفاعل من المستخدم.
+    protected override async Task OnInitializedAsync()
+    {
+        await SearchAsync(string.Empty, debounced: false);
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await Task.Delay(200);
 
         if (_productSearchField is not null)
             await _productSearchField.FocusAsync();
-
-        if (firstRender)
-            await SearchAsync(string.Empty, debounced: false);
     }
 
     private async Task TextChanged(string value) =>
