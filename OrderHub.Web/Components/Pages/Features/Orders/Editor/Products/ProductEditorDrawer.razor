@@ -180,13 +180,10 @@
                             </div>
                         }
 
-                        @if (!StockDenied)
-                        {
-                            <div class="flex items-center justify-between rounded-xl bg-blue-50/60 px-3 py-2 text-xs">
-                                <span class="font-semibold text-blue-800">الكمية المتبقية من المورد</span>
-                                <span class="font-mono font-bold text-blue-700">@SupplierRemainder</span>
-                            </div>
-                        }
+                        <div class="flex items-center justify-between rounded-xl bg-blue-50/60 px-3 py-2 text-xs">
+                            <span class="font-semibold text-blue-800">الكمية المتبقية من المورد</span>
+                            <span class="font-mono font-bold text-blue-700">@SupplierRemainder</span>
+                        </div>
 
                         @if (_sourceError is not null)
                         {
@@ -383,7 +380,6 @@
     public string? AvailabilityWarning { get; set; }
 
     private List<WarehouseSourceRow> _rows = [];
-    private Dictionary<int, int> _persistedWarehouseQty = [];
     private string? _sourceError;
 
     private bool StockDenied => AvailabilityWarning is not null;
@@ -410,7 +406,6 @@
     private void BuildSourceRows()
     {
         _rows = [];
-        _persistedWarehouseQty = [];
         _sourceError = null;
 
         if (_workingCopy is null)
@@ -421,8 +416,6 @@
             .GroupBy(allocation => allocation.WarehouseId!.Value)
             .ToDictionary(group => group.Key, group => (Qty: group.Sum(allocation => allocation.Qty),
                 Name: group.Select(allocation => allocation.WarehouseName).FirstOrDefault()));
-
-        _persistedWarehouseQty = persisted.ToDictionary(pair => pair.Key, pair => pair.Value.Qty);
 
         if (StockDenied)
             return;
@@ -461,9 +454,13 @@
             return null;
 
         if (StockDenied)
-            return _workingCopy.AllocatedQuantity == _workingCopy.Quantity
-                ? null
-                : "لا تطابق الكميات المخصصة كمية البند. أعد فتح المحرر بعد تعديل الكمية.";
+        {
+            // بلا صلاحية مخزون نحافظ على مصادر المخازن المحفوظة ونعيد حساب حصة المورد فقط.
+            if (WarehouseQuantity > _workingCopy.Quantity)
+                return "الكمية الجديدة أقل من الكميات المخصصة من المخازن. زد الكمية أو أعد التوزيع من حساب يملك صلاحية عرض المخزون.";
+
+            return ValidateSupplierRemainder(_workingCopy.Quantity - WarehouseQuantity);
+        }
 
         var warehouseQty = _rows.Sum(row => row.Qty);
         if (warehouseQty > _workingCopy.Quantity)
@@ -475,37 +472,50 @@
                 return $"الكمية المطلوبة من {row.WarehouseName} تتجاوز المتاح ({row.MaxQuantity}).";
         }
 
-        var remainder = _workingCopy.Quantity - warehouseQty;
-        if (remainder > 0)
-        {
-            if (!_workingCopy.SupplierId.HasValue)
-                return "يجب تحديد المورد للكمية غير المتوفرة في المخازن.";
+        return ValidateSupplierRemainder(_workingCopy.Quantity - warehouseQty);
+    }
 
-            if (!_workingCopy.Suppliers.Any(supplier => supplier.Id == _workingCopy.SupplierId))
-                return "المورد المحدد غير متاح لهذا المنتج.";
-        }
+    private string? ValidateSupplierRemainder(int remainder)
+    {
+        if (remainder <= 0)
+            return null;
+
+        if (!_workingCopy!.SupplierId.HasValue)
+            return "يجب تحديد المورد للكمية غير المتوفرة في المخازن.";
+
+        if (!_workingCopy.Suppliers.Any(supplier => supplier.Id == _workingCopy.SupplierId))
+            return "المورد المحدد غير متاح لهذا المنتج.";
 
         return null;
     }
 
     private void ApplyAllocations()
     {
-        if (_workingCopy is null || StockDenied)
+        if (_workingCopy is null)
             return;
 
         var allocations = new List<OrderItemAllocationEditorState>();
-        foreach (var row in _rows.Where(row => row.Qty > 0))
+        if (StockDenied)
         {
-            allocations.Add(new OrderItemAllocationEditorState
+            allocations.AddRange(_workingCopy.Allocations
+                .Where(allocation => allocation.SourceKind == AllocationSourceKind.Warehouse)
+                .Select(allocation => allocation.Clone()));
+        }
+        else
+        {
+            foreach (var row in _rows.Where(row => row.Qty > 0))
             {
-                SourceKind = AllocationSourceKind.Warehouse,
-                Qty = row.Qty,
-                WarehouseId = row.WarehouseId,
-                WarehouseName = row.WarehouseName
-            });
+                allocations.Add(new OrderItemAllocationEditorState
+                {
+                    SourceKind = AllocationSourceKind.Warehouse,
+                    Qty = row.Qty,
+                    WarehouseId = row.WarehouseId,
+                    WarehouseName = row.WarehouseName
+                });
+            }
         }
 
-        var remainder = _workingCopy.Quantity - _rows.Sum(row => row.Qty);
+        var remainder = _workingCopy.Quantity - allocations.Sum(allocation => allocation.Qty);
         if (remainder > 0)
         {
             allocations.Add(new OrderItemAllocationEditorState
