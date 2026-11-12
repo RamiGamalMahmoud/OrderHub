@@ -864,6 +864,111 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("deliverymen", (string)null);
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryMovement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("direction");
+
+                    b.Property<DateTime>("EffectiveAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("effective_at_utc");
+
+                    b.Property<string>("MovementType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("movement_type");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("note");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer")
+                        .HasColumnName("product_id");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<int?>("ReversalOfMovementId")
+                        .HasColumnType("integer")
+                        .HasColumnName("reversal_of_movement_id");
+
+                    b.Property<int?>("SourceCountId")
+                        .HasColumnType("integer")
+                        .HasColumnName("source_count_id");
+
+                    b.Property<int?>("SourceDeliveryRecordId")
+                        .HasColumnType("integer")
+                        .HasColumnName("source_delivery_record_id");
+
+                    b.Property<int?>("SourceIssueBatchId")
+                        .HasColumnType("integer")
+                        .HasColumnName("source_issue_batch_id");
+
+                    b.Property<int?>("SourceReturnId")
+                        .HasColumnType("integer")
+                        .HasColumnName("source_return_id");
+
+                    b.Property<int?>("SourceStockReceiptId")
+                        .HasColumnType("integer")
+                        .HasColumnName("source_stock_receipt_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("WarehouseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inventory_movements");
+
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("ix_inventory_movements_created_by_user_id");
+
+                    b.HasIndex("ReversalOfMovementId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inventory_movements_reversal_of_movement_id")
+                        .HasFilter("\"reversal_of_movement_id\" IS NOT NULL");
+
+                    b.HasIndex("ProductId", "EffectiveAtUtc")
+                        .HasDatabaseName("ix_inventory_movements_product_id_effective_at_utc");
+
+                    b.HasIndex("WarehouseId", "ProductId", "EffectiveAtUtc")
+                        .HasDatabaseName("ix_inventory_movements_warehouse_id_product_id_effective_at_utc");
+
+                    b.ToTable("inventory_movements", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inventory_movements_quantity", "quantity > 0");
+
+                            t.HasCheckConstraint("ck_inventory_movements_reversal_reference", "(movement_type = 'Reversal' AND reversal_of_movement_id IS NOT NULL) OR (movement_type <> 'Reversal' AND reversal_of_movement_id IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.Order", b =>
                 {
                     b.Property<int>("Id")
@@ -1853,6 +1958,70 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("shipping_carriers", (string)null);
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.StockBalance", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("DamagedQty")
+                        .HasColumnType("integer")
+                        .HasColumnName("damaged_qty");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer")
+                        .HasColumnName("product_id");
+
+                    b.Property<int>("ReservedOnHand")
+                        .HasColumnType("integer")
+                        .HasColumnName("reserved_on_hand");
+
+                    b.Property<int>("StockOnHand")
+                        .HasColumnType("integer")
+                        .HasColumnName("stock_on_hand");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.Property<int>("WarehouseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stock_balances");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("ix_stock_balances_product_id");
+
+                    b.HasIndex("WarehouseId", "ProductId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_stock_balances_warehouse_id_product_id");
+
+                    b.ToTable("stock_balances", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_stock_balances_damaged_qty", "damaged_qty >= 0");
+
+                            t.HasCheckConstraint("ck_stock_balances_reserved_le_stock", "reserved_on_hand <= stock_on_hand");
+
+                            t.HasCheckConstraint("ck_stock_balances_reserved_on_hand", "reserved_on_hand >= 0");
+
+                            t.HasCheckConstraint("ck_stock_balances_stock_on_hand", "stock_on_hand >= 0");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.Supplier", b =>
                 {
                     b.Property<int>("Id")
@@ -2747,6 +2916,23 @@ namespace OrderHub.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryMovement", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_movements_users_created_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_movements_products_product_id");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.Order", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.User", null)
@@ -3199,6 +3385,18 @@ namespace OrderHub.Infrastructure.Migrations
 
                     b.Navigation("ShippingCost")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.StockBalance", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_balances_products_product_id");
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Supplier", b =>

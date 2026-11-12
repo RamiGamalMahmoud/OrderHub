@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using OrderHub.Domain.Models.CommercialDocuments;
 using OrderHub.Domain.Models.Trips;
@@ -52,6 +54,8 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<StandaloneTrip> StandaloneTrips { get; set; }
     public DbSet<StandaloneTripAttempt> StandaloneTripAttempts { get; set; }
     public DbSet<StandaloneTripHistoryEntry> StandaloneTripHistoryEntries { get; set; }
+    public DbSet<StockBalance> StockBalances { get; set; }
+    public DbSet<InventoryMovement> InventoryMovements { get; set; }
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
@@ -67,10 +71,34 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
 
     private void ProtectHistory()
     {
-        if (ChangeTracker.Entries().Any(entry => entry.Entity is OrderStatusHistory or DeliveryStepStatusHistory
-            or WorkRecordStatusHistory or OrderDeliveryMovement or StandaloneTripHistoryEntry &&
-            entry.State is EntityState.Modified or EntityState.Deleted))
-            throw new InvalidOperationException("سجل التشغيل محفوظ ولا يمكن تعديله أو حذفه.");
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry.State is not (EntityState.Modified or EntityState.Deleted))
+                continue;
+
+            if (entry.Entity is InventoryMovement movement)
+            {
+                if (entry.State == EntityState.Deleted || !IsStatusOnlyChange(movement, entry))
+                    throw new InvalidOperationException("دفتر حركة المخزون محفوظ ولا يمكن تعديله أو حذفه.");
+                continue;
+            }
+
+            if (entry.Entity is OrderStatusHistory or DeliveryStepStatusHistory
+                or WorkRecordStatusHistory or OrderDeliveryMovement or StandaloneTripHistoryEntry)
+                throw new InvalidOperationException("سجل التشغيل محفوظ ولا يمكن تعديله أو حذفه.");
+        }
+    }
+
+    private static bool IsStatusOnlyChange(InventoryMovement movement, EntityEntry entry)
+    {
+        var modified = entry.Properties
+            .Where(property => property.IsModified)
+            .Select(property => property.Metadata.Name)
+            .ToList();
+
+        return modified.Count == 1
+            && modified[0] == nameof(InventoryMovement.Status)
+            && movement.Status == InventoryMovementStatus.Reversed;
     }
 
     private async Task<int> SaveWorkRecordsAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken)

@@ -144,7 +144,7 @@ Manual: `/admin/roles` as Higher Manager — 16 cards, «أمين مخزن» rea
 
 ---
 
-### [ ] T02 — Ledger, StockBalance, CAS operations
+### [x] T02 — Ledger, StockBalance, CAS operations
 
 **Goal:** The immutable movement ledger and the per-(warehouse, product) cached balance with `DamagedQty`, plus the atomic repository operations every later task consumes.
 
@@ -186,6 +186,8 @@ dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQuali
 - Do not write PG-specific `FOR UPDATE` here — the ordered-lock protocol lands with the write-flows that need it (T03+); SQLite must keep passing.
 
 **Proposed commit:** `feat(inventory): add stock ledger and cached balances`
+
+**Deviations:** `warehouse_id` carries no FK in this migration (the `warehouses` table lands in T03), same as the five deferred source refs; `InventoryMovement` is a standalone entity with an explicit `created_at_utc` column (no `ModelBase`/`modified_at`, since the ledger never updates); the mandatory-note rule also covers `DamagedAdjustment` (Q11 sensitive adjustment); migration created with `--startup-project OrderHub.Infrastructure`.
 
 ---
 

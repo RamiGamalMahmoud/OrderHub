@@ -15,6 +15,7 @@ internal static class ServiceCollectionExtensions
         services.AddScoped<IQuotationRepository, QuotationRepository>();
         services.AddScoped<IProformaInvoiceRepository, ProformaInvoiceRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IInventoryRepository, InventoryRepository>();
         return services;
     }
 }
