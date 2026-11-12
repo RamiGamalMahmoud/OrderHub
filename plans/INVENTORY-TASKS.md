@@ -191,7 +191,7 @@ dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQuali
 
 ---
 
-### [ ] T03 — Warehouses: entity, handlers, screens, nav
+### [x] T03 — Warehouses: entity, handlers, screens, nav
 
 **Goal:** Warehouse registry with exactly one keeper, transfer semantics, guards, and the first usable inventory screen.
 
@@ -233,6 +233,8 @@ Manual: `/warehouses` as Manager (create → transfer keeper → deactivate) and
 - Candidates query requires `Warehouses.Write`; hide the dialog for read-only users.
 
 **Proposed commit:** `feat(inventory): add warehouse registry with keeper assignment`
+
+**Deviations:** the «المخزون» nav group now links «عرض الكل» to `/warehouses` until the `/inventory` page lands in T06 (avoids a dead link); the `AddWarehouses` migration also adds the deferred warehouse FKs on `stock_balances` and `inventory_movements`; keeper transfer means replacing one warehouse's keeper (a user keeps at most one warehouse — DB unique index + handler guard), and pending-work consumers resolve the keeper from the warehouse row so no dependent rows change; `PendingIssueOrderCount` is returned as 0 until T06 wires issue orders; warehouse-name uniqueness is case-insensitive at the handler level over the DB's case-sensitive unique index (provider-neutral, no citext).
 
 ---
 

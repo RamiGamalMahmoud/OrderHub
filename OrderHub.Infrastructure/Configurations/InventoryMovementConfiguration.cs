@@ -78,6 +78,12 @@ internal sealed class InventoryMovementConfiguration : IEntityTypeConfiguration<
             .IsRequired()
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne<Warehouse>()
+            .WithMany()
+            .HasForeignKey(x => x.WarehouseId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(x => new { x.WarehouseId, x.ProductId, x.EffectiveAtUtc });
         builder.HasIndex(x => new { x.ProductId, x.EffectiveAtUtc });
 

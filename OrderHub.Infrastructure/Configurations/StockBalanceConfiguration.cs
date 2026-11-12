@@ -52,5 +52,11 @@ internal sealed class StockBalanceConfiguration : ModelConfigurationBase<StockBa
             .HasForeignKey(x => x.ProductId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<Warehouse>()
+            .WithMany()
+            .HasForeignKey(x => x.WarehouseId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -2452,6 +2452,41 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("users", (string)null);
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.Warehouse", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<int>("KeeperUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("keeper_user_id");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_warehouses");
+
+                    b.HasIndex("KeeperUserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_warehouses_keeper_user_id");
+
+                    b.ToTable("warehouses", (string)null);
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.WorkRecordStatusHistory", b =>
                 {
                     b.Property<int>("Id")
@@ -2931,6 +2966,13 @@ namespace OrderHub.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_inventory_movements_products_product_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Warehouse", null)
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_movements_warehouses_warehouse_id");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Order", b =>
@@ -3396,6 +3438,13 @@ namespace OrderHub.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_stock_balances_products_product_id");
 
+                    b.HasOne("OrderHub.Domain.Models.Warehouse", null)
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_balances_warehouses_warehouse_id");
+
                     b.Navigation("Product");
                 });
 
@@ -3634,6 +3683,46 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasConstraintName("fk_users_roles_role_id");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.Warehouse", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.User", "Keeper")
+                        .WithMany()
+                        .HasForeignKey("KeeperUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_warehouses_users_keeper_user_id");
+
+                    b.OwnsOne("OrderHub.Domain.ValueObjects.EntityName", "Name", b1 =>
+                        {
+                            b1.Property<int>("WarehouseId")
+                                .HasColumnType("integer")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("varchar(100)")
+                                .HasColumnName("name");
+
+                            b1.HasKey("WarehouseId");
+
+                            b1.HasIndex("Value")
+                                .IsUnique()
+                                .HasDatabaseName("ix_warehouses_name");
+
+                            b1.ToTable("warehouses");
+
+                            b1.WithOwner()
+                                .HasForeignKey("WarehouseId")
+                                .HasConstraintName("fk_warehouses_warehouses_id");
+                        });
+
+                    b.Navigation("Keeper");
+
+                    b.Navigation("Name")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("OrderHub.Infrastructure.Models.DraftRecord", b =>

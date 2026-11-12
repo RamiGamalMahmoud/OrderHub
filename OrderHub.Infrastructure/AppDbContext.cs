@@ -56,6 +56,7 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<StandaloneTripHistoryEntry> StandaloneTripHistoryEntries { get; set; }
     public DbSet<StockBalance> StockBalances { get; set; }
     public DbSet<InventoryMovement> InventoryMovements { get; set; }
+    public DbSet<Warehouse> Warehouses { get; set; }
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {

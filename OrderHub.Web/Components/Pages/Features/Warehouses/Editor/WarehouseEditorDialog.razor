@@ -1,0 +1,339 @@
+@inject IRequestExecutor RequestExecutor
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject ILogger<WarehouseEditorDialog> Logger
+
+<MudDialog Class="flex max-h-[92vh] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-xl max-w-[30rem] w-full"
+           TitleClass="p-0"
+           ContentClass="p-0"
+           ActionsClass="p-0"
+           Gutters="false">
+    <TitleContent>
+        <header class="flex items-center justify-between gap-3 border-b border-slate-100 p-5">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-100 bg-amber-50 text-amber-600">
+                    <MudIcon Icon="@(WarehouseId.HasValue ? Icons.Material.Filled.Edit : Icons.Material.Filled.Warehouse)"
+                             Size="Size.Small" />
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-bold leading-tight text-slate-900">@DialogTitle</h2>
+                    <p class="mt-1 text-xs font-medium text-slate-500">
+                        اربط المخزن بأمين واحد مسؤول عن حركاته
+                    </p>
+                </div>
+            </div>
+
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Size="Size.Small"
+                           Color="Color.Default"
+                           Disabled="_saving"
+                           OnClick="Cancel"
+                           aria-label="إغلاق النافذة"
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+        </header>
+    </TitleContent>
+
+    <DialogContent>
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true"
+                               Color="Color.Primary" />
+
+            <MudText Typo="Typo.body2" Class="p-6 text-sm text-slate-500">
+                جاري تحميل بيانات المخزن...
+            </MudText>
+        }
+        else if (_loadError is not null)
+        {
+            <div class="space-y-3 p-6">
+                <MudAlert Severity="Severity.Error"
+                          Dense="true">
+                    @_loadError
+                </MudAlert>
+
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           OnClick="LoadAsync"
+                           Class="oh-btn oh-btn--secondary oh-btn--sm">
+                    إعادة المحاولة
+                </MudButton>
+            </div>
+        }
+        else
+        {
+            <MudForm @ref="_form">
+                <div class="min-h-0 flex-1 space-y-4 bg-slate-50/70 p-5">
+                    @if (_saveError is not null)
+                    {
+                        <MudAlert Severity="Severity.Error"
+                                  Dense="true">
+                            @_saveError
+                        </MudAlert>
+                    }
+
+                    <MudTextField T="string"
+                                  @bind-Value="_state.Name"
+                                  Label="اسم المخزن"
+                                  Placeholder="مثال: المخزن الرئيسي"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  RequiredError="اسم المخزن مطلوب."
+                                  MaxLength="100"
+                                  Validation="@(new Func<string, string?>(WarehouseEditorState.ValidateName))"
+                                  Immediate="true"
+                                  Disabled="_saving" />
+
+                    <MudSelect T="int?"
+                               @bind-Value="_state.KeeperUserId"
+                               Label="أمين المخزن"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Required="true"
+                               RequiredError="أمين المخزن مطلوب."
+                               Validation="@(new Func<int?, string?>(ValidateKeeper))"
+                               Disabled="_saving">
+                        @foreach (var candidate in _state.Candidates)
+                        {
+                            <MudSelectItem T="int?" Value="@candidate.Id">
+                                @CandidateLabel(candidate)
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    @if (_state.SelectedKeeper is { IsActive: false })
+                    {
+                        <div class="flex items-start gap-2.5 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-800">
+                            <MudIcon Icon="@Icons.Material.Filled.Block"
+                                     Size="Size.Small"
+                                     Class="mt-0.5 shrink-0" />
+                            <p>
+                                المستخدم المحدد غير نشط، ولا يمكن ربطه كأمين مخزن. اختر مستخدمًا نشطًا.
+                            </p>
+                        </div>
+                    }
+                    else if (_state.SelectedKeeper is { HasInventoryWrite: false })
+                    {
+                        <div class="flex items-start gap-2.5 rounded-xl border border-amber-100 bg-amber-50 p-3 text-sm text-amber-800">
+                            <MudIcon Icon="@Icons.Material.Filled.WarningAmber"
+                                     Size="Size.Small"
+                                     Class="mt-0.5 shrink-0" />
+                            <p>
+                                هذا المستخدم لا يملك صلاحية كتابة المخزون. يمكن حفظ الربط، لكنه لن يستطيع تنفيذ عمليات المخزن حتى تُمنح له الصلاحية.
+                            </p>
+                        </div>
+                    }
+
+                    @if (WarehouseId.HasValue)
+                    {
+                        <div class="space-y-1">
+                            <MudSwitch T="bool"
+                                       @bind-Value="_state.IsActive"
+                                       Label="المخزن نشط"
+                                       Color="Color.Success"
+                                       Disabled="_saving" />
+
+                            <p class="text-xs text-slate-500">
+                                لا يمكن إيقاف المخزن ما دام يحمل أرصدة موجبة أو كميات تالفة.
+                            </p>
+                        </div>
+                    }
+                </div>
+            </MudForm>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <footer class="flex items-center justify-between gap-3 border-t border-slate-100 bg-white p-4">
+            <div class="flex items-center gap-2 text-xs font-medium text-slate-500">
+                <span class="inline-flex h-2.5 w-2.5 rounded-full @(SaveDisabled ? "bg-slate-300" : "bg-emerald-500")"></span>
+                <span>@(SaveDisabled ? "غير جاهز للحفظ" : "جاهز للحفظ")</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <MudButton Disabled="_saving"
+                           OnClick="Cancel"
+                           Variant="Variant.Text"
+                           Class="oh-btn oh-btn--secondary">
+                    إلغاء
+                </MudButton>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Disabled="SaveDisabled"
+                           OnClick="SaveAsync"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Class="oh-btn oh-btn--primary">
+                    @SaveButtonText
+                </MudButton>
+            </div>
+        </footer>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public int? WarehouseId { get; set; }
+
+    private WarehouseEditorState _state = new();
+    private MudForm? _form;
+    private string? _loadError;
+    private string? _saveError;
+    private bool _loading = true;
+    private bool _saving;
+
+    private string DialogTitle =>
+        WarehouseId.HasValue ? "تعديل المخزن" : "إضافة مخزن";
+
+    private string SaveButtonText
+    {
+        get
+        {
+            if (_saving)
+            {
+                return "جاري الحفظ...";
+            }
+
+            return WarehouseId.HasValue ? "حفظ التعديلات" : "إضافة";
+        }
+    }
+
+    private bool SaveDisabled =>
+        _loading || _saving || _loadError is not null || _state.SelectedKeeper is { IsActive: false };
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        _saveError = null;
+        _state = new WarehouseEditorState();
+
+        try
+        {
+            var candidates = await RequestExecutor.ExecuteAsync(new GetWarehouseKeeperCandidatesQuery());
+
+            if (WarehouseId is int warehouseId)
+            {
+                var warehouse = await RequestExecutor.ExecuteAsync(new GetWarehouseQuery(warehouseId));
+
+                if (warehouse is null)
+                {
+                    _loadError = "المخزن غير موجود.";
+                    return;
+                }
+
+                _state = WarehouseEditorState.FromWarehouse(warehouse);
+            }
+
+            _state.Candidates.AddRange(candidates);
+        }
+        catch (AuthorizationDeniedException)
+        {
+            MudDialog.Cancel();
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to load warehouse {WarehouseId}",
+                WarehouseId);
+
+            _loadError = "تعذر تحميل بيانات المخزن. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string CandidateLabel(WarehouseKeeperCandidate candidate) =>
+        candidate.IsActive
+            ? candidate.DisplayName
+            : $"{candidate.DisplayName} — غير نشط";
+
+    private static string? ValidateKeeper(int? keeperUserId) =>
+        keeperUserId.HasValue ? null : "أمين المخزن مطلوب.";
+
+    private void Cancel()
+    {
+        if (_saving)
+        {
+            return;
+        }
+
+        MudDialog.Cancel();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (SaveDisabled || _form is null)
+        {
+            return;
+        }
+
+        _saving = true;
+        _saveError = null;
+
+        try
+        {
+            await _form.ValidateAsync();
+
+            if (!_form.IsValid || _state.KeeperUserId is not int keeperUserId)
+            {
+                return;
+            }
+
+            Result result;
+
+            if (WarehouseId is int warehouseId)
+            {
+                result = await RequestExecutor.ExecuteAsync(
+                    new UpdateWarehouseCommand(
+                        new(warehouseId, _state.Name, keeperUserId, _state.IsActive)));
+            }
+            else
+            {
+                result = await RequestExecutor.ExecuteAsync(
+                    new CreateWarehouseCommand(new(_state.Name, keeperUserId)));
+            }
+
+            if (!result.IsSuccess)
+            {
+                _saveError = result.ErrorMessage;
+                return;
+            }
+
+            Snackbar.Add(
+                WarehouseId.HasValue
+                    ? "تم حفظ تعديلات المخزن بنجاح."
+                    : "تمت إضافة المخزن بنجاح.",
+                Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (AuthorizationDeniedException)
+        {
+            MudDialog.Cancel();
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to save warehouse {WarehouseId}",
+                WarehouseId);
+
+            _saveError = "تعذر حفظ المخزن. يرجى المحاولة مرة أخرى.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

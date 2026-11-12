@@ -1,0 +1,185 @@
+@page "/warehouses"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.Warehouses,
+    PermissionLevel.Read)]
+
+@inject IRequestExecutor RequestExecutor
+@inject OrderHub.Web.Services.PermissionAccess PermissionAccess
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject ILogger<Index> Logger
+
+<PageTitle>المخازن</PageTitle>
+
+<div class="space-y-5">
+    <PageScaffold Title="المخازن"
+                  Description="إدارة المخازن وأمناء المخزون وحالة التشغيل"
+                  Crumbs="_scaffoldCrumbs"
+                  Count="@_warehouses.Count">
+        <Actions>
+            @if (CanCreate)
+            {
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Large"
+                           Class="oh-btn oh-btn--primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Disabled="IsBusy"
+                           OnClick="OpenCreateDialogAsync">
+                    إضافة مخزن
+                </MudButton>
+            }
+        </Actions>
+    </PageScaffold>
+
+    @if (_loading)
+    {
+        <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <MudProgressCircular Indeterminate="true"
+                                 Color="Color.Primary" />
+            <p class="mt-2 text-sm text-slate-500">جاري تحميل المخازن...</p>
+        </div>
+    }
+    else if (_error is not null)
+    {
+        <div class="rounded-2xl border border-red-100 bg-red-50 p-5">
+            <MudAlert Severity="Severity.Error"
+                      Dense="true">
+                @_error
+            </MudAlert>
+
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Primary"
+                       Class="oh-btn oh-btn--secondary oh-btn--sm mt-3"
+                       OnClick="LoadAsync">
+                إعادة المحاولة
+            </MudButton>
+        </div>
+    }
+    else if (_warehouses.Count == 0)
+    {
+        <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+                <MudIcon Icon="@Icons.Material.Filled.Warehouse" aria-hidden="true" />
+            </span>
+            <p class="text-base font-bold text-slate-900">لم تتم إضافة مخازن بعد.</p>
+            <p class="mt-1 text-sm text-slate-500">أضف أول مخزن وحدّد أمينه لتظهر حركات المخزون لاحقًا.</p>
+        </div>
+    }
+    else
+    {
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+                <MudTextField T="string"
+                              @bind-Value="_searchTerm"
+                              Placeholder="ابحث عن مخزن أو أمين..."
+                              aria-label="البحث عن مخزن"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Immediate="true"
+                              Clearable="true"
+                              Class="w-full max-w-xs" />
+
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                               Variant="Variant.Text"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               Disabled="IsBusy"
+                               aria-label="تحديث القائمة"
+                               OnClick="LoadAsync"
+                               Class="oh-btn oh-btn--icon oh-btn--secondary oh-btn--sm" />
+            </div>
+
+            <MudTable T="WarehouseListItem"
+                      Items="FilteredWarehouses"
+                      Dense="true"
+                      Hover="true"
+                      Elevation="0"
+                      Square="true"
+                      Breakpoint="Breakpoint.Sm"
+                      @bind-CurrentPage="_currentPage"
+                      @bind-RowsPerPage="_rowsPerPage">
+                <HeaderContent>
+                    <MudTh Class="text-xs font-bold text-slate-500">
+                        المخزن
+                    </MudTh>
+
+                    <MudTh Class="text-xs font-bold text-slate-500">
+                        أمين المخزن
+                    </MudTh>
+
+                    <MudTh Class="w-28 text-xs font-bold text-slate-500">
+                        الحالة
+                    </MudTh>
+
+                    @if (_canWrite)
+                    {
+                        <MudTh Class="w-24 text-xs font-bold text-slate-500">
+                            <span class="sr-only">الإجراءات</span>
+                        </MudTh>
+                    }
+                </HeaderContent>
+
+                <RowTemplate Context="warehouse">
+                    <MudTd DataLabel="المخزن" Style="overflow-wrap:anywhere">
+                        <div class="flex items-center gap-2.5">
+                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+                                <MudIcon Icon="@Icons.Material.Filled.Warehouse" Size="Size.Small" />
+                            </span>
+                            <span class="text-sm font-bold text-slate-900">@warehouse.Name</span>
+                        </div>
+                    </MudTd>
+
+                    <MudTd DataLabel="أمين المخزن" Style="overflow-wrap:anywhere">
+                        <span class="text-sm font-medium text-slate-700">@warehouse.KeeperDisplayName</span>
+                    </MudTd>
+
+                    <MudTd DataLabel="الحالة">
+                        @if (warehouse.IsActive)
+                        {
+                            <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                                نشط
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+                                متوقف
+                            </span>
+                        }
+                    </MudTd>
+
+                    @if (_canWrite)
+                    {
+                        <MudTd DataLabel="الإجراءات">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           Disabled="IsBusy"
+                                           aria-label="تعديل المخزن"
+                                           OnClick="@(() => OpenEditDialogAsync(warehouse))"
+                                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+                        </MudTd>
+                    }
+                </RowTemplate>
+
+                <NoRecordsContent>
+                    <div class="py-6 text-center text-sm text-slate-500">
+                        لا توجد مخازن تطابق البحث.
+                    </div>
+                </NoRecordsContent>
+
+                <PagerContent>
+                    <TableFooter TotalItems="@(FilteredWarehouses.Count())"
+                                 CurrentPage="@FooterCurrentPage"
+                                 CurrentPageChanged="OnFooterPageChanged"
+                                 RowsPerPage="@_rowsPerPage"
+                                 RowsPerPageChanged="OnFooterRowsPerPageChanged" />
+                </PagerContent>
+            </MudTable>
+        </section>
+    }
+</div>

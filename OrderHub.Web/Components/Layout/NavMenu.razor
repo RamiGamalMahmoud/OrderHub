@@ -228,7 +228,11 @@ else
         ],
         new("إضافة منتج جديد للكتالوج", "/products/create", Icons.Material.Filled.Add, PermissionFeature.Products, "blue",
             "إضافة منتج جديد للكتالوج", PermissionLevel.Write)),
-        new("المخزون", Icons.Material.Filled.Warehouse, "المخازن والأرصدة وأوامر الصرف", "/inventory", []),
+        new("المخزون", Icons.Material.Filled.Warehouse, "المخازن والأرصدة وأوامر الصرف", "/warehouses",
+        [
+            new("المخازن", "/warehouses", Icons.Material.Outlined.Warehouse, PermissionFeature.Warehouses, "amber",
+                "المخازن وأمناء المخزون وحالة التشغيل")
+        ]),
         new("جهات التعامل", Icons.Material.Filled.Groups, "بيانات العملاء والموردين والتوصيل", "/clients",
         [
             new("العملاء", "/clients", Icons.Material.Outlined.Person, PermissionFeature.Clients, "blue",

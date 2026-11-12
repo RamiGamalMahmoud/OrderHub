@@ -45,6 +45,9 @@ public sealed class InventoryLedgerTests : IDisposable
         _context.Products.Add(_product);
         _context.Users.Add(_user);
         _context.SaveChanges();
+
+        _context.Warehouses.Add(new Warehouse("المخزن الرئيسي", _user.Id));
+        _context.SaveChanges();
     }
 
     // ---------- factory validation ----------
