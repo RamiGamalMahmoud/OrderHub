@@ -236,6 +236,18 @@ Manual: `/warehouses` as Manager (create → transfer keeper → deactivate) and
 
 **Deviations:** the «المخزون» nav group now links «عرض الكل» to `/warehouses` until the `/inventory` page lands in T06 (avoids a dead link); the `AddWarehouses` migration also adds the deferred warehouse FKs on `stock_balances` and `inventory_movements`; keeper transfer means replacing one warehouse's keeper (a user keeps at most one warehouse — DB unique index + handler guard), and pending-work consumers resolve the keeper from the warehouse row so no dependent rows change; `PendingIssueOrderCount` is returned as 0 until T06 wires issue orders; warehouse-name uniqueness is case-insensitive at the handler level over the DB's case-sensitive unique index (provider-neutral, no citext).
 
+### [x] T03a — Warehouse address/phone + eligible keepers (owner follow-up)
+
+**Goal:** Every warehouse has a required address and an optional phone; only users who can write/approve inventory may keep a warehouse.
+
+**Decisions:** address reuses `Address` + `cities` (street ≤ 150) and is required in the create/update handlers and editor but **nullable in the database** so T03 rows stay valid; phone reuses `Phone` (country code + national number) and is optional, blank number = no phone, clearing deletes the warehouse-owned `phones` row; keeper eligibility = active user AND (`IsAdmin` OR role has `Inventory.Write`/`Inventory.Approve`) — same predicate as T01's `HasInventoryWrite`, enforced in the candidates query and both handlers.
+
+**Files:** `Warehouse` entity + `WarehouseConfiguration`; migration `..._AddWarehouseContact` (nullable `address_id`/`phone_id`, FKs `Restrict`, indexes); `IWarehouseRepository` + `WarehouseRepository` (contact projections, `RemovePhone`, `GetByIdAsync` includes address/phone); warehouse contracts, `WarehouseInputValidation`, create/update handlers; `IUserRepository.GetWithRolePermissionsAsync` + implementation; new `GetWarehouseEditorCitiesQuery` (`Warehouses.Write`); keeper-candidate query + record; editor dialog/state, list page, tests.
+
+**Deviations:** `WarehouseKeeperCandidate` is now `(Id, DisplayName)` because the query returns only active eligible users (flags became redundant); editing a warehouse whose stored keeper is no longer eligible shows a red block, clears the selection and requires an eligible replacement on save; legacy warehouses without an address stay readable (`CityId = null`, empty street/phone) but must receive an address on their next save; `PendingIssueOrderCount` behaviour and all T03 guards are unchanged.
+
+**Proposed commit:** `feat(inventory): require warehouse address, add optional phone, restrict keeper to eligible users`
+
 ---
 
 ### [ ] T04 — Stock-in / opening balance + attachments

@@ -10,6 +10,10 @@ public interface IUserRepository
         int id,
         CancellationToken cancellationToken = default);
 
+    Task<User> GetWithRolePermissionsAsync(
+        int id,
+        CancellationToken cancellationToken = default);
+
     Task<User> GetByUsernameAsync(
         string username,
         CancellationToken cancellationToken = default);

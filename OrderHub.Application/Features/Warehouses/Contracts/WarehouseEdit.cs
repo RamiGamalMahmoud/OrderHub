@@ -4,4 +4,9 @@ public record WarehouseEdit(
     int Id,
     string Name,
     int KeeperUserId,
-    bool IsActive);
+    string KeeperDisplayName,
+    bool IsActive,
+    int? CityId,
+    string Street,
+    string PhoneNumber,
+    string CountryCode);

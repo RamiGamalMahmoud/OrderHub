@@ -41,12 +41,16 @@ public sealed class InventoryLedgerTests : IDisposable
         _product = new Product("قفاز طبي", "GLV-001", category, new Money(12.5m));
         _user = User.Create("tester", "hash", "أمين مخزن");
 
+        var city = new City("الرياض");
+
         _context.Categories.Add(category);
         _context.Products.Add(_product);
         _context.Users.Add(_user);
+        _context.Cities.Add(city);
         _context.SaveChanges();
 
-        _context.Warehouses.Add(new Warehouse("المخزن الرئيسي", _user.Id));
+        _context.Warehouses.Add(
+            new Warehouse("المخزن الرئيسي", _user.Id, city, "شارع الملك فهد"));
         _context.SaveChanges();
     }
 

@@ -1,4 +1,5 @@
 using MediatR;
+using OrderHub.Application.Features.Setup.Cities.Contracts;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Common;
@@ -11,6 +12,7 @@ namespace OrderHub.Application.Features.Warehouses;
 internal sealed class CreateWarehouseCommandHandler(
     IWarehouseRepository warehouses,
     IUserRepository users,
+    ICityRepository cities,
     IUnitOfWork unitOfWork) : IRequestHandler<CreateWarehouseCommand, Result<int>>
 {
     public async Task<Result<int>> Handle(
@@ -33,7 +35,31 @@ internal sealed class CreateWarehouseCommandHandler(
         if (keeperError is not null)
             return Result<int>.Failure(keeperError);
 
-        var warehouse = new Warehouse(name, keeper.Id);
+        var (city, addressError) = await WarehouseInputValidation.ResolveAddressAsync(
+            cities,
+            request.Input.CityId,
+            request.Input.Street,
+            cancellationToken);
+
+        if (addressError is not null)
+            return Result<int>.Failure(addressError);
+
+        if (!WarehouseInputValidation.TryNormalizePhone(
+                request.Input.CountryCode,
+                request.Input.PhoneNumber,
+                out string countryCode,
+                out string phoneNumber,
+                out string phoneError))
+            return Result<int>.Failure(phoneError);
+
+        var warehouse = new Warehouse(
+            name,
+            keeper.Id,
+            city,
+            request.Input.Street.Trim(),
+            phoneNumber,
+            countryCode);
+
         warehouses.Add(warehouse);
 
         try

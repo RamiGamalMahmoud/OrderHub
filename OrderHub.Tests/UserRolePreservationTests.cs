@@ -178,6 +178,11 @@ public sealed class UserRolePreservationTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult(user);
 
+        public Task<User> GetWithRolePermissionsAsync(
+            int id,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(user);
+
         public Task<User> GetByUsernameAsync(
             string username,
             CancellationToken cancellationToken = default) =>

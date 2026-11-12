@@ -36,5 +36,8 @@ public interface IWarehouseRepository
         int warehouseId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Removes a phone row owned exclusively by the warehouse when the contact is cleared.</summary>
+    void RemovePhone(Phone phone);
+
     void Add(Warehouse warehouse);
 }

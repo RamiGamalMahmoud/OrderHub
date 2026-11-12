@@ -5,4 +5,6 @@ public record WarehouseListItem(
     string Name,
     string KeeperDisplayName,
     bool IsActive,
-    int PendingIssueOrderCount);
+    int PendingIssueOrderCount,
+    string Address,
+    string PhoneNumber);

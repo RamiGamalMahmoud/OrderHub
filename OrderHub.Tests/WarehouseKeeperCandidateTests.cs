@@ -10,13 +10,14 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace OrderHub.Tests;
 
 public sealed class WarehouseKeeperCandidateTests
 {
     [Fact]
-    public async Task Handler_ProjectsCandidatesWithInventoryWriteFlag()
+    public async Task Handler_ReturnsOnlyActiveUsersWhoCanWriteInventory()
     {
         using var db = new RbacTestDb();
         await db.SeedAsync();
@@ -50,6 +51,7 @@ public sealed class WarehouseKeeperCandidateTests
             "hash",
             "موظف موقوف",
             isActive: false);
+        inactive.AssignRole(storekeeperRole);
 
         db.Context.Users.AddRange(
             admin,
@@ -69,19 +71,16 @@ public sealed class WarehouseKeeperCandidateTests
             new GetWarehouseKeeperCandidatesQuery(),
             CancellationToken.None);
 
-        Assert.Equal(6, candidates.Count);
+        Assert.Equal(3, candidates.Count);
         Assert.Equal(
-            new[] { admin, keeper, sales, manager, noRole, inactive }
+            new[] { admin, keeper, manager }
                 .OrderBy(user => user.DisplayName, StringComparer.Ordinal)
                 .Select(user => user.DisplayName),
             candidates.Select(candidate => candidate.DisplayName));
 
-        Assert.True(candidates.Single(candidate => candidate.DisplayName == "أمين النظام").HasInventoryWrite);
-        Assert.True(candidates.Single(candidate => candidate.DisplayName == "أحمد المخزن").HasInventoryWrite);
-        Assert.True(candidates.Single(candidate => candidate.DisplayName == "مدير").HasInventoryWrite);
-        Assert.False(candidates.Single(candidate => candidate.DisplayName == "بائع").HasInventoryWrite);
-        Assert.False(candidates.Single(candidate => candidate.DisplayName == "بلا دور").HasInventoryWrite);
-        Assert.False(candidates.Single(candidate => candidate.DisplayName == "موظف موقوف").IsActive);
+        Assert.DoesNotContain(candidates, candidate => candidate.DisplayName == "بائع");
+        Assert.DoesNotContain(candidates, candidate => candidate.DisplayName == "بلا دور");
+        Assert.DoesNotContain(candidates, candidate => candidate.DisplayName == "موظف موقوف");
     }
 
     [Fact]
@@ -104,8 +103,6 @@ public sealed class WarehouseKeeperCandidateTests
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToArray();
 
-        Assert.Equal(
-            ["DisplayName", "HasInventoryWrite", "Id", "IsActive"],
-            properties);
+        Assert.Equal(["DisplayName", "Id"], properties);
     }
 }

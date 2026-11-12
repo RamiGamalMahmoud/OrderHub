@@ -2477,12 +2477,26 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
 
+                    b.Property<int?>("address_id")
+                        .HasColumnType("integer")
+                        .HasColumnName("address_id");
+
+                    b.Property<int?>("phone_id")
+                        .HasColumnType("integer")
+                        .HasColumnName("phone_id");
+
                     b.HasKey("Id")
                         .HasName("pk_warehouses");
 
                     b.HasIndex("KeeperUserId")
                         .IsUnique()
                         .HasDatabaseName("ix_warehouses_keeper_user_id");
+
+                    b.HasIndex("address_id")
+                        .HasDatabaseName("ix_warehouses_address_id");
+
+                    b.HasIndex("phone_id")
+                        .HasDatabaseName("ix_warehouses_phone_id");
 
                     b.ToTable("warehouses", (string)null);
                 });
@@ -3694,6 +3708,18 @@ namespace OrderHub.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_warehouses_users_keeper_user_id");
 
+                    b.HasOne("OrderHub.Domain.Models.Address", "Address")
+                        .WithMany()
+                        .HasForeignKey("address_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_warehouses_addresses_address_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Phone", "Phone")
+                        .WithMany()
+                        .HasForeignKey("phone_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_warehouses_phones_phone_id");
+
                     b.OwnsOne("OrderHub.Domain.ValueObjects.EntityName", "Name", b1 =>
                         {
                             b1.Property<int>("WarehouseId")
@@ -3719,10 +3745,14 @@ namespace OrderHub.Infrastructure.Migrations
                                 .HasConstraintName("fk_warehouses_warehouses_id");
                         });
 
+                    b.Navigation("Address");
+
                     b.Navigation("Keeper");
 
                     b.Navigation("Name")
                         .IsRequired();
+
+                    b.Navigation("Phone");
                 });
 
             modelBuilder.Entity("OrderHub.Infrastructure.Models.DraftRecord", b =>

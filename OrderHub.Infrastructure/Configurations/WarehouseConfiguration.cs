@@ -43,5 +43,26 @@ internal sealed class WarehouseConfiguration : ModelConfigurationBase<Warehouse>
             .HasForeignKey(warehouse => warehouse.KeeperUserId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Optional in the database so warehouses created before addresses existed stay valid.
+        builder.Property<int?>("address_id")
+            .HasColumnType("integer")
+            .IsRequired(false);
+
+        builder.HasOne(warehouse => warehouse.Address)
+            .WithMany()
+            .HasForeignKey("address_id")
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property<int?>("phone_id")
+            .HasColumnType("integer")
+            .IsRequired(false);
+
+        builder.HasOne(warehouse => warehouse.Phone)
+            .WithMany()
+            .HasForeignKey("phone_id")
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

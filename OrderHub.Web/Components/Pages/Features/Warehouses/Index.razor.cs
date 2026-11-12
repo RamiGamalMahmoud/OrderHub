@@ -53,7 +53,9 @@ public partial class Index
 
             return _warehouses.Where(warehouse =>
                 warehouse.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                warehouse.KeeperDisplayName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+                warehouse.KeeperDisplayName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (warehouse.Address?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (warehouse.PhoneNumber?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false));
         }
     }
 

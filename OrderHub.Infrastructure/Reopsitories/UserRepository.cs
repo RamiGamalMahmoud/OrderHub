@@ -26,6 +26,19 @@ internal sealed class UserRepository : IUserRepository
                 cancellationToken);
     }
 
+    public Task<User> GetWithRolePermissionsAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Users
+            .AsNoTracking()
+            .Include(user => user.Role)
+            .ThenInclude(role => role.Permissions)
+            .FirstOrDefaultAsync(
+                user => user.Id == id,
+                cancellationToken);
+    }
+
     public Task<User> GetByUsernameAsync(
         string username,
         CancellationToken cancellationToken = default)
