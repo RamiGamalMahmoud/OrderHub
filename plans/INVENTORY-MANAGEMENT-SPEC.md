@@ -1,424 +1,351 @@
-# Inventory (Stock) Feature — Study & Specification
+# Inventory (Multi-Warehouse Stock) Feature — Study & Specification
 
-- **Version:** 1.3 (permission integration locked 2026-11-09; roles prerequisite complete)
-- **Status:** Approved study; **no inventory production code written yet.** The roles prerequisite (R0) is implemented. Implementation starts with slice A1 (Warehouses) after final approval.
-- **Date:** 2026-11-09 (supersedes v1.2, 2026-11-08)
-- **Repository:** OrderHub
-- **Style:** follows `plans/TRIPS-MANAGEMENT-SPEC.md`. All user-facing UI strings are Arabic; identifiers below are code names.
-- **v1.3 changes:** §3 and §7 rewritten against the implemented roles redesign (`Approve`, sealed presets, Higher Manager gates); D9 and D20 amended; D22–D29 added; preset seed extended via a frozen-V1 + new-V2 migration; keeper-binding rules added; build order updates R0 as done.
+- **Version:** 2.1 (v2.0 + owner round-2 decisions 17–21, 2026-11-12)
+- **Status:** Approved specification; **no inventory production code written yet.** Supersedes v2.0/v1.3 entirely — wherever an older file conflicts with this file or with `design_draft.md`, **the newer documents win** (owner directive).
+- **Sources of truth (in order):** `concepts_brief.md` (locked scope) · `design_draft.md` (architecture + § قرارات المالك المحسومة + § قرارات الجولة الثانية, 21 decisions) · this file (executable detail) · `AGENTS.md` (house rules).
+- **Date:** 2026-11-12
+- **Style:** follows `plans/TRIPS-MANAGEMENT-SPEC.md`. All user-facing UI strings are Arabic; identifiers are code names.
 
 ---
 
 ## 1. Purpose
 
-Add product stock (مخزون المنتجات) to OrderHub:
+Add multi-warehouse stock management to OrderHub:
 
-1. Every order item declares its fulfillment source: **stock** when the selected warehouse can supply (part or all of) the quantity, otherwise (or for the surplus) a **supplier linked to the product**.
-2. Stock balances derive exclusively from explicit movements (purchases/stock-in, issue-order execution, customer returns, reversals). A cached column is display-only; there is **no manual editing of stock numbers**.
-3. Stock-sourced items generate **Stock Issue Orders** (أوامر إخراج من المخزن) per warehouse, and the warehouse's keeper is **notified in-app** (visible to him only) and can be messaged on **WhatsApp** (copy / send link, `OrderSummaryDialog` pattern).
-4. The keeper records execution in-app. The operation links both **who requested it** (order creator) and **who executed it** (the keeper).
-5. Nothing is added or removed except through an explicit operation with recorded data.
-6. Customer **returns** are recorded with an intact/damaged state (only intact units rejoin stock).
-7. A **reversal** workflow fixes mistakes (reversal entries, never deletion), initiated by the keeper and **approved by a user holding `Inventory = Approve`** (Manager or Higher Manager).
-8. A **cancel** with a mandatory reason closes an issue order before execution.
-9. **Multiple warehouses**, each with exactly one keeper user; balances are per warehouse per product, with an aggregated totals view.
+1. Every order item is **allocated** by the sales user per its chosen source (D17): one or more warehouses, a linked supplier, or both, from live per-warehouse availability; warehouse-sourced items are reserved on final save, supplier-sourced quantities stay informational.
+2. **Final save** with status «قيد التجهيز» reserves all stock allocations **atomically**; drafts reserve nothing. No issue orders are created automatically.
+3. The sales user creates **manual stock issue orders** (`StockIssueOrder`), one per warehouse, in any number of later stages, up to the remaining reserved quantity.
+4. The warehouse keeper records **actual issue in batches** (`StockIssueBatch`); only issued quantity leaves the balance; the un-issued remainder stays reserved; a shortfall requires a mandatory reason visible to sales.
+5. Stocked delivery is tracked per product (`Delivered ≤ Issued`); **no stocked quantity can be delivered before it is issued**.
+6. Stock-in (purchases and opening balance) is a standalone documented operation by the keeper, with optional PDF/JPG/PNG attachments ≤ 5 MB each.
+7. Counts (جرد), adjustments, returns (intact/damaged), damaged disposal, and movement reversals are all explicit documented operations; **no balance changes silently**; sensitive operations require Manager approval.
+8. Every quantity change goes through the immutable movement ledger; the cached balance is derived and rebuildable.
 
----
-
-## 2. Domain background — standard inventory practice observed
-
-1. **The stock ledger is the source of truth.** Every balance change passes through an explicit `InventoryMovement` row carrying its source-document reference, actor, and time. Balance = sum of active movements.
-2. **No silent operations.** A sale deducts because an issue order was executed; inbound increases because a stock-in was recorded; a return increases because a return was registered. Nothing changes implicitly behind ordinary edits.
-3. **Cached balances are derived, never authoritative** — updated transactionally with each movement, rebuildable from the ledger.
-4. **Reversals, not deletion** — the accounting reversal-entry pattern: the mistaken movement stays flagged; a paired opposite movement references it.
-5. **Cancel ≠ reverse** — cancellation applies only to what has not drawn stock; executed operations go through reversal.
-6. **Explicit approval for sensitive operations** — here: reversals require `Inventory = Approve`.
-7. **Returns** are distinct operations referencing the original document, with quantities ≤ what was issued.
-8. **Audit trail** — every movement carries its creator, timestamps, and a mandatory reason for cancels/reversals. Historic rows are never deleted or edited.
+**Out of scope:** purchase orders for suppliers (the supplier choice stays informational on the order, current behavior) · internal warehouse transfers · units of measure (quantities are integers, product-level only, no SKU/property stock) · cost/valuation · SMS/push/BOM/reorder automation.
 
 ---
 
-## 3. Current codebase touchpoints
+## 2. Quantity model — invariants (binding)
+
+| # | Invariant |
+|---|---|
+| Q1 | `Available = StockOnHand − ReservedOnHand` (per product × warehouse), never < 0 |
+| Q2 | `ReservedOnHand = Σ(allocations active for this warehouse) − Σ(batches issued against them)` — **issued quantity leaves the reservation the moment it is issued** (prevents double-subtracting issued units from availability) |
+| Q3 | `ReservedOnHand ≤ StockOnHand` always |
+| Q4 | `Σ(issue-order lines against one allocation, active orders) ≤ allocation.Qty` |
+| Q5 | `IssuedQty(allocation) = Σ(batches)` ≤ allocation stock qty |
+| Q6 | `Delivered ≤ Issued` per stocked order item (delivered recorded, never re-deducted from balance) |
+| Q7 | `Returned ≤ Issued` per order; `Intact + Damaged ≤ Returned-eligible issued qty` |
+| Q8 | `DamagedDisposal ≤ StockBalance.DamagedQty` |
+| Q9 | Every change to `StockOnHand`/`DamagedQty` produces exactly one ledger movement; `ReservedOnHand` is derived from allocations/batches, not movements |
+| Q10 | Ledger rows are immutable (insert-only) except internal `Status → Reversed`; "المتبقي" is always computed, never stored |
+| Q11 | `DamagedQty = Σ damaged-affecting movements` (`ReturnDamagedIn` +, `DamagedDisposal` −, `DamagedAdjustment` ±) and is never part of `Available`; a count covers `StockOnHand` and `DamagedQty` as two separate columns (D20) |
+| Q12 | A decision applies at most once: the approval/count `Status` transition is a `Version` CAS (`"Conflict"` otherwise) (D21) |
+
+`Actual` (rebuild path) = Σ movements by `EffectiveAtUtc`. `Reserved` (rebuild path) = active allocations − batches. A Higher-Manager rebuild tool (slice 7) recomputes both and records before/after.
+
+---
+
+## 3. Codebase touchpoints (verified 2026-11-12)
 
 | Component | State | Relation |
 |---|---|---|
-| `OrderItem.SupplierId` / `SupplierName` | Optional; no stock-vs-supplier concept | Gains stock source fields (§5.9) |
-| `Product.Suppliers` | Exists (`AddSupplier`, `HasSupplier`, …) | "Supplier linked to the product" ready |
-| `Supply` | Order-bound, full `WorkRecordStatus` lifecycle, **no item quantities** | Untouched: purchases are a new independent operation (D2) |
-| `PermissionFeature` | 14 features; no warehouses/inventory entries | Adds `Warehouses` + `Inventory`, Arabic descriptions, catalog entries, nav group, preset V2 |
-| `PermissionLevel` / `AuthorizationService` | **Implemented:** `None < Read < Write < Approve`; `Read` ← R/W/A, `Write` ← W/A, `Approve` ← A | Reversal approval uses `Approve`; keeper binding is still required (D20) |
-| `Role` / sealed presets | **Implemented:** `IsSealed`, `RoleKey`, 4 presets / 31 cells; `SealedRoleSeedSql.V1` is **frozen** | V2 migration adds inventory cells + the `storekeeper` preset |
-| Higher Manager | **Implemented:** `HigherManagerAuthorizeAttribute`, `IsHigherManagerAsync` (`IsAdmin` bypass) | Rebuild tool; legal fallback for execution/cancel |
-| Users directory | `GetUsersQuery` requires `Users.Read`; Manager has `Users = None` | New minimal candidate query gated by `Warehouses.Write` (D23) |
-| Notifications | None exist | New page-agnostic, user-targeted `Notification` entity + header bell |
-| `User` | No `Phone` field | Nullable `Phone` (D19); edited on the Higher-Manager-only Users page (D28) |
-| WhatsApp | `OrderSummaryDialog` + `WhatsAppMessaging.TryNormalize` | Reused for the keeper message |
-| Numbering | `NumberSequenceKind` monthly per-party sequences | New warehouse numbering kind (D8) |
-| Order drafts (`OrderDrafts`) | Draft-flow exists | Issue orders + notifications occur on final save, aligned with the drafts flow |
-
-**Binding architecture notes:** MediatR (`RequestExecutor`) + `Result/Result<T>`; Domain entities private-setter/private-ctor/internal-ctor/factory validation; new EF columns must survive snake_case + SQLite tests; **feature-level** authz via `[RequirePermission]` / `PermissionAccess.IsAllowedAsync`; **warehouse-binding is a handler-level data check** returning `Result.Failure` (never a DB constraint, never only a UI check). `PermissionFeature` is stored as text, so inserting enum members before the Administration block does not migrate data.
+| `UpdateOrderHandler` / `Order.ReplaceOrderItems` | Deletes and re-inserts all items; `OrderItem.Id` unstable today | Slice 5 adds explicit client-sent item `Id`s (pattern: `SynchronizeDeliverySteps`) + FK `Restrict` from allocation to item — **owner-approved behavior change** |
+| `OrderItem.SupplierId/SupplierName` | Optional, hard-required by create/update handlers | Stays the supplier-source field. **After S5 (D17):** required only when the item has a `SourceKind = Supplier` allocation; a fully stock-sourced item saves with no supplier |
+| `Order.Lifecycle` (`TransitionStep`, `CanArchive`, `DeliveryReadinessError`) | Knows nothing about stock | Slice 5 adds reservation release on Delivered/Cancelled/Archived — **owner-approved** — and leaves readiness stock-free (D19). The per-delivery-record cap lands in slice 8 |
+| `DeliveryTrip` / `Shipment` / `ConfirmPickup` | Trips are independent work records; shipping creates `Shipment`; pickup has no trip | Slice 8 adds `StockDeliveryRecord` linked to order, optionally to trip/shipment |
+| `NumberSequenceService` | Monthly per-party, rejects unknown kinds; two `CHECK` constraints enumerate kinds and scope (`NumberSequenceConfiguration.cs:15-37`) | `NumberSequenceKind.Warehouse` added to the monthly allow-list (slice 6). The same migration recreates `ck_number_sequences_kind` / `ck_number_sequences_scope` to admit `Warehouse` — the single owner-approved exception to additive-only (D18): no rows touched, `Down` restores the original definitions, regression test proves the four legacy kinds still insert |
+| `IWorkRecord` pipeline (`UnitOfWork` auto-numbering, status history) | Generic; `Supply`/`DeliveryTrip` use it | `StockIssueOrder` joins as `WorkRecordType.StockIssueOrder` |
+| `PermissionFeature` (14 members, stored as text) / sealed presets (4 roles / 31 cells, `SealedRoleSeedSql.V1` **frozen**) | Roles redesign R0 complete | `Warehouses` + `Inventory` inserted after `PaymentMethods`; `V2` seed migration is additive/idempotent |
+| `AttachmentsController` + `LocalFileAccessService` | No ownership/size/type checks; stores by raw name | **Untouched.** Inventory attachments get a separate endpoint + folder + metadata entity (owner decision) |
+| `SealedRolePresets` / roles editor / `RoleFeatureCatalog` | 4 sealed roles; catalog switch | 5th sealed role «أمين مخزن»; two new catalog cards |
+| Legacy data safety | AGENTS.md rule 7 | All migrations additive; new columns nullable; legacy orders load unchanged; enforced-in-code rules only. **Documented exception (D18):** the issue-order migration recreates the two `number_sequences` CHECK constraints; no data is touched and rollback restores the originals |
 
 ---
 
 ## 4. Locked decisions (owner)
 
+Carried from `design_draft.md` § قرارات المالك المحسومة (2026-11-12) — restated for one-stop reference:
+
 | # | Decision |
 |---|----------|
-| D1 | Stock is **not** enabled per-product by a flag: an item takes a stock source when the product has balance in a warehouse; otherwise — or for the surplus beyond the balance — it goes to a supplier linked to the product. |
-| D2 | Purchases/stock-in are a **standalone stock-in operation**, independent of the existing order-bound `Supply` entity, which stays unchanged. |
-| D3 | The per-product "stock value" column is a **units count** balance (رصيد), not money. No cost valuation in this feature. |
-| D4 | **Multiple warehouses**: a full `Warehouses` feature (create/edit/deactivate, keeper assignment). Stock balance is tracked **per (product, warehouse)** with an aggregated totals view. |
-| D5 | Exactly **one keeper user per warehouse**; notifications target the keeper's user directly. |
-| D6 | When adding an item within stock quantity rules, the order creator **explicitly selects the warehouse**; the item reserves the available balance there; the surplus beyond the balance stays an open remainder directed to a linked supplier (one item, flagged split: stock portion + supplier remainder). |
-| D7 | Once an issue order exists for an item, the item is **locked against edits**; changes require cancelling the (not-yet-executed) issue order with a mandatory reason first. |
-| D8 | Issue orders get **monthly numbering** per warehouse following the existing per-party sequence pattern. |
-| D9 | **Reversal approval (amended v1.3):** the keeper (or a Higher Manager) initiates a reversal with a mandatory reason; it takes effect only after approval by a user whose role has **`Inventory = Approve`** (Manager or Higher Manager). **The approver must not be the requester.** The mandatory reason is recorded. |
-| D10 | Cancel reason and reversal reason are **mandatory**. |
-| D11 | Returns carry an **intact/damaged** state: intact units rejoin stock; damaged units are recorded but do not increase the balance. |
-| D12 | Movement granularity is **product-level only** (no property/SKU-level stock). |
-| D13 | Notifications surface as a **bell in the header** (counter + panel) following the `new-nav.html` patterns; accessible only to the recipient. |
-| D14 | Implementation runs in **two phases** (§12): A) warehouses + stock-in + item sourcing + issue orders + notifications + WhatsApp; B) returns + reversal approval + totals/reporting refinements. |
-| D15 | Execution must not exceed the live warehouse balance at execution time (`"Conflict"`-style `Result.Failure` on race). Requests beyond it were already resolved at item level by D6. |
-| D16 | `Supply`, delivery, documents, pricing, and the shared work-record pipeline are not modified. |
-| D17 | New rules apply only from new saves forward. Historic orders are never backfilled or touched. When an old, still-open order is edited and re-saved, **every item must gain a source** (stock/supplier) before the save completes — enforced in code only, never via DB constraints, so legacy rows stay loadable. |
-| D18 | When an order is **cancelled or archived** while its issue order is still `Pending`, the system **auto-cancels** the issue order, releases the reservation, and records a system-generated `Cancelled` history entry with a system reason. No manual keeper action required. |
-| D19 | The `User` entity gains an **optional, nullable `Phone`** (user profile) used for the WhatsApp-to-keeper action; when absent or un-normalizable, the always-available copy action and recipient-picker remain the fallback. |
-| D20 | **Execution/cancel authority (amended v1.3):** only the **current** warehouse keeper (`Warehouse.KeeperUserId`) or a **Higher Manager** (`IsAdmin` bypass) may execute or cancel an issue order, enforced inside the handler. **`Inventory = Approve` does not grant execution.** `StockIssueOrder.AssignedUserId` is request-time audit only; authority follows the current keeper. Deactivated keepers are resolved by a Higher Manager, fully audited. |
-| D21 | Opening stock enters **only** through an explicit stock-in operation (ordinary stock-in or a flagged initial-opening entry) recorded as visible ledger movements with actor/time. **No manual balance editing exists at any point** — the same rule governs opening stock. |
-| D22 | **`storekeeper` preset (locked 2026-11-09):** a 5th sealed role «أمين مخزن» is seeded with `Warehouses=Read`, `Inventory=Write`, `Products=Read`, `Orders=Read`, all else `None`. Its name is reserved; it is changeable only by a future owner-approved migration. |
-| D23 | **Manager inventory authority (locked 2026-11-09):** Manager gets `Warehouses=Write` and `Inventory=Approve`; keeper assignment uses a minimal `Warehouses.Write`-gated candidate query, not `Users.Read`. |
-| D24 | **Returns actor (default):** customer returns are recorded by the **current warehouse keeper or a Higher Manager** (`Inventory.Write` + binding). Sales cannot post returns. |
-| D25 | **Order-editor fallback (default):** a user with `Orders.Write` but no `Inventory.Read` can save supplier-sourced items only — availability is hidden, stock sourcing is disabled with an Arabic hint, and the handler rejects a stock portion. |
-| D26 | **Stock-in prerequisite (default):** the stock-in product picker requires `Products.Read`; the `storekeeper` preset includes it. `Inventory.Write` alone does not expose the catalog. |
-| D27 | **Routing (default):** all inventory screens live under `/warehouses` and `/inventory`; reversal approval is `/inventory/reversals`, never an `[Authorize(Roles = "Admin")]` page. |
-| D28 | **Phone ownership (default):** `User.Phone` is edited on the Higher-Manager-only Users page; the WhatsApp action always offers copy and the recipient picker when it is missing or invalid. |
-| D29 | **Read scope (default):** `Inventory.Read` is company-wide so sales can see availability while sourcing; every mutation remains keeper-bound. Balances are not per-user scoped. |
+| D1 | Storekeeper preset: `Warehouses=Read`, `Products=Read`, `Inventory=Write` — **no** `Orders.Read`; order number renders as text (no link) on issue-order screens. |
+| D2 | `Inventory.Read` is company-wide (sales see all warehouses in the allocation screen); warehouse-scoped reads apply **only** to the storekeeper inside inventory screens, enforced in handlers. |
+| D3 | Seed matrix: مبيعات `Inventory=Read` · مشتريات `Inventory=Read` · مدير `Warehouses=Write + Inventory=Approve` · أمين مخزن (new sealed) per D1 · data-entry unchanged. |
+| D4 | `Approver ≠ Requester` for all approval types, with **two exceptions**: `MovementReversal` (Manager may approve a correction he started) and a count he recorded himself (§5.8). |
+| D5 | Damaged stock: third column `DamagedQty` on `StockBalance`; damaged-in movement on sorting, disposal movement on destruction; never inside `Available`. |
+| D6 | Reversal marks the original `Reversed` (loses effect) + paired opposite movement referencing it. |
+| D7 | Ledger has `EffectiveAtUtc` (actual time, future rejected with margin) + `CreatedAtUtc` (recording time). "Book balance at count time" = Σ movements with `EffectiveAtUtc ≤ snapshot moment`. |
+| D8 | `StockIssueBatch` entity per execution batch (qty, actor, time, shortfall reason **mandatory when the batch is final and Σ < RequestedQty**). `ExecutedQty` on lines is derived/validated from batches. |
+| D9 | **Partial delivery is allowed.** No order-level stock gate: each `StockDeliveryRecord` is capped by `Issued − Delivered` for its allocation (Q6). A stocked quantity that was never issued can never be delivered. Legacy orders without allocations: behavior unchanged. |
+| D10 | Re-saving a legacy open order after feature activation requires **every item to gain a source** (stock allocation or supplier) — code-level check only, Arabic error. |
+| D11 | Item identity: editor sends explicit `Id` per persisted item (verified same-order, `SynchronizeDeliverySteps` pattern); `OrderInventoryAllocation → OrderItem` FK `Restrict`. No heuristic matching. |
+| D12 | Pending order edit: stored as full **payload** (items + new allocations) inside the approval request, applied atomically on approval; original order + reservation stay live until decision. |
+| D13 | Concurrency: ordered row locking on PostgreSQL for every balance/reserve/release/issue/adjust path (ascending product/warehouse order to avoid deadlocks) + mandatory `Version` check as second line of defense (`"Conflict"`). SQLite tests prove the CAS/conflict logic; a documented manual PostgreSQL lock proof precedes release. |
+| D14 | Inventory attachments: **separate** endpoint + folder + metadata entity (`StockReceiptAttachment`: path, original name, optional description, size, mime, uploader, timestamp); PDF/JPG/PNG ≤ 5 MB enforced inside this endpoint only; current attachments behavior untouched. |
+| D15 | One migration per implementation slice; the role-seed lives in its own migration. |
+| D16 | Delivery for trip-less paths (pickup, shipping company): standalone `StockDeliveryRecord` linked to the order, optionally to a trip or `Shipment` when one exists. |
+| D17 | **Sources are chosen per item by the user:** stock, supplier, or both. There is no "stocked product" flag. An item gains 0..n warehouse allocations and 0..1 supplier allocation, with `Σ warehouse + supplier = item quantity` exactly; a fully stock-sourced item carries no supplier and creates no `Supply` row. The editor lets a product enter the order only after its source is chosen. |
+| D18 | Issue-order numbering is a **monthly sequence per warehouse** (reaffirmed). `NumberSequenceKind.Warehouse` with `party_id = WarehouseId`; the same migration recreates the two `number_sequences` CHECK constraints — the single declared exception to additive-only, with original definitions restored in `Down`. |
+| D19 | **Partial delivery allowed**; D9 is replaced by the per-record cap. |
+| D20 | **Counts cover sound and damaged stock in separate columns:** `BookQty`/`CountedQty`/`Delta` and `BookDamagedQty`/`CountedDamagedQty`/`DamagedDelta`; approval posts `Adjustment` and/or `DamagedAdjustment` independently. A line is approvable only when both counted values are entered. |
+| D21 | **Approval protection:** `Version` on the request plus `TargetVersion`; the decision is one CAS (`Status='Pending' AND Version=@v`) so a second decision returns `"Conflict"` with no side effects. On target drift the request becomes `Stale` (system note, no side effects) and the requester resubmits; `InventoryCount` carries its own `Version` so two managers cannot post two adjustments. |
+
+Still in force from the earlier design phase: product-level granularity (v1.3 decision 12), no units of measure, supplier choice informational (no purchase orders), monthly per-warehouse issue-order numbering, the **current** keeper is the execution authority (transfer moves pending work automatically), Manager/Higher-Manager manage warehouses and decide approvals but never execute keeper operations (no `IsAdmin` execution bypass — the newer documents supersede the old HM fallback), sealed roles unchanged by users, users/roles managed exclusively by the Higher Manager, opening stock enters only via a documented stock-in operation, no manual balance editing at any point.
 
 ---
 
-## 5. Entities (proposed)
+## 5. Entities
 
-### 5.1 `Warehouse` — المخزن (phase A)
+### 5.1 `Warehouse` — المخزن
 
-- `Name` (EntityName), `KeeperUserId` (one user), activity flag for soft deactivation (not delete while stock or orders reference it — deletion guards, like trips spec).
-- EF configuration in `Configurations/WarehouseConfiguration.cs`; migration with descending-timestamp naming.
-- Keeper assignment validates that the user exists and is active. If the selected keeper's role lacks `Inventory.Write` (and is not a Higher Manager), the editor shows an amber warning; saving is allowed and the issue-order page surfaces the access gap.
+- `Name` (owned `EntityName`, unique, ≤ 100), `KeeperUserId` (required, exactly one user; unique index prevents one user keeping two warehouses), `IsActive`.
+- Behaviors: `Rename`, `AssignKeeper` (validates active user; transfer happens in one transaction — old binding removed, new added), `Deactivate` (guarded: rejected while any positive `StockOnHand`/`DamagedQty` or pending issue orders/counts exist), `Activate`. No delete.
+- Keeper transfer **moves pending issue orders and open counts to the new keeper automatically** (authority follows the current binding); transfer UI shows the affected pending count.
 
-### 5.2 `InventoryMovement` — the ledger (source of truth)
+### 5.2 `StockBalance` — الرصيد المخزن (derived, rebuildable)
+
+- `WarehouseId` · `ProductId` (unique pair) · `StockOnHand ≥ 0` · `ReservedOnHand ≥ 0` · `DamagedQty ≥ 0` · `Version`.
+- Row created lazily on first movement for the pair. Only domain behaviors mutate: `ApplyIn`, `ApplyOut`, `DamagedIn`, `DamagedDisposal`, `Reserve`, `Release`, `Consume` (stock + reserved decrease together, never below zero); each asserts its invariant and is wrapped in the D13 protocol.
+
+### 5.3 `InventoryMovement` — الدفتر (source of truth, immutable)
 
 | Field | Notes |
 |---|---|
-| `Id` | PK |
-| `WarehouseId` | per-warehouse ledger |
+| `WarehouseId`, `ProductId`, `Quantity > 0` | product-level only |
 | `Direction` | `In = 1 / Out = 2` |
-| `MovementType` | `StockIn` · `IssueOut` (issue-order execution) · `CustomerReturnIn` · `Reversal` |
-| `ProductId` | product-level only (D12) |
-| `Quantity` | ≥ 1 |
-| `SourcePurchaseId` / `SourceOrderIssueId` / `SourceReturnId` | real-document references |
-| `ReversalOfMovementId` | only with `MovementType = Reversal` |
-| `Status` | `Active / Reversed` (never deleted/edited) |
-| `Note` | mandatory on reversal |
-| `CreatedByUserId` · `CreatedAtUtc` · `Version` | audit + optimistic concurrency |
+| `MovementType` | `OpeningStock` · `StockIn` · `IssueOut` · `ReturnIn` (intact) · `ReturnDamagedIn` · `DamagedDisposal` · `DamagedAdjustment` · `Adjustment` · `Reversal` |
+| Source refs (nullable) | `SourceStockReceiptId` · `SourceIssueBatchId` · `SourceReturnId` · `SourceCountId` · `SourceDeliveryRecordId` — real FKs where the target table exists in the same migration |
+| `ReversalOfMovementId` | required iff `MovementType = Reversal`; unique filtered index |
+| `Status` | `Active / Reversed` (internal `MarkReversed` only) |
+| `EffectiveAtUtc` | actual event time; must not be in the future (small clock-margin allowed) |
+| `CreatedAtUtc` · `CreatedByUserId` · `Note?` | note mandatory on Reversal/Adjustment |
+- Insert-only; `AppDbContext.ProtectHistory` rejects Modified/Deleted like other history.
+- Count-time book balance = Σ `Active` movements with `EffectiveAtUtc ≤ count snapshot moment`.
 
-### 5.3 `StockItem` — per (Product × Warehouse) cached balance (display)
+### 5.4 `StockReceipt` + `StockReceiptLine` + `StockReceiptAttachment` — إضافة / رصيد افتتاحي
 
-- `WarehouseId` · `ProductId` · `StockOnHand` (units, D3) · `ReservedOnHand` (reserved by pending issue orders, D6) · `Version`.
-- Updated transactionally with each movement; admin-only rebuild-from-ledger tool (phase B). Never edited manually (D21).
+- Header: `WarehouseId`, `ReceiptType` (`Opening` / `StockIn`), `SupplierId?` (must be linked to every stocked product when set — same rule as the product-supplier link), `ReferenceNote?` (doc reference), actor/timestamps. Immutable after save; mistakes via approved reversal.
+- Lines: `ProductId`, `Quantity > 0`; duplicates aggregate deterministically.
+- Opening balance is a distinct `ReceiptType` on the same entity (one operation per warehouse when the feature starts).
+- Attachments: 0..N, PDF/JPG/PNG ≤ 5 MB, optional per-file description; **separate** endpoint + folder + metadata entity (D14). Files not yet referenced by a saved receipt are cleaned up if the upload is abandoned.
 
-### 5.4 `StockPurchase` — standalone stock-in (phase A)
-
-- Header: warehouse, optional supplier, optional note, user/timestamp/`Version`; item lines: product + quantity; generates one `StockIn` movement per line. Has a minimal, immutable lifecycle (no cancel-after-record; mistakes via reversal in phase B).
-
-### 5.5 `StockIssueOrder` — أمر الإخراج (phase A)
+### 5.5 `OrderInventoryAllocation` — تخصيص مصدر بند الطلب
 
 | Field | Notes |
 |---|---|
-| `OrderId` · `WarehouseId` | one order per (Order × Warehouse); aggregates that warehouse's stock items |
-| `Status` | `Pending → Completed / Cancelled` (existing `WorkRecordStatus` values) |
-| Number | monthly per warehouse (D8) |
-| `RequestedByUserId` · `RequestedAtUtc` | order creator of the stock-sourced item |
-| `AssignedUserId` | **request-time snapshot** of the keeper for audit/notification; not the execution authority (D20) |
-| `ExecutedByUserId` · `ExecutedAtUtc` | executor and time |
-| `CancelledByUserId` · `CancelReason` | mandatory reason (D10); system auto-cancel (D18) records a system actor/reason |
-| Item lines | `ProductId` · `ProductName` · `RequestedQty` (stock portion) · `ExecutedQty` |
+| `OrderId` · `OrderItemId` | FK `Restrict` to the item (D11) — deleting an allocated item is impossible without cancelling its allocation |
+| `ProductId` | denormalized for queries |
+| `SourceKind` | `Warehouse` (`WarehouseId` set) / `Supplier` (`SupplierId` set) |
+| `Qty` | allocated quantity |
+| `IssuedQty` | Σ batches against this allocation (stored, validated against batches on write) |
+| `Status` | `Active` / `Cancelled` / `Released` / `Consumed`(fully issued+delivered lifecycle handled by order close) |
+- Reservations are counted **only from `Active` allocations minus issued batches** (Q2).
+- Sources per item (D17): 0..n `Warehouse` rows + at most one `Supplier` row, and `Σ Qty = item quantity` exactly. `OrderItem.SupplierId` is required only when the supplier row exists; a fully stock-sourced item has no supplier and produces no new `Supply` row.
+- Creating/updating allocations happens **only** inside the order-save or edit-approval transactions under the D13 protocol.
 
-- Created automatically on final order save containing stock items — never manually.
-- Execution validates **`IsAdmin || warehouse.KeeperUserId == currentUser.Id`** against the current warehouse keeper, records executed quantities (full qty in phase 1), generates `IssueOut` movements, updates `StockItem`, and returns a notification to the order creator.
+### 5.6 `StockIssueOrder` + `StockIssueLine` + `StockIssueBatch` — أمر الصرف
 
-### 5.6 `InventoryReversal` — reversal with approved authority (phase B)
+- `StockIssueOrder : ModelBase, IWorkRecord`: `OrderId`, `WarehouseId`, `WorkRecordType.StockIssueOrder`, `NumberSequenceKind.Warehouse` (monthly per warehouse; number assigned by `UnitOfWork`), `RequestedByUserId` (sales), `AssignedUserId` (keeper snapshot, audit only), executor/cancel audit fields.
+- Status machine: `Pending` → (`PartiallyExecuted` ⇄) → `Completed`; `Pending/PartiallyExecuted → CancelRequested → Cancelled`. No transition out of `Completed/Cancelled`.
+  - `CancelRequested`: set by the **current keeper** with a mandatory reason; **blocks new batches and new issue orders against the same allocations** until the Manager decides; approval releases only the un-issued remainder.
+  - Order cancel/archive auto-releases (system actor + reason, history row).
+- Lines: `AllocationId` (unique per `(issueOrder, allocation)`), `ProductId`, `RequestedQty` ≤ allocation remaining reservation (validated inside the D13 transaction at creation).
+- Batches: `IssueOrderLineId`, `Quantity > 0`, actor, `EffectiveAtUtc`, `ShortfallReason` — mandatory when the batch is final and `Σ batches < RequestedQty`; the reason surfaces on the order page for sales. Each batch writes exactly one `IssueOut` movement + `Consume` in one transaction.
+- Only the **current keeper** records batches (`Warehouse.KeeperUserId == currentUser.Id` in-handler; no HM bypass, D4/D1 era).
 
-- Request by the current keeper or a Higher Manager with a mandatory reason + target movement (`Inventory.Write` + binding).
-- Status `PendingApproval → Approved / Rejected`; records `RequestedByUserId`, `DecidedByUserId`, `DecidedAtUtc`.
-- Approval requires **`Inventory = Approve`** and **`DecidedByUserId != RequestedByUserId`**.
-- On approval: single transaction generates the paired `Reversal` movement, flags the original `Reversed`, and re-derives the affected `StockItem`/issue order. Never deletes.
+### 5.7 `InventoryApprovalRequest` — طلبات الاعتماد
 
-### 5.7 `CustomerReturn` — مرتجع (phase B)
+- `RequestType`: `AllocationEdit` (order edit touching pending issue orders) · `IssueOrderCancel` · `MovementReversal` · `DamagedDisposal`.
+- Polymorphic reference: `ReferenceId` typed per `RequestType` (nullable FKs per target, one populated).
+- `Payload` (JSON) used by `AllocationEdit` only: the full proposed items + allocations, applied atomically on approval (D12). While pending: the order's existing items/allocations/reservations stay live and untouched; new edits to the same order are blocked until resubmit/decision.
+- `Reason` (mandatory on request), `Status` (`Pending/Approved/Rejected/Stale`), `Version`, `TargetVersion` (snapshot of the target row version at request time), `RequestedBy`, `DecidedBy`, `DecidedAtUtc`, `DecisionNote` (mandatory on reject).
+- Approval authority: `Inventory.Approve` (Manager/Higher-Manager) + **`Approver ≠ Requester`** except `MovementReversal` and a self-recorded count (D4).
+- **Single-decision guard (D21):** the decision is one CAS — `UPDATE … SET Status='Approved'|<rejected>, Version=Version+1, DecidedBy… WHERE Id=@id AND Status='Pending' AND Version=@v`. Zero rows → `"Conflict"`, no side effects. The target is re-validated inside the same transaction: order state + `Version` and no other pending request for the same order (`AllocationEdit`); still `CancelRequested` at `TargetVersion` (`IssueOrderCancel`); still `Active` (`MovementReversal`, unique filtered index as second guard); unchanged `DamagedQty` version (`DamagedDisposal`). Drift → request moves to `Stale` with a system note and no side effects; the requester resubmits.
+- `AllocationEdit` approval semantics (owner §6): approves the edit; the handler processes **only affected items** — issued quantities are preserved (shortfall beyond new demand becomes a «مرتجع مستحق» state on the return queue), the un-issued remainder is released, then the new allocations are reserved under D13; if the new reservation fails, the edit stays pending with the old reservation intact and sales revises. If the reservation succeeded, new issue orders are **not** auto-created — sales creates them manually.
 
-- References the original order; line items with quantities ≤ what was issued; per-line `Intact / Damaged` (D11) — intact generates `CustomerReturnIn` movements; damaged records without balance effect. Recorded by the current keeper or a Higher Manager (D24); actor + timestamps.
+### 5.8 `InventoryCount` + `InventoryCountLine` — الجرد
 
-### 5.8 `Notification` (phase A)
+- `WarehouseId`, scope `Full / Products`, `Status`: `Open` → `UnderReview` → (`Approved` / `Cancelled`), `Version` (D21); one open count per (warehouse, product) — filtered unique index + handler check.
+- Lines (D20): `ProductId`, `BookQty`, `BookDamagedQty` (snapshots from movements at line save, by `EffectiveAtUtc`), `CountedQty?`, `CountedDamagedQty?`, `Delta = CountedQty − BookQty`, `DamagedDelta = CountedDamagedQty − BookDamagedQty`, review fields: `LateMovementDecision` (`IncludedInCount / Recounted`), `ReviewNote`. A line is approvable only when both counted values are entered.
+- Saving counts never changes balance. Movements remain allowed while a count is open (snapshot is logical); on approval, if a movement with `EffectiveAtUtc` earlier than the snapshot was recorded after the count was saved, approval pauses for Manager review: «شملها العدّ» → recompute both book balances and both deltas; «لم يشملها» → recount (line returns to open). Decision recorded once per line.
+- Manager approves, **including a count he recorded himself** (D4 exception); the approval is a `Version` CAS on the count (D21). It creates up to two movements per line — `Adjustment` for `Delta` and `DamagedAdjustment` for `DamagedDelta`, each only if non-zero — applied to the **current** balance. Blocked if the sound result would drop `StockOnHand` below `ReservedOnHand` or the damaged result would go below zero.
+- Open counts transfer to the new keeper on keeper change.
 
-- `RecipientUserId` (single user), `Type` (`StockIssueAssigned`; later `Completed/Cancelled/ReversalRequested`), payload snapshot, `IssuedAtUtc`, `ReadAtUtc`. Handlers filter strictly by recipient; no feature permission is required to read one's own notifications.
+### 5.9 `InventoryReturn` + `InventoryReturnLine` — المرتجعات والتالف
 
-### 5.9 `OrderItem` changes (phase A)
+- References the originating order (+ issue order/batch when known); recorded by the **current keeper**.
+- Line caps: `IntactQty + DamagedQty ≤ issued-and-not-yet-returned qty` for that order item.
+- Intact → `ReturnIn` movement (+ balance in). Damaged → `ReturnDamagedIn` movement + `DamagedIn` on the balance (separate column, never available). «مرتجع مستحق» entries (from a shrinking approved edit) appear in the keeper's queue and enter the balance only after physical sorting.
+- Damaged disposal: keeper request with mandatory reason → `DamagedDisposal` approval type → Manager approval → movement + `DamagedDisposal` on balance (≤ `DamagedQty`).
 
-- Stock portion: `WarehouseId` (nullable); the stock quantity is the issue-order line's `RequestedQty`. Supplier remainder: existing `SupplierId`, restricted to `Product.Suppliers` (D6).
-- Item saving produces no movement and no implicit deduction; only the pending issue order accounts for the reservation in `StockItem.ReservedOnHand`.
-- A stock portion requires `Inventory.Read` at save time (D25); supplier-only savings need only `Orders.Write`.
-- New columns are nullable; D17's "every item must gain a source" is enforced in code on save, never in the migration.
+### 5.10 `StockDeliveryRecord` — التسليم المخزني
+
+- `OrderId`, `OrderItemId`/`AllocationId`, `ProductId`, `Quantity ≤ Issued − Delivered` for that allocation (D19; re-validated under D13 locks), `TripId?` / `ShipmentId?` (optional link), `RecordedByUserId` (sales), `EffectiveAtUtc`.
+- Delivered/remaining per stocked item = aggregation over records (computed, Q6). Recorded from the order workflow; no behavior change for non-stocked items (they keep the current trip path). Partial delivery is expected: un-issued stock lines simply stay undelivered.
+
+### 5.11 `OrderItem` / `Order` changes
+
+- No stock columns on `OrderItem` (allocations own the sources); `SupplierId` stays.
+- Editor sends explicit `Id` for persisted items; handler validates same-order ownership; unallocated-item deletion is blocked by the allocation FK (D11).
+- Lifecycle: **no order-level stock gate** (D9/D19) — transitions are untouched by stock; the stock cap lives on each delivery record (`Quantity ≤ Issued − Delivered`). Reservation release for the un-issued remainder on `Delivered/Cancelled/Archived` (system history row). Legacy orders without allocations are untouched.
 
 ---
 
 ## 6. Flows
 
-### 6.1 Issue-order lifecycle (phase A)
+### 6.1 Stock-in / opening balance
+Keeper (`Inventory.Write` + binding + `Products.Read`) → warehouse, type, product lines, optional supplier/reference, optional attachments → one transaction: receipt + per-line `StockIn`/`OpeningStock` movement + `ApplyIn`. Deactivation guard added to warehouse update.
 
-```
-stock-sourced item (final order save)
-   ─► per (order × warehouse) issue order: Pending  + reservation on StockItem
-        ├─ execute (current keeper / Higher Manager) ─► Completed ─► IssueOut movements + balance update + notify creator
-        └─ cancel (current keeper / Higher Manager, mandatory reason) ─► Cancelled ─► reservation released, item unlocked
-```
-`Inventory = Approve` alone does not appear in either branch (D20).
+### 6.2 Allocation at order editing
+Sales adds a product → chooses its source before it joins the item list: a warehouse (one or more), a supplier, or both (D17). Availability per warehouse (actual/reserved/available, descending) is shown company-wide (`Inventory.Read`) for warehouse-sourced items; with no stock, supplier-only. Draft saves allocate nothing. Re-saving an open legacy order forces every item to gain a source (D10).
 
-### 6.2 Item sourcing at order editing (phase A)
+### 6.3 Final save
+`Create/Update` handler: inside one transaction with ordered row locks — validate every warehouse allocation against live availability (Version check as second defense), create/refresh `StockReservation` accounting via allocations, save order + allocations together, or fail with a clear Arabic message («الكمية لم تعد متاحة…أعد التوزيع»). Drafts and legacy history never touch stock.
 
-1. Creator adds a product and picks quantity.
-2. Each warehouse's live availability (balance minus reservations) is shown, gated by `Inventory.Read`.
-3. Creator picks the warehouse (D6) for the stock portion (≤ availability); the surplus beyond it is a supplier remainder, restricted to `Product.Suppliers`.
-4. Once the issue order exists, the item is locked (D7).
-5. **No `Inventory.Read` (D25):** availability is hidden, stock sourcing is disabled with an Arabic hint, and the item must be supplier-sourced; the save handler rejects any stock portion.
+### 6.4 Issue orders
+Sales picks stocked items/quantities (≤ remaining reservation per allocation) → one order per warehouse, manual, multiple stages allowed → keeper sees them at login (his warehouse only). Batches deduct `Actual` and leave the remainder reserved; shortfall reason required and visible to sales.
 
-### 6.3 Reversal workflow (phase B)
+### 6.5 Delivery
+No order-level stock gate (D19): the sales user records delivered quantities per stocked item, each capped by `Issued − Delivered`, from the trip path or trip-less (D16). Un-issued stock stays undelivered; the rest of the order proceeds. Delivered never re-deducts the balance.
 
-Keeper or Higher Manager initiates with a mandatory reason (`Inventory.Write` + binding) → a user with `Inventory = Approve`, who is **not the requester**, approves/rejects → on approval: paired opposite movement + original flagged `Reversed` + derived records updated in one transaction. An already-reversed movement cannot be reversed again. Approval UI lives at `/inventory/reversals` (D27).
+### 6.6 Edit/cancel with reservations
+- Edit touching a pending issue order → Manager approval (D12 payload flow, §5.7).
+- Order cancelled → un-issued released automatically; issued stays in the ledger; physical returns go through the returns flow.
+- Keeper cancel request → Manager approval → release un-issued only.
 
-### 6.4 Notifications (phase A)
-
-- Bell in the header (counter + panel on the `new-nav.html` pattern) listing the recipient's notifications; each entry links to the relevant page (issue order / order). Read-time is set on open. All queries filter by recipient in handlers.
-
-### 6.5 WhatsApp message to the keeper (phase A)
-
-- Same pattern as `OrderSummaryDialog`: message built strictly from real data (order number, warehouse, stock items and quantities). Primary action `wa.me/{keeper phone}?text=…` after `TryNormalize`, disabled with a hint when the stored number rejects; always-enabled copy and `wa.me/?text=…` recipient picker.
-- The keeper phone comes from `User.Phone`, set by the Higher Manager (D28); absence never blocks the copy/picker path. No unbacked claims, no extras.
+### 6.7 Returns / damaged / counts / reversals
+As §5.9 and §5.8. Reversal (D6/D4): keeper request with mandatory reason → approval (approver ≠ requester **except** reversal) → single transaction: pair movement + `MarkReversed` + balance re-derivation.
 
 ---
 
-## 7. Permissions (v1.3 — authoritative)
+## 7. Permissions
 
-### 7.1 Features
+### 7.1 Features & seed (locked)
 
-Add two members to `PermissionFeature` between `PaymentMethods` and the Administration block (stored as text; the numeric shift is data-safe):
+`PermissionFeature` gains `Warehouses` (المخازن) and `Inventory` (المخزون) after `PaymentMethods`. `SealedRoleSeedSql.V2` (own migration, additive, idempotent by role_key + feature):
 
-| Enum | Arabic (Description) |
-|---|---|
-| `Warehouses` | المخازن |
-| `Inventory` | المخزون |
-
-Required wiring in slice A1: `RoleFeatureCatalog` name/description/icon/tone for both, `NavMenu` group, `SealedRolePresets` + V2 seed, drift-test counts. The policy factory and role-editor enumeration pick the members up automatically.
-
-### 7.2 Level semantics
-
-`Read` ← Read|Write|Approve · `Write` ← Write|Approve · `Approve` ← Approve only.
-
-Because `Approve` satisfies `Write`, **a feature gate alone is never execution authority**. The keeper-binding rule (§7.5) is mandatory in every mutating handler.
-
-### 7.3 Preset matrix delta (locked)
-
-| Role | Warehouses | Inventory | Rationale |
-|---|---|---|---|
-| مبيعات `sales` | Read | Read | Sees per-warehouse availability while sourcing order items |
-| مشتريات `purchasing` | Read | Write | Records stock-in purchases |
-| إدخال البيانات `data-entry` | — | — | No stock responsibility |
-| مدير `manager` | Write | Approve | Warehouse control + reversal approval |
-| أمين مخزن `storekeeper` **(new, sealed)** | Read | Write | Executes/cancels issue orders, records stock-in/returns for his warehouse |
-| مدير أعلى `IsAdmin` | bypass | bypass | Unchanged |
-| Existing custom roles | — | — | Additive default `None`; owner grants manually |
-
-`storekeeper` full preset: `Warehouses=Read`, `Inventory=Write`, `Products=Read`, `Orders=Read`, everything else `None`.
-
-**Seed mechanics:** V1 is frozen (`20261108214724_SeedSealedRoles`, 4 roles / 31 cells). Add `SealedRoleSeedSql.V2` in a new migration timestamped after it: insert the `storekeeper` row + its 4 cells, and 2 cells each for `sales`, `purchasing`, `manager`. Every insert is idempotent (`WHERE NOT EXISTS` by `role_key` + feature) and name-collision-safe. Expected totals: **5 sealed roles / 41 permission cells**; update `SealedRolePresets`, the reserved-name list, and all seed-test counts.
-
-### 7.4 Action → gate matrix
-
-| Action | Feature gate | Row / data gate |
+| Role | Warehouses | Inventory |
 |---|---|---|
-| Warehouses list & details | `Warehouses.Read` | — |
-| Warehouse create / edit / deactivate | `Warehouses.Write` | Deletion/deactivation guards (stock or pending issue orders) |
-| Keeper candidate list | `Warehouses.Write` | Minimal fields only (D23) |
-| Inventory balances / ledger | `Inventory.Read` | Company-wide read (D29) |
-| Record stock-in | `Inventory.Write` | Product picker needs `Products.Read` (D26) |
-| Issue orders list / details | `Inventory.Read` | — |
-| Execute / cancel issue order | `Inventory.Write` | **`IsAdmin` OR current warehouse keeper** (D20) |
-| Request reversal | `Inventory.Write` | **`IsAdmin` OR current warehouse keeper** |
-| Approve / reject reversal | `Inventory.Approve` | **Approver ≠ requester** (D9) |
-| Record customer return (B) | `Inventory.Write` | **`IsAdmin` OR current warehouse keeper** (D24) |
-| Rebuild balances from ledger (B3) | `[Authorize(Roles = "Admin")]` | Higher Manager only (data-repair tool) |
-| Item sourcing in order editor | `Orders.Write` to save; `Inventory.Read` for availability | Live availability + reservation; conflict on race (D15/D25) |
-| Notification bell | authenticated | Recipient filter only |
+| مبيعات `sales` | — | Read |
+| مشتريات `purchasing` | — | Read |
+| مدير `manager` | Write | Approve |
+| أمين مخزن `storekeeper` (new sealed, 3 cells) | Read | Write |
+| مدير أعلى | bypass | bypass |
 
-### 7.5 Keeper-binding rule (code-level, never a DB constraint)
+Storekeeper preset: `Warehouses=Read`, `Products=Read`, `Inventory=Write` — everything else None (D1). New cells added by V2: sales `Inventory=Read` (1) · purchasing `Inventory=Read` (1) · manager `Warehouses=Write` + `Inventory=Approve` (2) · storekeeper (3) = **7 new cells**. Expected totals after V2: **5 sealed roles / 38 cells**. Seed tests assert the exact counts; drift is fixed in the same task.
+
+### 7.2 Action matrix
+
+| Action | Feature gate | Row/data gate (handler) |
+|---|---|---|
+| Warehouses list/details | `Warehouses.Read` | — |
+| Warehouse create/edit/transfer keeper/deactivate | `Warehouses.Write` | Guards (positive stock, pending work); one-keeper uniqueness |
+| Keeper candidates | `Warehouses.Write` | Minimal fields (id, name, active, has-inventory-write) |
+| Balances / ledger / issue orders / counts / returns (read) | `Inventory.Read` | Company-wide; storekeeper's inventory screens additionally scope to his warehouse |
+| Stock-in / opening / batches / returns recording / reversal+cancel requests | `Inventory.Write` | **Current keeper binding**: `warehouse.KeeperUserId == currentUser.Id`; no HM bypass |
+| Approvals (edit/cancel/reversal/disposal/counts) | `Inventory.Approve` | `Approver ≠ Requester` except reversal and a self-recorded count; Manager never executes keeper ops |
+| Order allocation screen + final save | `Orders.Write` | Availability needs `Inventory.Read`; without it stock sourcing is disabled (supplier-only fallback, Arabic hint) |
+| Delivery records | `Orders.Write` | `Quantity ≤ Issued − Delivered` per allocation; no order-level gate |
+
+### 7.3 Keeper binding rule (code-level, every mutating handler)
 
 ```
-allowed = currentUser.IsAdmin
-       || warehouse.KeeperUserId == currentUser.Id
+allowed = warehouse.KeeperUserId == currentUser.Id
 ```
-
-- Evaluated **inside the Application handlers**, returning `Result.Failure("...", "Forbidden")` — not thrown, not DB-enforced.
-- Applies to execute, cancel, request reversal, and record return (phase B).
-- Uses the **current** keeper, so a keeper transfer immediately moves pending-work authority (D20).
-- Higher-Manager overrides are audited (`ExecutedByUserId` / `CancelledByUserId`).
-- The Manager's `Approve` level does **not** bypass this rule.
-
-### 7.6 Keeper candidate query (D23)
-
-`GetWarehouseKeeperCandidatesQuery` with `[RequirePermission(Warehouses, Write)]`, returning only `Id`, `DisplayName`, `IsActive`, `HasInventoryWrite` (true for Higher Managers or roles with `Inventory ∈ {Write, Approve}`). It never exposes usernames, roles, or phones. The warehouse editor uses it instead of `GetUsersQuery`.
-
-### 7.7 UI conventions
-
-All pages follow the established conventions (`PageScaffold` + `TableFooter` where applicable, `mud-blazor-overrides.css`, one primary CTA per page, no new JavaScript). Status tones via `OrderWorkflowPresentation` (brand = pending, emerald = completed, amber = awaiting, rose = cancelled/reversed/damaged). Inventory pages are **not** under `[Authorize(Roles = "Admin")]` (D27).
+`Result.Failure(..., "Forbidden")` — never thrown, never DB-enforced, never UI-only. Applies to stock-in, batches, returns, reversal requests, count recording, cancel requests. `Inventory.Approve` does **not** bypass it.
 
 ---
 
-## 8. Screens (Arabic UI)
+## 8. Concurrency protocol (D13)
 
-1. **المخازن** (`/warehouses`) — list + editor (name, keeper candidate selector, activity); gated `Warehouses.Read/Write`.
-2. **المخزون** (`/inventory`) — per warehouse: products × balance (and reserved), plus an all-warehouses aggregated view; product ledger drill-down (movements with actor/reason); `Inventory.Read`.
-3. **تسجيل توريد/شراء** (`/inventory/stock-in`) — warehouse + product lines + quantities (+ supplier + note optional); `Inventory.Write` + `Products.Read`.
-4. **أوامر الإخراج** (`/inventory/issue-orders`) — list with status filter; details with items, requested/executed quantities, targeted keeper, actor trail; execute / cancel (mandatory reason) only for the current keeper or Higher Manager.
-5. **المرتجعات** (`/inventory/returns`, phase B) — from the order page: lines with intact/damaged state; keeper/Higher Manager.
-6. **العكس** (`/inventory/reversals`, phase B) — request list + approval queue; request = `Inventory.Write` + binding, decision = `Inventory.Approve`, approver ≠ requester.
-7. **Header bell** — new in `MainLayout`, permission-agnostic, recipient-filtered.
-8. **Order editor** — per-item warehouse picker + supplier remainder handling; item locking per D7; availability hidden when `Inventory.Read` is absent (D25).
+- **Scope:** every transaction writing `StockBalance` (reserve on final save, release on cancel/close, consume per batch, stock-in, returns, adjustment, reversal application, delivery-cap validation) opens it by locking the affected `(product, warehouse)` balance rows in ascending (product, warehouse) order — PostgreSQL `SELECT … FOR UPDATE` via raw SQL where EF lacks it.
+- **Canonical lock order** (every path; a row is never locked before a row that precedes it in this list):
 
-Nav group «المخزون» (icon `Warehouse`, subtitle «المخازن والأرصدة وأوامر الإخراج») with items: المخازن (`Warehouses.Read`), المخزون (`Inventory.Read`), أوامر الإخراج (`Inventory.Read`), المرتجعات (`Inventory.Read`, phase B), العكس (`Inventory.Approve`, phase B); create CTA «تسجيل توريد» (`Inventory.Write`).
+```text
+number_sequences → orders → stock_issue_orders/lines → inventory_approval_requests
+→ inventory_counts → stock_balances (ProductId, WarehouseId asc) → insert movement
+```
+
+  This keeps the final-save path (`orders → balances`) and the approval paths (`approval → issue order → balances`) compatible and removes the mixed-order deadlock shape. `number_sequences` is only taken when creating an issue order; movements are inserted last and take no lock.
+- **Second defense:** `StockBalance.Version` checked/incremented in the same transaction; stale save → `"Conflict"`. Approval and count decisions use the same CAS discipline on their own `Version` (D21).
+- **Allocation accumulation** (Q4) is checked under the same locks, not by unique index alone.
+- **Testing:** SQLite tests prove the CAS logic (second over-reserve fails with `"Conflict"`, no partial save). Real locking is proven by a documented manual PostgreSQL script before release (repo has no PG test harness by design).
 
 ---
 
-## 9. Risks & mitigations
+## 9. Screens (Arabic UI)
+
+1. `/warehouses` — list + editor (name, keeper candidates, activity, pending-work hint from real data) · `Warehouses.Read/Write`.
+2. `/inventory` — balances (actual/reserved/available/damaged) per warehouse + aggregate view + ledger drill-down; storekeeper scoped to his warehouse · `Inventory.Read`.
+3. `/inventory/stock-in` — keeper form (type, lines, supplier?, reference?, attachments) · `Inventory.Write` + `Products.Read`.
+4. `/inventory/issue-orders` — list (sales-created, and the keeper's pending queue), details with lines/batches/reasons, create dialog (sales), batch recording + cancel request (keeper) · `Inventory.Read`.
+5. `/inventory/approvals` — Manager queue: allocation edits (payload diff view), cancel requests, reversals, disposals, count approvals · `Inventory.Approve`.
+6. `/inventory/counts` — keeper create/count/save/complete; Manager review & approve · per matrix.
+7. `/inventory/returns` — keeper recording + «مرتجع مستحق» queue + disposal request.
+8. Order editor `ProductsStep` — availability columns + allocation inputs; order details/workflow — issue/delivery status per stocked item, `RecordStockDelivery` dialog.
+9. Nav group «المخزون» — items per the matrix; no dead links; hidden when nothing is allowed.
+
+All pages: `PageScaffold` + `TableFooter` (exceptions per AGENTS.md), `.oh-btn`, one primary CTA, Arabic RTL, `CultureInfo.InvariantCulture` numbers, no new JavaScript, status tones via the existing four-hue system.
+
+---
+
+## 10. Risks & mitigations
 
 | Risk | Mitigation |
 |---|---|
-| Execution exceeds live balance (race) | Reject at execution time (D15) with `Result.Failure`; `Version` on `StockItem` + `"Conflict"` code |
-| Wrong warehouse selection keeps issuing against an empty one | Availability shown live at selection; requirement to pick explicitly (D6) |
-| Ledger tampering | Movements immutable; remediation only via cancel/reverse with reasons |
-| Notifications leak beyond recipient | Strict per-recipient handler filtering |
-| `Supply` impact | Untouched by D2/D16 |
-| Item locks block editing after issue order | Resolved by the documented cancel-then-edit path (D7/D10) |
-| SQLite + snake_case migration pitfalls | Standard conventions from the repo testing model; test options identical to existing tests |
-| Permission drift / over-privilege | Keeper-binding handler checks; V2 seed drift test; permission-specific risks R17–R24 in §13.2 |
+| Double-subtract issued from availability | Q2 equation + batch-driven `Reserved` |
+| Two savers race the last units | D13 locks + Version CAS + `"Conflict"` message |
+| Item identity lost on update | D11 explicit ids + `Restrict` FK |
+| Reservation leak on close | Release on Delivered/Cancelled/Archived + system history |
+| Cached balance drift | Ledger is truth; rebuild tool (HM); Version-revalidated writes |
+| Late-dated movement breaks count approval | `EffectiveAtUtc` + review decision flow (§5.8) |
+| Keeper transfer strands work | Authority follows current binding; open counts transfer too |
+| Attachments on shared endpoint | Separate endpoint/folder/metadata (D14) — legacy untouched |
+| Self-approval | D4 rule + tests (reversal and self-recorded count exceptions asserted) |
+| Partial delivery blocked by an over-strict gate | D19: cap on the delivery record, never on the order transition |
+| Behavior change to existing orders | D10/D11 owner-approved; D19 allows partial delivery instead of blocking it; legacy rows without allocations behave exactly as today |
+| SQLite can't prove locking | CAS-proofed tests + documented PG proof before release |
 
 ---
 
-## 10. Assumptions for phase scope
+## 11. Compatibility contracts
 
-- **Prerequisite (done):** roles redesign R0 — `Approve`, sealed presets, Higher Manager gates. Inventory A1 depends on it.
-- **Phase A (in scope):** Warehouses feature, `StockItem`, stock-in purchases, item sourcing rules + locking, issue orders + numbering + execute/cancel (mandatory reason), reservations accounting, `Notification` + header bell, WhatsApp message to keeper, permission wiring (features, catalog, nav, V2 seed, candidate query).
-- **Phase B (in scope):** customer returns (intact/damaged), reversal with `Inventory.Approve`, admin rebuild-from-ledger tool, aggregate reporting refinements (total per product across warehouses).
-- **Documented prerequisites:** stock-in needs `Products.Read` (D26); availability needs `Inventory.Read` (D25); `storekeeper` includes `Products.Read` + `Orders.Read` (D22).
-- **Out of scope (both phases):** periodic stocktakes, FIFO/FEFO/monetary valuation, supplier returns, SMS/push/Bot, BOM, property-level (SKU) stock, automated reorder, per-user balance scoping (D29).
-
----
-
-## 11. Compatibility contracts verified
-
-- `Result`/`Result<T>` returns across new handlers (no throwing for expected failures, `"Conflict"` on concurrency); handler-level auth failures return `Result.Failure`.
-- `PermissionFeature` grows two entries with Arabic `Description` attributes (المخازن، المخزون); roles editor 14 → 16 cards; `NavMenu` gains the group; feature gates via `[RequirePermission]`/`PermissionAccess`.
-- `Approve` now exists end-to-end; reversal approval uses it (roles R1 guard-line fix verified).
-- `SealedRoleSeedSql.V1` stays frozen; V2 is additive and idempotent; `SealedRolePresets` grows to 5 roles / 41 cells; seed tests updated accordingly.
-- Nothing in `Supply`, documents, pricing, delivery, or numbering of existing parties is modified (D16).
-- SQLite tests inherit the exact existing option set (snake_case naming, `EnsureCreated`).
-- UI language: Arabic, RTL, no runtime font fetching, no new JavaScript files, Tailwind + overrides discipline.
+- `Result`/`Result<T>` everywhere; codes: `"Unauthorized"`, `"Forbidden"`, `"NotFound"`, `"Conflict"`, `"InvalidOperation"`, `"Persistence"`. Inventory-specific `"Conflict"` cases: stale balance (Q3/Q6 race), second approval decision, drifted approval target, second count approval. Arabic messages are required for: unavailable quantity («الكمية لم تعد متاحة في {المخزن}؛ أعد التوزيع.»), missing source on re-save («يجب اختيار مصدر لكل بند: مخزون أو مورد»), delivery over issued («لا يمكن تسليم كمية مخزنية أكبر من المصروف غير المسلّم لهذا البند.»), and a decided/stale approval («تم البت في هذا الطلب مسبقاً» / «تغيّرت البيانات؛ أعد الإرسال»).
+- All migrations additive; new columns nullable; `SealedRoleSeedSql.V1` frozen; V2 idempotent; per-slice migrations descending timestamps after the current latest. **Declared exception (D18):** the issue-order migration recreates `ck_number_sequences_kind`/`ck_number_sequences_scope`; no rows touched, `Down` restores the originals, regression test covers the legacy kinds.
+- Tests: SQLite in-memory, snake_case + `EnsureCreated`, identical options to existing suites; `InternalsVisibleTo` intact.
+- Legacy orders: load, display, edit-gating and delivery flows unchanged unless allocations exist; no retroactive movements/reservations/notifications.
+- No JavaScript, no runtime font fetching, no `Supply`/pricing/documents changes, existing numbering untouched.
 
 ---
 
-## 12. Implementation plan (vertical slices)
+## 12. Implementation slices (one migration each; seed in its own)
 
-### Phase A
-0. **R0 — Roles & Permissions redesign** — ✅ **DONE** (Domain `Approve`/`IsSealed`/`RoleKey`; Application hierarchy + guards; `20261108214724_SeedSealedRoles`; Web 4-level matrix, sealed read-only, Higher Manager gates; tests).
-1. **A1 — Warehouses domain + Infrastructure + UI + permission wiring** — `Warehouse` entity/configuration/migration; `PermissionFeature.Warehouses`/`Inventory`; `RoleFeatureCatalog` entries; `NavMenu` group; `SealedRolePresets` + `SealedRoleSeedSql.V2` migration; `GetWarehouseKeeperCandidatesQuery`; warehouse screens; drift-test updates.
-2. **A2 — InventoryMovement + StockItem + stock-in purchases** — ledger, cached balance, stock-in screen; `Products.Read` prerequisite.
-3. **A3 — Order item sourcing** — `OrderItem.WarehouseId`, availability query, supplier remainder, validation, item locking, no-`Inventory.Read` fallback.
-4. **A4 — StockIssueOrder** — auto-creation on final save, numbering, execute/cancel flows with keeper-binding guard, audit fields, keeper contact query for WhatsApp.
-5. **A5 — Notification + header bell + WhatsApp keeper message.**
-6. **A6 — Tests** (unit: domain rules; app: handlers with SQLite; UI conventions; permission matrix).
+| # | Slice | Migration |
+|---|---|---|
+| S1 | Permissions (`Warehouses`/`Inventory`), `RoleFeatureCatalog`, nav group, `SealedRolePresets` + `SealedRoleSeedSql.V2` (own migration), keeper-candidate query, drift-test updates | `AddInventoryPermissions` (seed) |
+| S2 | `Warehouse` domain/persistence/handlers/screens | `AddWarehouses` |
+| S3 | Ledger + `StockBalance` (3 columns) + movements + protect-history + repository + CAS reserve/release/consume + rebuild data path | `AddInventoryLedger` |
+| S4 | `StockReceipt` (+lines+attachments) + attachment endpoint/folder/metadata + stock-in handlers/screens + deactivation guard | `AddStockReceipts` |
+| S5 | Order item identity (explicit ids + FK), `OrderInventoryAllocation` (D17 sources), availability read, editor UI, atomic reservation on final save, D10 lifecycle rule | `AddOrderAllocations` |
+| S6 | `StockIssueOrder` (+lines+batches), `IWorkRecord` join, `WorkRecordType` + `NumberSequenceKind.Warehouse`, **CHECK-constraint recreation (D18)**, execute-batch + cancel-request handlers/screens | `AddStockIssueOrders` |
+| S7 | `InventoryApprovalRequest` (+ `Version`/`TargetVersion`, D21) + edit-approval payload flow + issue-cancel approval + reversal flow | `AddInventoryApprovals` |
+| S8 | `StockDeliveryRecord` + workflow dialog + returns/damaged/disposal + counts with sound/damaged columns (D20) + count `Version` guard + rebuild tool + Phase acceptance | `AddDeliveryReturnsCounts` |
 
-### Phase B
-1. **B1 — Customer returns** (intact/damaged; ledger effects; keeper/Higher Manager actor).
-2. **B2 — Reversal requests + `Inventory.Approve` approval** (requester ≠ approver; `/inventory/reversals`).
-3. **B3 — Rebuild tool (Higher Manager) + aggregated stock reporting.**
-
-Each slice: Domain → Application → Infrastructure → Web, then `dotnet restore / build Release / test Release --no-build`. **Migration ordering:** the inventory migration must be timestamped after `20261108214724_SeedSealedRoles`; never edit V1.
+Each slice: Domain → Application → Infrastructure → Web → restore/build Release/test Release --no-build → manual browser pass. Slice order is strictly sequential.
 
 ---
 
-## 13. Data safety, legacy compatibility & risk register
+## 13. Test plan (per slice; summary)
 
-### 13.1 Governing constraint policy (owner directive)
-
-Wherever old data could conflict with a new rule, **the constraint lives in code** (Domain validation + handler checks), never in a breaking migration or `NOT NULL`/`CHECK`/FK change on existing tables. Concretely:
-
-| Situation | Policy |
-|---|---|
-| New rule needing `NOT NULL` on an existing table (`OrderItem` source/warehouse) | Nullable column + code-level validation at save/handler time (D17) |
-| New tables (all stock tables) | Free to carry strict PKs and unique indexes — no legacy rows exist |
-| Existing tables | **Additive-only migrations** (new tables, nullable columns); no type changes on `Order`/`OrderItem`/`Product` |
-| Permission rows | Additive seed only; V1 frozen; V2 idempotent by `role_key` + feature |
-| Deletion guards | Application-level (trips-spec pattern); no destructive cascades added |
-
-### 13.2 Risk register
-
-| # | Risk | Class | Mitigation |
-|---|---|---|---|
-| R1 | Legacy `OrderItem` rows lack source/warehouse | Data | Nullable columns; code-only validation; D17 re-save capture |
-| R2 | Historic orders affected by new logic | Data | No retroactive issues/deductions/notifications; ledger starts empty; opening stock only via D21 |
-| R3 | Double reservation race (two creators, last units) | Concurrency | Reservation increments inside the order-save transaction against `StockItem.Version`; second saver gets `"Conflict"` |
-| R4 | Reservation leak (order cancelled/archived with `Pending` issue order) | Lifecycle | Auto-cancel + release + system history (D18) |
-| R5 | Execution-time stock race | Concurrency | Re-validate live balance at execution; explicit `Result.Failure`; no negative ledger (D15) |
-| R6 | Cached balance drift | Data | `StockOnHand`/`ReservedOnHand` updated in the same transaction as movements; ledger wins; Phase-B rebuild tool |
-| R7 | Deleting a warehouse/product/supplier in use | Integrity | Application-level deletion guards; no silent cascades |
-| R8 | Keeper deactivated / loses access | Lifecycle | Higher-Manager fallback execute/cancel with audit (D20); assignment warns on missing `Inventory.Write` |
-| R9 | Item locking vs order lock interplay | Logic | Locked order (`CanEdit = false`) never spawns/mutates issue orders; `Pending` issue order locks the item (D7) |
-| R10 | Damaged returns silently changing totals | Logic | Damaged units recorded without balance effect, displayed separately (D11) |
-| R11 | Reversal half-applied states | Data | Ledger untouched until approval; on approval a single transaction applies the pair (D9) |
-| R12 | Drafts touching stock | Logic | Issue orders + notifications only on final save; drafts never reserve |
-| R13 | WhatsApp needs a phone that doesn't exist yet | Flow | Optional nullable `User.Phone` (D19) + copy/picker fallback; HM-owned setup (D28) |
-| R14 | Abusing/executing by unbound users | Security | Execution bound to current keeper or Higher Manager only (D20); handler-level `Result.Failure` |
-| R15 | Never-ending `Pending` orders | Flow | Allowed to age, always cancellable with mandatory reason; nothing auto-destructs |
-| R16 | RTL number rendering | UI | All quantities formatted with `CultureInfo.InvariantCulture` |
-| R17 | Manager `Approve` over-privileges execution | Security | Handler keeper-binding check; test that a non-bound Manager is rejected (D20) |
-| R18 | Sealed presets silently get zero inventory access | Data/UX | V2 seed + drift test asserting 5 roles / 41 cells |
-| R19 | Keeper transfer strands pending work | Lifecycle | Authority resolved against the current keeper; transfer UI shows affected pending count |
-| R20 | Self-approved reversal | Security | `Approver != Requester` guard + test (D9) |
-| R21 | Manager cannot assign keepers (`Users = None`) | Flow | Minimal `Warehouses.Write`-gated candidate query (D23) |
-| R22 | New enum members render as English generic cards | UX | `RoleFeatureCatalog` entries in A1 |
-| R23 | Storekeeper/preset count drift breaks seed tests | Test | Update `SealedRolePresets`, reserved names, role count 4→5, cells 31→41 |
-| R24 | Keeper phone never set | Flow | HM-owned Users page field (D28); copy/picker always available |
-
-### 13.3 Follow-through
-
-- Amendments to `User` (phone) and orders (item lock, lifecycle hook) are additive and minimal, listed in the A3/A4 slices.
-- The constraint policy above supersedes any generic "strict DB constraints" reading of §5; field tables there stay accurate for **new tables only**.
-- Permission changes are additive and code-enforced; the only DB additions are the two enum values (text rows) and the V2 seed, all owner-approved.
+1. **S1:** 16 features; seed counts (exact, including name-collision case); storekeeper sealed/reserved; candidate query minimal fields + gating.
+2. **S3:** movement immutability (`ProtectHistory`), invariant enforcement, CAS over-reserve conflict, ledger ordering by `EffectiveAtUtc`, no negative columns.
+3. **S5:** final-save atomicity (all-or-nothing allocations), race → `"Conflict"`, draft isolation, stock-only/supplier-only/mixed sources (D17), legacy order edit forces sources (D10), item-id validation + FK behavior, release on close, and the **absence** of an order-level delivery gate (D19).
+4. **S6:** numbering per warehouse/month + legacy-kind CHECK regression (D18), batch accumulation (Q4/Q5), shortfall reason mandatory on a final short batch, `CancelRequested` blocks, auto-release on order cancel/archive.
+5. **S7:** approval matrix (types × requester × approver, self-recorded count exception), reversal exception (D4), single-decision CAS + `"Conflict"` on the second decision (D21), `Stale` on target drift, payload application atomicity, failed reservation keeps old state.
+6. **S8:** delivered ≤ issued − delivered (trip + trip-less, D19), returns caps (Q7), damaged column lifecycle (Q8), count snapshot math on both columns (D20), late-movement review on both, dual adjustment, count CAS against double approval (D21), rebuild tool (HM-gated).
+7. **Cross:** binding rule — non-keeper with `Inventory.Write` rejected; Manager with `Approve` rejected for execution; keeper-scoped reads for storekeeper UI; seed drift; migration applies to a populated copy + rollback rehearsed before release (documented).
 
 ---
 
-## 14. Permission test plan
-
-**Application (SQLite, `EnsureCreated`, snake_case):**
-1. Authorization matrix: `Read` ← R/W/A, `Write` ← W/A, `Approve` ← A (including the former silent-deny case).
-2. Execute/cancel: current keeper succeeds; `Inventory.Write` non-keeper fails with `Result.Failure`; Manager-with-`Approve` non-keeper fails; Higher Manager succeeds and is audited.
-3. Keeper transfer: old keeper rejected, new keeper accepted on the same pending order.
-4. Reversal: request requires `Inventory.Write` + binding; approval requires `Inventory.Approve`; requester ≠ approver; double reversal rejected.
-5. Preset drift: 5 sealed roles × their exact cells (41 total); idempotent V2; reserved `storekeeper` name.
-6. Candidate query: requires `Warehouses.Write`; returns minimal fields; `HasInventoryWrite` correct (including Higher Managers).
-7. Order save: stock portion requires `Inventory.Read`; supplier-only allowed without it; reservation under `Orders.Write`; race returns `"Conflict"`.
-8. Stock-in: requires `Inventory.Write` + `Products.Read`.
-9. Seed guards: sealed rename/delete/set-permission rejected; V1 untouched by V2.
-
-**Web/UI:**
-- Nav group and items hidden/shown by feature level (including the Approve-only reversal item).
-- Role editor renders 16 cards with 4 segments; sealed roles read-only; `storekeeper` shows as «دور جاهز».
-- Issue-order actions hidden for non-bound users; handler still rejects if forced.
-- Reversal queue visible only with `Inventory.Approve`.
-- Warehouse editor warns when the selected keeper lacks inventory access.
+*v2.1 supersedes v2.0/v1.3 and v1.0 registry assumptions (auto issue orders, single warehouse per item, full-qty execution, deferred counts/returns). Owner decisions 1–21 are closed; implementation starts with S1 only after the owner starts the task registry.*

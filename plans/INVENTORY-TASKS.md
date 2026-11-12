@@ -1,37 +1,36 @@
-# Inventory (Stock) — Executable Task Registry
+# Inventory (Multi-Warehouse Stock) — Executable Task Registry
 
-- **Version:** 1.0 · 2026-11-09
-- **Sources of truth:** `plans/INVENTORY-MANAGEMENT-SPEC.md` v1.3 · `plans/INVENTORY-PERMISSIONS-REVIEW.md` v1.2 · `AGENTS.md`
-- **Status:** planning complete. **No inventory production code exists** (verified by repo-wide search). Every task below is unchecked.
-- **Execution mode:** sequential vertical slices. Each task is self-contained: it names its goal, dependencies, exact files, steps, acceptance criteria and verification commands. A task is done only when its own acceptance criteria and the global definition of done pass.
-- **Out of scope for this registry:** implementation approval. Do not start T01 until the owner approves this file.
+- **Version:** 2.1 · 2026-11-12
+- **Sources of truth:** `plans/INVENTORY-MANAGEMENT-SPEC.md` v2.1 · `design_draft.md` (§ قرارات المالك المحسومة + § قرارات الجولة الثانية, D1–D21) · `concepts_brief.md` · `AGENTS.md`
+- **Status:** planning complete. **No inventory production code exists** (verified by repo-wide search). Every task below is unchecked. This registry fully replaces v1.0 — wherever v1.0 conflicted with the newer documents, v2.1 encodes the newer decision.
+- **Execution mode:** strictly sequential tasks T01 → T08, one migration each (plus the standalone seed migration in T01). A task is done only when its own acceptance criteria and the global definition of done pass.
 
 ---
 
 ## 0. How to execute a task
 
-1. Read the task fully, plus the spec decisions it cites. Do not rely on memory of earlier tasks.
+1. Read the task fully, plus the spec sections it cites (`SPEC §n`, `D#` = decisions in `design_draft.md`). Do not rely on memory of earlier tasks.
 2. Implement Domain → Application → Infrastructure → Web in that order.
 3. Run `dotnet restore`, then `dotnet build OrderHub.sln --configuration Release`, then the task's targeted tests, then the full suite.
 4. Exercise the task's UI acceptance manually in the browser when the task adds or changes UI.
 5. Mark the checkbox `[x]` and append a one-line deviation note only when the implementation differs from the task.
-6. **Do not commit.** At the end, propose a Conventional Commit message (e.g. `feat(inventory): add warehouse registry`). The owner runs every commit.
-7. Never edit a migration that already ran, never edit `SealedRoleSeedSql.V1`, never add JavaScript, never fetch fonts at runtime, never change `Supply`, delivery, documents, pricing or existing numbering.
+6. **Do not commit.** At the end, propose the task's Conventional Commit message (listed per task). The owner runs every commit.
+7. Never edit a migration that already ran, never edit `SealedRoleSeedSql.V1`, never add JavaScript, never fetch fonts at runtime, never change `Supply`, pricing, documents, or existing numbering behavior.
 
 ### Global definition of done (applies to every task)
 
 - `dotnet build OrderHub.sln --configuration Release` is green with zero new warnings introduced by the task.
 - All tests pass, including the pre-existing suite.
-- New tables/columns are additive-only. Existing columns, rows and enum encodings are untouched.
-- All expected failures return `Result`/`Result<T>` with one of `"Unauthorized"`, `"Forbidden"`, `"NotFound"`, `"Conflict"`, `"InvalidOperation"`, `"Persistence"`. No throwing for expected failures.
-- Permission gates exist in **both** layers: page/attribute for navigation and UX, and handler-level checks for direct invocation.
-- Arabic, RTL UI. Numbers rendered with `CultureInfo.InvariantCulture`. No `MarkupString` for message previews.
-- UI uses `PageScaffold`, `TableFooter`, `.oh-btn` and the one-primary-CTA rule; no dead buttons; every async action has a busy flag.
-- No new JavaScript files. Clipboard/WhatsApp use the existing interop patterns only.
-- Migrations are created with the repo's design-time factory (`DesignTimeAppDbContextFactrory.cs`) and timestamped after `20261108214724_SeedSealedRoles`.
-- Seed/permission tests are updated in the same task that changes the matrix. Drift is never left for a later task.
+- Migrations are additive-only: new tables, nullable columns, defaults, indexes. Existing columns, rows, constraints and enum encodings are untouched.
+- Expected failures return `Result`/`Result<T>` with `"Unauthorized"`, `"Forbidden"`, `"NotFound"`, `"Conflict"`, `"InvalidOperation"`, `"Persistence"`. Never throw for expected failures.
+- Permission gates exist in **both** layers: page attribute for navigation/UX, handler-level check for direct invocation; keeper-binding (SPEC §7.3) inside every mutating inventory handler.
+- Arabic, RTL UI; numbers via `CultureInfo.InvariantCulture`; no `MarkupString` for previews; `PageScaffold` + `TableFooter` (exceptions per AGENTS.md); `.oh-btn`; exactly one primary CTA per page; busy flags on all async buttons.
+- No new JavaScript files. No runtime font fetching.
+- Migration created via the design-time factory (`DesignTimeAppDbContextFactrory.cs`), timestamped **after `20261109124656_AddStandaloneTrips`**, named exactly as its task states.
+- Seed/permission test counts are updated in the same task that changes the matrix; drift is never left for later.
+- Legacy data safety: legacy orders (no allocations) keep today's behavior exactly; no retroactive movements, reservations or approvals.
 
-### Build / test commands (from `OrderHub/`)
+### Build / test commands (from repo root)
 
 ```powershell
 dotnet restore OrderHub.sln
@@ -48,360 +47,131 @@ dotnet ef migrations add <Name> --project OrderHub.Infrastructure --startup-proj
 
 ---
 
-## 1. Final review — verified facts that constrain the tasks
+## 1. Verified facts that constrain the tasks
 
-The spec was re-checked against the current code. These are the facts that change or sharpen implementation; each is addressed by the task named on the right.
+Re-checked against the current code on 2026-11-12:
 
-| # | Verified fact | Evidence | Consequence / task |
+| # | Fact | Evidence | Consequence |
 |---|---|---|---|
-| FR-01 | Roles prerequisite is complete: `Approve`, sealed roles, Higher Manager gates, 4 presets / 31 cells | `PermissionLevel.cs`, `AuthorizationService.cs:16`, `20261108214724_SeedSealedRoles` | Inventory starts at T01; no roles work is repeated. |
-| FR-02 | `Approve` satisfies `Write`, so a feature gate alone is not execution authority | `AuthorizationService.cs:26-28` | Execute/cancel/cancel-return/reversal-request **must** run the keeper-binding check in the handler (T11, T17, T18). |
-| FR-03 | `SealedRoleSeedSql.V1` is frozen and tests assert 4 roles / 31 cells | `SealedRoleSeedSql.cs`, `SealedRoleSeedTests.cs:23-27` | Add `V2` in a new migration; update counts to 5 / 41 in T01. |
-| FR-04 | Manager has `Users = None`, but must assign keepers | `SealedRolePresets.cs:66-81` | Minimal `Warehouses.Write`-gated candidate query in T01; never reuse `GetUsersQuery`. |
-| FR-05 | `PermissionFeature` is stored as text; the enum currently has 14 members | `RolePermissionConfiguration.cs`, `PermissionFeature.cs` | Insert `Warehouses`/`Inventory` between `PaymentMethods` and `Logs`; no data migration needed (T01). |
-| FR-06 | Role cards use a hard-coded switch for name/description/icon/tone | `RoleFeatureCatalog.cs` | Two new cases in all four methods in T01, otherwise English generic cards appear. |
-| FR-07 | Order create/update hard-require a supplier for every item | `CreateOrderCommandHandler.cs:162-163`, `UpdateOrderHandler.cs:114-115` | Stock-only items cannot save until T10 changes the source rule. Supplier remains required for supplier-only and remainder items. |
-| FR-08 | Order update replaces all items and EF cascades deletes on `order_items` | `UpdateOrderHandler.cs:59`, `Order.ReplaceOrderItems`, `OrderConfiguration.cs:101-105` | Item identity is not stable. Locking must compare `(ProductId, WarehouseId, stock qty)` allocations against pending issue-order lines, never item IDs (T10). |
-| FR-09 | Order cancellation loops shipments/trips only; archive is allowed from `Processing` | `Order.Lifecycle.cs:109-117`, `CanArchive` at line 22 | D18 must hook **both** cancel and archive (T13). |
-| FR-10 | Monthly numbering service rejects unknown kinds | `NumberSequenceService.cs:79-88` | Add `NumberSequenceKind.Warehouse` to the allow-list in T09. |
-| FR-11 | `IWorkRecord` auto-numbering and status history are generic | `AppDbContext.cs:73-100`, `UnitOfWork.cs:53-102` | Issue orders reuse the pipeline in T09. `ProtectHistory` must also protect `InventoryMovement` (T05). |
-| FR-12 | `User` has no phone; only the Higher-Manager Users page can edit users | `User.cs`, `Users/Edit.razor:13` | Add nullable `User.Phone` and edit it only there (T15); WhatsApp always keeps copy/picker fallback. |
-| FR-13 | WhatsApp helpers already exist | `WhatsAppMessaging.cs` (`TryNormalize`, `BuildDirectUrl`, `BuildPickerUrl`) | Reuse in T15; no new normalizer, no new JS. |
-| FR-14 | There is no notification infrastructure; the earlier app-shell decision explicitly omitted a bell because no service existed | `MainLayout.razor` | T14 introduces the entity, handlers and bell; recipient filtering is in the handler, not the UI. |
-| FR-15 | SQLite tests use `EnsureCreated` + snake_case, not migrations | `RbacTestDb.cs`, `AGENTS.md` testing model | Seed SQL must run in test helpers explicitly; new EF columns must survive snake_case (all tasks). |
-| FR-16 | Repositories live in the misspelled `OrderHub.Infrastructure/Reopsitories/`; some classes use namespace `...Repositories` | `AGENTS.md`, `OrderRepository.cs` | Match the folder and namespace of the file you touch; do not "fix" the typo. |
-| FR-17 | `Warehouse`/`StockItem`/`InventoryMovement`/`StockIssueOrder` do not exist anywhere in source | repo-wide grep (only plans match) | T02/T05/T09 create them from scratch; no partial implementation is being extended. |
-
-### Review conclusions carried into the plan
-
-- **Approve levels never execute.** Execution/cancel authority is `IsAdmin || warehouse.KeeperUserId == currentUser.Id`, evaluated against the **current** keeper at action time. `AssignedUserId` is audit only.
-- **Reservations and issue orders are created only on final order save.** Drafts never reserve. Supplier-only orders keep the legacy path and require no inventory permission.
-- **Old orders stay loadable.** New `OrderItem` columns are nullable/defaulted; the "every saved item must have a source" rule is enforced in code at save time only.
-- **One pending issue order per (order, warehouse)**; cancelled/completed rows remain as history. Enforce with a filtered unique index and re-check in the handler.
-- **The cached balance is display-only.** Every change goes through a movement plus an atomic balance update in the same transaction; rebuild is phase B.
-- **No hard deletes** for warehouses, movements, purchases, returns or reversals. Errors are fixed by cancel (pending work) or approved reversal (executed work).
+| FR-01 | `PaymentMethods` is the last member before the `// Administration` block in `PermissionFeature`; 14 members total; stored as text | `PermissionFeature.cs` | T01 inserts `Warehouses`/`Inventory` between them; no data migration needed |
+| FR-02 | `NumberSequenceKind` has 4 members (Order, Supplier, Deliveryman, ShippingCarrier); `NumberSequenceService` rejects unknown kinds in the monthly path | `NumberSequenceKind.cs`, `NumberSequenceService.cs` | T05 adds `Warehouse = 5` to the monthly allow-list |
+| FR-03 | `WorkRecordType` has 3 members (SupplierSupply, Shipment, DeliveryTrip); `IWorkRecord` is internal, auto-numbered by `UnitOfWork` | `WorkRecordType.cs`, `AppDbContext.cs`, `UnitOfWork.cs` | T05 adds `StockIssueOrder = 4`; implement `IWorkRecord` explicitly like `DeliveryTrip`; never assign numbers manually |
+| FR-04 | `SealedRoleSeedSql.V1` is frozen; current seed = **4 roles / 31 cells** (sales 9, purchasing 6, manager 11, data-entry 5); tests assert these counts | `SealedRoleSeedSql.cs`, `SealedRoleSeedTests.cs` | T01 adds `V2` in its own migration; totals become **5 roles / 38 cells** (SPEC §7.1) |
+| FR-05 | `UpdateOrderHandler` rebuilds a replacement `Order` and `ReplaceOrderItems` deletes + re-inserts all items; item ids unstable | `UpdateOrderHandler.cs`, `Order.cs` | T03 adds explicit client-sent item ids, validated same-order (pattern: `Order.SynchronizeDeliverySteps`, line 209) |
+| FR-06 | `Order.SynchronizeDeliverySteps` already proves the explicit-id sync pattern | `Order.cs:209` | T03 mirrors it for items (`SynchronizeOrderItems`) |
+| FR-07 | Create/update order handlers hard-require a supplier for every item | `CreateOrderCommandHandler`, `UpdateOrderHandler` | T03 changes the rule: supplier required only for items with a supplier-sourced remainder; stock-fully-sourced items save without one |
+| FR-08 | `Order.Lifecycle` exposes `DeliveryReadinessError()` / `CanArchive`; readiness knows nothing about stock | `Order.Lifecycle.cs` | T05 keeps readiness unchanged (no order-level stock gate, D19) and adds reservation release on close; the delivery cap lands in T08 |
+| FR-09 | `AppDbContext.ProtectHistory` rejects Modified/Deleted on history entities | `AppDbContext.cs` | T02 adds `InventoryMovement` to it |
+| FR-10 | Repositories live in the misspelled `OrderHub.Infrastructure/Reopsitories/` (some namespaces `...Repositories`) | `AGENTS.md` | Match the folder/namespace of each file touched; never "fix" the typo |
+| FR-11 | Tests run SQLite in-memory (`EnsureCreated`, snake_case, `RbacTestDb` runs seed SQL explicitly) — **no PostgreSQL test harness exists and CI disables PG deliberately** | `AGENTS.md`, `RbacTestDb.cs` | T02/T03 prove CAS logic on SQLite; the real lock proof is the documented manual PG script (T08/D13) |
+| FR-12 | `AttachmentsController` + `LocalFileAccessService` have no ownership/size/type checks and store by raw uploaded name | `OrderHub.Web/Controllers/Files/AttachmentsController.cs` | T04 leaves them untouched; inventory attachments get a separate endpoint/folder/metadata entity (D14) |
+| FR-13 | Latest migration is `20261109124656_AddStandaloneTrips` | `Migrations/` | All inventory migrations timestamp after it |
+| FR-14 | `RoleFeatureCatalog` uses a hard-coded switch for name/description/icon/tone | `RoleFeatureCatalog.cs` | T01 adds two cases to all four methods or the roles editor renders English generic cards |
+| FR-15 | `NavMenu.razor` is the single nav source, permission-filtered groups | `NavMenu.razor` | T01 adds the «المخزون» group + first item; later tasks append items, never dead links |
+| FR-16 | Sealed-role guards (rename/delete/permission-edit rejected) already exist | `SealedRolePresets`, roles editor | T01 storekeeper preset inherits them automatically through `All` |
 
 ---
 
 ## 2. Dependency graph
 
 ```
-T01 Permissions + seed + keeper candidates
- ├─► T02 Warehouse domain/persistence ─► T03 Warehouses application ─► T04 Warehouses UI + nav
- ├─► T05 Ledger + StockItem ─► T06 Stock-in application ─► T07 Inventory read queries ─► T08 Inventory UI + nav
- ├─► T09 StockIssueOrder domain/numbering
- │        └─► T10 Order sourcing + availability + editor + auto-issue + locks
- │                 └─► T11 Issue-order execute/cancel handlers ─► T12 Issue-order UI + nav
- │                          ├─► T13 D18 auto-cancel on order cancel/archive
- │                          └─► T14 Notifications + bell
- │                                   └─► T15 User.Phone + WhatsApp keeper message
- └────────────────────────────────────────► T16 Phase A acceptance sweep
-
-Phase B: T05/T06/T10/T11 ─► T17 Returns ─► T18 Reversals ─► T19 Rebuild + aggregate reporting + Phase B acceptance
+T01 Permissions + V2 seed + candidates + catalog + nav group
+ └► T02 Ledger + StockBalance + CAS operations
+      ├► T03 Warehouses (entity → handlers → screens)   [independent of T02 except guards]
+      │      └► T04 Stock-in + attachments
+      │           └► T05 Order identity + allocations + atomic reservation + source rule
+      │                └► T06 Issue orders + batches + numbering
+      │                     └► T07 Approvals (edit payload / cancel / reversal)
+      │                          └► T08 Delivery records + returns/damaged/counts + rebuild + acceptance
 ```
 
-Rules:
-- T04 depends on T03; T08 depends on T07 and T03; T12 depends on T11.
-- T10 requires T05–T07 (balances) and T09 (issue orders) before it can be executed.
-- T14 modifies the issue-order creation handlers from T10 and the execution handler from T11; do not start it earlier.
-- Phase B starts only after T16 is green.
+Rules: strictly sequential; T03 may start only after T01 but its deactivation guard completes in T04; no task may create a migration other than its own.
 
 ---
 
-## 3. Phase A — tasks
+## 3. Tasks
 
-### [ ] T01 — Permission surface, sealed presets V2, keeper candidate query
+### [ ] T01 — Permission surface, sealed presets V2, keeper candidates, catalog, nav group
 
-**Goal:** Make `Warehouses` and `Inventory` first-class permission features, seed the locked 5-role / 41-cell preset matrix, and give warehouse managers a safe way to list keeper candidates without `Users` access.
+**Goal:** Make `Warehouses` and `Inventory` first-class permission features, seed the locked 5-role / 38-cell matrix in its own migration, and expose the warehouse-manager-safe candidate query.
 
-**Depends on:** nothing. **Delivers independently:** role editor shows 16 Arabic cards; seeded roles have the locked access; Manager can call the candidate query; all existing tests still pass.
+**Depends on:** nothing. **Delivers independently:** roles editor shows 16 Arabic cards; seeded roles match D1/D3; Manager can list keeper candidates.
 
-**Locked decisions:** D22, D23, §7.1–§7.3, §7.6.
+**Locked decisions:** D1, D2, D3, SPEC §7.1.
 
 **Files**
 - Modify `OrderHub.Domain/Enums/PermissionFeature.cs`
 - Modify `OrderHub.Domain/Authorization/SealedRolePresets.cs`
-- Modify `OrderHub.Infrastructure/Migrations/SealedRoleSeedSql.cs` (add `V2`; **do not touch `V1`**)
-- Create migration `OrderHub.Infrastructure/Migrations/<timestamp>_AddInventoryPermissions.cs` (timestamp after `20261108214724`)
+- Modify `OrderHub.Infrastructure/Migrations/SealedRoleSeedSql.cs` (add `V2`; **never touch `V1`**)
+- Create migration `..._SeedInventoryPermissions` (single `migrationBuilder.Sql(SealedRoleSeedSql.V2)` in `Up`; non-destructive `Down`)
 - Modify `OrderHub.Web/Components/Pages/Features/Administration/Roles/Editor/RoleFeatureCatalog.cs`
-- Create `OrderHub.Application/Features/Warehouses/GetKeeperCandidates/GetWarehouseKeeperCandidatesQuery.cs` + handler
-- Create `OrderHub.Application/Features/Warehouses/GetKeeperCandidates/WarehouseKeeperCandidate.cs`
-- Modify `OrderHub.Application/Interfaces/Repositories/IUserRepository.cs` and `OrderHub.Infrastructure/Reopsitories/UserRepository.cs`
-- Modify `OrderHub.Tests/RbacTestDb.cs` and `OrderHub.Tests/SealedRoleSeedTests.cs`
+- Modify `OrderHub.Web/Components/Layout/NavMenu.razor`
+- Create `OrderHub.Application/Features/Warehouses/GetKeeperCandidates/GetWarehouseKeeperCandidatesQuery.cs` (+ handler) and `WarehouseKeeperCandidate.cs`
+- Modify `OrderHub.Application/Interfaces/Repositories/IUserRepository.cs` + `OrderHub.Infrastructure/Reopsitories/UserRepository.cs`
+- Modify `OrderHub.Tests/RbacTestDb.cs` (run V1 then V2) and `OrderHub.Tests/SealedRoleSeedTests.cs`
 - Create `OrderHub.Tests/WarehouseKeeperCandidateTests.cs`
 
 **Steps**
-1. Add enum members in this exact position — after `PaymentMethods`, before `Logs`:
-   - `[Description("المخازن")] Warehouses`
-   - `[Description("المخزون")] Inventory`
-2. Update `SealedRolePresets`:
-   - `Sales`: append `Warehouses=Read`, `Inventory=Read` (11 cells total).
-   - `Purchasing`: append `Warehouses=Read`, `Inventory=Write` (8 cells total).
-   - `Manager`: append `Warehouses=Write`, `Inventory=Approve` (13 cells total).
-   - Add `StorekeeperKey = "storekeeper"` and preset «أمين مخزن» with exactly `Warehouses=Read`, `Inventory=Write`, `Products=Read`, `Orders=Read` (4 cells).
-   - `DataEntry` stays at 5 cells. Expected total: **41**.
-   - Existing custom roles are untouched; `IsReservedName` automatically covers the new preset through `All`.
-3. Add `SealedRoleSeedSql.V2`:
-   - Insert the `storekeeper` role only if neither `role_key` nor a role with the same name exists.
-   - Insert only the 10 new cells (`sales` 2, `purchasing` 2, `manager` 2, `storekeeper` 4), each guarded by `WHERE NOT EXISTS (role_id + feature)`.
-   - Use `CURRENT_TIMESTAMP`, `TRUE`, and text feature/level names exactly like V1. Keep it provider-neutral (PostgreSQL + SQLite).
-4. Create the migration and add a single `migrationBuilder.Sql(SealedRoleSeedSql.V2)` (both `Up` and no destructive `Down`; `Down` must not delete seeded roles).
-5. `RbacTestDb.SeedAsync` runs `V1` then `V2`. Update `SealedRoleSeedTests`:
-   - 5 roles / 41 cells;
-   - manager 13, sales 11, purchasing 8, storekeeper 4, data-entry 5;
-   - `storekeeper` name reserved and sealed;
-   - idempotency after two runs is still 5 / 41;
-   - name-collision test still skips the `sales` preset: with the pre-existing custom «مبيعات» role (1 cell), the expected total is **5 roles / 31 cells** (custom 1 + purchasing 8 + data-entry 5 + manager 13 + storekeeper 4, and no sales cells); assert no role has `role_key = 'sales'`.
-6. Candidate query:
-   - `WarehouseKeeperCandidate(int Id, string DisplayName, bool IsActive, bool HasInventoryWrite)`.
-   - `[RequirePermission(PermissionFeature.Warehouses, PermissionLevel.Write)]`.
-   - Query handler returns all users ordered by `DisplayName`; `HasInventoryWrite` is true when `IsAdmin` or the role level for `Inventory` is `Write` or `Approve`.
-   - Repository method loads `User.Role.Permissions`; never expose username, password hash, role name or phone.
-7. Catalog entries:
-   - `Warehouses`: name «المخازن», description «إدارة المخازن وأمناء المخزون وحالة التشغيل», icon `Icons.Material.Filled.Warehouse`, tone `bg-amber-50 text-amber-600`.
-   - `Inventory`: name «المخزون», description «أرصدة المنتجات وحركات المخزون وأوامر الإخراج», icon `Icons.Material.Filled.Inventory`, tone `bg-teal-50 text-teal-600`.
-8. Tests: the candidate handler returns minimal fields; Manager gets `HasInventoryWrite=true` (Approve); a storekeeper gets true; a sales user gets false; an unauth/unprivileged user is denied by the pipeline; admin is marked true.
+1. Enum members after `PaymentMethods`, before `// Administration`: `[Description("المخازن")] Warehouses` then `[Description("المخزون")] Inventory`.
+2. `SealedRolePresets`: sales +`Inventory=Read` (10 cells) · purchasing +`Inventory=Read` (7 cells) · manager +`Warehouses=Write`, `Inventory=Approve` (13 cells) · new `StorekeeperKey = "storekeeper"` «أمين مخزن» with exactly `Warehouses=Read`, `Products=Read`, `Inventory=Write` (3 cells) · data-entry unchanged (5). Total **38**.
+3. `SealedRoleSeedSql.V2`: insert the `storekeeper` role (guarded by `role_key` OR same display name) + the 7 new cells, each `WHERE NOT EXISTS (role_id + feature)`; `CURRENT_TIMESTAMP`/`TRUE`/text names exactly like V1; provider-neutral (PostgreSQL + SQLite).
+4. Catalog entries (both features, all four switch methods): `Warehouses` «المخازن» — icon `Icons.Material.Filled.Warehouse`, tone `bg-amber-50 text-amber-600`, description «إدارة المخازن وأمناء المخزون وحالة التشغيل»; `Inventory` «المخزون» — icon `Icons.Material.Filled.Inventory`, tone `bg-teal-50 text-teal-600`, description «أرصدة المنتجات وحركات المخزون وأوامر الصرف».
+5. NavMenu: add group «المخزون» (icon Warehouse, subtitle «المخازن والأرصدة وأوامر الصرف») with no items yet — or add it in T02/T03 alongside its first item; **never render a dead link**. If the group renders zero visible items it must be hidden (existing `GroupVisible` logic).
+6. Candidate query: `[RequirePermission(PermissionFeature.Warehouses, PermissionLevel.Write)]`; returns `Id`, `DisplayName`, `IsActive`, `HasInventoryWrite` (true for `IsAdmin` or role level for `Inventory` ∈ {Write, Approve}); ordered by `DisplayName`; never exposes username/password hash/role name/phone.
+7. Tests: seed totals 5 / 38 (manager 13, sales 10, purchasing 7, storekeeper 3, data-entry 5); idempotency after a second run; storekeeper name reserved + sealed; name-collision case re-derived: with a pre-existing custom «مبيعات» role (1 cell) the sales preset is skipped → expected **5 roles / 29 cells**; candidate handler minimal fields + gating; admin/storekeeper `HasInventoryWrite=true`, sales user `false`.
+8. Update any other test asserting 31 cells or 4 roles in the same task.
 
-**Acceptance criteria**
-- `PermissionFeature` has 16 members; the roles editor renders 16 cards with Arabic labels and four segments, without any code change to the matrix component.
-- Seed totals are exactly 5 sealed roles / 41 cells; V2 is idempotent; V1 text is byte-for-byte unchanged.
-- A Manager can obtain keeper candidates; a Sales user cannot (feature gate); the payload exposes no sensitive fields.
-- `storekeeper` appears as a sealed ready role and resists rename/delete/permission edits through the existing guards.
+**Acceptance**
+- 16 feature cards, Arabic, four segments, no matrix-component code change.
+- V2 idempotent; V1 byte-for-byte unchanged; totals exactly 5 / 38.
+- Manager gets candidates; a sales user is denied at the pipeline; payload has no sensitive fields.
 
 **Verify**
 ```powershell
 dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~SealedRoleSeedTests"
 dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~WarehouseKeeperCandidateTests"
 ```
-Manual: open `/admin/roles` as Higher Manager; confirm 16 cards, `أمين مخزن` is read-only, and sales/purchasing/manager show the new cells.
+Manual: `/admin/roles` as Higher Manager — 16 cards, «أمين مخزن» read-only «دور جاهز».
 
 **Traps**
-- Do not insert the two enum members inside the Administration block; text storage means position is only compile-time, but the spec fixes it.
+- Do not insert the enum members inside the Administration block.
 - Do not give the candidate query `Users.Read`; do not reuse `GetUsersQuery`.
-- Do not update V1 to add cells; a new database runs V1 then V2.
-- Counts changed; any other test asserting 31 cells must be found and updated in the same task.
+- Counts: 38 everywhere; the collision case is 29 (re-derive, don't copy v1.0's numbers).
 
 **Proposed commit:** `feat(inventory): add warehouse and inventory permissions with sealed storekeeper preset`
 
 ---
 
-### [ ] T02 — Warehouse domain and persistence
+### [ ] T02 — Ledger, StockBalance, CAS operations
 
-**Goal:** Introduce the `Warehouse` aggregate with exactly one keeper, soft activity state and no hard delete, plus its EF mapping, repository and migration.
+**Goal:** The immutable movement ledger and the per-(warehouse, product) cached balance with `DamagedQty`, plus the atomic repository operations every later task consumes.
 
-**Depends on:** T01 (permission surface exists, though the entity itself does not need it). **Delivers independently:** warehouses can be created/loaded/tested; no UI yet.
+**Depends on:** T01 (feature surface). **Delivers independently:** ledger + balances testable end to end; no UI.
 
-**Locked decisions:** D4, D5, §5.1, §13.1 (new tables may be strict).
+**Locked decisions:** D5, D6, D7, D20, D13, SPEC §2 (Q1–Q12), §5.2, §5.3.
 
 **Files**
-- Create `OrderHub.Domain/Models/Warehouse.cs`
-- Create `OrderHub.Infrastructure/Configurations/WarehouseConfiguration.cs`
-- Modify `OrderHub.Infrastructure/AppDbContext.cs` (add `DbSet<Warehouse>`)
-- Create `OrderHub.Application/Interfaces/Repositories/IWarehouseRepository.cs`
-- Create `OrderHub.Infrastructure/Reopsitories/WarehouseRepository.cs`
+- Create `OrderHub.Domain/Enums/InventoryDirection.cs` (`In=1, Out=2`), `InventoryMovementType.cs` (`OpeningStock=1, StockIn=2, IssueOut=3, ReturnIn=4, ReturnDamagedIn=5, DamagedDisposal=6, Adjustment=7, Reversal=8, DamagedAdjustment=9`), `InventoryMovementStatus.cs` (`Active=1, Reversed=2`)
+- Create `OrderHub.Domain/Models/InventoryMovement.cs`, `StockBalance.cs`
+- Create `OrderHub.Infrastructure/Configurations/InventoryMovementConfiguration.cs`, `StockBalanceConfiguration.cs`
+- Modify `OrderHub.Infrastructure/AppDbContext.cs` (DbSets + `ProtectHistory` for `InventoryMovement` — FR-09)
+- Create `OrderHub.Application/Interfaces/Repositories/IInventoryRepository.cs` + `OrderHub.Infrastructure/Reopsitories/InventoryRepository.cs` (match FR-10 namespace style)
 - Modify `OrderHub.Infrastructure/Reopsitories/ServiceCollectionExtensions.cs`
-- Create migration `..._AddWarehouses.cs`
-- Create `OrderHub.Tests/WarehouseDomainTests.cs`
-
-**Steps**
-1. Entity (`Warehouse : ModelBase`):
-   - `Name` as `EntityName` (same value object as `City`).
-   - `KeeperUserId` (`int`, required) and `Keeper` navigation.
-   - `IsActive` (default true).
-   - Constructor `Warehouse(string name, int keeperUserId)` and `Rename`, `AssignKeeper`, `Deactivate`, `Activate`.
-   - Validation: name through `EntityName`; keeper id `> 0`; deactivation is idempotent; no `Delete` method and no public setters.
-   - Optional `ChangeKeeper(int keeperUserId)` must not clear audit data (none exists yet).
-2. EF configuration:
-   - Table `warehouses`; owned unique `name` as `varchar(100)`; `keeper_user_id` required; FK to `users` with `DeleteBehavior.Restrict`; index on `keeper_user_id`.
-   - `is_active` required, `created_at`/`modified_at` from `ModelConfigurationBase`.
-3. Repository:
-   - `GetAllAsync()` (tracked-off, ordered by name);
-   - `GetByIdAsync(int id)`;
-   - `Add(Warehouse warehouse)`;
-   - `AnyWithNameAsync(string name, int? excludingId = null)`;
-   - `GetWithKeeperAsync(int id)` for handlers.
-4. Register `IWarehouseRepository` in the existing repository registration file (match its namespace).
-5. Migration `AddWarehouses` only creates the `warehouses` table and indexes; no changes to `users`.
-6. Tests (`WarehouseDomainTests`): valid construction; blank name rejected; keeper id 0 rejected; rename; deactivate/activate idempotent; EF round-trip preserves name/keeper/active; deleting a referenced user is restricted (FK behavior).
-
-**Acceptance criteria**
-- A warehouse requires a positive keeper id and a non-empty unique name.
-- There is no way to hard-delete a warehouse from the domain or repository.
-- `EnsureCreated` on SQLite produces `warehouses` with snake_case columns and the FK; the migration applies additively on PostgreSQL.
-- Existing tests remain green.
-
-**Verify**
-```powershell
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~WarehouseDomainTests"
-```
-
-**Traps**
-- `EntityName` is an owned type; mirror `CityConfiguration`, not a plain string mapping.
-- Do not add a `Version` column to `Warehouse`; concurrency handling is not part of D4 and last-write-wins is acceptable for this registry.
-- Keep the repository in the misspelled `Reopsitories` folder; match the namespace style of the file you edit.
-
-**Proposed commit:** `feat(inventory): add warehouse aggregate and persistence`
-
----
-
-### [ ] T03 — Warehouses application layer (list, detail, create, update, activity)
-
-**Goal:** Provide the CQRS surface that the warehouses page needs, with duplicate-name, keeper-validity and activity rules enforced in handlers.
-
-**Depends on:** T01, T02. **Delivers independently:** all warehouse operations are callable and testable without UI.
-
-**Locked decisions:** D4, D5, D23, §5.1, §7.4.
-
-**Files**
-- Create under `OrderHub.Application/Features/Warehouses/`:
-  - `GetWarehouses/GetWarehousesQuery.cs` + handler + `WarehouseListItem.cs`
-  - `GetWarehouse/GetWarehouseQuery.cs` + handler + `WarehouseDetails.cs`
-  - `CreateWarehouse/CreateWarehouseCommand.cs` + handler
-  - `UpdateWarehouse/UpdateWarehouseCommand.cs` + handler
-- Create contracts `OrderHub.Application/Features/Warehouses/Contracts/WarehouseInputValidation.cs` if shared validation is useful.
-- Create `OrderHub.Tests/WarehouseCommandHandlerTests.cs`
-
-**Steps**
-1. `GetWarehousesQuery` → `IReadOnlyList<WarehouseListItem>` with `Id`, `Name`, `KeeperUserId`, `KeeperDisplayName`, `IsActive`. Gate `[RequirePermission(Warehouses, Read)]`.
-2. `GetWarehouseQuery(int Id)` → `WarehouseDetails` (same fields plus `KeeperIsActive`, `KeeperHasInventoryWrite`). Gate `Warehouses.Read`; return `null` or a failure for a missing id consistently with existing read handlers.
-3. `CreateWarehouseCommand(string Name, int KeeperUserId)` with `[RequirePermission(Warehouses, Write)]`:
-   - authenticated actor required;
-   - trimmed name non-empty and unique (case-insensitive check through `AnyWithNameAsync`);
-   - keeper exists and is active (`IUserRepository` needs a minimal `GetByIdAsync`/`GetActiveByIdAsync` if absent);
-   - save via `IUnitOfWork`;
-   - return `Result<int>`; map `PersistenceException` to a friendly failure.
-4. `UpdateWarehouseCommand(int Id, string Name, int KeeperUserId, bool IsActive)` with `[RequirePermission(Warehouses, Write)]`:
-   - load warehouse or `NotFound`;
-   - duplicate-name check excluding self;
-   - keeper exists and is active; assigning an inactive keeper fails `"InvalidOperation"`;
-   - keeper without `Inventory.Write`/`Approve` is **allowed** (the UI warns); the handler does not block it;
-   - deactivation is allowed for now; a guard for stock/pending work is added by T06/T09 (documented in the handler as an extension point, but do not add dead abstractions);
-   - no hard delete command.
-5. Tests: create success; duplicate name fails; inactive/unknown keeper fails; update renames/reassigns; deactivation persists; handler authorization attributes exist; unauthorized actor returns failure/denied.
-
-**Acceptance criteria**
-- All four operations are executable and return `Result`-based outcomes.
-- Keeper identity is validated in the handler, not only in the UI.
-- No delete path exists.
-- The list/detail contracts contain no username, phone or role data.
-
-**Verify**
-```powershell
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~WarehouseCommandHandlerTests"
-```
-
-**Traps**
-- Do not inject `ICurrentUser` only for display; check authentication explicitly.
-- `GetWarehouseKeeperCandidatesQuery` from T01 remains the only source for the dropdown; do not duplicate it here.
-- Keep the response codes consistent with existing handlers (`"Unauthorized"`, `"NotFound"`, `"InvalidOperation"`, `"Persistence"`).
-
-**Proposed commit:** `feat(inventory): add warehouse application handlers`
-
----
-
-### [ ] T04 — Warehouses page and navigation group
-
-**Goal:** Ship the first usable inventory screen: a warehouse list with create/edit dialog, keeper selection, activity control and the locked warning, plus the new navigation group.
-
-**Depends on:** T01, T03. **Delivers independently:** the owner can manage warehouses end to end in the browser.
-
-**Locked decisions:** D4, D5, D23, §7.7, §8.1, UI conventions in `AGENTS.md`.
-
-**Files**
-- Create `OrderHub.Web/Components/Pages/Features/Warehouses/Index.razor` (+ `.razor.cs`)
-- Create `OrderHub.Web/Components/Pages/Features/Warehouses/Editor/WarehouseEditorDialog.razor`
-- Create `OrderHub.Web/Components/Pages/Features/Warehouses/Editor/WarehouseEditorState.cs`
-- Modify `OrderHub.Web/Components/Layout/NavMenu.razor`
-
-**Steps**
-1. Page `/warehouses` with `[PermissionAuthorize(PermissionFeature.Warehouses, PermissionLevel.Read)]`; `PageScaffold` title «المخازن», description «إدارة المخازن وأمناء المخزن وحالة التشغيل», breadcrumb.
-2. List card: `MudTable`/`MudDataGrid` with name, keeper display name, activity badge (green «نشط» / slate «متوقف»), pending-work hint placeholder only when data exists (do not fabricate counts). Search in memory; `TableFooter` with 1-based page conversion.
-3. Primary CTA «إضافة مخزن» rendered only when `PermissionAccess.IsAllowedAsync(Warehouses, Write)`; opens the editor dialog. Secondary row action «تعديل».
-4. Editor dialog follows `CityEditorDialog` conventions (icon header, close, white section cards, footer readiness dot + إلغاء/حفظ):
-   - name (required, max 100);
-   - keeper `MudSelect` fed by `GetWarehouseKeeperCandidatesQuery`; show «متوقف» for inactive users;
-   - amber inline warning when the selected candidate has `HasInventoryWrite = false`: «المستخدم المحدد لا يملك صلاحية المخزون؛ لن يستطيع تنفيذ أوامر الإخراج حتى تُمنح له.» Saving remains allowed;
-   - activity toggle for existing warehouses (create defaults active);
-   - validation blocks empty name/keeper; busy flag on save; success snackbar and reload.
-5. No hard-delete control. Deactivation is the only way to retire a warehouse.
-6. Navigation: extend the existing `Groups` array with group «المخزون», icon `Icons.Material.Filled.Warehouse`, subtitle «المخازن والأرصدة وأوامر الإخراج», `ViewAllHref="/warehouses"`. Add only the «المخازن» item now (`/warehouses`, `Warehouses.Read`, description «المخازن وأمناء المخزن»). Later tasks append their items; never leave a link to a non-existent page.
-7. Manual acceptance with a Manager account and a storekeeper-role account.
-
-**Acceptance criteria**
-- A user with `Warehouses.Read` sees the page and list; without it, the nav group and page are hidden/denied.
-- Create/edit works; duplicate names and invalid keepers show Arabic inline errors.
-- The warning appears for a keeper without inventory access but does not block saving.
-- Exactly one primary CTA on the page; all busy states disable repeats.
-- No JavaScript added; RTL layout correct on desktop and mobile.
-
-**Verify**
-```powershell
-dotnet build OrderHub.sln --configuration Release
-dotnet run --project OrderHub.Web
-```
-Manual checklist: `/warehouses` as Manager (HM seeded) → create → edit keeper → deactivate → nav visibility as Sales (read-only? Sales has `Warehouses.Read`: list visible, no CTA) and as Data Entry (group hidden).
-
-**Traps**
-- The nav group must be hidden when none of its items is allowed; the existing `GroupVisible` logic handles it.
-- Do not add a fake count badge.
-- Use `MudSelect`/`MudDialog` only for data/widget behavior; page layout stays HTML + Tailwind.
-- Keeper candidates require `Warehouses.Write`; do not call the query for read-only users (hide the dialog).
-
-**Proposed commit:** `feat(inventory): add warehouses management page and navigation`
-
----
-
-### [ ] T05 — Inventory ledger and cached stock balance (domain + persistence)
-
-**Goal:** Add the immutable movement ledger and the per-(warehouse, product) cached balance, with atomic reserve/release/consume operations that later tasks use.
-
-**Depends on:** T02. **Delivers independently:** movements and balances can be recorded and tested; no UI or stock-in flow yet.
-
-**Locked decisions:** D3, D12, D15, D21, §5.2, §5.3, §13.1.
-
-**Files**
-- Create `OrderHub.Domain/Enums/InventoryDirection.cs` (`In = 1`, `Out = 2`)
-- Create `OrderHub.Domain/Enums/InventoryMovementType.cs` (`StockIn = 1`, `IssueOut = 2`, `CustomerReturnIn = 3`, `Reversal = 4`)
-- Create `OrderHub.Domain/Enums/InventoryMovementStatus.cs` (`Active = 1`, `Reversed = 2`)
-- Create `OrderHub.Domain/Models/InventoryMovement.cs`
-- Create `OrderHub.Domain/Models/StockItem.cs`
-- Create `OrderHub.Infrastructure/Configurations/InventoryMovementConfiguration.cs`
-- Create `OrderHub.Infrastructure/Configurations/StockItemConfiguration.cs`
-- Modify `OrderHub.Infrastructure/AppDbContext.cs` (DbSets + `ProtectHistory`)
-- Create `OrderHub.Application/Interfaces/Repositories/IInventoryRepository.cs`
-- Create `OrderHub.Infrastructure/Reopsitories/InventoryRepository.cs`
-- Modify `OrderHub.Infrastructure/Reopsitories/ServiceCollectionExtensions.cs`
-- Create migration `..._AddInventoryLedger.cs`
+- Create migration `..._AddInventoryLedger`
 - Create `OrderHub.Tests/InventoryLedgerTests.cs`
 
 **Steps**
-1. `InventoryMovement`:
-   - Fields: `WarehouseId`, `Direction`, `MovementType`, `ProductId`, `Quantity` (`> 0`), `SourcePurchaseId?`, `SourceOrderIssueId?`, `SourceReturnId?`, `ReversalOfMovementId?`, `Status` (Active), `Note?`, `CreatedByUserId`, `CreatedAtUtc`, `Version`.
-   - Factory `Create(...)` validates quantity and actor; `Reversal` requires `ReversalOfMovementId` and a non-empty note; non-reversal movements cannot set that id.
-   - Only `internal MarkReversed()` changes status. No public setters, no delete.
-2. `StockItem`:
-   - Fields: `WarehouseId`, `ProductId`, `StockOnHand`, `ReservedOnHand` (both `>= 0`), `Version`.
-   - Behaviors: `ApplyIn(qty)`, `ApplyOut(qty)` (throws/fails on negative), `Reserve(qty)`, `Release(qty)`, `Consume(qty)` (stock and reserved both decrease; never below zero); each increments `Version`.
-   - One row per `(warehouse_id, product_id)`; unique index.
-3. EF configurations:
-   - `inventory_movements`: enums stored as strings; FKs to warehouse/product with `Restrict`; no FK for the three optional source ids (documents and issue orders are new tables; use real FKs where the target exists in the same migration, otherwise plain nullable ints); unique filtered index on `reversal_of_movement_id` where not null; check constraints `quantity > 0`, `stock`/`reserved >= 0`; index `(warehouse_id, product_id, created_at)` and `(product_id, created_at)`.
-   - `stock_items`: unique `(warehouse_id, product_id)`; checks `stock_on_hand >= 0`, `reserved_on_hand >= 0`; `version` concurrency token (or atomic updates; pick one and test it).
-4. `AppDbContext.ProtectHistory` must reject `Modified`/`Deleted` entries for `InventoryMovement` (same exception text pattern as existing history protection).
-5. Repository interface/implementation:
-   - `GetStockItemAsync(warehouseId, productId)` (tracked), `GetStockAsync(int? warehouseId)` (no-tracking list);
-   - `Add(InventoryMovement)`, `AddStockItem(StockItem)` (or `GetOrCreateStockItemAsync`);
-   - `TryReserveAsync(warehouseId, productId, qty)` — atomic update guarded by `stock_on_hand - reserved_on_hand >= qty`; returns false when no row/insufficient;
-   - `ReleaseAsync(warehouseId, productId, qty)` and `ConsumeAsync(warehouseId, productId, qty)` — atomic, never negative;
-   - `GetLedgerAsync(warehouseId, productId, skip, take)` and `CountLedgerAsync`.
-   - All operations must work on both PostgreSQL and SQLite (use `ExecuteUpdateAsync` or provider-neutral EF; if a provider-specific SQL is unavoidable, add the SQLite branch and test it).
-6. Migration creates both tables, indexes and checks. No changes to `order_items` or products.
-7. Tests: quantity/note validation; mark reversed; stock apply/reserve/release/consume boundaries; EF round-trip; unique stock row; history protection rejects edits/deletes; atomic reserve returns false on the second over-book; ledger ordering.
+1. `StockBalance`: `WarehouseId`, `ProductId`, `StockOnHand`, `ReservedOnHand`, `DamagedQty` (all `>= 0`), `Version`. Behaviors: `ApplyIn`, `ApplyOut`, `DamagedIn`, `DamagedDisposal`, `Reserve`, `Release`, `Consume` (stock + reserved decrease together, never negative); each asserts invariants Q1/Q3/Q8/Q11 and bumps `Version`.
+2. `InventoryMovement`: fields per SPEC §5.3 — direction, type, quantity `> 0`, the five nullable source refs (plain nullable ints in this migration; real FKs added by later tasks when the target table lands), `ReversalOfMovementId` (required iff type = Reversal), `Status`, `EffectiveAtUtc` (rejects future beyond a small clock margin), `CreatedAtUtc`, `CreatedByUserId`, `Note?` (mandatory on Reversal/Adjustment). Factory validation; internal-only `MarkReversed()`; no public setters; no delete.
+3. EF: enums as strings; checks `quantity > 0`, `stock_on_hand >= 0`, `reserved_on_hand >= 0`, `damaged_qty >= 0`; unique `(warehouse_id, product_id)`; unique filtered index on `reversal_of_movement_id WHERE NOT NULL`; indexes `(warehouse_id, product_id, effective_at_utc)` and `(product_id, effective_at_utc)`.
+4. Repository: `GetStockItemAsync` (tracked), `GetStockAsync`, `Add(InventoryMovement)`, `GetOrCreateStockItemAsync`, `TryReserveAsync(warehouseId, productId, qty)` (atomic guarded update `stock_on_hand - reserved_on_hand >= qty`, bumps Version, returns false on insufficient), `ReleaseAsync`, `ConsumeAsync` (atomic, never negative), `GetLedgerAsync`/`CountLedgerAsync` ordered by `EffectiveAtUtc` desc. Provider-neutral (no PG-only SQL in this task).
+5. Migration: both tables, indexes, checks; nothing on existing tables.
+6. Tests: factory validation; `MarkReversed` internal only; reserve/release/consume boundaries + Version increments; second over-reserve returns false (`"Conflict"` path at handler level later); EF round-trip; unique pair; `ProtectHistory` rejects modify/delete; ledger ordering by `EffectiveAtUtc`; damaged in/disposal never touching `StockOnHand` (Q8).
 
-**Acceptance criteria**
-- No API can produce a negative `StockOnHand`/`ReservedOnHand` or a zero/negative movement.
-- Movements cannot be modified or deleted after insert (protected in `AppDbContext`).
-- Reserve is atomic and race-safe at the database level.
-- `EnsureCreated` + snake_case works in tests; migration is additive.
+**Acceptance**
+- No API can produce a negative column or a zero/negative movement; movements are immutable after insert.
+- Reserve is atomic and race-safe at the SQLite level (CAS proven — FR-11); real lock proof is T08's PG script.
+- Existing tests remain green.
 
 **Verify**
 ```powershell
@@ -409,906 +179,305 @@ dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQuali
 ```
 
 **Traps**
-- Do not add a `Version` to `InventoryMovement` and also try to update it; the ledger is immutable except `Status` transition to `Reversed`, which is internal to a reversal approval (phase B).
-- `StockItem.Version` is for optimistic concurrency; if atomic `ExecuteUpdate` is used, increment it in the same update.
-- Do not create a generic "inventory service" abstraction; keep operations on the repository used by T06/T10/T11.
+- Do not add a mutable `Version` to `InventoryMovement` (ledger is insert-only; only `Status` transitions internally).
+- Do not build a generic "inventory service" abstraction; the repository is the shared surface.
+- Do not write PG-specific `FOR UPDATE` here — the ordered-lock protocol lands with the write-flows that need it (T03+); SQLite must keep passing.
 
 **Proposed commit:** `feat(inventory): add stock ledger and cached balances`
 
 ---
 
-### [ ] T06 — Stock-in application (record purchase into a warehouse)
+### [ ] T03 — Warehouses: entity, handlers, screens, nav
 
-**Goal:** Let an authorized user record a stock-in purchase that creates one `StockIn` movement and increases the cached balance per line, atomically.
+**Goal:** Warehouse registry with exactly one keeper, transfer semantics, guards, and the first usable inventory screen.
 
-**Depends on:** T05. **Delivers independently:** stock can be entered and verified through handlers/tests; UI arrives in T08.
+**Depends on:** T01, T02 (repository surface for guards). **Delivers independently:** warehouses manageable in the browser; keeper binding queryable.
 
-**Locked decisions:** D2, D21, D26, §5.4, §7.4.
+**Locked decisions:** D1, D2, SPEC §5.1, §7.2, §7.3.
 
 **Files**
-- Create `OrderHub.Domain/Models/StockPurchase.cs`
-- Create `OrderHub.Domain/Models/StockPurchaseItem.cs`
-- Create `OrderHub.Infrastructure/Configurations/StockPurchaseConfiguration.cs` (+ item configuration)
-- Modify `OrderHub.Infrastructure/AppDbContext.cs` (DbSets)
-- Create `OrderHub.Application/Features/Inventory/RecordStockIn/RecordStockInCommand.cs` + handler + contracts (`StockInLineInput.cs`, `StockInReceipt.cs`)
-- Modify `OrderHub.Application/Interfaces/Repositories/IInventoryRepository.cs` / `InventoryRepository.cs` as needed
-- Create migration `..._AddStockPurchases.cs`
-- Create `OrderHub.Tests/RecordStockInHandlerTests.cs`
+- Create `OrderHub.Domain/Models/Warehouse.cs`, `OrderHub.Infrastructure/Configurations/WarehouseConfiguration.cs`
+- Create `OrderHub.Application/Interfaces/Repositories/IWarehouseRepository.cs` + `OrderHub.Infrastructure/Reopsitories/WarehouseRepository.cs`
+- Create migration `..._AddWarehouses`
+- Create `OrderHub.Application/Features/Warehouses/`: `GetWarehouses`, `GetWarehouse`, `CreateWarehouse`, `UpdateWarehouse` (commands + handlers + contracts)
+- Create `OrderHub.Web/Components/Pages/Features/Warehouses/Index.razor` (+ `.razor.cs`), `Editor/WarehouseEditorDialog.razor`, `Editor/WarehouseEditorState.cs`
+- Modify `NavMenu.razor` (add «المخازن» item to the «المخزون» group)
+- Create `OrderHub.Tests/WarehouseDomainTests.cs`, `WarehouseCommandHandlerTests.cs`
 
 **Steps**
-1. Domain:
-   - `StockPurchase`: `WarehouseId`, optional `SupplierId`, optional `Note` (max 500), `RecordedByUserId`, `RecordedAtUtc`, lines collection. Factory validates at least one line, no duplicate products (or aggregate duplicates deterministically — choose aggregation and test it), quantities `> 0`.
-   - `StockPurchaseItem`: `ProductId`, `Quantity`.
-   - No cancel-after-record; mistakes are corrected by reversal in phase B. No update method.
-2. Command `RecordStockInCommand(int WarehouseId, int? SupplierId, string? Note, IReadOnlyList<StockInLineInput> Lines)` with `[RequirePermission(Inventory, Write)]`.
-3. Handler:
-   - authenticated actor required;
-   - **`Products.Read` required** through `IAuthorizationService` (D26) → `"Forbidden"`;
-   - warehouse exists and `IsActive`, else `"InvalidOperation"`/`"NotFound"`;
-   - supplier, when provided, must exist (use the existing supplier reader/repository; do not add `Suppliers.Read` as a gate — the field is optional and the storekeeper preset has no supplier access, so the UI hides it);
-   - all product ids exist; unknown product → `"InvalidOperation"` with the product name if available;
-   - begin a transaction; add the purchase; `SaveChangesAsync` to assign `Id`; for each line get-or-create the stock item, apply in, and add a `StockIn` movement with `SourcePurchaseId`;
-   - commit; on any failure roll back and return `"Persistence"`.
-4. Extend the warehouse deactivation rule from T03: `UpdateWarehouseCommand` now rejects deactivation when any `StockItem.StockOnHand > 0` exists for the warehouse (`"InvalidOperation"`: «لا يمكن إيقاف مخزن يحتوي على رصيد.»). Add a repository query.
-5. Tests: successful multi-line stock-in creates movements/balance; missing `Products.Read` forbidden; inactive warehouse rejected; unknown product rejected; optional supplier saved; failure rolls back stock and movements; duplicate lines handled per the chosen rule; deactivation guard.
+1. Entity: owned `EntityName` (unique, ≤ 100), `KeeperUserId` required, `IsActive`. Behaviors `Rename`, `AssignKeeper`, `Deactivate`, `Activate`; no delete. EF: FK to users `Restrict`, unique index on `keeper_user_id` (one user keeps at most one warehouse), unique name.
+2. Handlers: `GetWarehousesQuery` (`Warehouses.Read`) → id, name, keeper display name, `IsActive`, pending-issue-order count (0 in this task; wired in T06); `GetWarehouseQuery`; `CreateWarehouseCommand`/`UpdateWarehouseCommand` (`Warehouses.Write`) — name uniqueness (case-insensitive), keeper exists + active, deactivation guarded (`InvalidOperation` when positive stock/damaged or pending work exists — guard reads `StockBalance` + (later) issue orders; in this task implement the stock part and leave a documented extension point).
+3. Keeper transfer happens in one save: binding removed from the old warehouse context and added to the new; open counts/issue orders follow the current binding (consumers read by warehouse, so transfer needs no row updates — assert this in tests).
+4. UI `/warehouses`: `PageScaffold` «المخازن»; MudTable/grid of name/keeper/activity badge (emerald نشط / slate متوقف); primary CTA «إضافة مخزن» (`Warehouses.Write` only); editor dialog per `CityEditorDialog` conventions with candidates from T01's query, amber inline warning when `HasInventoryWrite=false` (saving still allowed), activity toggle on edit; no delete control.
+5. Tests: construction/validation; rename; assign/deactivate; unique name + unique keeper; deactivation guard with positive stock; handler authz; transfer keeps pending work readable via the new keeper binding.
 
-**Acceptance criteria**
-- Every recorded line has exactly one `StockIn` movement and an increased balance, in one transaction.
-- `Inventory.Write` alone cannot bypass the `Products.Read` prerequisite.
-- No manual balance editing exists.
-- Deactivation is blocked while positive stock remains.
+**Acceptance**
+- Exactly one keeper per warehouse, enforced at DB and handler level.
+- Deactivation blocked with positive stock; no delete path anywhere.
+- Page usable: create/edit/transfer/deactivate with Arabic inline errors; one primary CTA; RTL correct.
 
 **Verify**
 ```powershell
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~RecordStockInHandlerTests"
-```
-
-**Traps**
-- The purchase id is needed for the movement reference; it is acceptable to save twice inside the transaction.
-- Do not reuse the order-bound `Supply` entity (D2/D16).
-- Stock-in is not keeper-bound; purchasing and manager may record it for any active warehouse.
-- Use `CultureInfo.InvariantCulture` only in presentation; handler quantities are integers.
-
-**Proposed commit:** `feat(inventory): record stock-in purchases with ledger movements`
-
----
-
-### [ ] T07 — Inventory read queries (balances, aggregate, ledger)
-
-**Goal:** Provide the read models for balances per warehouse, aggregated totals per product, and a product ledger drill-down.
-
-**Depends on:** T05. **Delivers independently:** all inventory data can be queried and tested; UI arrives in T08.
-
-**Locked decisions:** D3, D4, D29, §8.2.
-
-**Files**
-- Create `OrderHub.Application/Features/Inventory/GetBalances/GetInventoryBalancesQuery.cs` + handler + `InventoryBalanceRow.cs`, `InventoryProductTotal.cs`
-- Create `OrderHub.Application/Features/Inventory/GetLedger/GetProductLedgerQuery.cs` + handler + `ProductLedgerEntry.cs` + `PagedResult<T>` (reuse an existing paged contract if one exists)
-- Create `OrderHub.Application/Features/Inventory/Contracts/IInventoryReader.cs`
-- Create `OrderHub.Infrastructure/Features/Inventory/InventoryReader.cs` + registration
-- Create `OrderHub.Tests/InventoryReadTests.cs`
-
-**Steps**
-1. `GetInventoryBalancesQuery(int? WarehouseId)` with `[RequirePermission(Inventory, Read)]`:
-   - rows: warehouse id/name, product id/name/category, `StockOnHand`, `ReservedOnHand`, `Available = StockOnHand - ReservedOnHand`, `IsWarehouseActive`;
-   - when `WarehouseId` is null, return all warehouses;
-   - separate aggregate list: product id/name, total stock, total reserved, total available across warehouses;
-   - order by warehouse name, then product name.
-2. `GetProductLedgerQuery(int WarehouseId, int ProductId, int Page, int PageSize)`:
-   - `[RequirePermission(Inventory, Read)]`;
-   - entries: date, direction label (in/out), type label, quantity, source reference (purchase/issue/return/reversal id, or null), actor display name, note, status;
-   - order newest first; page size 25 default; capped at 100;
-   - totals row (sum in, sum out, current balance) if the existing paged pattern supports it.
-3. Reader implementation joins `stock_items`, `warehouses`, `products` (and category if available) and `inventory_movements`/`users`; no per-row N+1.
-4. Do not expose cost/value; the column is a units balance (D3).
-5. Tests: availability math, warehouse filter, company-wide rows, aggregate totals, ledger mapping/actor, paging bounds, empty state.
-
-**Acceptance criteria**
-- A Sales user with `Inventory.Read` sees all warehouses and products, no cost data.
-- A user without `Inventory.Read` cannot call either query.
-- Ledger entries are read-only projections and contain no entity references.
-- Numbers are formatted in the UI later; contracts stay numeric.
-
-**Verify**
-```powershell
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~InventoryReadTests"
-```
-
-**Traps**
-- Do not compute balances by summing the ledger per row; read the cached balance (display) and keep the ledger for drill-down.
-- Do not scope by keeper: D29 is company-wide read.
-- Use no-tracking queries.
-
-**Proposed commit:** `feat(inventory): add balances and ledger read queries`
-
----
-
-### [ ] T08 — Inventory page, stock-in page, and navigation items
-
-**Goal:** Ship the read screens and the stock-in screen so balances, ledger and recording stock-in are usable in the browser.
-
-**Depends on:** T03, T04, T06, T07. **Delivers independently:** `/inventory` and `/inventory/stock-in` work with real data.
-
-**Locked decisions:** D26, D29, §7.7, §8.2, §8.3.
-
-**Files**
-- Create `OrderHub.Web/Components/Pages/Features/Inventory/Index.razor` (+ `.razor.cs`)
-- Create `OrderHub.Web/Components/Pages/Features/Inventory/Balances/LedgerDialog.razor`
-- Create `OrderHub.Web/Components/Pages/Features/Inventory/StockIn/StockIn.razor` (+ `.razor.cs`)
-- Create `OrderHub.Web/Components/Pages/Features/Inventory/StockIn/StockInLineState.cs`
-- Modify `OrderHub.Web/Components/Layout/NavMenu.razor`
-
-**Steps**
-1. `/inventory` with `[PermissionAuthorize(Inventory, Read)]`:
-   - `PageScaffold` title «المخزون», description «أرصدة المنتجات في المخازن وحركات المخزون»;
-   - warehouse filter (`MudSelect`, «كل المخازن» default);
-   - summary tiles (total products, total units, total reserved) from the aggregate data;
-   - table: warehouse, product, category, stock, reserved, available; available highlighted amber when 0 and rose never (no negative values possible);
-   - row action «السجل» opens `LedgerDialog` with the product ledger and paging;
-   - aggregate section/tab «إجمالي المنتجات» listing product totals across warehouses;
-   - primary CTA «تسجيل توريد» only when `Inventory.Write`; no other primary.
-2. `/inventory/stock-in` with `[PermissionAuthorize(Inventory, Write)]`:
-   - if the user lacks `Products.Read`, show a blocking Arabic card («تحتاج صلاحية عرض المنتجات لاختيار الأصناف») and no form; handler already enforces it;
-   - warehouse select (active only), optional supplier select only when `Suppliers.Read` exists (otherwise hide the field), note (max 500);
-   - line rows: product `MudAutocomplete` (needs `Products.Read`), quantity; add/remove line; totals units; validation;
-   - submit → `RecordStockInCommand`; success snackbar, reset form, navigate to `/inventory`; busy flag; failure banner with the handler message.
-3. Nav: append «المخزون» (`/inventory`, `Inventory.Read`, description «أرصدة المخازن والحركات») and set the group create CTA «تسجيل توريد» (`/inventory/stock-in`, `Inventory.Write`, icon Add). Keep «المخازن» from T04.
-4. Manual acceptance: seed stock via the form; verify balances, aggregate, ledger, permission hiding.
-
-**Acceptance criteria**
-- Balances and ledger match the handler data exactly; no client-side arithmetic beyond display totals.
-- Stock-in works for Purchasing (Write + Products.Read) and Storekeeper; is denied for Sales.
-- The stock-in page has one primary CTA («تسجيل التوريد»); the inventory page has one («تسجيل توريد») and it disappears without Write.
-- No dead controls when a prerequisite permission is missing; hints are Arabic.
-- RTL and mobile layout correct; numbers use `CultureInfo.InvariantCulture`.
-
-**Verify**
-```powershell
+dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~Warehouse"
 dotnet build OrderHub.sln --configuration Release
-dotnet run --project OrderHub.Web
 ```
-Manual: `/inventory` → filter → ledger → `/inventory/stock-in` → record 2 lines → `/inventory` reflects both; repeat as Sales/Storekeeper.
+Manual: `/warehouses` as Manager (create → transfer keeper → deactivate) and as Data Entry (nav group hidden).
 
 **Traps**
-- Do not show a supplier picker without `Suppliers.Read`; the storekeeper preset has none.
-- Do not fetch all products client-side for the autocomplete if an existing product search query exists; reuse it.
-- The ledger dialog must not use `MarkupString`.
-- Keep page-level permission attributes; the write CTA is an additional check, not a replacement.
+- `EntityName` is owned — mirror `CityConfiguration`.
+- Do not add `Version` to `Warehouse` (registry data, last-write-wins acceptable — same call as v1.0).
+- Candidates query requires `Warehouses.Write`; hide the dialog for read-only users.
 
-**Proposed commit:** `feat(inventory): add inventory and stock-in pages`
+**Proposed commit:** `feat(inventory): add warehouse registry with keeper assignment`
 
 ---
 
-### [ ] T09 — Stock issue order domain, numbering and persistence
+### [ ] T04 — Stock-in / opening balance + attachments
 
-**Goal:** Add the `StockIssueOrder` work record with monthly per-warehouse numbering, pending lines, execute/cancel transition rules and status history, ready for order-save integration.
+**Goal:** The keeper records stock-in and the one-time opening balance with optional PDF/JPG/PNG attachments, through a separate endpoint/folder/metadata entity that leaves the legacy attachments untouched.
 
-**Depends on:** T02, T05. **Delivers independently:** issue orders can be created in tests, numbered, transitioned and persisted; no producers or UI yet.
+**Depends on:** T03. **Delivers independently:** stock can enter through the UI with documents attached.
 
-**Locked decisions:** D7, D8, D10, D20 (data model only), §5.5.
+**Locked decisions:** D14, SPEC §5.4, §6.1, §7.2.
 
 **Files**
-- Modify `OrderHub.Domain/Enums/WorkRecordType.cs` (add `StockIssueOrder = 4`)
-- Modify `OrderHub.Domain/Enums/NumberSequenceKind.cs` (add `Warehouse = 5`)
-- Modify `OrderHub.Infrastructure/Services/NumberSequenceService.cs` (allow `Warehouse` in `NextMonthlyAsync`; `NextGlobalAsync` unchanged)
-- Create `OrderHub.Domain/Models/StockIssueOrder.cs`
-- Create `OrderHub.Domain/Models/StockIssueOrderLine.cs`
-- Create `OrderHub.Infrastructure/Configurations/StockIssueOrderConfiguration.cs` (+ line configuration)
-- Modify `OrderHub.Infrastructure/AppDbContext.cs` (DbSets)
-- Create `OrderHub.Application/Interfaces/Repositories/IStockIssueOrderRepository.cs`
-- Create `OrderHub.Infrastructure/Reopsitories/StockIssueOrderRepository.cs`
-- Modify `OrderHub.Infrastructure/Reopsitories/ServiceCollectionExtensions.cs`
-- Create migration `..._AddStockIssueOrders.cs`
-- Create `OrderHub.Tests/StockIssueOrderTests.cs` (+ numbering test additions)
+- Create `OrderHub.Domain/Models/StockReceipt.cs`, `StockReceiptLine.cs`, `StockReceiptAttachment.cs` + configurations
+- Create migration `..._AddStockReceipts`
+- Create `OrderHub.Application/Features/Inventory/RecordStockIn/RecordStockInCommand.cs` (+ handler + `StockInLineInput.cs`, `StockReceiptDetails.cs`)
+- Create `OrderHub.Application/Features/Inventory/UploadStockAttachment/` (command + handler) and `DeleteDraftStockAttachment` (or fold into the upload endpoint contract per the implementation's cleanest shape — choose one, document it)
+- Create `OrderHub.Web/Controllers/Files/StockAttachmentsController.cs` (separate endpoint)
+- Modify `OrderHub.Infrastructure/Services/FilesAccess/LocalFileAccessService.cs` **additively only** (new folder + type/size validation used by the new endpoint; existing behavior untouched)
+- Create `OrderHub.Web/Components/Pages/Features/Inventory/StockIn/StockIn.razor` (+ `.razor.cs`, `StockInLineState.cs`, `StockInState.cs`)
+- Modify `NavMenu.razor` («تسجيل توريد» CTA in the group where create CTAs live)
+- Create `OrderHub.Tests/StockReceiptTests.cs`, `StockInHandlerTests.cs`, `StockAttachmentEndpointTests.cs`
 
 **Steps**
-1. `StockIssueOrder : ModelBase, IWorkRecord`:
-   - `OrderId`/`Order`, `WarehouseId`/`Warehouse`, `Status` (`Pending` initial);
-   - `WorkRecordNumber`, `SequenceYear`, `SequenceMonth`, `RequestedByUserId`, `RequestedByUserName`, `RequestedAtUtc`, `AssignedUserId` (request-time snapshot), `ExecutedByUserId?`, `ExecutedAtUtc?`, `CancelledByUserId?`, `CancelledByUserName?`, `CancelReason?`, `Version`;
-   - lines collection `StockIssueOrderLine` (`ProductId`, `ProductName`, `RequestedQty`, `ExecutedQty`, `Id`).
-   - Explicit `IWorkRecord` members: `NumberSequenceKind = Warehouse`, `NumberingPartyId = WarehouseId`, number assignment validated to the same warehouse, status history like `Supply` with `WorkRecordType.StockIssueOrder`.
-   - `TransitionTo(WorkRecordStatus target, string? reason, DateTime? atUtc)` restricted to `Pending → Completed/Cancelled`; cancel requires a reason (≤200); completed records executor/time; no transition from Completed/Cancelled.
-   - `AddLine` allowed only while Pending; no duplicate `ProductId` in one order (aggregate at creation).
-2. EF mapping:
-   - tables `stock_issue_orders` and `stock_issue_order_items`;
-   - FK to orders (`Restrict`), warehouses (`Restrict`), products (`Restrict`), users (`Restrict`, nullable for system cancel);
-   - **filtered unique index** `(order_id, warehouse_id) WHERE status = 'Pending'` (SQLite and PostgreSQL both support it; verify `EnsureCreated`);
-   - unique index `(warehouse_id, sequence_year, sequence_month, work_record_number)` where number > 0;
-   - checks: `requested_qty > 0`, `executed_qty >= 0 AND executed_qty <= requested_qty`, reason length ≤200.
-3. Numbering: add `Warehouse` to the monthly allow-list; unit test that two warehouses get independent sequences and that a new month restarts at 1. Existing numbering behavior must not change.
-4. Repository: `Add`, `GetByIdAsync` (with warehouse + lines), `GetPendingForOrderAsync(orderId)`, `GetAllForOrderAsync`, `GetPendingForWarehouseAsync`, paged list support for T11.
-5. Migration additive only.
-6. Tests: creation validation, duplicate line aggregation, numbering per warehouse/month, status history initial Pending, cancel reason required, completed/cancelled terminal, EF round-trip, filtered pending uniqueness, `ProtectHistory` behavior for work-record history remains intact.
+1. Entities: header (`WarehouseId`, `ReceiptType` Opening/StockIn, `SupplierId?` must be product-linked when set, `ReferenceNote?`, actor/timestamps) + lines (`ProductId`, `Quantity > 0`, duplicates aggregate) + attachments (relative path, original name, optional description ≤ 200, size, mime, uploader, timestamp). Immutable after save — mistakes via approved reversal (T07).
+2. Attachment rules (D14): PDF/JPG/PNG, ≤ 5 MB, enforced by magic-byte + extension at the new endpoint; files stored under a dedicated folder; draft uploads not referenced by a saved receipt are cleaned (on save failure or orphan sweep in the upload command).
+3. Endpoint `StockAttachmentsController`: upload requires `Inventory.Write`; download/delete verify the attachment's owning receipt and the caller's keeper binding (or `Inventory.Approve` for download by Manager); returns via the existing file-stream pattern — **no changes to `AttachmentsController`** (FR-12).
+4. Command `RecordStockInCommand` (`Inventory.Write` + `Products.Read` gate + **keeper binding** per SPEC §7.3): validates active warehouse, products exist, supplier link, then one transaction: receipt + per-line movement (`OpeningStock`/`StockIn`, `SourceStockReceiptId`) + `ApplyIn`; rollback → `"Persistence"`.
+5. Deactivation guard completion: `UpdateWarehouseCommand` also rejects deactivation while pending issue orders exist (extension point from T03 — issue orders don't exist yet; implement the query defensively).
+6. UI `/inventory/stock-in`: keeper-scoped warehouse fixed to his binding (Manager/HM have no stock-in per the locked rules — the page is hidden for them by permission+binding logic, not just attribute); receipt type select («رصيد افتتاحي» allowed only while the warehouse has no movements yet — handler enforces); product autocomplete (`Products.Read`), quantities, supplier select only if the user has `Suppliers.Read`, reference note, attachment upload list with per-file description, removal before save; one primary CTA «حفظ التوريد».
+7. Tests: movements + balance in one transaction; rollback leaves nothing; `Products.Read` gate; keeper binding rejects a non-keeper even with `Inventory.Write`; opening type blocked after first movement; attachment size/type/ownership; legacy endpoint untouched (existing attachment tests still green).
 
-**Acceptance criteria**
-- Issue orders are work records with monthly per-warehouse numbers and a Pending initial history row.
-- A second Pending issue order for the same `(order, warehouse)` is rejected by the database and by the repository/domain.
-- Completed and cancelled issue orders are terminal and immutable except audit fields set at transition time.
-- Existing `Supply`/`DeliveryTrip` numbering and tests are unchanged.
+**Acceptance**
+- Stock enters only through this documented operation; no manual balance editing.
+- Attachment rules enforced server-side; the legacy attachments flow behaves exactly as before.
+- Opening balance is a distinct type on the same entity and cannot be repeated for a warehouse that already has stock.
 
 **Verify**
 ```powershell
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~StockIssueOrderTests"
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~WorkRecordNumberingTests"
+dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~StockIn"
+dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~StockAttachment"
 ```
+Manual: record stock-in with 2 lines + 1 PDF as storekeeper; verify `/inventory` balances (T06 page may not exist yet — verify via ledger tests data or the balances query); repeat as sales (denied).
 
 **Traps**
-- `IWorkRecord` is internal; implement it explicitly like `Supply`/`DeliveryTrip`.
-- Do not add a global sequence; D8 is monthly per warehouse.
-- `UnitOfWork` auto-numbers added work records on save; do not also assign a number manually.
-- Do not add `Inventory = Approve` behaviour here; authority is T11.
+- The receipt id is needed by movements — two saves inside one transaction is acceptable.
+- Do not reuse the order-bound `Supply` entity.
+- Manager/HM never execute keeper operations (locked rule) — stock-in is keeper-bound; no `IsAdmin` bypass.
 
-**Proposed commit:** `feat(inventory): add stock issue order work records`
+**Proposed commit:** `feat(inventory): record stock-in with attachments`
 
 ---
 
-### [ ] T10 — Order item sourcing: contracts, availability, editor UI, issue-order creation, reservation and locks
+### [ ] T05 — Order item identity, allocations, atomic reservation, source rule
 
-**Goal:** Let order items explicitly source quantity from a warehouse with the remainder from a linked supplier; create/reserve issue orders on final save; lock allocated items until the pending issue order is cancelled.
+**Goal:** Order items allocate across warehouses and/or a linked supplier (D17); final save reserves atomically; item identity is stable; release-on-close lands (no order-level delivery gate, D19).
 
-**Depends on:** T05, T06, T07, T09. **Delivers independently:** a user can create/edit an order with stock sourcing and see the resulting pending issue order and reservation.
+**Depends on:** T02, T04. **Delivers independently:** an order can be saved with allocations and reservations; editor shows live availability.
 
-**Locked decisions:** D1, D6, D7, D15, D17, D25, §5.9, §6.2.
+**Locked decisions:** D10, D11, D13, D17, D19, SPEC §5.5, §5.11, §6.2, §6.3; owner-approved behavior changes.
 
 **Files**
-- Modify `OrderHub.Domain/Models/OrderItem.cs`
-- Modify `OrderHub.Domain/Models/Order.cs` (`AddOrderItem` signature)
-- Modify `OrderHub.Application/Features/Orders/Contracts/OrderInput.cs`
-- Modify `OrderHub.Application/Features/Orders/Create/CreateOrderCommandHandler.cs`
-- Modify `OrderHub.Application/Features/Orders/Update/UpdateOrderHandler.cs`
-- Modify `OrderHub.Application/Features/Orders/GetForEdit/OrderEditorItem.cs` and its reader (`OrderHub.Infrastructure/Features/Orders/*`)
-- Modify `OrderHub.Application/Features/Orders/GetItemEditor/OrderItemEditorData.cs`, `GetOrderItemEditorHandler.cs`, `IOrderItemEditorReader.cs`, `OrderItemEditorReader.cs`
-- Modify `OrderHub.Application/Features/Orders/GetItemsEditor/*` if the editor loads availability in bulk
-- Modify `OrderHub.Web/Components/Pages/Features/Orders/Editor/State/OrderItemEditorState.cs`
-- Modify `OrderHub.Web/Components/Pages/Features/Orders/Editor/OrderEditor.razor.cs` (`BuildOrderInput`, validation)
-- Modify `OrderHub.Web/Components/Pages/Features/Orders/Editor/Products/ProductEditorDrawer.razor` and `ProductsStep.razor`
-- Modify `OrderHub.Web/Components/Pages/Features/Orders/Editor/OrderDetails/DetailsStep.razor.cs` if it aggregates validation
-- Create `OrderHub.Application/Features/Inventory/GetAvailability/GetStockAvailabilityQuery.cs` + handler + contracts (if not folded into item editor reads)
-- Create `OrderHub.Tests/OrderSourcingTests.cs`, `OrderSourcingPersistenceTests.cs`
+- Create `OrderHub.Domain/Models/OrderInventoryAllocation.cs` + configuration
+- Modify `OrderHub.Domain/Models/Order.cs` (add `SynchronizeOrderItems` mirroring `SynchronizeDeliverySteps`), `Order.Lifecycle.cs` (release hook only)
+- Modify `OrderHub.Application/Features/Orders/Contracts/OrderInput.cs` (trailing optional `int? ItemId`, allocation inputs)
+- Modify `CreateOrderCommandHandler.cs`, `UpdateOrderHandler.cs` (identity validation, source rule FR-07, atomic reservation)
+- Modify `GetForEdit/OrderEditorItem.cs` + its reader; `GetItemEditor/*` availability
+- Create `OrderHub.Application/Features/Inventory/GetStockAvailability/GetStockAvailabilityQuery.cs` (+ handler + rows)
+- Modify `OrderHub.Web/.../Editor/Products/ProductEditorDrawer.razor`, `ProductsStep.razor`, `State/OrderItemEditorState.cs`, `OrderEditor.razor.cs`
+- Create migration `..._AddOrderAllocations`
+- Create `OrderHub.Tests/OrderAllocationTests.cs`, `OrderAllocationPersistenceTests.cs`, `StockSourceLifecycleTests.cs`
 
 **Steps**
-1. Domain (`OrderItem`):
-   - Add `WarehouseId` (`int?`), `StockQuantity` (`int`, default 0), `Warehouse` navigation.
-   - Extend `Create` and `Order.AddOrderItem` with trailing optional parameters `int? warehouseId = null, int stockQuantity = 0`.
-   - Validation: `0 <= StockQuantity <= Quantity`; `WarehouseId` required when `StockQuantity > 0`; `WarehouseId` must be null when `StockQuantity == 0`; supplier required when `StockQuantity < Quantity`; supplier may be null when the whole quantity comes from stock.
-   - `SupplierName` remains snapshot data. No methods mutate stock fields directly; replacements recreate items.
-2. Contract: extend `OrderInput.Item` with trailing `int? WarehouseId = null, int StockQuantity = 0`. Do not reorder existing parameters (positional call sites in the editor and drafts).
-3. Editor read contracts:
-   - `OrderEditorItem` gains `WarehouseId`, `StockQuantity`, `IsStockLocked`, `PendingIssueOrderId`.
-   - The order-edit reader returns the persisted values and lock state from pending issue-order lines.
-   - Item-editor data gains per-warehouse availability: warehouse id/name, on-hand, reserved, available; only when the caller has `Inventory.Read`. Otherwise return an empty list and a `CanReadInventory = false` flag.
-4. Availability semantics:
-   - New order: selectable stock quantity ≤ available.
-   - Existing order with the same warehouse/product still pending: selectable ≤ `available + item.StockQuantity` (its own reservation is already inside `ReservedOnHand`).
-   - Availability is live at load; the save handler re-validates (D15).
-5. Handler validation (create and update):
-   - if any item has `StockQuantity > 0`, require `Inventory.Read` through `IAuthorizationService` (D25); otherwise `"Forbidden"` with an Arabic message;
-   - supplier remainder must be linked to the product (`Product.Suppliers`); use the product repository/reader; unknown link → `"InvalidOperation"`;
-   - stock-only items no longer require a supplier;
-   - supplier-only items still require a supplier (legacy behavior);
-   - warehouse must exist and be active.
-6. Create handler integration:
-   - group stock allocations by warehouse; for each group create one `StockIssueOrder` (requested-by = current user, assigned = current keeper) with aggregated lines;
-   - atomically reserve each allocation; on failure return `"Conflict"` with an Arabic message and roll back the transaction;
-   - do the work inside the existing order transaction; let `UnitOfWork` assign issue-order numbers on save.
-7. Update handler integration:
-   - load pending issue orders for the order, build the **locked allocation map** `(WarehouseId, ProductId) → RequestedQty` from their lines;
-   - build the desired map from the incoming items;
-   - if any locked key changes quantity or disappears → `"InvalidOperation"`: «يجب إلغاء أمر الإخراج أولاً قبل تعديل كمية المخزون لهذا البند.» (D7);
-   - for new allocations: reserve and append lines to an existing Pending order for the same warehouse, or create a new Pending order; never create a second Pending order for the same pair;
-   - supplier-only changes remain free;
-   - on stock changes, run the whole save under a transaction; release nothing (locked allocations cannot be removed);
-   - never compare `OrderItem.Id` (items are replaced wholesale).
-8. UI:
-   - `OrderItemEditorState`: add `WarehouseId`, `StockQuantity`, `PersistedWarehouseId`, `PersistedStockQuantity`, `IsStockLocked`, `PendingIssueOrderId`, `WarehouseOptions`; include them in `CreateWorkingCopy`.
-   - Product drawer: quantity; a «المصدر» section with warehouse select and «الكمية من المخزون» (0 = supplier-only); show available per warehouse; compute the supplier remainder and require a supplier only when remainder > 0; restrict suppliers to the linked list (already present).
-   - If `CanReadInventory` is false (D25): hide availability, disable stock controls, show «لا تملك صلاحية عرض المخزون؛ سيُحفظ البند عبر مورد فقط.» and force `StockQuantity = 0`.
-   - If `IsStockLocked`: disable quantity/stock/warehouse controls for that item, show «هذا البند مرتبط بأمر إخراج معلّق» with a link to `/inventory/issue-orders` (T12 route; until then link to the list route only after T12 exists — if T12 is not yet implemented, show the text without a link, then add the link in T12).
-   - `BuildOrderInput` passes the new fields; final validation mirrors the handler.
-9. Tests:
-   - stock-only saves without supplier and creates issue order + reservation;
-   - supplier-only still requires supplier and creates no issue order;
-   - split item creates a line for the stock portion only;
-   - stock quantity above availability → `"Conflict"`, no order/issue/reservation;
-   - no `Inventory.Read` → `"Forbidden"` and no save;
-   - update with unchanged allocations succeeds;
-   - update that changes a locked allocation is rejected;
-   - update that adds a new stock allocation appends/creates the pending issue order;
-   - legacy supplier-only order edit remains possible;
-   - two concurrent reservations over the last units → exactly one succeeds;
-   - product-supplier link enforced.
+1. `OrderInventoryAllocation` per SPEC §5.5 (`SourceKind` Warehouse/Supplier, `Qty`, `IssuedQty`, `Status`); FK `Restrict` to `order_items` (D11) and to warehouse/supplier as applicable; unique index `(order_item_id, source_kind, warehouse_id)` to prevent duplicate warehouse rows per item.
+2. Item identity: `OrderInput.Item` gains trailing optional `int? ItemId` (never reorder existing positional parameters); `Order.SynchronizeOrderItems` matches by id (same-order validation), keeps matched items, removes missing ones (blocked by FK when allocated — handler translates to a clear Arabic error), adds new; duplicates of the same product remain allowed.
+3. Source rule change (FR-07, D17, owner-approved): the editor lets a product join the item list only after a source is chosen — warehouse(s), supplier, or both; supplier is required only when a supplier-sourced remainder exists; a fully stock-sourced item saves without a supplier; a legacy re-save (D10) requires **every** item to gain a source — code-level check with the Arabic message from the spec.
+4. Availability query: `Inventory.Read`-gated; per warehouse actual/reserved/available, descending by available; company-wide (D2). In the editor, a user without `Inventory.Read` gets supplier-only sourcing with the Arabic hint (D25-era behavior preserved).
+5. Final-save reservation (D13): in the create/update transaction, lock affected balance rows in ascending (product, warehouse) order, validate every allocation against live availability (Version check), then persist order + allocations; conflict → `"Conflict"` with «الكمية لم تعد متاحة في {المخزن}؛ أعد التوزيع.» Drafts allocate nothing; legacy history untouched.
+6. Lifecycle: **no order-level stock gate** (D19) — `DeliveryReadinessError` keeps its current non-stock semantics; the stock cap belongs to the delivery record and lands in T08. On `Delivered/Cancelled/Archived` the un-issued remainder releases (system actor + reason history row). Orders without allocations are untouched (tests assert legacy parity).
+7. Tests: identity sync (keep/move/add/remove incl. allocated-blocked case); reservation atomicity + race conflict; draft isolation; D10 enforcement; stock-only / supplier-only / mixed sources (D17); readiness unaffected by partial stock; release on the three close paths; allocation FK `Restrict` behavior; availability math + ordering.
 
-**Acceptance criteria**
-- Every saved item has a valid source; the rule is code-only (columns nullable).
-- Stock-only items save end to end; the issue order appears Pending with the right warehouse/lines; `ReservedOnHand` reflects it.
-- Locked items cannot change without cancelling the pending issue order first; the error is Arabic and actionable.
-- Users without `Inventory.Read` get supplier-only behavior and cannot bypass it by calling the command directly.
-- No existing order-editor behavior regresses for supplier-only orders.
+**Acceptance**
+- Two concurrent savers of the last units: exactly one wins, the other gets `"Conflict"` with no partial save.
+- Item ids survive update; allocated items cannot be silently deleted.
+- Readiness is never blocked by stock; legacy orders behave identically to today.
 
 **Verify**
 ```powershell
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~OrderSourcing"
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~OrderPricingTests"
+dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~OrderAllocation"
+dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~StockSourceLifecycle"
 ```
-Manual: create an order with a split item; open `/inventory` and confirm the reservation; edit the order and confirm the lock; cancel the pending issue order (T11) and confirm the item unlocks.
+Manual: editor — allocate an item across 2 warehouses + supplier remainder; save draft (no reservation); final save; reopen and confirm ids kept.
 
 **Traps**
-- Do not compare order-item ids; `ReplaceOrderItems` clears the old rows.
-- Do not require `Inventory.Read` for supplier-only saves.
-- Do not create issue orders from drafts; only from final create/update.
-- The item's stock quantity is the issue line `RequestedQty`; there is no per-line movement at save.
-- Reservations must be in the same transaction as the order save; do not leave a reservation if the order save fails.
-- Keep the trailing optional parameters to avoid touching every positional call site.
+- Trailing optional parameters only — positional call sites in the editor and drafts must not break.
+- The reservation transaction is the **only** place that writes `ReservedOnHand` from the order side; issue-order consumption later uses `ConsumeAsync`.
+- Do not let the availability query leak entity types to the UI (contracts only).
 
-**Proposed commit:** `feat(inventory): source order items from warehouse stock`
+**Proposed commit:** `feat(orders): add stock allocations with atomic reservation`
 
 ---
 
-### [ ] T11 — Issue-order execution and cancellation handlers (keeper-bound)
+### [ ] T06 — Issue orders, batches, numbering
 
-**Goal:** Implement the pending-issue-order workflow: list/detail queries, execute with live balance validation, and cancel with a mandatory reason, all bound to the current warehouse keeper or a Higher Manager.
+**Goal:** Manual per-warehouse issue orders with monthly numbering, batch execution by the current keeper, shortfall reasons, and cancel requests pending Manager approval.
 
-**Depends on:** T05, T09, T10 (data exists). **Delivers independently:** issue orders can be executed/cancelled through handlers and tests.
+**Depends on:** T05. **Delivers independently:** full issue → batch → deduct flow testable and usable.
 
-**Locked decisions:** D9 (approval is not execution), D10, D15, D20, §6.1, §7.5.
+**Locked decisions:** D8, D13, D18, SPEC §5.6, §6.4; numbering decision (design_draft § قرار ترقيم أوامر الصرف).
 
 **Files**
-- Create under `OrderHub.Application/Features/Inventory/IssueOrders/`:
-  - `GetStockIssueOrders/GetStockIssueOrdersQuery.cs` + handler + `StockIssueOrderListItem.cs`
-  - `GetStockIssueOrder/GetStockIssueOrderQuery.cs` + handler + `StockIssueOrderDetails.cs`
-  - `ExecuteStockIssueOrder/ExecuteStockIssueOrderCommand.cs` + handler
-  - `CancelStockIssueOrder/CancelStockIssueOrderCommand.cs` + handler
-- Create `OrderHub.Application/Features/Inventory/IssueOrders/StockIssueOrderCancellationService.cs` (shared by manual cancel and T13 auto-cancel)
-- Modify `OrderHub.Application/Interfaces/Repositories/IStockIssueOrderRepository.cs` (paged list, detail, pending)
-- Create `OrderHub.Tests/StockIssueOrderHandlerTests.cs`, `StockIssueOrderPermissionTests.cs`
+- Modify `WorkRecordType.cs` (`StockIssueOrder = 4`), `NumberSequenceKind.cs` (`Warehouse = 5`), `NumberSequenceService.cs` (monthly allow-list)
+- Modify `OrderHub.Infrastructure/Configurations/NumberSequenceConfiguration.cs` (recreate `ck_number_sequences_kind` / `ck_number_sequences_scope` — D18)
+- Create `OrderHub.Domain/Models/StockIssueOrder.cs`, `StockIssueLine.cs`, `StockIssueBatch.cs` + configurations
+- Create migration `..._AddStockIssueOrders`
+- Create `IStockIssueOrderRepository` + repository (Reopsitories folder)
+- Create `OrderHub.Application/Features/Inventory/IssueOrders/`: `CreateStockIssueOrder`, `GetIssueOrdersForSales`, `GetPendingForKeeper`, `GetIssueOrderDetails`, `RecordIssueBatch`, `RequestIssueOrderCancel`
+- Create `OrderHub.Web/Components/Pages/Features/Inventory/IssueOrders/`: `Index.razor`, `Details.razor`, `CreateIssueOrderDialog.razor` (+ states)
+- Modify `OrderWorkflow` order page to surface issue status per stocked item + the shortfall reasons
+- Create `OrderHub.Tests/StockIssueOrderTests.cs`, `IssueBatchHandlerTests.cs`
 
 **Steps**
-1. Queries:
-   - list with optional status/warehouse filter, search, paging; fields: number, order number, warehouse, keeper display name, requested-by name, requested at, line count, total requested qty, status;
-   - detail: all header fields, lines (product, requested, executed), warehouse keeper id/name, order link data, status history;
-   - both gated `[RequirePermission(Inventory, Read)]`;
-   - detail/list include `CanAct` computed as `IsAdmin || warehouse.KeeperUserId == currentUser.Id` (no sensitive data).
-2. Execute command `(int IssueOrderId, int ExpectedVersion)` with `[RequirePermission(Inventory, Write)]`:
-   - authenticated; load issue order + warehouse + lines (tracked); `CheckVersion`;
-   - status must be Pending (`"InvalidOperation"` otherwise);
-   - **keeper binding**: `currentUser.IsAdmin || warehouse.KeeperUserId == currentUser.Id`, else `"Forbidden"`;
-   - transaction; for each line, ensure `StockOnHand >= RequestedQty` (D15); if not, return `"Conflict"` and roll back with no movement;
-   - atomically consume stock/reservation and add one `IssueOut` movement per line (`SourceOrderIssueId`, actor/time);
-   - set line `ExecutedQty = RequestedQty`, transition to `Completed` with executor/time;
-   - commit; return a receipt (id, status, executed at).
-   - `Inventory = Approve` alone is **not** authority; Manager must also be the current keeper.
-3. Cancel command `(int IssueOrderId, int ExpectedVersion, string Reason)` with `[RequirePermission(Inventory, Write)]`:
-   - same authentication/version/Pending/binding gates;
-   - reason required, trimmed, ≤200 (D10);
-   - release every line's reservation atomically; no movement;
-   - transition to `Cancelled` with actor/reason/time;
-   - commit.
-4. Shared cancellation service: `CancelPendingForOrderAsync(orderId, reason, actor)` used by T13; it loads pending orders, applies the same release + transition, and records the system actor when `actor` is system. Keep the manual handler and the service on one code path for release logic.
-5. Tests:
-   - current keeper executes; reservation drops; stock drops; `IssueOut` movements created; status/history correct;
-   - non-keeper with `Inventory.Write` → `"Forbidden"`, no writes;
-   - Manager with `Inventory.Approve` but not keeper → `"Forbidden"`;
-   - Higher Manager executes and is audited;
-   - keeper transfer: old keeper rejected, new keeper accepted on the same pending order;
-   - insufficient live stock at execution → `"Conflict"`, no partial movements, status still Pending;
-   - double execute/cancel rejected;
-   - cancel requires reason, releases reservation, writes no movement;
-   - detail `CanAct` matches the binding rule.
+1. `StockIssueOrder : ModelBase, IWorkRecord` — `NumberSequenceKind.Warehouse`, `NumberingPartyId = WarehouseId`, status history via the work-record pipeline; explicit `IWorkRecord` implementation like `DeliveryTrip`. Status machine: `Pending → (PartiallyExecuted ⇄) → Completed`, `Pending/PartiallyExecuted → CancelRequested → Cancelled`; no exit from terminal states.
+2. Lines: `AllocationId` (unique `(issue_order_id, allocation_id)`), `RequestedQty` ≤ allocation's un-issued reservation — validated **inside the reservation-lock transaction at creation** (Q4; not by index alone). Batches: qty, actor, `EffectiveAtUtc`, `ShortfallReason?` — mandatory when the batch is final and Σ batches < requested.
+3. Numbering (D18): `Warehouse` in the monthly allow-list with `party_id = WarehouseId`; the same migration recreates `ck_number_sequences_kind` and `ck_number_sequences_scope` (drop/add, no rows touched, `Down` restores the originals — the single declared additive-rule exception); tests cover per-warehouse independence, month restart, and a regression insert for all four legacy kinds.
+4. Handlers: create (sales, `Orders.Write`, any number of orders per allocation over time); batch recording (**current keeper binding**, D13 locks + Version; one `IssueOut` movement + `ConsumeAsync` per batch in one transaction); cancel request (keeper, mandatory reason → `CancelRequested`; blocks new batches and new orders against the same allocations until decided — decided in T07); order cancel/archive auto-release hook completes here (system actor/reason) if not fully landed in T05.
+5. Keeper screens: pending queue scoped to his warehouse (D1/D2 — no `Orders.Read`; order number text-only); batch dialog (quantities per line, reason on shortfall); details with lines/batches/actor trail. Sales screen: his created orders + statuses + reasons.
+6. Tests: numbering + legacy-kind CHECK regression; line cap vs reservation (Q4) incl. concurrent create race; batch accumulation (Q5) + shortfall reason; `CancelRequested` blocks; terminal immutability; keeper binding rejection; `ProtectHistory` interplay for work-record history.
 
-**Acceptance criteria**
-- Only the current keeper or a Higher Manager can execute/cancel; this is enforced inside the handler, not only in the UI.
-- Execution is all-or-nothing across lines and never makes a balance negative.
-- Cancellation always releases reservations and requires a reason.
-- `Inventory = Approve` never grants execution.
-- Version conflicts return `"Conflict"`.
+**Acceptance**
+- Issue orders are work records with monthly per-warehouse numbers; the same reserved unit cannot be drawn into two active orders.
+- Only the current keeper records batches; deduction and reservation-exit happen in one transaction.
+- Sales sees reasons; keeper sees only his warehouse; no `Orders.Read` needed anywhere.
 
 **Verify**
 ```powershell
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~StockIssueOrderHandlerTests"
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~StockIssueOrderPermissionTests"
+dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~StockIssueOrder"
+dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~IssueBatch"
 ```
+Manual: sales creates an order per warehouse → storekeeper records a partial batch with reason → sales sees it on the order page.
 
 **Traps**
-- Do not use `AssignedUserId` for authority; use `Warehouse.KeeperUserId` at action time.
-- Do not add movements on cancel.
-- Do not allow partial execution in phase A.
-- Do not let the UI be the only keeper check; forced command calls must fail in the handler.
+- `IWorkRecord` is internal — implement explicitly; `UnitOfWork` numbers added work records, never assign manually.
+- The `CancelRequested` state must block batch recording **in the handler**, not only in the UI.
+- Do not create a second numbering path beside `UnitOfWork`.
 
-**Proposed commit:** `feat(inventory): execute and cancel stock issue orders with keeper binding`
+**Proposed commit:** `feat(inventory): add manual issue orders with batch execution`
 
 ---
 
-### [ ] T12 — Issue-order list and detail pages
+### [ ] T07 — Approvals: edit payload, issue-order cancel, reversal
 
-**Goal:** Give keepers and readers the issue-order screens with the correct action visibility, mandatory cancel reason, busy states and order links.
+**Goal:** The Manager approval queue: pending order edits applied from a stored payload, issue-order cancellation approval, and movement reversal — with the approver≠requester rule and the reversal exception.
 
-**Depends on:** T11. **Delivers independently:** issue orders are operable in the browser.
+**Depends on:** T06. **Delivers independently:** the sensitive-operation loop closes.
 
-**Locked decisions:** D7, D10, D20, §7.7, §8.4.
+**Locked decisions:** D4, D6, D12, D21, SPEC §5.7, §6.6, §6.7.
 
 **Files**
-- Create `OrderHub.Web/Components/Pages/Features/Inventory/IssueOrders/Index.razor` (+ `.razor.cs`)
-- Create `OrderHub.Web/Components/Pages/Features/Inventory/IssueOrders/Details.razor` (+ `.razor.cs`)
-- Create `OrderHub.Web/Components/Pages/Features/Inventory/IssueOrders/CancelIssueOrderDialog.razor`
-- Modify `OrderHub.Web/Components/Layout/NavMenu.razor`
-- Modify `OrderHub.Web/Components/Pages/Features/Orders/Editor/Products/ProductEditorDrawer.razor` (add the real link to `/inventory/issue-orders` for locked items)
+- Create `OrderHub.Domain/Models/InventoryApprovalRequest.cs` + configuration (+ migration `..._AddInventoryApprovals`; add real FKs for `SourceIssueOrderId` etc. where targets now exist)
+- Create `OrderHub.Application/Features/Inventory/Approvals/`: `RequestOrderEditApproval` (integrated into `UpdateOrderHandler` branching), `RequestIssueOrderCancel` decision handler, `RequestMovementReversal` + decision, `GetApprovals`, `DecideApproval`
+- Modify `OrderHub.Web/.../Inventory/Approvals/`: `Index.razor`, `EditPayloadReview.razor` (diff view), reversal request dialog (from the ledger screen)
+- Modify the order editor to route edits-with-pending-issue-orders into the approval flow
+- Create `OrderHub.Tests/ApprovalFlowTests.cs`, `MovementReversalTests.cs`
 
 **Steps**
-1. `/inventory/issue-orders` with `[PermissionAuthorize(Inventory, Read)]`:
-   - filters: status (all/pending/completed/cancelled), warehouse, search by number/order number;
-   - columns: number, order number, warehouse, keeper, requested by, date, lines, requested qty, status badge (brand pending, emerald completed, rose cancelled);
-   - `TableFooter`, 1-based page conversion; row opens `/inventory/issue-orders/{id:int}`.
-2. `/inventory/issue-orders/{IssueOrderId:int}`:
-   - header cards: warehouse, keeper, requested by/at, status, order link `/orders/{orderId}`;
-   - lines table: product, requested, executed;
-   - timeline/status history (source, status, reason, date);
-   - actions: «تنفيذ» primary and «إلغاء» danger, visible only when `CanAct` and Pending;
-   - execute uses a confirmation dialog showing counts and the live-balance warning; on `"Conflict"` show the Arabic handler message and reload;
-   - cancel opens `CancelIssueOrderDialog` with a required reason (counter ≤200), calls the command, busy flag;
-   - read-only users see no actions and no disabled dead buttons.
-3. Nav: append «أوامر الإخراج» under the inventory group (`/inventory/issue-orders`, `Inventory.Read`, description «تنفيذ وإلغاء أوامر صرف المخزون»).
-4. Locked-item link in the order editor becomes active now.
-5. Manual acceptance as keeper, Manager-non-keeper, Higher Manager, and Sales.
+1. Entity per SPEC §5.7: `RequestType` (`AllocationEdit`, `IssueOrderCancel`, `MovementReversal`, `DamagedDisposal` reserved for T08), typed references, `Payload` JSON (AllocationEdit only), `Reason`, `Status` (`Pending/Approved/Rejected/Stale`), `Version`, `TargetVersion`, requester/decider/times, `DecisionNote` mandatory on reject.
+2. Decision protocol (D21): one CAS `WHERE Status='Pending' AND Version=@v` — zero rows → `"Conflict"` with no side effects; re-validate the target in the same transaction (order state/version + no other pending request; `CancelRequested` still at `TargetVersion`; movement still `Active`; damaged balance version) and move the request to `Stale` on drift. Share the helper across all four request types.
+3. Edit flow (D12): when an update touches items with allocations/pending issue orders, the handler stores the full proposed payload instead of applying; order + old allocations stay live; further edits blocked until decision/resubmit; on approval, one transaction — preserve issued (shortfall beyond new demand → «مرتجع مستحق» queue entry for T08), release un-issued, reserve new allocations under D13; failed reservation → edit stays pending, old state intact; new issue orders are **not** auto-created.
+4. Issue-order cancel: decides `CancelRequested` → `Cancelled` + release un-issued only; rejection returns to its prior state with the recorded reason visible to the keeper.
+5. Reversal (D6/D4): keeper requests with mandatory reason on an `Active` movement; approval requires `Inventory.Approve`; **`Approver ≠ Requester` except `MovementReversal`**; the reversal movement takes `EffectiveAtUtc = decision time` (never the original's date) and the original is marked `Reversed`; on approval one transaction — paired `Reversal` movement + `MarkReversed` + balance re-derivation (`ApplyIn`/`ApplyOut` inverse per direction, or recompute from ledger for the affected pair); already-reversed movement rejected; reservation-side effects of reversing an `IssueOut` batch must restore the reservation and reopen the line's issued accounting (define and test explicitly).
+6. Approvals screen: queue by type with payload diff for edits; decide with reason; Arabic reasons everywhere; `Stale` rows show the system note and a resubmit action.
+7. Tests: matrix (type × requester × approver incl. the reversal exception and the Manager-execution rejection); payload atomicity; failed new reservation keeps old state; reversal restores reservation correctly; double reversal rejected; second approval decision → `"Conflict"` with no side effects; drifted target → `Stale` and resubmission.
 
-**Acceptance criteria**
-- Action visibility matches `CanAct`; forced calls are still rejected by T11.
-- Execute and cancel show correct success/failure feedback; double clicks are impossible while busy.
-- Status tones follow the four-hue system; no new colors.
-- One primary CTA per page/section.
-- No JS; RTL/mobile correct.
+**Acceptance**
+- No sensitive operation applies without approval; requester can never approve himself except reversals and a self-recorded count (T08).
+- A rejected/failed edit leaves the original order and reservation exactly as they were.
+- Reversal never deletes; the ledger stays append-only.
 
 **Verify**
 ```powershell
-dotnet build OrderHub.sln --configuration Release
-dotnet run --project OrderHub.Web
+dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~Approval"
+dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~MovementReversal"
 ```
-Manual: create an order with stock, open the pending order as its keeper, execute it, verify `/inventory` balance and the status; repeat with cancellation and verify the order item unlocks.
+Manual: edit an allocated order as sales → approve as Manager → confirm issued preserved + new issue order created manually; self-approval attempt rejected.
 
 **Traps**
-- Do not show the cancel/execute buttons to a Manager who is not the keeper.
-- Do not allow reasons over 200 characters; the handler also validates.
-- Do not use `MudTable` row-click as the only navigation; provide an explicit «التفاصيل» action for accessibility.
-- Do not add the WhatsApp button here; T15 adds it with its data query.
+- Do not apply the edit payload partially outside one transaction.
+- The reversal's reservation restore is the subtlest path in the feature — write the test first.
+- `DecisionNote`/`Reason` lengths: match the ≤200 work-record reason convention.
 
-**Proposed commit:** `feat(inventory): add stock issue order screens`
+**Proposed commit:** `feat(inventory): add manager approvals for edits, cancels and reversals`
 
 ---
 
-### [ ] T13 — Auto-cancel pending issue orders when an order is cancelled or archived (D18)
+### [ ] T08 — Delivery records, returns/damaged, counts, rebuild, acceptance
 
-**Goal:** Guarantee no reservation survives a cancelled or archived order: pending issue orders are cancelled by the system, reservations released, and a system reason recorded.
+**Goal:** Close the quantity chain: delivered tracking (trip and trip-less), returns with intact/damaged, counts with the late-movement review, and the Higher-Manager rebuild tool; then the release checklist.
 
-**Depends on:** T11 (shared cancellation service), order lifecycle code. **Delivers independently:** cancelling/archiving an order cleans up all pending stock work.
+**Depends on:** T07. **Delivers independently:** the feature is functionally complete and release-ready.
 
-**Locked decisions:** D18, R4, R19.
+**Locked decisions:** D5, D7, D16, D19, D20, D21, SPEC §5.8–§5.10, §6.5, §6.7, Q6–Q12.
 
 **Files**
-- Modify `OrderHub.Application/Features/Orders/Lifecycle/OrderLifecycleHandlers.cs`
-- Reuse `OrderHub.Application/Features/Inventory/IssueOrders/StockIssueOrderCancellationService.cs`
-- Create `OrderHub.Tests/OrderLifecycleStockCleanupTests.cs`
+- Create `OrderHub.Domain/Models/StockDeliveryRecord.cs`, `InventoryReturn.cs`, `InventoryReturnLine.cs`, `InventoryCount.cs`, `InventoryCountLine.cs` + configurations (+ migration `..._AddDeliveryReturnsCounts`)
+- Create `OrderHub.Application/Features/Inventory/`: `Deliveries/RecordStockDelivery` (+ handler), `Returns/RecordReturn`, `Returns/RequestDisposal`, `Counts/StartCount`, `SaveCountLine`, `CompleteCount`, `ReviewLateMovement`, `ApproveCount`, `CancelCount`, `Rebuild/RebuildBalances`
+- Create `OrderHub.Web/Components/Pages/Features/Inventory/`: `Returns/Index.razor` (+ `ReturnDialog`, `DisposalDialog`), `Counts/Index.razor` + `Editor.razor` + `Review.razor`, `Rebuild` (Higher-Manager-only page or `[Authorize(Roles="Admin")]` area per the existing pattern)
+- Modify `OrderWorkflow` + `RecordStockDeliveryDialog.razor`; add «مرتجع مستحق» queue to the keeper views
+- Create `OrderHub.Tests/DeliveryRecordTests.cs`, `InventoryReturnTests.cs`, `InventoryCountTests.cs`, `InventoryCountApprovalTests.cs`, `RebuildBalancesTests.cs`
+- Create `docs/`-equivalent release artifact: `OrderHub.Tests/PostgresLockProof.md` (or `plans/INVENTORY-PG-LOCK-PROOF.md`) — the D13 manual lock script + observed results
 
 **Steps**
-1. Inject the shared cancellation service and `IStockIssueOrderRepository` into `OrderLifecycleHandlers`.
-2. After a successful `change(order, operation)` in `Execute`:
-   - if `order.OrderStatus == OrderStatus.Cancelled` **or** `order.IsArchived`, load pending issue orders for `order.Id`;
-   - cancel each using the system path: actor id `null`, name «النظام», reason `"إلغاء تلقائي: أُلغي الطلب أو أُرشف."` (≤200);
-   - release every reservation; no movements;
-   - keep the order save and the issue-order mutations in the same `SaveChangesAsync` call (the handler already saves only when `Version` changed; ensure the save happens when only stock work changed too).
-3. Do not auto-cancel `Completed` issue orders; their stock is already out (phase B reversal handles mistakes).
-4. Do not touch `Supply`, shipments or trips; their existing cancellation loops stay as-is.
-5. Tests:
-   - cancellation from any allowed status cancels pending issue orders, releases reservations, records a Cancelled history with the system reason;
-   - archive from `Processing` does the same;
-   - archive from a final status handles a lingering pending order (defensive) or no-ops;
-   - completed issue orders are untouched;
-   - order with no stock work saves normally;
-   - transaction/conflict path does not leave a released reservation without an order change.
+1. `StockDeliveryRecord` (D16): order-linked, optional `TripId`/`ShipmentId`, `Quantity ≤ remaining issued` (validated under D13 locks), recorded by sales (`Orders.Write`); delivered/remaining computed by aggregation (Q6); dialog on the order workflow for trip-less paths too.
+2. Returns (Q7): keeper records against the originating order — caps enforced; intact → `ReturnIn` + balance; damaged → `ReturnDamagedIn` + `DamagedIn` (Q8 path); «مرتجع مستحق» entries (from T07 shrinking edits) appear in the queue and enter the balance only after sorting; disposal: keeper request + reason → `DamagedDisposal` approval type → Manager decision → movement (≤ `DamagedQty`).
+3. Counts (D20/D21): scope Full/Products; snapshot `BookQty` and `BookDamagedQty` per product from movements (`EffectiveAtUtc ≤ snapshot`); save never changes balance; one open count per (warehouse, product) (filtered unique + handler check); movements remain allowed while open; a line is approvable only when both counted values are entered; on approval, a late-dated movement pauses approval → Manager review (`IncludedInCount` → recompute both book balances/deltas, `Recounted` → line reopens); decision recorded; approval is a `Version` CAS on the count (second manager → `"Conflict"`) and creates up to two movements per line — `Adjustment` for `Delta` and `DamagedAdjustment` for `DamagedDelta`, each only if non-zero, applied to the **current** balance; blocked if the sound result would drop `StockOnHand` below `ReservedOnHand` or the damaged result would go below zero; the recorder may approve his own count; open counts follow the current keeper.
+4. Rebuild tool (Higher-Manager only): recomputes `StockOnHand`/`DamagedQty` from ledger by `EffectiveAtUtc` and `ReservedOnHand` from active allocations − batches; records actor, time, before/after per row; audited.
+5. Acceptance sweep + release checklist:
+   - Full restore/build/test chain green; migration applied to a populated copy + rollback rehearsed (documented in the proof file).
+   - **PostgreSQL lock proof (D13)**: scripted concurrent reservation attempt against a real PG instance demonstrating single-winner + `"Conflict"`; results recorded in `PostgresLockProof.md`.
+   - Browser pass for all four roles (sales / storekeeper / manager / higher manager) + a legacy order without allocations.
+   - Numbers: Latin digits everywhere (`CultureInfo.InvariantCulture`).
 
-**Acceptance criteria**
-- After cancel/archive, no `Pending` issue order and no reserved quantity remain for the order.
-- The history shows a system-generated cancellation with a non-empty reason.
-- Completed issue orders and their movements are untouched.
-- The existing lifecycle behavior/tests for orders without stock remain green.
+**Acceptance**
+- The full chain holds: allocated → reserved → issued (batches) → delivered → returned → sorted; every invariant Q1–Q10 has a passing test.
+- Counts adjust only on approval; late movements route through review; rebuild is HM-only and audited.
+- Release checklist documented and green.
 
 **Verify**
 ```powershell
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~OrderLifecycleStockCleanupTests"
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~OrderReassignment"
-```
-
-**Traps**
-- Archive is allowed from `Processing`; do not only hook the Cancelled target.
-- Do not require the current keeper to perform the auto-cancel; this is a system action (D18).
-- Do not add a movement; cancellation releases only.
-- Ensure the handler saves when issue orders changed even if `order.Version == expectedVersion` (the existing guard could skip the save).
-
-**Proposed commit:** `feat(inventory): auto-cancel pending issue orders on order cancel or archive`
-
----
-
-### [ ] T14 — Notifications and the header bell
-
-**Goal:** Add recipient-scoped notifications and a header bell, and produce the two phase-A notifications: issue order assigned to the keeper and issue order completed for the requester.
-
-**Depends on:** T10 (creation points), T11 (execution point), T12 (link target). **Delivers independently:** users see a bell with their unread count and notification panel; producers create real rows.
-
-**Locked decisions:** D13, §5.8, §6.4, §8.7.
-
-**Files**
-- Create `OrderHub.Domain/Models/Notification.cs` + `OrderHub.Domain/Enums/NotificationType.cs`
-- Create `OrderHub.Infrastructure/Configurations/NotificationConfiguration.cs`
-- Modify `OrderHub.Infrastructure/AppDbContext.cs`
-- Create `OrderHub.Application/Interfaces/Repositories/INotificationRepository.cs` + `OrderHub.Infrastructure/Reopsitories/NotificationRepository.cs` + registration
-- Create `OrderHub.Application/Features/Notifications/GetMyNotifications/*`, `GetUnreadNotificationCount/*`, `MarkNotificationRead/*`
-- Modify `OrderHub.Application/Features/Orders/Create/CreateOrderCommandHandler.cs` and `Update/UpdateOrderHandler.cs` (assigned notifications)
-- Modify `OrderHub.Application/Features/Inventory/IssueOrders/ExecuteStockIssueOrder/*` (completed notification)
-- Modify `OrderHub.Web/Components/Layout/MainLayout.razor` (+ `.razor.cs`)
-- Create migration `..._AddNotifications.cs`
-- Create `OrderHub.Tests/NotificationTests.cs`, `NotificationProducerTests.cs`
-
-**Steps**
-1. Entity: `RecipientUserId`, `Type`, `Title`, `Body`, `LinkUrl`, `OrderId?`, `IssueOrderId?`, `IssuedAtUtc`, `ReadAtUtc?`. No global write access to `RecipientUserId` after creation. `MarkRead(atUtc)` idempotent.
-2. Types: `StockIssueAssigned = 1`, `StockIssueCompleted = 2`, `StockIssueCancelled = 3`.
-3. EF: table `notifications`; FK recipient `Restrict`; index `(recipient_user_id, read_at_utc, issued_at_utc)`; body/title max lengths; additive migration.
-4. Queries/commands (no feature permission; authenticated recipient only):
-   - `GetMyNotificationsQuery(page, pageSize)` filters `RecipientUserId == currentUser.Id`;
-   - `GetUnreadNotificationCountQuery` same filter with `ReadAtUtc IS NULL`;
-   - `MarkNotificationReadCommand(id)` filters by recipient and id; missing/foreign → `"NotFound"` (never reveal others' notifications).
-5. Producers:
-   - On final order save with stock lines: after `SaveChangesAsync` (ids assigned), add one `StockIssueAssigned` notification per keeper (grouped per warehouse), link `/inventory/issue-orders/{issueOrderId}`, title «أمر إخراج جديد», body with order number, warehouse and line count; save again. In create, the existing transaction covers both saves; in update, wrap the stock-changing save and the notification save in one transaction.
-   - On execute: add `StockIssueCompleted` to `RequestedByUserId` (if > 0), link to the order or issue order, title «تم تنفيذ أمر الإخراج», body with warehouse/order number.
-   - Never notify a user who is not the recipient; never notify the actor's own generic feed unless they are the requester.
-6. Bell in `MainLayout`:
-   - plain HTML button with Material bell icon and a counter badge (hidden at 0, capped «99+»);
-   - panel with the latest notifications, unread dot, relative time, link; «تعليم الكل كمقروء» optional only if it has a real command (otherwise omit);
-   - load count/list on layout init, on `Navigation.LocationChanged`, and on open; mark read when an item is opened;
-   - no JS, no fake polling timer, no dead «عرض الكل» link (link to a real `/notifications` page only if created; otherwise the panel itself is the list).
-7. Tests: recipient isolation (user A cannot read/mark B), unread count, mark-read idempotency, producer rows/links/recipients, no notification when no stock lines, no notification on supplier-only execution errors.
-
-**Acceptance criteria**
-- The bell is visible to every authenticated user and shows only that user's unread count.
-- Opening a notification marks it read and navigates to a real page.
-- Creating a stock order notifies the current keeper; executing it notifies the requester.
-- A foreign notification id returns `"NotFound"` without leaking data.
-- No JavaScript, no fabricated data, no dead controls.
-
-**Verify**
-```powershell
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~Notification"
-```
-Manual: two browser sessions (keeper + creator): create a stock order as creator → keeper sees the bell; execute as keeper → creator sees completion.
-
-**Traps**
-- Issue-order ids are 0 before the first save; create notifications after saving the order/issue orders.
-- Update flow may not have an explicit transaction; add one for the notification-producing path.
-- Notification links must point to real routes; `/inventory/issue-orders/{id}` exists from T12.
-- Do not add a permission feature for notifications.
-
-**Proposed commit:** `feat(inventory): add recipient notifications and header bell`
-
----
-
-### [ ] T15 — User phone and WhatsApp keeper message
-
-**Goal:** Store an optional WhatsApp number per user (Higher Manager only) and let an issue-order viewer send/copy a real-data message to the warehouse keeper with the existing fallback behavior.
-
-**Depends on:** T02, T11, T12, T14 (link target optional). **Delivers independently:** the phone field is editable; the issue-order detail has a working WhatsApp action with copy/picker fallback.
-
-**Locked decisions:** D19, D28, §6.5, §8.4.
-
-**Files**
-- Modify `OrderHub.Domain/Models/User.cs` (`Phone`, `ChangePhone`)
-- Modify `OrderHub.Infrastructure/Configurations/UserConfiguration.cs`
-- Create migration `..._AddUserPhone.cs`
-- Modify `OrderHub.Application/Features/Administration/Users/Update/*` (command/contract/handler/reader) and `GetUser/*`
-- Modify `OrderHub.Web/Components/Pages/Features/Administration/Users/Edit.razor` (+ `.razor.cs`)
-- Create `OrderHub.Application/Features/Inventory/IssueOrders/GetKeeperContact/GetStockIssueOrderKeeperContactQuery.cs` + handler + contract
-- Create `OrderHub.Application/Features/Inventory/IssueOrders/Contracts/StockIssueWhatsAppMessageBuilder.cs`
-- Create `OrderHub.Web/Components/Pages/Features/Inventory/IssueOrders/IssueOrderWhatsAppDialog.razor`
-- Modify `IssueOrders/Details.razor` (+ code-behind) to add the action
-- Create `OrderHub.Tests/UserPhoneTests.cs`, `StockIssueWhatsAppMessageBuilderTests.cs`, `KeeperContactQueryTests.cs`
-
-**Steps**
-1. `User.Phone`:
-   - nullable string, max 30; `ChangePhone(string? phone)` trims, empty clears, rejects invalid characters/length (`Result` or exception consistent with the entity style);
-   - no phone in `User.Create` required; existing users stay null.
-2. EF: nullable `phone` varchar(30); additive migration.
-3. Users edit (Higher-Manager-only page):
-   - field «رقم واتساب» with helper «اختياري — يُستخدم لفتح محادثة واتساب مع أمين المخزن»;
-   - inline validation; save through the existing update command; no other role can edit (page already `[HigherManagerAuthorize]`).
-4. Keeper contact query:
-   - `[RequirePermission(Inventory, Read)]`;
-   - input issue-order id; resolves the **current** warehouse keeper (not `AssignedUserId`), returns `DisplayName`, `Phone` (raw), `WarehouseName`;
-   - never returns username or role.
-5. Message builder (pure, testable):
-   - facts only: order number, warehouse name, issue number, product names and requested quantities;
-   - Arabic heading like «أمر إخراج جديد»; no prices, no unbacked claims, no links;
-   - reuse `WhatsAppMarkdown` conventions if helpful; the preview renders typed segments, never `MarkupString`.
-6. Dialog:
-   - opened from issue-order detail action «واتساب أمين المخزن»;
-   - primary `wa.me/{normalized}?text=...` only when `WhatsAppPhone.TryNormalize` succeeds; otherwise disabled with an Arabic hint;
-   - always-enabled copy action (reuse the `OrderSummaryDialog` clipboard interop) and `wa.me/?text=...` recipient picker;
-   - no phone → hint «لم يُسجَّل رقم واتساب لأمين المخزن؛ انسخ الرسالة أو اختر المستلم.»
-7. Tests: phone validation/clear/round-trip; update command persists phone; contact query returns current keeper after a transfer; message builder exact content (no invented data); normalization fallback flags.
-
-**Acceptance criteria**
-- Only a Higher Manager can set/clear a user's phone.
-- WhatsApp action works with a valid phone; with an invalid/missing phone, copy and picker remain available and no broken link is shown.
-- The message contains only real order/warehouse/line data.
-- The query resolves the current keeper, not the request-time snapshot.
-- No new JavaScript; clipboard uses the existing interop pattern.
-
-**Verify**
-```powershell
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~UserPhoneTests"
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~StockIssueWhatsAppMessageBuilderTests"
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~KeeperContactQueryTests"
-```
-Manual: set a phone as HM → open a pending issue order → verify direct link, copy, and picker; clear the phone → verify fallback.
-
-**Traps**
-- Do not allow Manager or the keeper to edit phones; D28 is Higher-Manager-only.
-- Do not trust the stored number; always normalize.
-- Do not expose the phone on issue-order list/detail read models; fetch it only through the contact query when the action is used.
-- Do not add a second normalizer; reuse `WhatsAppPhone`/`WhatsAppMessaging`.
-
-**Proposed commit:** `feat(inventory): add keeper WhatsApp contact and user phone`
-
----
-
-### [ ] T16 — Phase A acceptance sweep
-
-**Goal:** Prove phase A is complete, documented and regression-free before starting phase B.
-
-**Depends on:** T01–T15. **Delivers independently:** a green phase-A baseline and accurate docs.
-
-**Files**
-- Modify `plans/INVENTORY-MANAGEMENT-SPEC.md` (status line: phase A implemented; keep decisions intact)
-- Modify this file (checkboxes/status)
-- Add/adjust tests anywhere gaps were found (no production behavior changes)
-
-**Steps**
-1. Run the full suite and the Node test:
-   ```powershell
-   dotnet build OrderHub.sln --configuration Release
-   dotnet test OrderHub.sln --configuration Release --no-build
-   node OrderHub.Tests/Web/order-local-time.test.mjs
-   ```
-2. Manual acceptance matrix (record results in this file under T16):
-   - Sales: sees `/warehouses` and `/inventory`; cannot stock-in, execute/cancel, or open issue-order actions; supplier-only fallback works if `Inventory.Read` is revoked.
-   - Purchasing: stock-in works; cannot execute/cancel issue orders unless also the keeper.
-   - Storekeeper: sees warehouses/inventory/issue orders; executes/cancels own warehouse; cannot execute another warehouse's order; cannot stock-in without `Products.Read` (confirm preset has it).
-   - Manager: creates/edits warehouses, assigns keepers, sees all inventory, can approve reversals (phase B), **cannot** execute a non-owned issue order.
-   - Higher Manager: fallback execution/cancel; phone editing; all pages.
-   - Data Entry: inventory group hidden.
-3. Browser checks: create order with split/stock-only/supplier-only items; reservation; lock; cancel issue order; item unlock; execute; balance/ledger; notifications; WhatsApp; order cancel/archive auto-cancel; mobile RTL.
-4. Migration rehearsal on a populated copy (owner-run or documented as a deployment step): apply new migrations in order, confirm no data changes to existing tables.
-5. Update the spec status and list any deviations; do not rewrite locked decisions.
-
-**Acceptance criteria**
-- Full build/test/Node commands pass.
-- Every manual matrix row behaves as specified; failures are fixed in the owning task, not papered over.
-- Spec status and task checkboxes reflect reality.
-- No pending `[ ]` in T01–T15.
-
-**Verify:** the commands above plus the completed manual matrix.
-
-**Proposed commit:** `test(inventory): complete phase A acceptance sweep`
-
----
-
-## 4. Phase B — tasks
-
-### [ ] T17 — Customer returns (intact/damaged)
-
-**Goal:** Record customer returns against the original order, with intact units rejoining stock and damaged units recorded without a balance effect.
-
-**Depends on:** T05, T06, T10, T11, T16. **Delivers independently:** returns can be recorded and audited; stock effects are correct.
-
-**Locked decisions:** D11, D24, §5.7, §8.5.
-
-**Files**
-- Create `OrderHub.Domain/Models/CustomerReturn.cs`, `CustomerReturnItem.cs`
-- Create `OrderHub.Infrastructure/Configurations/CustomerReturnConfiguration.cs` (+ item)
-- Modify `OrderHub.Infrastructure/AppDbContext.cs`
-- Create `OrderHub.Application/Features/Inventory/Returns/RecordCustomerReturn/*` (query returnable items + command + handler + contracts)
-- Create `OrderHub.Application/Interfaces/Repositories/ICustomerReturnRepository.cs` + implementation + registration
-- Create `OrderHub.Web/Components/Pages/Features/Inventory/Returns/Index.razor` (+ code-behind) and `RecordReturnDialog.razor`
-- Modify `OrderHub.Web/Components/Pages/Features/Orders/OrderDetials.razor` (real action opening the return dialog for eligible stock items)
-- Modify `OrderHub.Web/Components/Layout/NavMenu.razor`
-- Create migration `..._AddCustomerReturns.cs`
-- Create `OrderHub.Tests/CustomerReturnTests.cs`
-
-**Steps**
-1. Domain: header `OrderId`, `WarehouseId`, `RecordedByUserId`, `RecordedAtUtc`, note; lines `OrderItemId`/`ProductId`, `Quantity`, `Condition` (`Intact`/`Damaged`), `OrderIssueOrderId?`. Validate quantity > 0, no duplicate product with the same condition (or aggregate), and no over-return.
-2. Eligibility query: original order's stock-sourced items and executed quantities minus previous returns (intact + damaged), grouped by product/warehouse; only completed issue-order lines are returnable.
-3. Command `[RequirePermission(Inventory, Write)]`:
-   - current keeper or Higher Manager (D24) binding;
-   - order exists; warehouse matches the issue order;
-   - quantities ≤ remaining executed; reject `"InvalidOperation"` otherwise;
-   - transaction: add return + lines; for intact lines add `CustomerReturnIn` movements and increase stock; damaged lines record only;
-   - no negative/zero lines; no movements for damaged.
-4. Unknown/mismatched order/product/warehouse → `"InvalidOperation"`/`"NotFound"`.
-5. UI:
-   - `/inventory/returns` list with order number, warehouse, keeper, date, intact/damaged totals, status none (recorded only);
-   - dialog from the order page and the returns page (if it can select an order, otherwise order-page only); lines with condition toggle and remaining quantity; one primary CTA;
-   - nav item «المرتجعات» (`Inventory.Read`), page gate Read; action gate Write + binding.
-6. Tests: intact increases balance and adds movement; damaged records without balance effect; over-return rejected; non-keeper rejected; Higher Manager allowed; atomicity; eligibility math after partial returns; no return for supplier-only/unexecuted items.
-
-**Acceptance criteria**
-- Intact units rejoin the same warehouse balance; damaged units are visible but do not change it.
-- Only the current keeper or a Higher Manager can record a return.
-- Quantities never exceed what was issued and not yet returned.
-- Returns are immutable; mistakes go through reversal (T18).
-
-**Verify**
-```powershell
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~CustomerReturnTests"
-```
-
-**Traps**
-- Do not create a return for an issue order that is still Pending.
-- Do not use the order item quantity; use the executed issue-order quantity as the ceiling.
-- Keep damaged lines in the return record even though they produce no movement.
-- Add the nav item only after the page exists.
-
-**Proposed commit:** `feat(inventory): record customer returns with intact and damaged conditions`
-
----
-
-### [ ] T18 — Reversal requests with `Inventory.Approve` approval
-
-**Goal:** Fix executed stock mistakes with a request/approval workflow: keeper or Higher Manager requests with a reason; a different user with `Inventory = Approve` decides; approval writes the paired reversal movement and flags the original.
-
-**Depends on:** T05, T06, T11, T17, T16. **Delivers independently:** reversals are requested, approved/rejected and reflected in the ledger and balances.
-
-**Locked decisions:** D9, D10, D20, R11, R20, §5.6, §6.3, §8.6.
-
-**Files**
-- Create `OrderHub.Domain/Models/InventoryReversalRequest.cs` + `OrderHub.Domain/Enums/ReversalRequestStatus.cs`
-- Create `OrderHub.Infrastructure/Configurations/InventoryReversalRequestConfiguration.cs`
-- Modify `OrderHub.Infrastructure/AppDbContext.cs`
-- Create `OrderHub.Application/Features/Inventory/Reversals/RequestReversal/*`, `ApproveReversal/*`, `RejectReversal/*`, `GetReversals/*`
-- Create `OrderHub.Application/Interfaces/Repositories/IReversalRepository.cs` + implementation + registration
-- Create `OrderHub.Web/Components/Pages/Features/Inventory/Reversals/Index.razor` (+ code-behind), `RequestReversalDialog.razor`, `DecisionDialog.razor`
-- Modify `OrderHub.Web/Components/Pages/Features/Inventory/Index.razor` (ledger row action «طلب عكس»)
-- Modify `OrderHub.Web/Components/Layout/NavMenu.razor`
-- Create migration `..._AddInventoryReversals.cs`
-- Create `OrderHub.Tests/InventoryReversalTests.cs`
-
-**Steps**
-1. Entity: `MovementId`, `Reason` (required, ≤200), `RequestedByUserId`, `RequestedAtUtc`, `Status` (`PendingApproval`), `DecidedByUserId?`, `DecidedAtUtc?`, `DecisionNote?`. One pending request per movement (filtered unique index).
-2. Request command `[RequirePermission(Inventory, Write)]`:
-   - movement exists and is Active; not already reversed and no pending request;
-   - current keeper of the movement's warehouse or Higher Manager (keeper binding); `Inventory.Approve` alone is not enough to request;
-   - reason required; no ledger change at request time.
-3. Approve command `[RequirePermission(Inventory, Approve)]`:
-   - request Pending; **approver id != requester id** (D9), including Higher Managers (no bypass);
-   - transaction: add paired movement (opposite direction, `MovementType = Reversal`, same product/warehouse/quantity, `ReversalOfMovementId`, `Source*` copied, note = request reason, actor = approver), mark original `Reversed`, update `StockItem` (in↔out) without going negative (if the original was `StockIn`, reverse out must not exceed current stock; reject `"Conflict"` if it would);
-   - set request Approved with decider/time; no deletion;
-   - update the issue order/return derived state only where phase-A/B rules require (completed issue order stays completed; the reversal is the audit fix).
-4. Reject command: same `Approve` gate, Pending only, no ledger change; record decider/time/note (optional).
-5. UI `/inventory/reversals`:
-   - request list + pending approval queue; tabs/filters;
-   - request action from the ledger row (visible for keeper/HM and `Inventory.Write`);
-   - approve/reject actions visible only with `Approve`, disabled for the requester's own request with an Arabic hint;
-   - one primary CTA per context;
-   - nav item «العكس» (`Inventory.Approve`), page gate `Approve`; the request dialog from `/inventory` is separately gated by Write + binding.
-6. Tests: request requires binding; approve requires Approve; self-approval rejected (including HM); double approval/rejection rejected; approval creates exactly one reversal and flags the original; reverse of a `StockIn` blocked when stock insufficient; rejection leaves ledger/balance untouched; one pending request per movement; approver can be a Manager who is not the keeper; page/handler gates.
-
-**Acceptance criteria**
-- No movement is deleted or edited; reversals are paired and auditable.
-- Separation of duties always holds, including for Higher Managers.
-- Ledger and balance stay consistent in one transaction; no negative stock.
-- Only `Inventory = Approve` users can decide; only bound writers can request.
-- The reversal page is not under an Admin-only page claim (D27).
-
-**Verify**
-```powershell
-dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~InventoryReversalTests"
-```
-
-**Traps**
-- `Inventory.Write` is satisfied by `Approve`; the request path still needs keeper binding, and the decision path needs `Approve` explicitly.
-- Do not allow approving a request for a movement that was reversed by another path in the meantime.
-- Do not auto-approve or bypass separation for HM.
-- The reversal note is mandatory and comes from the request reason.
-
-**Proposed commit:** `feat(inventory): add reversal requests with approval workflow`
-
----
-
-### [ ] T19 — Balance rebuild, aggregate reporting refinements, Phase B acceptance
-
-**Goal:** Provide the Higher-Manager-only rebuild-from-ledger tool, finish cross-warehouse reporting, and close phase B with tests and docs.
-
-**Depends on:** T17, T18. **Delivers independently:** drift can be repaired safely; totals are complete; phase B is signed off.
-
-**Locked decisions:** §5.3, §7.4 (rebuild gate), §12 B3, R6.
-
-**Files**
-- Create `OrderHub.Application/Features/Inventory/RebuildBalances/RebuildStockBalancesCommand.cs` + handler + `RebuildStockBalancesResult.cs`
-- Create `OrderHub.Web/Components/Pages/Features/Inventory/Rebuild.razor` (+ code-behind)
-- Modify `OrderHub.Web/Components/Pages/Features/Inventory/Index.razor` (link/entry for HM only, totals refinements)
-- Modify `OrderHub.Application/Features/Inventory/GetBalances/*` (cross-warehouse product totals if not complete)
-- Modify `plans/INVENTORY-MANAGEMENT-SPEC.md` and this file
-- Create `OrderHub.Tests/RebuildStockBalancesTests.cs`, `InventoryReportingTests.cs`
-
-**Steps**
-1. Rebuild command:
-   - `[RequireHigherManager]` (Higher Manager only; do not rely on an Admin page claim alone);
-   - recompute `StockOnHand` for every stock item from `SUM(active movements by direction)`; recompute `ReservedOnHand` from pending issue-order lines;
-   - create missing stock rows with zero when a warehouse/product has movements or pending lines;
-   - one transaction; return counts (scanned, changed, missing-created) and a before/after diff sample;
-   - no movement rows are created by a rebuild.
-2. UI `/inventory/rebuild`:
-   - Higher-Manager-only page; explanation of what changes; «معاينة» then confirm; busy states; result summary;
-   - link from `/inventory` visible only to HM.
-3. Reporting refinements:
-   - `/inventory` aggregate table includes total stock/reserved/available per product across all warehouses and the number of warehouses holding it;
-   - ledger drill-down remains per warehouse/product;
-   - no monetary valuation (out of scope).
-4. Phase B acceptance:
-   - full suite + Node test;
-   - manual matrix for returns and reversals (keeper/HM/Manager/approver separation);
-   - migration rehearsal note;
-   - update spec status to implemented and this file's checkboxes.
-5. Tests: rebuild repairs a deliberately drifted cached balance; reserved recomputed from pending lines; idempotent second run reports zero changes; non-HM denied; no movements created; reporting totals correct.
-
-**Acceptance criteria**
-- Rebuild is Higher-Manager-only, transactional, idempotent and never deletes movements.
-- After rebuild, cached balances equal the active ledger sums and reservations equal pending lines.
-- The aggregate view is correct across warehouses.
-- Phase B manual matrix and docs are complete; no unchecked task remains.
-
-**Verify**
-```powershell
-dotnet build OrderHub.sln --configuration Release
 dotnet test OrderHub.sln --configuration Release --no-build
 node OrderHub.Tests/Web/order-local-time.test.mjs
 ```
+Manual: full scenario — stock-in → allocate → issue → batch (shortfall reason) → deliver → return (intact+damaged) → count → adjustment → reversal → rebuild sanity check.
 
 **Traps**
-- Do not use rebuild to hide bugs; it is a repair tool.
-- Do not let it create movements or notifications.
-- Do not expose it to Managers; `Inventory.Approve` is not enough.
-- Do not recompute `ReservedOnHand` from the ledger; reservations are not movements.
+- `Adjustment` delta is relative to the **count-time book balance** applied onto the **current** balance — the late-movement review exists precisely to prevent double-counting; test both branches.
+- Do not let the delivery dialog appear for non-stocked items (they keep the current trip path untouched).
+- The rebuild tool must never run automatically — explicit HM command only.
 
-**Proposed commit:** `feat(inventory): rebuild cached balances and finalize inventory reporting`
-
----
-
-## 5. Task status board
-
-| Task | Phase | Status | Blocked by |
-|---|---|---|---|
-| T01 Permissions + seed + candidates | A | [ ] | — |
-| T02 Warehouse domain | A | [ ] | T01 |
-| T03 Warehouses application | A | [ ] | T01, T02 |
-| T04 Warehouses UI + nav | A | [ ] | T01, T03 |
-| T05 Ledger + StockItem | A | [ ] | T02 |
-| T06 Stock-in application | A | [ ] | T05 |
-| T07 Inventory read queries | A | [ ] | T05 |
-| T08 Inventory + stock-in UI | A | [ ] | T03, T04, T06, T07 |
-| T09 Issue-order domain | A | [ ] | T02, T05 |
-| T10 Order sourcing + locks | A | [ ] | T05–T07, T09 |
-| T11 Execute/cancel handlers | A | [ ] | T05, T09, T10 |
-| T12 Issue-order UI | A | [ ] | T11 |
-| T13 D18 auto-cancel | A | [ ] | T11 |
-| T14 Notifications + bell | A | [ ] | T10, T11, T12 |
-| T15 Phone + WhatsApp | A | [ ] | T02, T11, T12 |
-| T16 Phase A acceptance | A | [ ] | T01–T15 |
-| T17 Returns | B | [ ] | T05, T06, T10, T11, T16 |
-| T18 Reversals + approval | B | [ ] | T05, T06, T11, T17, T16 |
-| T19 Rebuild + reporting + acceptance | B | [ ] | T17, T18 |
+**Proposed commit:** `feat(inventory): add delivery tracking, returns, counts and rebuild tool`
 
 ---
 
-## 6. Acceptance/sign-off
+## 4. Release checklist (after T08)
 
-- [ ] Phase A: T01–T16 checked, full suite + Node test green, manual matrix recorded in T16.
-- [ ] Phase B: T17–T19 checked, full suite + Node test green, manual matrix recorded in T19.
-- [ ] Spec status updated; no locked decision changed without an owner-approved amendment.
-- [ ] Deployment note added for the migrations (V2 seed, warehouses, ledger, purchases, issue orders, notifications, user phone, returns, reversals).
+1. `dotnet restore` → Release build → full test suite → Node test, per the CI chain.
+2. Migration applied to a populated copy; rollback rehearsed; results recorded.
+3. PostgreSQL lock proof (D13) executed and recorded in `PostgresLockProof.md`.
+4. Browser regression across roles; legacy order parity confirmed.
+5. The owner runs all commits with the proposed Conventional Commit messages.
+6. **No tags are pushed by agents** (release CI is owner-only per AGENTS.md).
 
-**Proposed final commit (after the owner's review):** `feat(inventory): complete warehouse stock management`
+*Registry v2.1 complete; implementation starts at T01 only after the owner approves this file.*
