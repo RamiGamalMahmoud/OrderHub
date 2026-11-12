@@ -33,22 +33,22 @@ public sealed class RoleReadServiceTests
 
         IReadOnlyList<RoleListItem> roles = await service.GetAsync();
 
-        Assert.Equal(5, roles.Count);
-        Assert.All(roles.Take(4), role => Assert.True(role.IsSealed));
-        Assert.Equal("مخصص", roles[4].Name);
-        Assert.False(roles[4].IsSealed);
+        Assert.Equal(6, roles.Count);
+        Assert.All(roles.Take(5), role => Assert.True(role.IsSealed));
+        Assert.Equal("مخصص", roles[5].Name);
+        Assert.False(roles[5].IsSealed);
 
         RoleListItem manager = roles.Single(role => role.RoleKey == "manager");
         Assert.Equal(0, manager.ReadCount);
-        Assert.Equal(0, manager.WriteCount);
-        Assert.Equal(11, manager.ApproveCount);
-        Assert.Equal(11, manager.PermissionCount);
+        Assert.Equal(1, manager.WriteCount);
+        Assert.Equal(12, manager.ApproveCount);
+        Assert.Equal(13, manager.PermissionCount);
 
         RoleListItem sales = roles.Single(role => role.RoleKey == "sales");
-        Assert.Equal(7, sales.ReadCount);
+        Assert.Equal(8, sales.ReadCount);
         Assert.Equal(2, sales.WriteCount);
         Assert.Equal(0, sales.ApproveCount);
-        Assert.Equal(9, sales.PermissionCount);
+        Assert.Equal(10, sales.PermissionCount);
 
         RoleListItem custom = roles.Single(role => role.Name == "مخصص");
         Assert.Equal(1, custom.ReadCount);
@@ -62,10 +62,17 @@ public sealed class RoleReadServiceTests
         Assert.NotNull(details);
         Assert.True(details.IsSealed);
         Assert.Equal("manager", details.RoleKey);
-        Assert.Equal(11, details.Permissions.Count);
-        Assert.All(
+        Assert.Equal(13, details.Permissions.Count);
+        Assert.Contains(
             details.Permissions,
-            permission => Assert.Equal(PermissionLevel.Approve, permission.Level));
+            permission =>
+                permission.Feature == PermissionFeature.Warehouses &&
+                permission.Level == PermissionLevel.Write);
+        Assert.Contains(
+            details.Permissions,
+            permission =>
+                permission.Feature == PermissionFeature.Inventory &&
+                permission.Level == PermissionLevel.Approve);
     }
 
     [Fact]

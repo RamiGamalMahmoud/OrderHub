@@ -22,6 +22,7 @@ public static class SealedRolePresets
     public const string PurchasingKey = "purchasing";
     public const string DataEntryKey = "data-entry";
     public const string ManagerKey = "manager";
+    public const string StorekeeperKey = "storekeeper";
 
     public static IReadOnlyList<SealedRolePreset> All { get; } =
     [
@@ -37,7 +38,8 @@ public static class SealedRolePresets
                 new(PermissionFeature.Deliverymen, PermissionLevel.Read),
                 new(PermissionFeature.ShippingCarriers, PermissionLevel.Read),
                 new(PermissionFeature.Cities, PermissionLevel.Read),
-                new(PermissionFeature.PaymentMethods, PermissionLevel.Read)
+                new(PermissionFeature.PaymentMethods, PermissionLevel.Read),
+                new(PermissionFeature.Inventory, PermissionLevel.Read)
             ]),
 
         new(
@@ -49,7 +51,8 @@ public static class SealedRolePresets
                 new(PermissionFeature.Products, PermissionLevel.Read),
                 new(PermissionFeature.Suppliers, PermissionLevel.Write),
                 new(PermissionFeature.Cities, PermissionLevel.Read),
-                new(PermissionFeature.PaymentMethods, PermissionLevel.Read)
+                new(PermissionFeature.PaymentMethods, PermissionLevel.Read),
+                new(PermissionFeature.Inventory, PermissionLevel.Read)
             ]),
 
         new(
@@ -77,7 +80,18 @@ public static class SealedRolePresets
                 new(PermissionFeature.Deliverymen, PermissionLevel.Approve),
                 new(PermissionFeature.ShippingCarriers, PermissionLevel.Approve),
                 new(PermissionFeature.Cities, PermissionLevel.Approve),
-                new(PermissionFeature.PaymentMethods, PermissionLevel.Approve)
+                new(PermissionFeature.PaymentMethods, PermissionLevel.Approve),
+                new(PermissionFeature.Warehouses, PermissionLevel.Write),
+                new(PermissionFeature.Inventory, PermissionLevel.Approve)
+            ]),
+
+        new(
+            StorekeeperKey,
+            "أمين مخزن",
+            [
+                new(PermissionFeature.Warehouses, PermissionLevel.Read),
+                new(PermissionFeature.Products, PermissionLevel.Read),
+                new(PermissionFeature.Inventory, PermissionLevel.Write)
             ])
     ];
 

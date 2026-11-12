@@ -46,6 +46,13 @@ public enum PermissionFeature
     [Description("طرق الدفع")]
     PaymentMethods,
 
+    // Inventory
+    [Description("المخازن")]
+    Warehouses,
+
+    [Description("المخزون")]
+    Inventory,
+
     // Administration
     [Description("سجلات النظام")]
     Logs,

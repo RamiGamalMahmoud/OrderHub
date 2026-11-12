@@ -46,6 +46,12 @@ public static class RoleFeatureCatalog
             PermissionFeature.PaymentMethods =>
                 "طرق الدفع",
 
+            PermissionFeature.Warehouses =>
+                "المخازن",
+
+            PermissionFeature.Inventory =>
+                "المخزون",
+
             PermissionFeature.Logs =>
                 "سجلات النظام",
 
@@ -99,6 +105,12 @@ public static class RoleFeatureCatalog
 
             PermissionFeature.PaymentMethods =>
                 "إدارة بوابات وطرق الدفع والرسوم والتحويلات البنكية",
+
+            PermissionFeature.Warehouses =>
+                "إدارة المخازن وأمناء المخزون وحالة التشغيل",
+
+            PermissionFeature.Inventory =>
+                "أرصدة المنتجات وحركات المخزون وأوامر الصرف",
 
             PermissionFeature.Logs =>
                 "عرض سجلات التدقيق وتتبع حركات المستخدمين والأحداث",
@@ -154,6 +166,12 @@ public static class RoleFeatureCatalog
             PermissionFeature.PaymentMethods =>
                 Icons.Material.Filled.Payments,
 
+            PermissionFeature.Warehouses =>
+                Icons.Material.Filled.Warehouse,
+
+            PermissionFeature.Inventory =>
+                Icons.Material.Filled.Inventory,
+
             PermissionFeature.Logs =>
                 Icons.Material.Filled.ReceiptLong,
 
@@ -208,6 +226,12 @@ public static class RoleFeatureCatalog
 
             PermissionFeature.PaymentMethods =>
                 "bg-green-50 text-green-600",
+
+            PermissionFeature.Warehouses =>
+                "bg-amber-50 text-amber-600",
+
+            PermissionFeature.Inventory =>
+                "bg-teal-50 text-teal-600",
 
             PermissionFeature.Logs =>
                 "bg-amber-50 text-amber-600",

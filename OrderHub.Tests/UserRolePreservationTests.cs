@@ -5,6 +5,7 @@ using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Authorization;
 using OrderHub.Domain.Models;
 using OrderHub.Infrastructure.Repositories;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -196,6 +197,10 @@ public sealed class UserRolePreservationTests
             int userId,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(hasOtherActiveAdmin);
+
+        public Task<IReadOnlyList<User>> GetAllWithRolePermissionsAsync(
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<User>>([user]);
 
         public void Add(User addedUser)
         {

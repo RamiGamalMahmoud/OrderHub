@@ -68,7 +68,7 @@ public sealed class RoleCommandGuardTests
             .SingleAsync(role => role.Id == sales.Id);
 
         Assert.Equal("مبيعات", reloaded.Name);
-        Assert.Equal(9, reloaded.Permissions.Count);
+        Assert.Equal(10, reloaded.Permissions.Count);
     }
 
     [Fact]

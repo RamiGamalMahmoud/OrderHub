@@ -42,7 +42,7 @@ public sealed class TripPermissionTests
             .Include(role => role.Permissions)
             .ToListAsync();
 
-        Assert.Equal(4, roles.Count);
-        Assert.Equal(31, roles.Sum(role => role.Permissions.Count));
+        Assert.Equal(5, roles.Count);
+        Assert.Equal(38, roles.Sum(role => role.Permissions.Count));
     }
 }

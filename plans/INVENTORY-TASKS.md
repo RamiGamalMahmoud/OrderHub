@@ -91,7 +91,7 @@ Rules: strictly sequential; T03 may start only after T01 but its deactivation gu
 
 ## 3. Tasks
 
-### [ ] T01 — Permission surface, sealed presets V2, keeper candidates, catalog, nav group
+### [x] T01 — Permission surface, sealed presets V2, keeper candidates, catalog, nav group
 
 **Goal:** Make `Warehouses` and `Inventory` first-class permission features, seed the locked 5-role / 38-cell matrix in its own migration, and expose the warehouse-manager-safe candidate query.
 
@@ -139,6 +139,8 @@ Manual: `/admin/roles` as Higher Manager — 16 cards, «أمين مخزن» rea
 - Counts: 38 everywhere; the collision case is 29 (re-derive, don't copy v1.0's numbers).
 
 **Proposed commit:** `feat(inventory): add warehouse and inventory permissions with sealed storekeeper preset`
+
+**Deviations:** migration created with `--startup-project OrderHub.Infrastructure` because the Web host lacks `Microsoft.EntityFrameworkCore.Design`; the nav group is added empty (hidden by `GroupVisible`) until T02/T03 add its first item; `IUserRepository` gained `GetAllWithRolePermissionsAsync` (stubbed in `UserRolePreservationTests`'s fake) and `RoleCommandGuardTests`'s sales cell count moved 9 → 10.
 
 ---
 

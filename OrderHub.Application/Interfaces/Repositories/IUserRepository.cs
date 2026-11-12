@@ -1,4 +1,5 @@
 ﻿using OrderHub.Domain.Models;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,6 +24,9 @@ public interface IUserRepository
 
     Task<bool> AnyOtherActiveAdminAsync(
         int userId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<User>> GetAllWithRolePermissionsAsync(
         CancellationToken cancellationToken = default);
 
     void Add(User user);

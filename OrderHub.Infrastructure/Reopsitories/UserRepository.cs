@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Models;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -64,6 +66,18 @@ internal sealed class UserRepository : IUserRepository
                 x.IsAdmin &&
                 x.IsActive,
             cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<User>> GetAllWithRolePermissionsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users
+            .AsNoTracking()
+            .Include(x => x.Role)
+            .ThenInclude(role => role.Permissions)
+            .OrderBy(x => x.DisplayName)
+            .ThenBy(x => x.Id)
+            .ToListAsync(cancellationToken);
     }
 
     public void Add(User user)

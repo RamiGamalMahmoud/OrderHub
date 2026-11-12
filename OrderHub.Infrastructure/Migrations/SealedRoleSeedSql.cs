@@ -58,4 +58,32 @@ internal static class SealedRoleSeedSql
               AND existing.feature = cells.feature
         );
         """;
+
+    public const string V2 = """
+        INSERT INTO roles (name, is_sealed, role_key, created_at)
+        SELECT candidates.name, TRUE, candidates.role_key, CURRENT_TIMESTAMP
+        FROM (
+            SELECT 'أمين مخزن' AS name, 'storekeeper' AS role_key
+        ) AS candidates
+        WHERE NOT EXISTS (SELECT 1 FROM roles existing WHERE existing.role_key = candidates.role_key)
+          AND NOT EXISTS (SELECT 1 FROM roles existing WHERE existing.name = candidates.name);
+
+        INSERT INTO role_permissions (role_id, feature, level)
+        SELECT role_row.id, cells.feature, cells.level
+        FROM roles role_row
+        INNER JOIN (
+            SELECT 'sales' AS role_key, 'Inventory' AS feature, 'Read' AS level
+            UNION ALL SELECT 'purchasing', 'Inventory', 'Read'
+            UNION ALL SELECT 'manager', 'Warehouses', 'Write'
+            UNION ALL SELECT 'manager', 'Inventory', 'Approve'
+            UNION ALL SELECT 'storekeeper', 'Warehouses', 'Read'
+            UNION ALL SELECT 'storekeeper', 'Products', 'Read'
+            UNION ALL SELECT 'storekeeper', 'Inventory', 'Write'
+        ) AS cells ON cells.role_key = role_row.role_key
+        WHERE NOT EXISTS (
+            SELECT 1 FROM role_permissions existing
+            WHERE existing.role_id = role_row.id
+              AND existing.feature = cells.feature
+        );
+        """;
 }

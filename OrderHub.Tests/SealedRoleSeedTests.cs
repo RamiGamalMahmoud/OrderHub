@@ -10,7 +10,7 @@ namespace OrderHub.Tests;
 public sealed class SealedRoleSeedTests
 {
     [Fact]
-    public async Task Seed_OnEmptyDatabase_CreatesFourSealedRoles()
+    public async Task Seed_OnEmptyDatabase_CreatesFiveSealedRoles()
     {
         using var db = new RbacTestDb();
 
@@ -20,11 +20,11 @@ public sealed class SealedRoleSeedTests
             .Include(role => role.Permissions)
             .ToListAsync();
 
-        Assert.Equal(4, roles.Count);
+        Assert.Equal(5, roles.Count);
         Assert.All(roles, role => Assert.True(role.IsSealed));
         Assert.All(roles, role => Assert.False(string.IsNullOrWhiteSpace(role.RoleKey)));
-        Assert.Equal(4, roles.Select(role => role.RoleKey).Distinct().Count());
-        Assert.Equal(31, roles.Sum(role => role.Permissions.Count));
+        Assert.Equal(5, roles.Select(role => role.RoleKey).Distinct().Count());
+        Assert.Equal(38, roles.Sum(role => role.Permissions.Count));
         Assert.Equal(
             SealedRolePresets.All.Select(preset => preset.Name).OrderBy(name => name),
             roles.Select(role => role.Name).OrderBy(name => name));
@@ -38,8 +38,8 @@ public sealed class SealedRoleSeedTests
         await db.SeedAsync();
         await db.SeedAsync();
 
-        Assert.Equal(4, await db.Context.Roles.CountAsync());
-        Assert.Equal(31, await db.Context.Set<RolePermission>().CountAsync());
+        Assert.Equal(5, await db.Context.Roles.CountAsync());
+        Assert.Equal(38, await db.Context.Set<RolePermission>().CountAsync());
     }
 
     [Fact]
@@ -69,9 +69,12 @@ public sealed class SealedRoleSeedTests
         Assert.Equal(PermissionFeature.Products, permission.Feature);
         Assert.Equal(PermissionLevel.Read, permission.Level);
 
-        Assert.Equal(4, await db.Context.Roles.CountAsync());
+        Assert.Equal(5, await db.Context.Roles.CountAsync());
+        Assert.Equal(29, await db.Context.Set<RolePermission>().CountAsync());
         Assert.False(await db.Context.Roles
             .AnyAsync(role => role.RoleKey == SealedRolePresets.SalesKey));
+        Assert.True(await db.Context.Roles
+            .AnyAsync(role => role.RoleKey == SealedRolePresets.StorekeeperKey));
     }
 
     [Fact]
@@ -99,14 +102,14 @@ public sealed class SealedRoleSeedTests
             .Where(permission => permission.RoleId == manager.Id)
             .ToListAsync();
 
-        Assert.Equal(11, permissions.Count);
+        Assert.Equal(13, permissions.Count);
         Assert.Contains(
             permissions,
             permission =>
                 permission.Feature == PermissionFeature.Clients &&
                 permission.Level == PermissionLevel.Approve);
 
-        Assert.Equal(31, await db.Context.Set<RolePermission>().CountAsync());
+        Assert.Equal(38, await db.Context.Set<RolePermission>().CountAsync());
     }
 
     [Fact]

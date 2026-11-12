@@ -38,8 +38,11 @@ internal sealed class RbacTestDb : IDisposable
 
     public UnitOfWork UnitOfWork { get; }
 
-    public Task SeedAsync() =>
-        Context.Database.ExecuteSqlRawAsync(SealedRoleSeedSql.V1);
+    public async Task SeedAsync()
+    {
+        await Context.Database.ExecuteSqlRawAsync(SealedRoleSeedSql.V1);
+        await Context.Database.ExecuteSqlRawAsync(SealedRoleSeedSql.V2);
+    }
 
     public void Dispose()
     {

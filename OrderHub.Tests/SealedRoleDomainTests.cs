@@ -76,9 +76,9 @@ public sealed class SealedRoleDomainTests
     [Fact]
     public void SealedRolePresets_Matrix_MatchesApprovedMatrix()
     {
-        Assert.Equal(4, SealedRolePresets.All.Count);
-        Assert.Equal(4, SealedRolePresets.All.Select(p => p.RoleKey).Distinct().Count());
-        Assert.Equal(4, SealedRolePresets.All.Select(p => p.Name).Distinct().Count());
+        Assert.Equal(5, SealedRolePresets.All.Count);
+        Assert.Equal(5, SealedRolePresets.All.Select(p => p.RoleKey).Distinct().Count());
+        Assert.Equal(5, SealedRolePresets.All.Select(p => p.Name).Distinct().Count());
 
         AssertMatrix(
             SealedRolePresets.SalesKey,
@@ -92,7 +92,8 @@ public sealed class SealedRoleDomainTests
                 new(PermissionFeature.Deliverymen, PermissionLevel.Read),
                 new(PermissionFeature.ShippingCarriers, PermissionLevel.Read),
                 new(PermissionFeature.Cities, PermissionLevel.Read),
-                new(PermissionFeature.PaymentMethods, PermissionLevel.Read)
+                new(PermissionFeature.PaymentMethods, PermissionLevel.Read),
+                new(PermissionFeature.Inventory, PermissionLevel.Read)
             ]);
 
         AssertMatrix(
@@ -104,7 +105,8 @@ public sealed class SealedRoleDomainTests
                 new(PermissionFeature.Products, PermissionLevel.Read),
                 new(PermissionFeature.Suppliers, PermissionLevel.Write),
                 new(PermissionFeature.Cities, PermissionLevel.Read),
-                new(PermissionFeature.PaymentMethods, PermissionLevel.Read)
+                new(PermissionFeature.PaymentMethods, PermissionLevel.Read),
+                new(PermissionFeature.Inventory, PermissionLevel.Read)
             ]);
 
         AssertMatrix(
@@ -132,7 +134,18 @@ public sealed class SealedRoleDomainTests
                 new(PermissionFeature.Deliverymen, PermissionLevel.Approve),
                 new(PermissionFeature.ShippingCarriers, PermissionLevel.Approve),
                 new(PermissionFeature.Cities, PermissionLevel.Approve),
-                new(PermissionFeature.PaymentMethods, PermissionLevel.Approve)
+                new(PermissionFeature.PaymentMethods, PermissionLevel.Approve),
+                new(PermissionFeature.Warehouses, PermissionLevel.Write),
+                new(PermissionFeature.Inventory, PermissionLevel.Approve)
+            ]);
+
+        AssertMatrix(
+            SealedRolePresets.StorekeeperKey,
+            "أمين مخزن",
+            [
+                new(PermissionFeature.Warehouses, PermissionLevel.Read),
+                new(PermissionFeature.Products, PermissionLevel.Read),
+                new(PermissionFeature.Inventory, PermissionLevel.Write)
             ]);
 
         Assert.DoesNotContain(
@@ -148,7 +161,9 @@ public sealed class SealedRoleDomainTests
         Assert.True(SealedRolePresets.IsReservedName("  مبيعات "));
         Assert.True(SealedRolePresets.IsReservedName("إدخال البيانات"));
         Assert.True(SealedRolePresets.IsReservedName(" مدير "));
+        Assert.True(SealedRolePresets.IsReservedName("أمين مخزن"));
         Assert.False(SealedRolePresets.IsReservedName("مبيعات فرع"));
+        Assert.False(SealedRolePresets.IsReservedName("أمين مخزن فرع"));
         Assert.False(SealedRolePresets.IsReservedName("مدير فرع"));
         Assert.False(SealedRolePresets.IsReservedName(" "));
         Assert.False(SealedRolePresets.IsReservedName(null));
