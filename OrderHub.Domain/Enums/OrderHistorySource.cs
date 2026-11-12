@@ -23,5 +23,7 @@ public enum OrderHistorySource
     [Description("تأكيد استلام")]
     PickupConfirmed,
     [Description("إلغاء خطوة توصيل")]
-    DeliveryStepCancelled
+    DeliveryStepCancelled,
+    [Description("تحرير حجز المخزون")]
+    StockRelease
 }

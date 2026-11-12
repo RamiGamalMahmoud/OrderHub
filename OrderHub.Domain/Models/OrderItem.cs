@@ -2,6 +2,7 @@
 using OrderHub.Domain.ValueObjects;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace OrderHub.Domain.Models;
 
@@ -63,8 +64,7 @@ public class OrderItem : ModelBase
     public Money SubTotal => UnitPrice * Quantity;
 
     internal void AttachTo(Order order)
-    {
-        if (Id > 0 && Order is not null && !ReferenceEquals(Order, order))
+    {        if (Id > 0 && Order is not null && !ReferenceEquals(Order, order))
             throw new System.InvalidOperationException("لا يمكن نقل بند محفوظ إلى طلب آخر.");
         Order = order;
         OrderId = order.Id;
@@ -97,6 +97,57 @@ public class OrderItem : ModelBase
                 supplierName,
                 supplierId,
                 properties));
+    }
+
+    internal Result Synchronize(
+        decimal unitPrice,
+        int quantity,
+        decimal vatRate,
+        string supplierName,
+        int? supplierId,
+        IReadOnlyCollection<OrderItemPropertyData> properties)
+    {
+        if (Order is not null && !Order.CanEdit)
+            return Result.Failure("بيانات الطلب مقفولة ولا تقبل التعديل.");
+        if (unitPrice <= 0)
+            return Result.Failure("Unit price must be greater than zero.");
+        if (quantity <= 0)
+            return Result.Failure("Quantity must be greater than zero.");
+        if (vatRate < 0 || vatRate > 100)
+            return Result.Failure("VAT rate must be between 0 and 100.");
+
+        UnitPrice = new Money(unitPrice);
+        Quantity = quantity;
+        VatRate = vatRate;
+        SupplierId = supplierId;
+        SupplierName = supplierName;
+
+        var incoming = properties.ToDictionary(property => property.PropertyId);
+        foreach (var property in _properties.Where(existing => !incoming.ContainsKey(existing.PropertyId)).ToList())
+            _properties.Remove(property);
+
+        foreach (var property in properties)
+        {
+            var existing = _properties.FirstOrDefault(current => current.PropertyId == property.PropertyId);
+            if (existing is null)
+            {
+                _properties.Add(new OrderItemProperty
+                {
+                    PropertyId = property.PropertyId,
+                    Value = property.Value
+                });
+                continue;
+            }
+
+            if (existing.Value != property.Value)
+                existing.Value = property.Value;
+        }
+
+        foreach (var property in _properties)
+            property.AttachTo(this);
+
+        Order?.RefreshDiscount();
+        return Result.Success();
     }
 
     public Result UpdateQuantity(int quantity)

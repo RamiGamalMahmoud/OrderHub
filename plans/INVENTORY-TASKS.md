@@ -313,7 +313,7 @@ Manual: record stock-in with 2 lines + 1 PDF as storekeeper; verify `/inventory`
 
 ---
 
-### [ ] T05 — Order item identity, allocations, atomic reservation, source rule
+### [x] T05 — Order item identity, allocations, atomic reservation, source rule
 
 **Goal:** Order items allocate across warehouses and/or a linked supplier (D17); final save reserves atomically; item identity is stable; release-on-close lands (no order-level delivery gate, D19).
 
@@ -359,6 +359,20 @@ Manual: editor — allocate an item across 2 warehouses + supplier remainder; sa
 - Do not let the availability query leak entity types to the UI (contracts only).
 
 **Proposed commit:** `feat(orders): add stock allocations with atomic reservation`
+
+**Decisions / files**
+- Domain: `OrderInventoryAllocation` (`SourceKind` Warehouse/Supplier, `Qty`, `IssuedQty`, `Status` Active/Released, `Remaining`, `ChangeQuantity`, `Release`); unique `(OrderItemId, SourceKind, WarehouseId)`; FK `Restrict` to order, order item, warehouse and supplier; quantity CHECK. `Order.SynchronizeOrderItems` mirrors `SynchronizeDeliverySteps` (keeps matched instances by id, rejects unknown/duplicate ids, blocks removal while an active allocation exists) and `Order.RemoveAllocations` drops sources from the aggregate. `Order.ReleaseOpenAllocations` sets Active rows to Released and writes one `StockRelease` history row (`PreviousStatus = null`).
+- Migration `20261112222657_AddOrderAllocations` (additive; created with `--startup-project OrderHub.Infrastructure`).
+- Application: `OrderAllocationRules.Plan` centralises D17 validation (0..n warehouses, ≤ 1 supplier, Σ = quantity, supplier item↔allocation match, `MissingSourceMessage` for D10); `OrderAllocationReservation` loads/locks warehouses and performs CAS reserve/release; `GetStockAvailabilityQuery` returns `(WarehouseId, WarehouseName, StockOnHand, ReservedOnHand, Available)` contracts only, active warehouses, descending by available, `Inventory.Read`-gated. Create and update handlers reserve inside the transaction after locking balances; a CAS miss returns `"Conflict"` with «الكمية لم تعد متاحة في {المخزن}؛ أعد التوزيع.». Create keeps drafts allocation-free (drafts persist no allocation choices).
+- Lifecycle: Delivered/Cancelled/Archived release the un-issued remainder before save; legacy orders without allocations take the untouched path. `UpdateOrderHandler` deletes dropped sources (repository `RemoveAllocations` + aggregate removal) so the unique index does not block re-adding the same source later, and blocks removing an item once `IssuedQty > 0`.
+- Web: `ProductEditorDrawer` «مصدر الكمية» section (editable warehouse rows with `Max = persisted + available`, derived supplier remainder, `ValidateSources`/`ApplyAllocations`); `ProductsStep` caches availability per product and falls back to supplier-only with an Arabic hint when `Inventory.Read` is denied; `OrderEditor` sends `ItemId` + allocations and maps returned item ids. New state: `OrderItemAllocationEditorState`, `StockAvailabilityEditorState`; `OrderItemEditorState` gained `ItemId`/`Allocations`.
+- Tests: `OrderAllocationTests` (plan rules, allocation factory/quantity/release, readiness unaffected by stock, legacy no-op), `OrderAllocationPersistenceTests` (round-trip, FK `Restrict`, unique index, quantity CHECK, availability math/order/exclusions), `StockSourceLifecycleTests` (race conflict without partial save, id preservation + reservation resize, removal releases, issued-quantity block, D10 legacy re-save, supplier-only/mixed sources, release on three close paths, legacy close parity). Shared SQLite harness `OrderAllocationTestDb`.
+
+**Deviations**
+- Removing an allocated item is allowed while nothing has been issued: the reservation is released and the allocation rows are deleted inside the same transaction. Only `IssuedQty > 0` blocks removal («لا يمكن حذف بند صُرفت منه كميات. راجع أوامر الصرف أولاً.»), which is stricter and clearer than letting the FK surface a raw failure.
+- Dropped sources are physically deleted rather than kept as `Released` rows, because the unique `(OrderItemId, SourceKind, WarehouseId)` index ignores status and would otherwise reject re-adding the same source on a later save. Released rows stay only for allocations released on order close (where the order is immutable afterwards).
+- Drafts store no allocation choices (`OrderDraftData` unchanged); restoring a draft requires re-selecting a source for every item, matching D10.
+- The editor availability cache is fetched once per product per editing session; a stale cache can only over-estimate `Max`, the final save still validates against live availability and returns `"Conflict"`.
 
 ---
 

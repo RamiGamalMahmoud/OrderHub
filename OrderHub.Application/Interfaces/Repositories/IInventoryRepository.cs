@@ -1,3 +1,4 @@
+using OrderHub.Application.Features.Inventory.GetStockAvailability;
 using OrderHub.Domain.Models;
 using System.Collections.Generic;
 using System.Threading;
@@ -7,6 +8,19 @@ namespace OrderHub.Application.Interfaces.Repositories;
 
 public interface IInventoryRepository
 {
+    /// <summary>Company-wide availability of a product per active warehouse, highest available first.</summary>
+    Task<IReadOnlyList<StockAvailabilityRow>> GetAvailabilityAsync(
+        int productId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Ordered row locks (ascending product, then warehouse) on PostgreSQL; a no-op elsewhere.
+    /// Must run inside the caller's transaction (D13).
+    /// </summary>
+    Task LockBalancesAsync(
+        IReadOnlyCollection<(int WarehouseId, int ProductId)> keys,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Loads the tracked balance row so domain behaviors can be applied before saving.</summary>
     Task<StockBalance> GetStockItemAsync(
         int warehouseId,

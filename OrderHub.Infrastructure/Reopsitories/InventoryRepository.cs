@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using OrderHub.Application.Features.Inventory.GetStockAvailability;
 using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Models;
 using System;
@@ -16,6 +17,56 @@ internal sealed class InventoryRepository : IInventoryRepository
     public InventoryRepository(AppDbContext dbContext)
     {
         _dbContext = dbContext;
+    }
+
+    public async Task<IReadOnlyList<StockAvailabilityRow>> GetAvailabilityAsync(
+        int productId,
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await (
+            from warehouse in _dbContext.Warehouses.AsNoTracking()
+            join balance in _dbContext.StockBalances.AsNoTracking()
+                on warehouse.Id equals balance.WarehouseId into balances
+            from balance in balances.Where(item => item.ProductId == productId).DefaultIfEmpty()
+            where warehouse.IsActive
+            select new
+            {
+                warehouse.Id,
+                Name = warehouse.Name.Value,
+                StockOnHand = balance == null ? 0 : balance.StockOnHand,
+                ReservedOnHand = balance == null ? 0 : balance.ReservedOnHand
+            }).ToListAsync(cancellationToken);
+
+        return rows
+            .Select(row => new StockAvailabilityRow(
+                row.Id,
+                row.Name,
+                row.StockOnHand,
+                row.ReservedOnHand,
+                row.StockOnHand - row.ReservedOnHand))
+            .OrderByDescending(row => row.Available)
+            .ThenBy(row => row.WarehouseName)
+            .ToList();
+    }
+
+    public async Task LockBalancesAsync(
+        IReadOnlyCollection<(int WarehouseId, int ProductId)> keys,
+        CancellationToken cancellationToken = default)
+    {
+        if (_dbContext.Database.ProviderName?.Contains("Npgsql", StringComparison.Ordinal) != true
+            || _dbContext.Database.CurrentTransaction is null)
+            return;
+
+        foreach (var key in keys.Distinct()
+                     .OrderBy(item => item.ProductId)
+                     .ThenBy(item => item.WarehouseId))
+        {
+            await _dbContext.StockBalances
+                .FromSqlInterpolated(
+                    $"SELECT * FROM stock_balances WHERE warehouse_id = {key.WarehouseId} AND product_id = {key.ProductId} FOR UPDATE")
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+        }
     }
 
     public Task<StockBalance> GetStockItemAsync(

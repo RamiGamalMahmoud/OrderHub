@@ -1,18 +1,22 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using OrderHub.Application.Context;
+using OrderHub.Application.Features.Orders.Allocations;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Common;
+using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using OrderHub.Application.Features.Orders.Archive;
 
 namespace OrderHub.Application.Features.Orders.Lifecycle;
 
 internal sealed class OrderLifecycleHandlers(IOrderRepository repository, IUnitOfWork unitOfWork,
-    ICurrentUser user, TimeProvider clock) :
+    IInventoryRepository inventory, ICurrentUser user, TimeProvider clock) :
     IRequestHandler<ChangeOrderStatusCommand, Result<OrderOperationReceipt>>,
     IRequestHandler<ChangeDeliveryStepStatusCommand, Result<OrderOperationReceipt>>,
     IRequestHandler<DeliverOrderDirectlyCommand, Result<OrderOperationReceipt>>,
@@ -46,9 +50,48 @@ internal sealed class OrderLifecycleHandlers(IOrderRepository repository, IUnitO
         var operation = new OrderOperation(user.Id.Value, user.DisplayName ?? user.UserName, clock.GetUtcNow().UtcDateTime);
         valid = change(order, operation);
         if (!valid.IsSuccess) return Result<OrderOperationReceipt>.Failure(valid.ErrorMessage, "InvalidOperation");
+
+        var closes = order.IsArchived || order.OrderStatus is OrderStatus.Delivered or OrderStatus.Cancelled;
+        var releaseable = closes ? order.OpenAllocations() : [];
+        var transactionActive = false;
         try
         {
-            if (order.Version != expectedVersion) await unitOfWork.SaveChangesAsync(cancellationToken);
+            if (releaseable.Count > 0)
+            {
+                await unitOfWork.BeginTransactionAsync(cancellationToken);
+                transactionActive = true;
+
+                var releases = releaseable
+                    .Where(allocation => allocation.SourceKind == AllocationSourceKind.Warehouse &&
+                        allocation.WarehouseId.HasValue && allocation.Remaining > 0)
+                    .Select(allocation => (ProductId: allocation.ProductId,
+                        WarehouseId: allocation.WarehouseId!.Value, Qty: allocation.Remaining))
+                    .ToList();
+                if (releases.Count > 0)
+                {
+                    await inventory.LockBalancesAsync(
+                        releases.Select(release => (release.WarehouseId, release.ProductId)).Distinct().ToList(),
+                        cancellationToken);
+                    var released = await OrderAllocationReservation.ReleaseAsync(inventory, releases, cancellationToken);
+                    if (!released.IsSuccess)
+                        return Result<OrderOperationReceipt>.Failure(released.ErrorMessage, "Conflict");
+                }
+
+                var reason = order.IsArchived ? "أرشفة الطلب"
+                    : order.OrderStatus == OrderStatus.Cancelled ? "إلغاء الطلب"
+                    : "إتمام التسليم";
+                valid = order.ReleaseOpenAllocations(operation, reason);
+                if (!valid.IsSuccess)
+                    return Result<OrderOperationReceipt>.Failure(valid.ErrorMessage, "InvalidOperation");
+            }
+
+            if (order.Version != expectedVersion || transactionActive)
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+            if (transactionActive)
+            {
+                transactionActive = false;
+                await unitOfWork.CommitTransactionAsync(cancellationToken);
+            }
             return new OrderOperationReceipt(order.Id, order.Version, order.OrderStatus);
         }
         catch (PersistenceConflictException exception)
@@ -58,6 +101,11 @@ internal sealed class OrderLifecycleHandlers(IOrderRepository repository, IUnitO
         catch (PersistenceException)
         {
             return Result<OrderOperationReceipt>.Failure("تعذر حفظ العملية. لم يتم اعتماد أي تغيير.", "Persistence");
+        }
+        finally
+        {
+            if (transactionActive)
+                await unitOfWork.RollbackTransactionAsync(CancellationToken.None);
         }
     }
 }

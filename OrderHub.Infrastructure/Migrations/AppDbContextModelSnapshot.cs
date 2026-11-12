@@ -1321,6 +1321,87 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("order_delivery_steps", (string)null);
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.OrderInventoryAllocation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("IssuedQty")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("issued_qty");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_id");
+
+                    b.Property<int>("OrderItemId")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_item_id");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer")
+                        .HasColumnName("product_id");
+
+                    b.Property<int>("Qty")
+                        .HasColumnType("integer")
+                        .HasColumnName("qty");
+
+                    b.Property<string>("SourceKind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("source_kind");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<int?>("SupplierId")
+                        .HasColumnType("integer")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<int?>("WarehouseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_order_inventory_allocations");
+
+                    b.HasIndex("SupplierId")
+                        .HasDatabaseName("ix_order_inventory_allocations_supplier_id");
+
+                    b.HasIndex("WarehouseId")
+                        .HasDatabaseName("ix_order_inventory_allocations_warehouse_id");
+
+                    b.HasIndex("OrderId", "Status")
+                        .HasDatabaseName("ix_order_inventory_allocations_order_id_status");
+
+                    b.HasIndex("OrderItemId", "SourceKind", "WarehouseId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_order_inventory_allocations_order_item_id_source_kind_wareh");
+
+                    b.ToTable("order_inventory_allocations", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_order_inventory_allocations_quantity", "qty > 0 AND issued_qty >= 0 AND issued_qty <= qty");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.OrderItem", b =>
                 {
                     b.Property<int>("Id")
@@ -3313,6 +3394,43 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("ShippingCarrier");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.OrderInventoryAllocation", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
+                        .WithMany("Allocations")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_order_inventory_allocations_orders_order_id");
+
+                    b.HasOne("OrderHub.Domain.Models.OrderItem", "OrderItem")
+                        .WithMany()
+                        .HasForeignKey("OrderItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_order_inventory_allocations_order_items_order_item_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_order_inventory_allocations_suppliers_supplier_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_order_inventory_allocations_warehouses_warehouse_id");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("OrderItem");
+
+                    b.Navigation("Supplier");
+
+                    b.Navigation("Warehouse");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.OrderItem", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.Order", "Order")
@@ -4077,6 +4195,8 @@ namespace OrderHub.Infrastructure.Migrations
 
             modelBuilder.Entity("OrderHub.Domain.Models.Order", b =>
                 {
+                    b.Navigation("Allocations");
+
                     b.Navigation("DeliveryMovements");
 
                     b.Navigation("DeliverySteps");

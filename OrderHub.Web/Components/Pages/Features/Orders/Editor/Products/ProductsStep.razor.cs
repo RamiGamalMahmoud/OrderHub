@@ -1,11 +1,14 @@
 
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
+using OrderHub.Application.Authorization;
+using OrderHub.Application.Features.Inventory.GetStockAvailability;
 using OrderHub.Application.Features.Orders.GetItemEditor;
 using OrderHub.Application.Features.Products.Contracts;
 using OrderHub.Application.Features.Orders;
 using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Common;
+using OrderHub.Domain.Enums;
 using OrderHub.Domain.Services.Pricing;
 using OrderHub.Web.Components.Pages.Features.Orders.Editor.State;
 
@@ -20,6 +23,17 @@ public partial class ProductsStep : IDisposable
     private OrderItemEditorState? _editingItem;
     private bool _isEditorOpen;
     private bool _isAddingItem;
+
+    private readonly Dictionary<int, StockSourceAvailability> _availability = [];
+
+    private sealed record StockSourceAvailability(
+        IReadOnlyList<StockAvailabilityEditorState> Rows,
+        string? Warning);
+
+    private StockSourceAvailability CurrentAvailability =>
+        _editingItem is not null && _availability.TryGetValue(_editingItem.ProductId, out var value)
+            ? value
+            : new StockSourceAvailability([], null);
 
     private static PricingItemResult PricingOf(OrderItemEditorState item) =>
         PricingCalculator.CalculateItem(
@@ -102,6 +116,36 @@ public partial class ProductsStep : IDisposable
         }
     }
 
+    private async Task<StockSourceAvailability> GetAvailabilityAsync(int productId)
+    {
+        if (_availability.TryGetValue(productId, out var cached))
+            return cached;
+
+        StockSourceAvailability availability;
+        try
+        {
+            var rows = await RequestExecutor.ExecuteAsync(new GetStockAvailabilityQuery(productId));
+            availability = new StockSourceAvailability(
+                rows.Select(row => new StockAvailabilityEditorState(
+                    row.WarehouseId, row.WarehouseName, row.StockOnHand, row.ReservedOnHand, row.Available)).ToList(),
+                null);
+        }
+        catch (AuthorizationDeniedException)
+        {
+            availability = new StockSourceAvailability(
+                [], "لا تملك صلاحية عرض أرصدة المخزون. يمكنك تخصيص الكمية من المورد فقط.");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load stock availability for product {ProductId}.", productId);
+            availability = new StockSourceAvailability(
+                [], "تعذر تحميل أرصدة المخزون. يمكنك تخصيص الكمية من المورد فقط.");
+        }
+
+        _availability[productId] = availability;
+        return availability;
+    }
+
     private async Task<Result> OpenNewProductEditorAsync(ProductLookupItem selectedProduct)
     {
         if (_disposed || _isEditorOpen || _editingItem is not null)
@@ -138,6 +182,8 @@ public partial class ProductsStep : IDisposable
         {
             return Result.Failure("المنتج لم يعد متاحاً. اختر منتجاً آخر.");
         }
+
+        await GetAvailabilityAsync(product.ProductId);
 
         var draft = new OrderItemEditorState
         {
@@ -182,7 +228,7 @@ public partial class ProductsStep : IDisposable
         return Result.Success();
     }
 
-    private void EditItem(OrderItemEditorState item)
+    private async Task EditItem(OrderItemEditorState item)
     {
         if (_disposed || !Items.Contains(item))
             return;
@@ -190,6 +236,8 @@ public partial class ProductsStep : IDisposable
         // Already editing this item — don't reinitialize the drawer.
         if (_isEditorOpen && ReferenceEquals(_editingItem, item) && !_isAddingItem)
             return;
+
+        await GetAvailabilityAsync(item.ProductId);
 
         _editingItem = item;
         _isAddingItem = false;
@@ -205,7 +253,7 @@ public partial class ProductsStep : IDisposable
         if (_isEditorOpen && _isAddingItem)
             return;
 
-        EditItem(item);
+        _ = EditItem(item);
     }
 
     private Task OnEditorOpenChanged(bool open)
@@ -246,18 +294,9 @@ public partial class ProductsStep : IDisposable
                 "تحقق من السعر والكمية والضريبة قبل الحفظ.");
         }
 
-        if (!working.SupplierId.HasValue)
-        {
-            return Result.Failure(
-                "يجب تحديد المورد للمنتج.");
-        }
-
-        if (working.SupplierId.HasValue &&
-            !original.Suppliers.Any(s => s.Id == working.SupplierId))
-        {
-            return Result.Failure(
-                "المورد المحدد غير متاح لهذا المنتج.");
-        }
+        var allocationError = ValidateAllocations(working);
+        if (allocationError is not null)
+            return Result.Failure(allocationError);
 
         if (!original.Properties
                 .Select(p => p.PropertyId)
@@ -285,7 +324,8 @@ public partial class ProductsStep : IDisposable
             !original.Properties
                 .Select(p => p.Value)
                 .SequenceEqual(
-                    working.Properties.Select(p => p.Value));
+                    working.Properties.Select(p => p.Value)) ||
+            !AllocationKey(original).SequenceEqual(AllocationKey(working));
 
         // في التعديل، لا حاجة لتحديث الحالة عند عدم وجود تغييرات.
         // أما الإضافة، فيجب إدراج المسودة حتى لو لم يعدل المستخدم القيم الافتراضية.
@@ -296,6 +336,8 @@ public partial class ProductsStep : IDisposable
         original.Quantity = working.Quantity;
         original.VatRate = working.VatRate;
         original.SupplierId = working.SupplierId;
+        original.Allocations.Clear();
+        original.Allocations.AddRange(working.Allocations.Select(allocation => allocation.Clone()));
 
         for (var index = 0; index < original.Properties.Count; index++)
         {
@@ -316,6 +358,46 @@ public partial class ProductsStep : IDisposable
         await ItemsChanged.InvokeAsync();
 
         return Result.Success();
+    }
+
+    private static IEnumerable<(AllocationSourceKind Kind, int? WarehouseId, int? SupplierId, int Qty)>
+        AllocationKey(OrderItemEditorState item) =>
+        item.Allocations.Select(allocation =>
+            (allocation.SourceKind, allocation.WarehouseId, allocation.SupplierId, allocation.Qty));
+
+    private static string? ValidateAllocations(OrderItemEditorState item)
+    {
+        if (item.Allocations.Count == 0)
+            return "يجب تحديد مصدر البند (مخزن أو مورد) قبل إضافته للطلب.";
+
+        if (item.Allocations.Any(allocation => allocation.Qty <= 0))
+            return "كميات المصدر يجب أن تكون أكبر من صفر.";
+
+        if (item.Allocations.Any(allocation =>
+                allocation.SourceKind == AllocationSourceKind.Warehouse && !allocation.WarehouseId.HasValue))
+            return "حدد المخزن لكل كمية مخصصة.";
+
+        var supplierAllocations = item.Allocations
+            .Where(allocation => allocation.SourceKind == AllocationSourceKind.Supplier)
+            .ToList();
+
+        if (supplierAllocations.Count > 1)
+            return "لا يمكن تخصيص كمية البند لأكثر من مورد واحد.";
+
+        if (supplierAllocations.Count == 1)
+        {
+            if (!item.SupplierId.HasValue ||
+                supplierAllocations[0].SupplierId != item.SupplierId)
+                return "يجب تحديد المورد للكمية غير المتوفرة في المخازن.";
+
+            if (!item.Suppliers.Any(supplier => supplier.Id == item.SupplierId))
+                return "المورد المحدد غير متاح لهذا المنتج.";
+        }
+
+        if (item.Allocations.Sum(allocation => allocation.Qty) != item.Quantity)
+            return "مجموع الكميات المخصصة يجب أن يساوي كمية البند.";
+
+        return null;
     }
 
     private async Task RemoveItem(OrderItemEditorState item)

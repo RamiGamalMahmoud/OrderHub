@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using OrderHub.Application.Context;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
+using OrderHub.Application.Features.Orders.Allocations;
 using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Interfaces;
 using OrderHub.Application.Interfaces.Repositories;
@@ -10,6 +11,7 @@ using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using OrderHub.Domain.Models.CommercialDocuments;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,6 +28,8 @@ internal class CreateOrderCommandHandler
     private readonly ICurrentUser _currentUser;
     private readonly IDraftRepository _draftRepository;
     private readonly INumberSequenceService _numberSequenceService;
+    private readonly IInventoryRepository _inventoryRepository;
+    private readonly IWarehouseRepository _warehouseRepository;
 
     public CreateOrderCommandHandler(
         IOrderRepository orderRepository,
@@ -34,7 +38,9 @@ internal class CreateOrderCommandHandler
         IProformaInvoiceRepository proformaInvoiceRepository,
         ICurrentUser currentUser,
         IDraftRepository draftRepository,
-        INumberSequenceService numberSequenceService)
+        INumberSequenceService numberSequenceService,
+        IInventoryRepository inventoryRepository,
+        IWarehouseRepository warehouseRepository)
     {
         _orderRepository = orderRepository;
         _unitOfWork = unitOfWork;
@@ -43,6 +49,8 @@ internal class CreateOrderCommandHandler
         _currentUser = currentUser;
         _draftRepository = draftRepository;
         _numberSequenceService = numberSequenceService;
+        _inventoryRepository = inventoryRepository;
+        _warehouseRepository = warehouseRepository;
     }
 
     public async Task<Result<int>> Handle(
@@ -99,8 +107,8 @@ internal class CreateOrderCommandHandler
                     "خطوات التوصيل أو ترتيبها غير صالح.");
             }
 
-            if ((input.OrderItems ?? Enumerable.Empty<OrderInput.Item>())
-                .Any(item =>
+            var inputItems = (input.OrderItems ?? Enumerable.Empty<OrderInput.Item>()).ToList();
+            if (inputItems.Any(item =>
                     item is null ||
                     (item.Properties ?? Enumerable.Empty<OrderInput.Property>())
                         .Any(property => property is null)))
@@ -109,8 +117,42 @@ internal class CreateOrderCommandHandler
                     "بنود الطلب أو خصائصها غير صالحة.");
             }
 
+            var plan = OrderAllocationRules.Plan(inputItems, allowExistingIds: false);
+            if (!plan.IsSuccess)
+                return Result<int>.Failure(plan.ErrorMessage);
+
+            var warehouses = await OrderAllocationReservation.LoadWarehousesAsync(
+                _warehouseRepository,
+                plan.Value.SelectMany(item => item.Allocations)
+                    .Where(allocation => allocation.SourceKind == AllocationSourceKind.Warehouse)
+                    .Select(allocation => allocation.WarehouseId.Value),
+                cancellationToken);
+            if (!warehouses.IsSuccess)
+                return Result<int>.Failure(warehouses.ErrorMessage);
+
             await _unitOfWork.BeginTransactionAsync(cancellationToken);
             transactionActive = true;
+
+            var plannedReservations = plan.Value
+                .SelectMany(item => OrderAllocationReservation.WarehouseReservations(
+                    item.Input.ProductId, item.Allocations))
+                .ToList();
+            if (plannedReservations.Count > 0)
+            {
+                await _inventoryRepository.LockBalancesAsync(
+                    plannedReservations
+                        .Select(item => (item.WarehouseId, item.ProductId))
+                        .ToList(),
+                    cancellationToken);
+
+                var reserved = await OrderAllocationReservation.ReserveAsync(
+                    _inventoryRepository,
+                    plannedReservations,
+                    warehouses.Value,
+                    cancellationToken);
+                if (!reserved.IsSuccess)
+                    return Result<int>.Failure(reserved.ErrorMessage, reserved.ErrorCode);
+            }
 
             long nextOrderNumber = await _numberSequenceService.NextGlobalAsync(NumberSequenceKind.Order, cancellationToken);
 
@@ -156,20 +198,17 @@ internal class CreateOrderCommandHandler
             if (!initial.IsSuccess)
                 return Result<int>.Failure(initial.ErrorMessage);
 
-            foreach (OrderInput.Item item in
-                request.Order.OrderItems ?? Enumerable.Empty<OrderInput.Item>())
+            foreach (PlannedItem plannedItem in plan.Value)
             {
-                if (item.SupplierId is null)
-                    return Result<int>.Failure($"{item.ProductName}: يجب تحديد المورد.");
-
+                var item = plannedItem.Input;
                 Result<OrderItem> result = order.AddOrderItem(
                     item.ProductId,
                     item.ProductName,
                     item.UnitPrice,
                     item.Quantity,
                     item.VatRate,
-                    item.SupplierName,
-                    item.SupplierId,
+                    plannedItem.SupplierName,
+                    plannedItem.SupplierId,
                     (item.Properties ?? Enumerable.Empty<OrderInput.Property>())
                         .Select(p => new OrderItemPropertyData(
                             p.PropertyId,
@@ -179,6 +218,20 @@ internal class CreateOrderCommandHandler
 
                 if (!result.IsSuccess)
                     return Result<int>.Failure(result.ErrorMessage);
+
+                foreach (PlannedAllocation plannedAllocation in plannedItem.Allocations)
+                {
+                    Result<OrderInventoryAllocation> allocation = OrderInventoryAllocation.Create(
+                        item.ProductId,
+                        plannedAllocation.SourceKind,
+                        plannedAllocation.Qty,
+                        plannedAllocation.WarehouseId,
+                        plannedAllocation.SupplierId);
+                    if (!allocation.IsSuccess)
+                        return Result<int>.Failure(allocation.ErrorMessage);
+
+                    order.AddAllocation(allocation.Value, result.Value);
+                }
             }
 
             if (order.OrderItems.Count == 0)

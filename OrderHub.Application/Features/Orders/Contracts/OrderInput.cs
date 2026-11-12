@@ -32,7 +32,15 @@ public static class OrderInput
         decimal VatRate,
         string SupplierName,
         int? SupplierId,
-        IEnumerable<Property> Properties);
+        IEnumerable<Property> Properties,
+        int? ItemId = null,
+        IEnumerable<Allocation> Allocations = null);
+
+    public record Allocation(
+        AllocationSourceKind SourceKind,
+        int Qty,
+        int? WarehouseId = null,
+        int? SupplierId = null);
 
     public record Property(
         int PropertyId,

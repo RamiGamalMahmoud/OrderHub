@@ -10,6 +10,7 @@ namespace OrderHub.Domain.Models;
 public partial class Order : ModelBase
 {
     private readonly List<OrderItem> _orderItems = [];
+    private readonly List<OrderInventoryAllocation> _allocations = [];
     private readonly List<OrderDeliveryStep> _deliverySteps = [];
     private readonly List<Shipment> _shipments = [];
     private readonly List<DeliveryTrip> _deliveryTrips = [];
@@ -72,6 +73,7 @@ public partial class Order : ModelBase
     }
 
     public IReadOnlyCollection<OrderItem> OrderItems => _orderItems.AsReadOnly();
+    public IReadOnlyCollection<OrderInventoryAllocation> Allocations => _allocations.AsReadOnly();
     public IReadOnlyCollection<OrderDeliveryStep> DeliverySteps => _deliverySteps.AsReadOnly();
     public IReadOnlyCollection<Shipment> Shipments => _shipments.AsReadOnly();
     public IReadOnlyCollection<DeliveryTrip> DeliveryTrips => _deliveryTrips.AsReadOnly();
@@ -130,6 +132,19 @@ public partial class Order : ModelBase
         }
 
         return result;
+    }
+
+    public void AddAllocation(OrderInventoryAllocation allocation, OrderItem item)
+    {
+        EnsureEditable();
+        allocation.AttachTo(this, item);
+        _allocations.Add(allocation);
+    }
+
+    public void RemoveAllocations(IReadOnlyCollection<OrderInventoryAllocation> allocations)
+    {
+        EnsureEditable();
+        _allocations.RemoveAll(allocation => allocations.Any(dropped => ReferenceEquals(dropped, allocation)));
     }
 
     public void RemoveOrderItem(OrderItem orderItem)
@@ -202,6 +217,65 @@ public partial class Order : ModelBase
         foreach (var item in replacementItems) item.AttachTo(this);
         _orderItems.Clear();
         _orderItems.AddRange(replacementItems);
+        EnsureSupplierSupplies();
+        RefreshDiscount();
+    }
+
+    /// <summary>
+    /// Applies an editor payload while preserving the identity of persisted items.
+    /// </summary>
+    public void SynchronizeOrderItems(IReadOnlyCollection<(int? Id, OrderItem Values)> items)
+    {
+        EnsureEditable();
+        var existing = _orderItems.ToDictionary(item => item.Id);
+        var ids = items.Where(item => item.Id.HasValue).Select(item => item.Id.Value).ToList();
+        if (ids.Distinct().Count() != ids.Count || ids.Any(id => id <= 0 || !existing.ContainsKey(id)))
+            throw new System.ArgumentException("Invalid order item identities.", nameof(items));
+
+        var synchronized = new List<OrderItem>();
+        foreach (var (id, values) in items)
+        {
+            if (id.HasValue)
+            {
+                var item = existing[id.Value];
+                var changed = item.Synchronize(
+                    values.UnitPrice.Value,
+                    values.Quantity,
+                    values.VatRate,
+                    values.SupplierName,
+                    values.SupplierId,
+                    values.Properties.Select(property => new OrderItemPropertyData(
+                        property.PropertyId, property.Value)).ToList());
+                if (!changed.IsSuccess)
+                    throw new System.InvalidOperationException(changed.ErrorMessage);
+                synchronized.Add(item);
+            }
+            else
+            {
+                values.AttachTo(this);
+                synchronized.Add(values);
+            }
+        }
+
+        var removed = _orderItems.Where(item => synchronized.All(kept => !ReferenceEquals(kept, item))).ToList();
+        foreach (var item in removed)
+        {
+            if (_allocations.Any(allocation => allocation.OrderItemId == item.Id &&
+                    allocation.Status == OrderAllocationStatus.Active))
+                throw new System.InvalidOperationException(
+                    "لا يمكن حذف بند مرتبط بتخصيص مخزون فعّال. حرر التخصيص أولاً.");
+        }
+
+        foreach (var item in removed)
+        {
+            _allocations.RemoveAll(allocation => allocation.OrderItemId == item.Id);
+            _orderItems.Remove(item);
+        }
+
+        foreach (var item in synchronized)
+            if (!_orderItems.Any(existingItem => ReferenceEquals(existingItem, item)))
+                _orderItems.Add(item);
+
         EnsureSupplierSupplies();
         RefreshDiscount();
     }

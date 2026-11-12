@@ -14,4 +14,14 @@ public record OrderEditorItem(
         string SupplierName,
         IEnumerable<OrderEditorSupplier> Suppliers,
         IEnumerable<OrderEditorProperty> Properties,
-        decimal VatRate = 0);
+        decimal VatRate = 0,
+        int? Id = null,
+        IEnumerable<OrderEditorAllocation> Allocations = null);
+
+public record OrderEditorAllocation(
+    OrderHub.Domain.Enums.AllocationSourceKind SourceKind,
+    int Qty,
+    int? WarehouseId,
+    string WarehouseName,
+    int? SupplierId,
+    string SupplierName);

@@ -5,6 +5,7 @@ using System.Data.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -42,6 +43,7 @@ internal class OrderRepository : IOrderRepository
         return _dbContext.Orders
             .Include(order => order.OrderItems)
                 .ThenInclude(item => item.Properties)
+            .Include(order => order.Allocations)
             .Include(order => order.Supplies)
             .Include(order => order.DeliverySteps)
             .SingleOrDefaultAsync(order => order.Id == orderId, cancellationToken);
@@ -57,6 +59,7 @@ internal class OrderRepository : IOrderRepository
             .Include(order => order.DeliverySteps).ThenInclude(step => step.ShippingCarrier)
             .Include(order => order.DeliverySteps).ThenInclude(step => step.Shipments)
             .Include(order => order.DeliverySteps).ThenInclude(step => step.DeliveryTrips)
+            .Include(order => order.Allocations)
             .AsSplitQuery()
             .SingleOrDefaultAsync(order => order.Id == orderId, cancellationToken);
 
@@ -121,6 +124,9 @@ internal class OrderRepository : IOrderRepository
             rank.IsModified = true;
         }
     }
+
+    public void RemoveAllocations(IEnumerable<OrderInventoryAllocation> allocations) =>
+        _dbContext.OrderInventoryAllocations.RemoveRange(allocations);
 
     public Task<int?> FindCreationRequestAsync(Guid requestId, int userId, CancellationToken cancellationToken = default) =>
         _dbContext.Orders.Where(order => order.CreationRequestId == requestId && order.StatusHistory.Any(history =>

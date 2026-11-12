@@ -35,6 +35,7 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<DeliveryStepStatusHistory> DeliveryStepStatusHistories { get; set; }
     public DbSet<OrderDeliveryMovement> OrderDeliveryMovements { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
+    public DbSet<OrderInventoryAllocation> OrderInventoryAllocations { get; set; }
     public DbSet<PaymentMethod> PaymentMethods { get; set; }
     public DbSet<Property> Properties { get; set; }
     public DbSet<PropertyOption> PropertyOptions { get; set; }

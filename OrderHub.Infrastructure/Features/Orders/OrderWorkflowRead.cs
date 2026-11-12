@@ -165,6 +165,7 @@ internal sealed partial class OrderReader
             OrderHistorySource.DeliveryRouteReassigned => "إعادة توجيه",
             OrderHistorySource.DeliveryStepCancelled => "إلغاء خطوة",
             OrderHistorySource.PickupConfirmed => "تأكيد استلام",
+            OrderHistorySource.StockRelease => "تحرير حجز",
             _ => null
         };
         return new OrderHistoryEntry(row.Id, (isMovement ? "movement:" : "order:") + row.Id,

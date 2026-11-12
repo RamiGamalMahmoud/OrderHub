@@ -353,6 +353,12 @@ public sealed class StockInHandlerTests
     /// <summary>Delegates every read to the real repository but fails when the ledger row is added.</summary>
     private sealed class FailingInventoryRepository(IInventoryRepository inner) : IInventoryRepository
     {
+        public Task<System.Collections.Generic.IReadOnlyList<OrderHub.Application.Features.Inventory.GetStockAvailability.StockAvailabilityRow>> GetAvailabilityAsync(int productId, CancellationToken cancellationToken = default) =>
+            inner.GetAvailabilityAsync(productId, cancellationToken);
+
+        public Task LockBalancesAsync(System.Collections.Generic.IReadOnlyCollection<(int WarehouseId, int ProductId)> keys, CancellationToken cancellationToken = default) =>
+            inner.LockBalancesAsync(keys, cancellationToken);
+
         public Task<StockBalance> GetStockItemAsync(int warehouseId, int productId, CancellationToken cancellationToken = default) =>
             inner.GetStockItemAsync(warehouseId, productId, cancellationToken);
 

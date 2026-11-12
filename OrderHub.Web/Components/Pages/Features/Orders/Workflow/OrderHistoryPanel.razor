@@ -118,6 +118,10 @@
                                     {
                                         <p class="mt-1.5 text-[11px] text-slate-500">ناتج عن اكتمال آخر خطوة توصيل.</p>
                                     }
+                                    else if (entry.Source == OrderHistorySource.StockRelease)
+                                    {
+                                        <p class="mt-1.5 text-[11px] text-slate-500">أُفرج عن حجز المخزون المتبقي غير المصروف بعد إغلاق الطلب.</p>
+                                    }
                                 </div>
                             </li>
                         }

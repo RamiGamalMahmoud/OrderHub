@@ -111,6 +111,91 @@
                                                                                   value > 0 ? null : "يجب أن تكون الكمية أكبر من صفر."))" />
                     </div>
 
+                    @* Source allocation *@
+                    <div class="space-y-2 border-t border-slate-100 pt-3">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-bold text-slate-700">مصدر الكمية</label>
+                            <span class="text-[11px] text-slate-400">المطلوب: @_workingCopy.Quantity</span>
+                        </div>
+
+                        @if (AvailabilityWarning is not null)
+                        {
+                            <MudAlert Severity="Severity.Info" Dense="true">
+                                @AvailabilityWarning
+                            </MudAlert>
+
+                            @if (_workingCopy.Allocations.Count > 0)
+                            {
+                                <ul class="space-y-1 rounded-xl bg-slate-50 p-3 text-[11px] text-slate-600">
+                                    @foreach (var allocation in _workingCopy.Allocations)
+                                    {
+                                        <li class="flex items-center justify-between">
+                                            <span>
+                                                @(allocation.SourceKind == AllocationSourceKind.Warehouse
+                                                    ? allocation.WarehouseName
+                                                    : allocation.SupplierName)
+                                            </span>
+                                            <span class="font-mono">@allocation.Qty</span>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        }
+                        else if (_rows.Count == 0)
+                        {
+                            <p class="rounded-xl bg-slate-50 p-3 text-[11px] text-slate-500">
+                                لا توجد أرصدة متاحة في المخازن لهذا المنتج. ستُخصَّص الكمية من المورد.
+                            </p>
+                        }
+                        else
+                        {
+                            <div class="space-y-2">
+                                @foreach (var row in _rows)
+                                {
+                                    <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-100 p-2.5">
+                                        <div class="min-w-0">
+                                            <p class="truncate text-xs font-semibold text-slate-700">@row.WarehouseName</p>
+                                            <p class="text-[11px] text-slate-400">
+                                                متاح: @row.Available
+                                                @if (!row.IsListed)
+                                                {
+                                                    <span> — لم يعد المخزن مدرجاً</span>
+                                                }
+                                            </p>
+                                        </div>
+
+                                        <div class="w-24 shrink-0">
+                                            <MudNumericField T="int"
+                                                             @bind-Value="row.Qty"
+                                                             Min="0"
+                                                             Max="@row.MaxQuantity"
+                                                             Disabled="_saving"
+                                                             Variant="Variant.Outlined"
+                                                             Margin="Margin.Dense"
+                                                             HideSpinButtons="true"
+                                                             InputClass="text-xs" />
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        @if (!StockDenied)
+                        {
+                            <div class="flex items-center justify-between rounded-xl bg-blue-50/60 px-3 py-2 text-xs">
+                                <span class="font-semibold text-blue-800">الكمية المتبقية من المورد</span>
+                                <span class="font-mono font-bold text-blue-700">@SupplierRemainder</span>
+                            </div>
+                        }
+
+                        @if (_sourceError is not null)
+                        {
+                            <MudAlert Severity="Severity.Warning" Dense="true">
+                                @_sourceError
+                            </MudAlert>
+                        }
+                    </div>
+
                     @* Tax *@
                     <MudNumericField T="decimal"
                                      Label="نسبة الضريبة (%)"
@@ -291,6 +376,152 @@
     public Func<OrderItemEditorState, Guid, OrderItemEditorState, Task<Result>> Commit
     { get; set; } = null!;
 
+    [Parameter]
+    public IReadOnlyList<StockAvailabilityEditorState> Availability { get; set; } = [];
+
+    [Parameter]
+    public string? AvailabilityWarning { get; set; }
+
+    private List<WarehouseSourceRow> _rows = [];
+    private Dictionary<int, int> _persistedWarehouseQty = [];
+    private string? _sourceError;
+
+    private bool StockDenied => AvailabilityWarning is not null;
+
+    private int WarehouseQuantity => StockDenied
+        ? _workingCopy?.Allocations
+            .Where(allocation => allocation.SourceKind == AllocationSourceKind.Warehouse)
+            .Sum(allocation => allocation.Qty) ?? 0
+        : _rows.Sum(row => row.Qty);
+
+    private int SupplierRemainder => Math.Max(0, (_workingCopy?.Quantity ?? 0) - WarehouseQuantity);
+
+    private sealed class WarehouseSourceRow
+    {
+        public int WarehouseId { get; init; }
+        public required string WarehouseName { get; init; }
+        public int Available { get; init; }
+        public bool IsListed { get; init; }
+        public int PersistedQty { get; init; }
+        public int MaxQuantity => Math.Max(Available + PersistedQty, 0);
+        public int Qty { get; set; }
+    }
+
+    private void BuildSourceRows()
+    {
+        _rows = [];
+        _persistedWarehouseQty = [];
+        _sourceError = null;
+
+        if (_workingCopy is null)
+            return;
+
+        var persisted = _workingCopy.Allocations
+            .Where(allocation => allocation.SourceKind == AllocationSourceKind.Warehouse && allocation.WarehouseId.HasValue)
+            .GroupBy(allocation => allocation.WarehouseId!.Value)
+            .ToDictionary(group => group.Key, group => (Qty: group.Sum(allocation => allocation.Qty),
+                Name: group.Select(allocation => allocation.WarehouseName).FirstOrDefault()));
+
+        _persistedWarehouseQty = persisted.ToDictionary(pair => pair.Key, pair => pair.Value.Qty);
+
+        if (StockDenied)
+            return;
+
+        foreach (var availability in Availability)
+        {
+            var qty = persisted.TryGetValue(availability.WarehouseId, out var saved) ? saved.Qty : 0;
+            _rows.Add(new WarehouseSourceRow
+            {
+                WarehouseId = availability.WarehouseId,
+                WarehouseName = availability.WarehouseName,
+                Available = availability.Available,
+                IsListed = true,
+                PersistedQty = qty,
+                Qty = qty
+            });
+        }
+
+        foreach (var missing in persisted.Where(pair => _rows.All(row => row.WarehouseId != pair.Key)))
+        {
+            _rows.Add(new WarehouseSourceRow
+            {
+                WarehouseId = missing.Key,
+                WarehouseName = missing.Value.Name ?? "مخزن غير متاح",
+                Available = 0,
+                IsListed = false,
+                PersistedQty = missing.Value.Qty,
+                Qty = missing.Value.Qty
+            });
+        }
+    }
+
+    private string? ValidateSources()
+    {
+        if (_workingCopy is null)
+            return null;
+
+        if (StockDenied)
+            return _workingCopy.AllocatedQuantity == _workingCopy.Quantity
+                ? null
+                : "لا تطابق الكميات المخصصة كمية البند. أعد فتح المحرر بعد تعديل الكمية.";
+
+        var warehouseQty = _rows.Sum(row => row.Qty);
+        if (warehouseQty > _workingCopy.Quantity)
+            return "مجموع كميات المخازن يتجاوز كمية البند.";
+
+        foreach (var row in _rows.Where(row => row.Qty > 0))
+        {
+            if (row.Qty > row.MaxQuantity)
+                return $"الكمية المطلوبة من {row.WarehouseName} تتجاوز المتاح ({row.MaxQuantity}).";
+        }
+
+        var remainder = _workingCopy.Quantity - warehouseQty;
+        if (remainder > 0)
+        {
+            if (!_workingCopy.SupplierId.HasValue)
+                return "يجب تحديد المورد للكمية غير المتوفرة في المخازن.";
+
+            if (!_workingCopy.Suppliers.Any(supplier => supplier.Id == _workingCopy.SupplierId))
+                return "المورد المحدد غير متاح لهذا المنتج.";
+        }
+
+        return null;
+    }
+
+    private void ApplyAllocations()
+    {
+        if (_workingCopy is null || StockDenied)
+            return;
+
+        var allocations = new List<OrderItemAllocationEditorState>();
+        foreach (var row in _rows.Where(row => row.Qty > 0))
+        {
+            allocations.Add(new OrderItemAllocationEditorState
+            {
+                SourceKind = AllocationSourceKind.Warehouse,
+                Qty = row.Qty,
+                WarehouseId = row.WarehouseId,
+                WarehouseName = row.WarehouseName
+            });
+        }
+
+        var remainder = _workingCopy.Quantity - _rows.Sum(row => row.Qty);
+        if (remainder > 0)
+        {
+            allocations.Add(new OrderItemAllocationEditorState
+            {
+                SourceKind = AllocationSourceKind.Supplier,
+                Qty = remainder,
+                SupplierId = _workingCopy.SupplierId,
+                SupplierName = _workingCopy.Suppliers
+                    .FirstOrDefault(supplier => supplier.Id == _workingCopy.SupplierId)?.Name
+            });
+        }
+
+        _workingCopy.Allocations.Clear();
+        _workingCopy.Allocations.AddRange(allocations);
+    }
+
     private OrderItemEditorState? _workingCopy;
     private OrderItemEditorState? _original;
     private Guid _originalSession;
@@ -323,6 +554,7 @@
             _original = Item;
             _originalSession = SessionId;
             _workingCopy = Item.CreateWorkingCopy();
+            BuildSourceRows();
             _error = null;
         }
 
@@ -396,6 +628,12 @@
                 if (!_form.IsValid)
                     return;
             }
+
+            _sourceError = ValidateSources();
+            if (_sourceError is not null)
+                return;
+
+            ApplyAllocations();
 
             var result = await Commit(
                 _original,

@@ -2,5 +2,11 @@ using System.Collections.Generic;
 
 namespace OrderHub.Application.Features.Orders.Update;
 
-public sealed record OrderUpdateReceipt(int Version, IReadOnlyList<SavedDeliveryStep> DeliverySteps);
+public sealed record OrderUpdateReceipt(
+    int Version,
+    IReadOnlyList<SavedDeliveryStep> DeliverySteps,
+    IReadOnlyList<SavedOrderItem> OrderItems = null);
+
 public sealed record SavedDeliveryStep(int Id, int StepOrder);
+
+public sealed record SavedOrderItem(int Id, int ProductId);

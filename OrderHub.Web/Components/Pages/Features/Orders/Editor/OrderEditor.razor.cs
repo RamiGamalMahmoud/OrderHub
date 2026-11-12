@@ -383,6 +383,7 @@ public partial class OrderEditor : IDisposable
             Items = order.OrderItems.Select(item => new OrderItemEditorState()
             {
                 ProductId = item.ProductId,
+                ItemId = item.Id,
                 CategoryName = item.CategoryName,
                 ProductName = item.ProductName,
                 UnitPrice = item.UnitPrice,
@@ -395,6 +396,15 @@ public partial class OrderEditor : IDisposable
                 Suppliers = item.Suppliers.Select(supplier => new OrderItemSupplierEditorState(
                     supplier.Id, supplier.Name)).ToList(),
                 Properties = item.Properties.Select(RestoreProperty).ToList(),
+                Allocations = (item.Allocations ?? []).Select(allocation => new OrderItemAllocationEditorState
+                {
+                    SourceKind = allocation.SourceKind,
+                    Qty = allocation.Qty,
+                    WarehouseId = allocation.WarehouseId,
+                    WarehouseName = allocation.WarehouseName,
+                    SupplierId = allocation.SupplierId,
+                    SupplierName = allocation.SupplierName
+                }).ToList(),
             }).ToList()
         };
 
@@ -456,7 +466,10 @@ public partial class OrderEditor : IDisposable
             method == DeliveryMethod.ShippingCompany ? _state.Delivery.ShippingCarrierId : null,
             _state.Items.Select(item => new OrderInput.Item(item.ProductId, item.ProductName, item.Quantity,
                 item.UnitPrice, item.VatRate, ResolveSupplierName(item, IsEdit), item.SupplierId,
-                item.Properties.Select(property => new OrderInput.Property(property.PropertyId, property.Value)).ToList())).ToList(),
+                item.Properties.Select(property => new OrderInput.Property(property.PropertyId, property.Value)).ToList(),
+                item.ItemId,
+                item.Allocations.Select(allocation => new OrderInput.Allocation(
+                    allocation.SourceKind, allocation.Qty, allocation.WarehouseId, allocation.SupplierId)).ToList())).ToList(),
             method == DeliveryMethod.DeliveryChain
                 ? steps.Select((step, index) => new OrderInput.DeliveryStep(
                     preserveStepOrder ? step.StepOrder : index + 1, step.Method, step.HandlerId!.Value, IsEdit ? step.Id : null)).ToList()
@@ -509,9 +522,21 @@ public partial class OrderEditor : IDisposable
             errors.Add("مصدر الطلب أو طريقة التوصيل غير صالح.");
         foreach (var item in state.Items)
         {
+            if (item.Allocations.Count == 0)
+            {
+                errors.Add($"{item.ProductName}: يجب تحديد مصدر البند (مخزن أو مورد) قبل إضافته للطلب.");
+                continue;
+            }
+
+            if (item.Allocations.Sum(allocation => allocation.Qty) != item.Quantity)
+                errors.Add($"{item.ProductName}: مجموع الكميات المخصصة يجب أن يساوي كمية البند.");
+
+            if (!item.Allocations.Any(allocation => allocation.SourceKind == AllocationSourceKind.Supplier))
+                continue;
+
             if (!item.SupplierId.HasValue)
             {
-                errors.Add($"{item.ProductName}: يجب تحديد المورد.");
+                errors.Add($"{item.ProductName}: يجب تحديد المورد للكمية غير المتوفرة في المخازن.");
             }
             else if (!(preservePersistedSnapshot && item.SupplierId == item.PersistedSupplierId) &&
                 item.Suppliers.Count(supplier => supplier.Id == item.SupplierId) != 1)
@@ -619,11 +644,20 @@ public partial class OrderEditor : IDisposable
             _isSavingUpdate = true;
             var submittedStates = _state.Delivery.Steps.ToArray();
             var submittedSteps = input.DeliverySteps.ToList();
+            var submittedItems = _state.Items.ToArray();
             var orderId = OrderId!.Value;
             try
             {
                 var updateResult = await RequestExecutor!.ExecuteAsync(new Application.Features.Orders.Update.UpdateOrderCommand(orderId, input, _state.Version));
                 if (updateResult.IsSuccess) _state.Version = updateResult.Value.Version;
+                if (updateResult.IsSuccess && updateResult.Value?.OrderItems is { } savedItems)
+                {
+                    for (var index = 0; index < submittedItems.Length && index < savedItems.Count; index++)
+                    {
+                        if (savedItems[index].ProductId == submittedItems[index].ProductId)
+                            submittedItems[index].ItemId = savedItems[index].Id;
+                    }
+                }
                 if (updateResult.IsSuccess && input.DeliveryMethod == DeliveryMethod.DeliveryChain)
                 {
                     var saved = updateResult.Value;

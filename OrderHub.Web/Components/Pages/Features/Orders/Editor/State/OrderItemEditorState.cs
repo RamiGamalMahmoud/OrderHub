@@ -1,8 +1,12 @@
-﻿namespace OrderHub.Web.Components.Pages.Features.Orders.Editor.State;
+﻿using OrderHub.Domain.Enums;
+
+namespace OrderHub.Web.Components.Pages.Features.Orders.Editor.State;
 
 public sealed class OrderItemEditorState
 {
     public int ProductId { get; init; }
+
+    public int? ItemId { get; set; }
 
     public required string ProductName { get; init; }
 
@@ -27,9 +31,23 @@ public sealed class OrderItemEditorState
 
     public List<OrderItemPropertyEditorState> Properties { get; init; } = [];
 
+    // مصدر كل جزء من الكمية: مخزن أو مورد. تُملأ عند حفظ المنتج في المحرر.
+    public List<OrderItemAllocationEditorState> Allocations { get; init; } = [];
+
+    public int AllocatedQuantity => Allocations.Sum(allocation => allocation.Qty);
+
+    public int WarehouseQuantity => Allocations
+        .Where(allocation => allocation.SourceKind == AllocationSourceKind.Warehouse)
+        .Sum(allocation => allocation.Qty);
+
+    public int SupplierQuantity => Allocations
+        .Where(allocation => allocation.SourceKind == AllocationSourceKind.Supplier)
+        .Sum(allocation => allocation.Qty);
+
     public OrderItemEditorState CreateWorkingCopy() => new()
     {
         ProductId = ProductId,
+        ItemId = ItemId,
         ProductName = ProductName,
         CategoryName = CategoryName,
         UnitPrice = UnitPrice,
@@ -40,6 +58,7 @@ public sealed class OrderItemEditorState
         SupplierName = SupplierName,
         MetadataRestorationError = MetadataRestorationError,
         Suppliers = Suppliers.ToArray(),
+        Allocations = Allocations.Select(allocation => allocation.Clone()).ToList(),
         Properties = Properties.Select(property => new OrderItemPropertyEditorState
         {
             PropertyId = property.PropertyId,

@@ -122,6 +122,25 @@ public partial class Order
         return Result.Success();
     }
 
+    public IReadOnlyList<OrderInventoryAllocation> OpenAllocations() =>
+        _allocations.Where(allocation => allocation.Status == OrderAllocationStatus.Active).ToList();
+
+    /// <summary>Releases the un-issued remainder after the order closes; records one system history row.</summary>
+    public Result ReleaseOpenAllocations(OrderOperation operation, string reason)
+    {
+        var valid = ValidateOperation(operation);
+        if (!valid.IsSuccess) return valid;
+        var open = OpenAllocations();
+        if (open.Count == 0) return Result.Success();
+        foreach (var allocation in open)
+        {
+            var released = allocation.Release();
+            if (!released.IsSuccess) return released;
+        }
+        _statusHistory.Add(new(null, OrderStatus, operation, reason, OrderHistorySource.StockRelease, Version));
+        return Result.Success();
+    }
+
     public IReadOnlyList<DeliveryStatus> AllowedStepStatuses(OrderDeliveryStep step)
     {
         if (IsArchived || OrderStatus != OrderStatus.OutForDelivery || DeliveryMethod != Enums.DeliveryMethod.DeliveryChain ||
