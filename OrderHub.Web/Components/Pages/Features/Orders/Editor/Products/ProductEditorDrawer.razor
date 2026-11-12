@@ -56,7 +56,7 @@
                                 <MudSelect T="int?"
                                            @bind-Value="_workingCopy.SupplierId"
                                            Clearable="true"
-                                           Disabled="_saving"
+                                           Disabled="_saving || SupplierCovered"
                                            Variant="Variant.Outlined"
                                            Margin="Margin.Dense"
                                            InputClass="text-xs font-semibold">
@@ -79,6 +79,13 @@
                                                   OnCreated="OnSupplierCreatedAsync" />
                         </div>
 
+                        @if (SupplierCovered)
+                        {
+                            <p class="rounded-xl bg-slate-50 px-3 py-2 text-[11px] leading-5 text-slate-500">
+                                الكمية مغطاة بالكامل من المخازن — لا حاجة لاختيار مورد، وسيُتجاهل أي اختيار سابق عند الحفظ.
+                            </p>
+                        }
+
                         @if (_workingCopy.SupplierId.HasValue &&
                              !_workingCopy.Suppliers.Any(s => s.Id == _workingCopy.SupplierId))
                         {
@@ -93,6 +100,7 @@
                         <MudNumericField T="decimal"
                                          Label="سعر الوحدة قبل الضريبة"
                                          @bind-Value="_workingCopy.UnitPrice"
+                                         Immediate="true"
                                          Min="0"
                                          Disabled="_saving"
                                          Variant="Variant.Outlined"
@@ -103,7 +111,9 @@
                         <MudNumericField T="int"
                                          Label="الكمية"
                                          @bind-Value="_workingCopy.Quantity"
-                                         Min="1"
+                                         @bind-Value:after="OnSourceQtyChanged"
+                                         Immediate="true"
+                                         Min="@QuantityMinimum"
                                          Disabled="_saving"
                                          Variant="Variant.Outlined"
                                          Margin="Margin.Dense"
@@ -167,6 +177,8 @@
                                         <div class="w-24 shrink-0">
                                             <MudNumericField T="int"
                                                              @bind-Value="row.Qty"
+                                                             @bind-Value:after="() => OnWarehouseQtyChanged(row)"
+                                                             Immediate="true"
                                                              Min="0"
                                                              Max="@row.MaxQuantity"
                                                              Disabled="_saving"
@@ -197,6 +209,7 @@
                     <MudNumericField T="decimal"
                                      Label="نسبة الضريبة (%)"
                                      @bind-Value="_workingCopy.VatRate"
+                                     Immediate="true"
                                      Min="0"
                                      Max="100"
                                      Disabled="_saving"
@@ -230,6 +243,7 @@
                                                       @key="property.PropertyId"
                                                       Label="@property.Name"
                                                       @bind-Value="property.Value"
+                                                      Immediate="true"
                                                       Required="property.IsRequired"
                                                       Disabled="_saving"
                                                       Variant="Variant.Outlined"
@@ -392,6 +406,30 @@
 
     private int SupplierRemainder => Math.Max(0, (_workingCopy?.Quantity ?? 0) - WarehouseQuantity);
 
+    private bool SupplierCovered =>
+        _workingCopy is not null &&
+        _workingCopy.Quantity > 0 &&
+        SupplierRemainder <= 0;
+
+    // بلا صلاحية مخزون لا يمكن تقليل مصادر المخازن، فيُمنع النزول عن مجموعها.
+    private int QuantityMinimum => StockDenied ? Math.Max(1, WarehouseQuantity) : 1;
+
+    private void OnSourceQtyChanged() => ClearSupersededSupplier();
+
+    private void ClearSupersededSupplier()
+    {
+        if (SupplierCovered && _workingCopy?.SupplierId is not null)
+            _workingCopy.SupplierId = null;
+    }
+
+    private void OnWarehouseQtyChanged(WarehouseSourceRow row)
+    {
+        if (row.Qty > row.MaxQuantity)
+            row.Qty = row.MaxQuantity;
+
+        OnSourceQtyChanged();
+    }
+
     private sealed class WarehouseSourceRow
     {
         public int WarehouseId { get; init; }
@@ -418,7 +456,10 @@
                 Name: group.Select(allocation => allocation.WarehouseName).FirstOrDefault()));
 
         if (StockDenied)
+        {
+            ClearSupersededSupplier();
             return;
+        }
 
         foreach (var availability in Availability)
         {
@@ -446,6 +487,8 @@
                 Qty = missing.Value.Qty
             });
         }
+
+        ClearSupersededSupplier();
     }
 
     private string? ValidateSources()

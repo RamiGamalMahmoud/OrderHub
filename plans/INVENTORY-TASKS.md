@@ -374,6 +374,8 @@ Manual: editor — allocate an item across 2 warehouses + supplier remainder; sa
 - Drafts store no allocation choices (`OrderDraftData` unchanged); restoring a draft requires re-selecting a source for every item, matching D10.
 - The editor availability cache is fetched once per product per editing session; a stale cache can only over-estimate `Max`, the final save still validates against live availability and returns `"Conflict"`.
 
+**Follow-up (2026-11-13):** the editor now lists only warehouses that actually hold stock (`StockOnHand > 0`), disables and clears the supplier selection once warehouse sources cover the full quantity (ignored on save, with an inline note), and makes every drawer input update immediately (`Immediate="true"` + live remainder/coverage/price summary); warehouse quantities clamp to `MaxQuantity` as they are typed.
+
 ---
 
 ### [ ] T06 — Issue orders, batches, numbering

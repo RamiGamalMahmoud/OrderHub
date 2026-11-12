@@ -126,8 +126,10 @@ public partial class ProductsStep : IDisposable
         {
             var rows = await RequestExecutor.ExecuteAsync(new GetStockAvailabilityQuery(productId));
             availability = new StockSourceAvailability(
-                rows.Select(row => new StockAvailabilityEditorState(
-                    row.WarehouseId, row.WarehouseName, row.StockOnHand, row.ReservedOnHand, row.Available)).ToList(),
+                rows.Where(row => row.StockOnHand > 0)
+                    .Select(row => new StockAvailabilityEditorState(
+                        row.WarehouseId, row.WarehouseName, row.StockOnHand, row.ReservedOnHand, row.Available))
+                    .ToList(),
                 null);
         }
         catch (AuthorizationDeniedException)
