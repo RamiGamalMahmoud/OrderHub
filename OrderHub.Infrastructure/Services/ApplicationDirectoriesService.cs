@@ -23,6 +23,9 @@ internal sealed class ApplicationDirectoriesService
     public string AttachmentsDirectory =>
         Path.Combine(RootDirectory, "Attachments");
 
+    public string StockAttachmentsDirectory =>
+        Path.Combine(RootDirectory, "StockAttachments");
+
     public string DocumentsDirectory =>
         Path.Combine(RootDirectory, "Documents");
 
@@ -49,6 +52,7 @@ internal sealed class ApplicationDirectoriesService
         Directory.CreateDirectory(RootDirectory);
         Directory.CreateDirectory(ConfigDirectory);
         Directory.CreateDirectory(AttachmentsDirectory);
+        Directory.CreateDirectory(StockAttachmentsDirectory);
         Directory.CreateDirectory(DocumentsDirectory);
         Directory.CreateDirectory(InvoicesDirectory);
         Directory.CreateDirectory(ProformaInvoicesDirectory);

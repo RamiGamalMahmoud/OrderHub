@@ -955,6 +955,9 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasDatabaseName("ix_inventory_movements_reversal_of_movement_id")
                         .HasFilter("\"reversal_of_movement_id\" IS NOT NULL");
 
+                    b.HasIndex("SourceStockReceiptId")
+                        .HasDatabaseName("ix_inventory_movements_source_stock_receipt_id");
+
                     b.HasIndex("ProductId", "EffectiveAtUtc")
                         .HasDatabaseName("ix_inventory_movements_product_id_effective_at_utc");
 
@@ -2022,6 +2025,184 @@ namespace OrderHub.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.StockReceipt", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<string>("ReceiptType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("receipt_type");
+
+                    b.Property<string>("ReferenceNote")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("reference_note");
+
+                    b.Property<int?>("SupplierId")
+                        .HasColumnType("integer")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<int>("WarehouseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stock_receipts");
+
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("ix_stock_receipts_created_by_user_id");
+
+                    b.HasIndex("SupplierId")
+                        .HasDatabaseName("ix_stock_receipts_supplier_id");
+
+                    b.HasIndex("WarehouseId", "CreatedAt")
+                        .HasDatabaseName("ix_stock_receipts_warehouse_id_created_at");
+
+                    b.ToTable("stock_receipts", (string)null);
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.StockReceiptAttachment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("description");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("original_file_name");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<int?>("StockReceiptId")
+                        .HasColumnType("integer")
+                        .HasColumnName("stock_receipt_id");
+
+                    b.Property<string>("StoredFileName")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("character varying(260)")
+                        .HasColumnName("stored_file_name");
+
+                    b.Property<int>("UploadedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("uploaded_by_user_id");
+
+                    b.Property<int>("WarehouseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stock_receipt_attachments");
+
+                    b.HasIndex("StockReceiptId")
+                        .HasDatabaseName("ix_stock_receipt_attachments_stock_receipt_id");
+
+                    b.HasIndex("StoredFileName")
+                        .IsUnique()
+                        .HasDatabaseName("ix_stock_receipt_attachments_stored_file_name");
+
+                    b.HasIndex("UploadedByUserId")
+                        .HasDatabaseName("ix_stock_receipt_attachments_uploaded_by_user_id");
+
+                    b.HasIndex("WarehouseId", "UploadedByUserId", "StockReceiptId")
+                        .HasDatabaseName("ix_stock_receipt_attachments_warehouse_id_uploaded_by_user_id_");
+
+                    b.ToTable("stock_receipt_attachments", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_stock_receipt_attachments_size", "size_bytes > 0");
+                        });
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.StockReceiptLine", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer")
+                        .HasColumnName("product_id");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<int>("StockReceiptId")
+                        .HasColumnType("integer")
+                        .HasColumnName("stock_receipt_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stock_receipt_lines");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("ix_stock_receipt_lines_product_id");
+
+                    b.HasIndex("StockReceiptId", "ProductId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_stock_receipt_lines_stock_receipt_id_product_id");
+
+                    b.ToTable("stock_receipt_lines", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_stock_receipt_lines_quantity", "quantity > 0");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.Supplier", b =>
                 {
                     b.Property<int>("Id")
@@ -2981,6 +3162,12 @@ namespace OrderHub.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_inventory_movements_products_product_id");
 
+                    b.HasOne("OrderHub.Domain.Models.StockReceipt", null)
+                        .WithMany()
+                        .HasForeignKey("SourceStockReceiptId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_inventory_movements_stock_receipts_source_stock_receipt_id");
+
                     b.HasOne("OrderHub.Domain.Models.Warehouse", null)
                         .WithMany()
                         .HasForeignKey("WarehouseId")
@@ -3462,6 +3649,85 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.StockReceipt", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_receipts_users_created_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_stock_receipts_suppliers_supplier_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_receipts_warehouses_warehouse_id");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Supplier");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.StockReceiptAttachment", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.StockReceipt", "StockReceipt")
+                        .WithMany("Attachments")
+                        .HasForeignKey("StockReceiptId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_stock_receipt_attachments_stock_receipts_stock_receipt_id");
+
+                    b.HasOne("OrderHub.Domain.Models.User", "UploadedBy")
+                        .WithMany()
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_receipt_attachments_users_uploaded_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_receipt_attachments_warehouses_warehouse_id");
+
+                    b.Navigation("StockReceipt");
+
+                    b.Navigation("UploadedBy");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.StockReceiptLine", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_receipt_lines_products_product_id");
+
+                    b.HasOne("OrderHub.Domain.Models.StockReceipt", "StockReceipt")
+                        .WithMany("Lines")
+                        .HasForeignKey("StockReceiptId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_receipt_lines_stock_receipts_stock_receipt_id");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("StockReceipt");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.Supplier", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.Address", "Address")
@@ -3853,6 +4119,13 @@ namespace OrderHub.Infrastructure.Migrations
             modelBuilder.Entity("OrderHub.Domain.Models.Role", b =>
                 {
                     b.Navigation("Permissions");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.StockReceipt", b =>
+                {
+                    b.Navigation("Attachments");
+
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Trips.StandaloneTrip", b =>

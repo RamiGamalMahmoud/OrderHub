@@ -57,6 +57,9 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<StockBalance> StockBalances { get; set; }
     public DbSet<InventoryMovement> InventoryMovements { get; set; }
     public DbSet<Warehouse> Warehouses { get; set; }
+    public DbSet<StockReceipt> StockReceipts { get; set; }
+    public DbSet<StockReceiptLine> StockReceiptLines { get; set; }
+    public DbSet<StockReceiptAttachment> StockReceiptAttachments { get; set; }
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
@@ -84,10 +87,36 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
                 continue;
             }
 
+            if (entry.Entity is StockReceiptAttachment attachment)
+            {
+                if (entry.State == EntityState.Deleted && attachment.IsDraft)
+                    continue;
+
+                if (entry.State == EntityState.Modified && IsDraftAttachmentBinding(attachment, entry))
+                    continue;
+
+                throw new InvalidOperationException("مرفق توريد محفوظ ولا يمكن تعديله أو حذفه.");
+            }
+
+            if (entry.Entity is StockReceipt or StockReceiptLine)
+                throw new InvalidOperationException("سجل التوريد محفوظ ولا يمكن تعديله أو حذفه.");
+
             if (entry.Entity is OrderStatusHistory or DeliveryStepStatusHistory
                 or WorkRecordStatusHistory or OrderDeliveryMovement or StandaloneTripHistoryEntry)
                 throw new InvalidOperationException("سجل التشغيل محفوظ ولا يمكن تعديله أو حذفه.");
         }
+    }
+
+    private static bool IsDraftAttachmentBinding(StockReceiptAttachment attachment, EntityEntry entry)
+    {
+        var modified = entry.Properties
+            .Where(property => property.IsModified)
+            .Select(property => property.Metadata.Name)
+            .ToList();
+
+        return modified.Count == 1
+            && modified[0] == nameof(StockReceiptAttachment.StockReceiptId)
+            && attachment.StockReceiptId is not null;
     }
 
     private static bool IsStatusOnlyChange(InventoryMovement movement, EntityEntry entry)

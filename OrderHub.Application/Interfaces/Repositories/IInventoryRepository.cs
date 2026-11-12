@@ -57,4 +57,9 @@ public interface IInventoryRepository
         int warehouseId,
         int? productId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>True when the warehouse already has any ledger movement (used by the opening-balance rule).</summary>
+    Task<bool> HasMovementsAsync(
+        int warehouseId,
+        CancellationToken cancellationToken = default);
 }

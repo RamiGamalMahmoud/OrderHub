@@ -46,6 +46,36 @@ internal sealed class LocalFileAccessService
         return Task.CompletedTask;
     }
 
+    // Stock attachments (inventory receipts)
+
+    public async Task SaveStockAttachmentAsync(
+        string fileName,
+        Stream content)
+    {
+        string filePath = GetStockAttachmentPath(fileName);
+
+        await SaveAsync(filePath, content);
+    }
+
+    public Task<string> GetStockAttachmentAsync(
+        string fileName)
+    {
+        string filePath = GetStockAttachmentPath(fileName);
+
+        return Task.FromResult(
+            File.Exists(filePath)
+                ? filePath
+                : null);
+    }
+
+    public Task DeleteStockAttachmentAsync(
+        string fileName)
+    {
+        DeleteFile(GetStockAttachmentPath(fileName));
+
+        return Task.CompletedTask;
+    }
+
     // Quotations
 
     public async Task SaveQuotationAsync(
@@ -148,6 +178,16 @@ internal sealed class LocalFileAccessService
 
         return Path.Combine(
             _directories.AttachmentsDirectory,
+            fileName);
+    }
+
+    private string GetStockAttachmentPath(
+        string fileName)
+    {
+        ValidateFileName(fileName);
+
+        return Path.Combine(
+            _directories.StockAttachmentsDirectory,
             fileName);
     }
 

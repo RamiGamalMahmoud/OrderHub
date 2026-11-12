@@ -16,6 +16,13 @@ internal sealed class ProductRepository(AppDbContext context) : IProductReposito
     public async Task<IReadOnlyList<Supplier>> GetSuppliersAsync(IEnumerable<int> ids, CancellationToken cancellationToken) =>
         await context.Suppliers.Where(supplier => ids.Contains(supplier.Id)).ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<Product>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken cancellationToken) =>
+        await context.Products
+            .AsNoTracking()
+            .Include(product => product.Suppliers)
+            .Where(product => ids.Contains(product.Id))
+            .ToListAsync(cancellationToken);
+
     public Task<Product> GetForUpdateAsync(int id, CancellationToken cancellationToken) =>
         context.Products.Include(product => product.Category).Include(product => product.Suppliers)
             .Include(product => product.Properties).FirstOrDefaultAsync(product => product.Id == id, cancellationToken);

@@ -152,6 +152,13 @@ internal sealed class InventoryRepository : IInventoryRepository
         return LedgerQuery(warehouseId, productId).CountAsync(cancellationToken);
     }
 
+    public Task<bool> HasMovementsAsync(
+        int warehouseId,
+        CancellationToken cancellationToken = default) =>
+        _dbContext.InventoryMovements.AnyAsync(
+            movement => movement.WarehouseId == warehouseId,
+            cancellationToken);
+
     private IQueryable<InventoryMovement> LedgerQuery(int warehouseId, int? productId)
     {
         var query = _dbContext.InventoryMovements

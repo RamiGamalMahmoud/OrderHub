@@ -11,6 +11,8 @@ public interface IApplicationDirectoriesService
 
     string AttachmentsDirectory { get; }
 
+    string StockAttachmentsDirectory { get; }
+
     string DocumentsDirectory { get; }
 
     string InvoicesDirectory { get; }

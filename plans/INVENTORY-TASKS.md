@@ -250,7 +250,7 @@ Manual: `/warehouses` as Manager (create → transfer keeper → deactivate) and
 
 ---
 
-### [ ] T04 — Stock-in / opening balance + attachments
+### [x] T04 — Stock-in / opening balance + attachments
 
 **Goal:** The keeper records stock-in and the one-time opening balance with optional PDF/JPG/PNG attachments, through a separate endpoint/folder/metadata entity that leaves the legacy attachments untouched.
 
@@ -296,6 +296,20 @@ Manual: record stock-in with 2 lines + 1 PDF as storekeeper; verify `/inventory`
 - Manager/HM never execute keeper operations (locked rule) — stock-in is keeper-bound; no `IsAdmin` bypass.
 
 **Proposed commit:** `feat(inventory): record stock-in with attachments`
+
+**Decisions / files**
+- Domain: `StockReceipt` (Opening/StockIn, optional supplier, note ≤ 300), `StockReceiptLine` (unique per product, duplicates aggregate with checked sum), `StockReceiptAttachment` (draft until `StockReceiptId` is set). `AppDbContext.ProtectHistory` blocks receipt/line edits and any attachment edit/delete once bound, while allowing draft delete and the single draft→receipt binding.
+- Migration `20261112212143_AddStockReceipts` (additive): `stock_receipts`, `stock_receipt_lines`, `stock_receipt_attachments`, unique stored file name, unique `(StockReceiptId, ProductId)`, `SourceStockReceiptId` FK (`Restrict`) on `inventory_movements`.
+- Application: `RecordStockIn` (keeper binding, `Products.Read` gate, active warehouse, opening-once via `HasMovementsAsync`, supplier must be linked to every stocked product, two saves inside one transaction to obtain the receipt id); `UploadStockAttachment` (magic-byte + extension, ≤ 5 MB, ≤ 200-char description, stored `Guid` name, 24 h stale-draft sweep); `DeleteStockAttachment` (draft + keeper + original uploader); `GetStockAttachmentFile` (keeper or `Inventory.Approve`); `GetStockInContext` (warehouse fixed to the keeper binding, opening flag, product/supplier capability flags).
+- Attachments split across two commands (`UploadStockAttachment` / `DeleteStockAttachment`) rather than the optional `DeleteDraftStockAttachment` name — both are exercised through one controller + the Blazor circuit.
+- Web: `/inventory/stock-in` keeper-scoped page (warehouse card, receipt type, supplier only with `Suppliers.Read`, product autocomplete, quantities, note, attachment list with view/delete, single primary «حفظ التوريد», saved-receipt summary); `NavMenu` «تسجيل توريد» create CTA behind a `KeeperOnly` flag evaluated once through `GetStockInContextQuery` so Manager/HM never see it; `StockAttachmentsController` at `files/stock-attachments` with dedicated folder `StockAttachments` — `AttachmentsController` and the legacy `Attachments` folder are untouched.
+- Tests: `StockReceiptTests` (aggregation/validation/immutability), `StockInHandlerTests` (receipt+ledger+balance, rollback, `Products.Read`, keeper, opening-once, supplier link, draft ownership), `StockAttachmentEndpointTests` (rules/size/magic bytes, upload/delete/download ownership, stale sweep).
+
+**Deviations**
+- T04 step 5 (reject deactivation while pending issue orders exist) cannot be implemented yet: there is no issue-order table before T06. The existing positive-stock guard stays and the extension comment remains in `UpdateWarehouseCommandHandler`.
+- Orphan cleanup is best-effort: explicit delete, draft delete on user action, and a 24 h sweep in upload. A transient failure after the draft file is written is cleaned by the upload handler; files are never deleted during a save failure (the draft stays reusable).
+- The receipt is inserted first inside the transaction to obtain its id for `SourceStockReceiptId` and attachment binding (allowed by the traps).
+- `NavMenu` performs one extra `GetStockInContextQuery` for users holding `Inventory.Write`; it is cached with the existing `_permissionsEvaluated` flag.
 
 ---
 

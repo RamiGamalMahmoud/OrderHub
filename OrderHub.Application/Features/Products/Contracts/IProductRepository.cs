@@ -9,6 +9,7 @@ public interface IProductRepository
 {
     Task<Category> FindCategoryAsync(int id, CancellationToken cancellationToken);
     Task<IReadOnlyList<Supplier>> GetSuppliersAsync(IEnumerable<int> ids, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Product>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken cancellationToken);
     Task<Product> GetForUpdateAsync(int id, CancellationToken cancellationToken);
     Task<Product> FindAsync(int id, CancellationToken cancellationToken);
     Task<bool> HasBusinessReferencesAsync(int id, CancellationToken cancellationToken);

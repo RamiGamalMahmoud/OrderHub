@@ -19,6 +19,18 @@ public interface ILocalFileAccessService
     Task DeleteAttachmentAsync(
         string fileName);
 
+    // Stock attachments (inventory receipts)
+
+    Task SaveStockAttachmentAsync(
+        string fileName,
+        Stream content);
+
+    Task<string> GetStockAttachmentAsync(
+        string fileName);
+
+    Task DeleteStockAttachmentAsync(
+        string fileName);
+
 
     // Quotations
     Task SaveQuotationAsync(

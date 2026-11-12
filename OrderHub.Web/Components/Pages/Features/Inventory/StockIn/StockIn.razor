@@ -1,0 +1,405 @@
+@page "/inventory/stock-in"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.Inventory,
+    PermissionLevel.Write)]
+
+@inject IRequestExecutor RequestExecutor
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject ILogger<StockIn> Logger
+
+<PageTitle>تسجيل توريد</PageTitle>
+
+<div class="space-y-4">
+    <PageScaffold Title="تسجيل توريد"
+                  Description="توريد أصناف أو تسجيل الرصيد الافتتاحي لمخزنك"
+                  Crumbs="_scaffoldCrumbs">
+        <Actions>
+            <a href="/warehouses" class="oh-btn oh-btn--secondary oh-btn--sm">العودة للمخازن</a>
+        </Actions>
+    </PageScaffold>
+
+    @if (_loading)
+    {
+        <div class="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-xs">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" aria-label="تحميل بيانات التوريد" />
+            <p class="mt-2 text-xs text-slate-500">جاري تحميل بيانات التوريد...</p>
+        </div>
+    }
+    else if (_loadError is not null)
+    {
+        <div class="rounded-xl border border-rose-200 bg-rose-50 p-5">
+            <p class="text-sm font-bold text-rose-800">@_loadError</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+                <button type="button" class="oh-btn oh-btn--secondary oh-btn--sm" @onclick="LoadAsync">
+                    إعادة المحاولة
+                </button>
+            </div>
+        </div>
+    }
+    else if (_state is null)
+    {
+        <div class="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/80 p-5" role="alert">
+            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                <MudIcon Icon="@Icons.Material.Filled.Lock" Class="text-[20px]" />
+            </span>
+            <div class="space-y-1">
+                <p class="text-sm font-bold text-amber-900">تسجيل التوريد غير متاح لهذا الحساب</p>
+                <p class="text-xs leading-6 text-amber-800">
+                    @(_accessMessage ?? "تسجيل التوريد متاح لأمين المخزن المرتبط بمخزن فقط.")
+                </p>
+            </div>
+        </div>
+    }
+    else
+    {
+        @if (_lastSaved is not null)
+        {
+            <section class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 sm:p-5" aria-label="ملخص التوريد المحفوظ">
+                <div class="flex items-start gap-3">
+                    <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Class="text-[20px]" />
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-bold text-emerald-900">
+                            تم حفظ @ReceiptTypeLabel(_lastSaved.ReceiptType) بنجاح
+                        </p>
+                        <p class="mt-1 text-xs text-emerald-800">
+                            @_lastSaved.Lines.Count صنفًا · @_lastSaved.Attachments.Count مرفقًا
+                            @if (!string.IsNullOrWhiteSpace(_lastSaved.ReferenceNote))
+                            {
+                                <span> · @_lastSaved.ReferenceNote</span>
+                            }
+                        </p>
+                        <ul class="mt-2 flex flex-wrap gap-1.5">
+                            @foreach (var line in _lastSaved.Lines)
+                            {
+                                <li class="rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                                    @line.ProductName × @line.Quantity
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                    <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                   Size="Size.Small"
+                                   Color="Color.Default"
+                                   OnClick="@(() => _lastSaved = null)"
+                                   aria-label="إغلاق الملخص"
+                                   Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+                </div>
+            </section>
+        }
+
+        @if (_saveError is not null)
+        {
+            <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+                <p class="text-sm font-bold text-rose-800">@_saveError</p>
+            </div>
+        }
+
+        @if (!_state.CanReadProducts)
+        {
+            <div class="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/80 p-4" role="alert">
+                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                    <MudIcon Icon="@Icons.Material.Filled.VisibilityOff" Class="text-[18px]" />
+                </span>
+                <p class="text-xs font-bold leading-6 text-amber-900">
+                    لا تملك صلاحية قراءة المنتجات، لذا لا يمكنك اختيار الأصناف. تواصل مع مدير النظام لمنحك صلاحية «المنتجات — قراءة».
+                </p>
+            </div>
+        }
+
+        @* ============================================================
+           Receipt header
+           ============================================================ *@
+        <section class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-6" aria-label="بيانات التوريد">
+            <header class="mb-4 flex items-center gap-3 border-b border-slate-100 pb-4">
+                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600">
+                    <MudIcon Icon="@Icons.Material.Filled.Inventory" Class="text-[20px]" />
+                </span>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">بيانات التوريد</h2>
+                    <p class="text-xs text-slate-500">المخزن المرتبط بحسابك ونوع الحركة والمورد</p>
+                </div>
+            </header>
+
+            <div class="space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-amber-600 shadow-sm">
+                            <MudIcon Icon="@Icons.Material.Filled.Warehouse" Class="text-[18px]" />
+                        </span>
+                        <div>
+                            <p class="text-[11px] font-medium text-slate-500">المخزن</p>
+                            <p class="text-sm font-bold text-slate-900">@_state.WarehouseName</p>
+                        </div>
+                    </div>
+                    <span class="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700">
+                        أمين المخزن
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <MudSelect T="StockReceiptType"
+                                   @bind-Value="_state.ReceiptType"
+                                   Label="نوع الحركة"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   Disabled="IsBusy"
+                                   Class="w-full">
+                            <MudSelectItem T="StockReceiptType" Value="StockReceiptType.StockIn">
+                                توريد
+                            </MudSelectItem>
+                            <MudSelectItem T="StockReceiptType" Value="StockReceiptType.Opening" Disabled="!_state.IsOpeningAllowed">
+                                رصيد افتتاحي
+                            </MudSelectItem>
+                        </MudSelect>
+
+                        <p class="mt-1.5 text-xs text-slate-500">
+                            @if (_state.IsOpeningAllowed)
+                            {
+                                <span>«الرصيد الافتتاحي» يسجَّل مرة واحدة فقط قبل أي حركة على هذا المخزن.</span>
+                            }
+                            else
+                            {
+                                <span>سُجّلت حركات على هذا المخزن، لذا لا يمكن اختيار الرصيد الافتتاحي.</span>
+                            }
+                        </p>
+                    </div>
+
+                    @if (_state.CanSelectSupplier)
+                    {
+                        <div>
+                            <MudSelect T="SupplierInfo"
+                                       Value="_state.Supplier"
+                                       ValueChanged="OnSupplierChanged"
+                                       Label="المورد (اختياري)"
+                                       Variant="Variant.Outlined"
+                                       Margin="Margin.Dense"
+                                       Clearable="true"
+                                       Disabled="IsBusy"
+                                       Class="w-full">
+                                @foreach (var supplier in _suppliers)
+                                {
+                                    <MudSelectItem T="SupplierInfo" Value="@supplier">
+                                        @supplier.Name
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
+
+                            <p class="mt-1.5 text-xs text-slate-500">
+                                عند اختيار مورد يجب أن تكون كل الأصناف مرتبطة به في كتالوج المنتجات.
+                            </p>
+                        </div>
+                    }
+                </div>
+
+                <MudTextField T="string"
+                              @bind-Value="_state.ReferenceNote"
+                              Label="ملاحظة مرجعية (اختياري)"
+                              Placeholder="مثال: رقم فاتورة المورد أو بيان الشحنة"
+                              Immediate="true"
+                              MaxLength="300"
+                              Lines="2"
+                              HelperText="حتى 300 حرف"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Disabled="IsBusy" />
+            </div>
+        </section>
+
+        @* ============================================================
+           Lines
+           ============================================================ *@
+        <section class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-6" aria-label="أصناف التوريد">
+            <header class="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div class="flex items-center gap-3">
+                    <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                        <MudIcon Icon="@Icons.Material.Outlined.Layers" Class="text-[20px]" />
+                    </span>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">الأصناف والكميات</h2>
+                        <p class="text-xs text-slate-500">اختر المنتجات وأدخل الكمية الواردة لكل صنف</p>
+                    </div>
+                </div>
+
+                <button type="button"
+                        class="oh-btn oh-btn--secondary oh-btn--sm"
+                        disabled="@(_state.CanReadProducts is false || IsBusy)"
+                        @onclick="AddLine">
+                    <MudIcon Icon="@Icons.Material.Filled.Add" Class="text-[16px]" />
+                    <span>إضافة صنف</span>
+                </button>
+            </header>
+
+            <div class="space-y-3">
+                @foreach (var line in _state.Lines)
+                {
+                    <div class="grid grid-cols-1 items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3 sm:grid-cols-12"
+                         @key="line">
+                        <div class="sm:col-span-7">
+                            <MudAutocomplete T="ProductLookupItem"
+                                             Value="line.Product"
+                                             ValueChanged="@(product => OnProductSelected(line, product))"
+                                             SearchFunc="SearchProductsAsync"
+                                             ToStringFunc="@(product => product is null ? null : $"{product.Name} ({product.Code})")"
+                                             Label="المنتج"
+                                             Placeholder="ابحث بالاسم أو الرمز"
+                                             Variant="Variant.Outlined"
+                                             Margin="Margin.Dense"
+                                             Clearable="true"
+                                             ResetValueOnEmptyText="true"
+                                             CoerceText="false"
+                                             Disabled="@(!_state.CanReadProducts || IsBusy)"
+                                             Class="w-full" />
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <MudNumericField T="int"
+                                             @bind-Value="line.Quantity"
+                                             Label="الكمية"
+                                             Min="1"
+                                             Max="1000000"
+                                             Variant="Variant.Outlined"
+                                             Margin="Margin.Dense"
+                                             Disabled="IsBusy"
+                                             Class="w-full" />
+                        </div>
+
+                        <div class="flex items-center justify-end sm:col-span-2 sm:pt-1">
+                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                           Size="Size.Small"
+                                           Color="Color.Default"
+                                           Disabled="IsBusy"
+                                           OnClick="@(() => RemoveLine(line))"
+                                           aria-label="حذف الصنف"
+                                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (_state.HasInvalidLine)
+            {
+                <p class="mt-3 text-xs font-semibold text-rose-700">
+                    كمية كل صنف يجب أن تكون أكبر من صفر.
+                </p>
+            }
+        </section>
+
+        @* ============================================================
+           Attachments
+           ============================================================ *@
+        <section class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-6" aria-label="مرفقات التوريد">
+            <header class="mb-4 flex items-center gap-3 border-b border-slate-100 pb-4">
+                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+                    <MudIcon Icon="@Icons.Material.Filled.AttachFile" Class="text-[20px]" />
+                </span>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">المستندات المرفقة</h2>
+                    <p class="text-xs text-slate-500">فاتورة المورد أو إذن الاستلام — PDF أو JPG أو PNG</p>
+                </div>
+            </header>
+
+            @if (_attachmentError is not null)
+            {
+                <div class="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2">
+                    <p class="text-xs font-bold text-rose-800">@_attachmentError</p>
+                </div>
+            }
+
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-12">
+                <div class="sm:col-span-6">
+                    <MudTextField T="string"
+                                  @bind-Value="_attachmentDescription"
+                                  Label="وصف المرفق (اختياري)"
+                                  Placeholder="مثال: فاتورة مورد رقم 123"
+                                  Immediate="true"
+                                  MaxLength="200"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  HelperText="حتى 200 حرف"
+                                  Disabled="IsBusy" />
+                </div>
+
+                <div class="sm:col-span-6">
+                    <label class="mb-1.5 block text-xs font-semibold text-slate-700" for="stock-attachment-input">
+                        اختيار ملف
+                    </label>
+                    <InputFile id="stock-attachment-input"
+                               @key="_attachmentInputKey"
+                               accept=".pdf,.jpg,.jpeg,.png"
+                               disabled="@IsBusy"
+                               OnChange="OnFileSelectedAsync"
+                               class="block w-full rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2.5 text-xs font-medium text-slate-600 file:me-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-brand-600 disabled:cursor-not-allowed disabled:opacity-60" />
+                    <p class="mt-1.5 text-xs text-slate-500">
+                        حتى 5 ميجابايت لكل ملف، وبحد أقصى 10 ملفات. @(_uploading ? "جاري رفع المرفق..." : string.Empty)
+                    </p>
+                </div>
+            </div>
+
+            @if (_state.Attachments.Count > 0)
+            {
+                <ul class="mt-4 space-y-2">
+                    @foreach (var attachment in _state.Attachments)
+                    {
+                        <li class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2.5"
+                            @key="attachment.Id">
+                            <div class="flex min-w-0 items-center gap-2.5">
+                                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-purple-600 shadow-sm">
+                                    <MudIcon Icon="@AttachmentIcon(attachment.ContentType)" Class="text-[18px]" />
+                                </span>
+                                <div class="min-w-0">
+                                    <a href="@($"/files/stock-attachments/{attachment.Id}")"
+                                       target="_blank"
+                                       rel="noopener"
+                                       class="truncate text-xs font-bold text-brand-700 hover:underline">
+                                        @attachment.OriginalFileName
+                                    </a>
+                                    <p class="text-xs text-slate-500">
+                                        @FormatSize(attachment.SizeBytes)
+                                        @if (!string.IsNullOrWhiteSpace(attachment.Description))
+                                        {
+                                            <span> · @attachment.Description</span>
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+
+                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                           Size="Size.Small"
+                                           Color="Color.Default"
+                                           Disabled="IsBusy"
+                                           OnClick="@(() => RemoveAttachmentAsync(attachment))"
+                                           aria-label="حذف المرفق"
+                                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        @* ============================================================
+           Bottom action bar
+           ============================================================ *@
+        <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs sm:p-5">
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+                <MudIcon Icon="@Icons.Material.Filled.Info" Class="text-[16px] text-slate-400" />
+                <span>لا يمكن تعديل التوريد بعد الحفظ؛ أي تصحيح يتم عبر عملية عكس معتمدة.</span>
+            </div>
+            <div class="flex w-full flex-wrap items-center justify-end gap-2.5 sm:w-auto">
+                <a href="/warehouses" class="oh-btn oh-btn--secondary oh-btn--sm">إلغاء</a>
+                <button type="button"
+                        class="oh-btn oh-btn--primary"
+                        aria-busy="@_saving"
+                        disabled="@(!CanSubmit)"
+                        @onclick="SaveAsync">
+                    <MudIcon Icon="@Icons.Material.Filled.Save" Class="text-[16px]" />
+                    <span>@(_saving ? "جاري حفظ التوريد..." : "حفظ التوريد")</span>
+                </button>
+            </div>
+        </div>
+    }
+</div>

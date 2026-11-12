@@ -20,6 +20,13 @@ internal sealed class WarehouseRepository(AppDbContext context) : IWarehouseRepo
             .Include(warehouse => warehouse.Phone)
             .FirstOrDefaultAsync(warehouse => warehouse.Id == id, cancellationToken);
 
+    public Task<Warehouse> GetByKeeperAsync(
+        int keeperUserId,
+        CancellationToken cancellationToken = default) =>
+        context.Warehouses
+            .AsNoTracking()
+            .FirstOrDefaultAsync(warehouse => warehouse.KeeperUserId == keeperUserId, cancellationToken);
+
     public async Task<IReadOnlyList<WarehouseListItem>> GetListAsync(
         CancellationToken cancellationToken = default)
     {

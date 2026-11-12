@@ -2,9 +2,11 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Routing
 @using OrderHub.Domain.Enums
+@using OrderHub.Application.Features.Inventory.GetStockInContext
 @using System.Collections.Generic
 @using System.Linq
 @inject OrderHub.Web.Services.PermissionAccess PermissionAccess
+@inject OrderHub.Application.Interfaces.IRequestExecutor RequestExecutor
 @inject NavigationManager Navigation
 @implements IDisposable
 
@@ -185,7 +187,8 @@ else
         string Tone,
         string Description,
         PermissionLevel Level = PermissionLevel.Read,
-        bool AdminOnly = false);
+        bool AdminOnly = false,
+        bool KeeperOnly = false);
 
     private sealed record NavGroupModel(
         string Title,
@@ -232,7 +235,9 @@ else
         [
             new("المخازن", "/warehouses", Icons.Material.Outlined.Warehouse, PermissionFeature.Warehouses, "amber",
                 "المخازن وأمناء المخزون وحالة التشغيل")
-        ]),
+        ],
+        new("تسجيل توريد", "/inventory/stock-in", Icons.Material.Filled.Add, PermissionFeature.Inventory, "teal",
+            "تسجيل توريد أو رصيد افتتاحي للمخزن المرتبط بك", PermissionLevel.Write, KeeperOnly: true)),
         new("جهات التعامل", Icons.Material.Filled.Groups, "بيانات العملاء والموردين والتوصيل", "/clients",
         [
             new("العملاء", "/clients", Icons.Material.Outlined.Person, PermissionFeature.Clients, "blue",
@@ -274,6 +279,7 @@ else
     private readonly HashSet<(PermissionFeature Feature, PermissionLevel Level)> _allowedPermissions = [];
     private bool _permissionsEvaluated;
     private bool _isAdmin;
+    private bool _isKeeper;
     private string? _openGroup;
     private bool _mobileOpen;
 
@@ -302,6 +308,19 @@ else
 
         _isAdmin = await PermissionAccess.IsHigherManagerAsync();
 
+        if (_allowedPermissions.Contains((PermissionFeature.Inventory, PermissionLevel.Write)))
+        {
+            try
+            {
+                var stockInContext = await RequestExecutor.ExecuteAsync(new GetStockInContextQuery());
+                _isKeeper = stockInContext.IsSuccess;
+            }
+            catch (Exception)
+            {
+                _isKeeper = false;
+            }
+        }
+
         _permissionsEvaluated = true;
     }
 
@@ -314,6 +333,7 @@ else
 
     private bool IsAllowed(NavItemModel item) =>
         (!item.AdminOnly || _isAdmin) &&
+        (!item.KeeperOnly || _isKeeper) &&
         _allowedPermissions.Contains((item.Feature, item.Level));
 
     /// <summary>هل مجموعة القائمة تحتوي الصفحة الحالية؟ لتلوين زر المجموعة في الشريط العلوي.</summary>

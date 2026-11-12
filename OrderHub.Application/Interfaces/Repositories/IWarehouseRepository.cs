@@ -12,6 +12,11 @@ public interface IWarehouseRepository
         int id,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Loads the single warehouse the user keeps, or null when the user keeps none.</summary>
+    Task<Warehouse> GetByKeeperAsync(
+        int keeperUserId,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<WarehouseListItem>> GetListAsync(
         CancellationToken cancellationToken = default);
 
