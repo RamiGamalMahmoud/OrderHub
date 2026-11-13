@@ -1,0 +1,231 @@
+@using System.Collections.Generic
+@using System.Globalization
+@using System.Linq
+@using Microsoft.Extensions.Logging
+@using MudBlazor
+
+<MudDialog Class="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-xl"
+           TitleClass="p-0"
+           ContentClass="p-0"
+           ActionsClass="p-0"
+           Gutters="false">
+    <TitleContent>
+        <header class="flex items-start justify-between gap-3 border-b border-slate-100 p-5">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+                    <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Small" />
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-bold leading-tight text-slate-900">تسجيل دفعة صرف</h2>
+                    <p class="mt-1 text-xs font-medium text-slate-500">@OrderLabel — @WarehouseName</p>
+                </div>
+            </div>
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Size="Size.Small"
+                           Color="Color.Default"
+                           Disabled="_submitting"
+                           OnClick="Cancel"
+                           aria-label="إغلاق النافذة"
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+        </header>
+    </TitleContent>
+
+    <DialogContent>
+        <div class="min-h-0 flex-1 space-y-4 overflow-y-auto bg-slate-50/70 p-5">
+            <div class="rounded-xl border border-slate-200 bg-white px-3 py-3 text-xs leading-6 text-slate-600">
+                <p class="font-bold text-slate-800">كيف تعمل الدفعات؟</p>
+                <p class="mt-1">
+                    كل دفعة تُسجّل حركة صرف واحدة لكل بند وتُخصم من رصيد المخزن فورًا.
+                    يمكنك تسجيل عدة دفعات حتى استكمال الكميات المطلوبة، ثم إغلاق الأمر بدفعة نهائية.
+                </p>
+            </div>
+
+            @foreach (var line in Lines)
+            {
+                var quantity = _quantities.GetValueOrDefault(line.Id, line.RequestedQty - line.IssuedQty);
+                var shortfall = _final && quantity < line.RequestedQty - line.IssuedQty;
+                <div class="space-y-2 rounded-xl border border-slate-200 bg-white p-3" @key="line.Id">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <p class="text-xs font-bold text-slate-800">@line.ProductName</p>
+                            <p class="mt-0.5 text-[11px] text-slate-500">
+                                المطلوب: @line.RequestedQty · المصروف: @line.IssuedQty · المتبقي: @(line.RequestedQty - line.IssuedQty)
+                            </p>
+                        </div>
+                        <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                            دفعة الآن: @quantity
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-12">
+                        <div class="sm:col-span-4">
+                            <MudNumericField T="int"
+                                             Value="quantity"
+                                             ValueChanged="@(value => SetQuantity(line, value))"
+                                             Label="كمية الدفعة"
+                                             Min="0"
+                                             Max="@(line.RequestedQty - line.IssuedQty)"
+                                             Variant="Variant.Outlined"
+                                             Margin="Margin.Dense"
+                                             Disabled="_submitting"
+                                             Class="w-full" />
+                        </div>
+                        <div class="sm:col-span-8">
+                            @if (_final)
+                            {
+                                <MudTextField T="string"
+                                              Value="_reasons.GetValueOrDefault(line.Id)"
+                                              ValueChanged="@(value => SetReason(line, value))"
+                                              Label="@(shortfall ? "سبب النقص (إلزامي)" : "سبب النقص (اختياري)")"
+                                              Immediate="true"
+                                              MaxLength="300"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Disabled="_submitting"
+                                              Class="w-full" />
+                            }
+                            else
+                            {
+                                <p class="pt-3 text-[11px] text-slate-500">
+                                    اترك الكمية صفرًا لاستكمال هذا البند في دفعة لاحقة.
+                                </p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+                <MudCheckBox T="bool"
+                             @bind-Value="_final"
+                             Label="إغلاق أمر الصرف بعد هذه الدفعة"
+                             Disabled="_submitting" />
+                <p class="text-[11px] leading-5 text-slate-500">
+                    عند الإغلاق ستُعتبر الكميات غير المصروفة نقصًا، ويجب توضيح سببه لكل بند ناقص.
+                </p>
+
+                <label class="mt-1 block text-xs font-semibold text-slate-700" for="issue-batch-effective">
+                    وقت التنفيذ الفعلي
+                </label>
+                <InputDate id="issue-batch-effective"
+                           TValue="DateTime"
+                           Type="InputDateType.DateTimeLocal"
+                           @bind-Value="_effectiveLocal"
+                           disabled="@_submitting"
+                           class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700" />
+            </div>
+
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+            }
+        </div>
+    </DialogContent>
+
+    <DialogActions>
+        <footer class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 bg-white p-4">
+            <MudButton Disabled="_submitting" OnClick="Cancel" Variant="Variant.Text" Class="oh-btn oh-btn--secondary">رجوع دون تغيير</MudButton>
+            <MudButton Disabled="@(!CanSubmit)"
+                       Class="oh-btn oh-btn--primary"
+                       OnClick="SubmitAsync">@(_submitting ? "جاري تسجيل الدفعة…" : "تسجيل الدفعة")</MudButton>
+        </footer>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Inject] private IRequestExecutor Executor { get; set; } = null!;
+    [Inject] private ILogger<RecordIssueBatchDialog> Logger { get; set; } = null!;
+
+    [Parameter, EditorRequired] public int IssueOrderId { get; set; }
+    [Parameter, EditorRequired] public string OrderLabel { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string WarehouseName { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public IReadOnlyList<StockIssueOrderLineDetails> Lines { get; set; } = [];
+
+    private readonly Dictionary<int, int> _quantities = [];
+    private readonly Dictionary<int, string> _reasons = [];
+    private bool _final;
+    private DateTime _effectiveLocal = DateTime.Now;
+    private string? _error;
+    private bool _submitting;
+
+    private bool HasAnyQuantity => Lines.Any(line => _quantities.GetValueOrDefault(line.Id, Remaining(line)) > 0);
+
+    private bool CanSubmit => !_submitting && HasAnyQuantity && (!_final || MissingReason() is null);
+
+    protected override void OnInitialized()
+    {
+        foreach (var line in Lines)
+            _quantities[line.Id] = Remaining(line);
+        _final = false;
+    }
+
+    private static int Remaining(StockIssueOrderLineDetails line) => line.RequestedQty - line.IssuedQty;
+
+    private void SetQuantity(StockIssueOrderLineDetails line, int value) =>
+        _quantities[line.Id] = Math.Clamp(value, 0, Remaining(line));
+
+    private void SetReason(StockIssueOrderLineDetails line, string value) =>
+        _reasons[line.Id] = value ?? string.Empty;
+
+    private string? MissingReason()
+    {
+        foreach (var line in Lines)
+        {
+            int quantity = _quantities.GetValueOrDefault(line.Id, Remaining(line));
+            if (quantity < Remaining(line) && string.IsNullOrWhiteSpace(_reasons.GetValueOrDefault(line.Id)))
+                return line.ProductName;
+        }
+        return null;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (!CanSubmit)
+            return;
+
+        if (MissingReason() is string missing)
+        {
+            _error = $"أدخل سبب النقص للبند «{missing}».";
+            return;
+        }
+
+        _submitting = true;
+        _error = null;
+        try
+        {
+            DateTime effectiveUtc = DateTime.SpecifyKind(_effectiveLocal, DateTimeKind.Local).ToUniversalTime();
+            var input = Lines
+                .Select(line => new IssueBatchLineInput(
+                    line.Id,
+                    _quantities.GetValueOrDefault(line.Id),
+                    _reasons.GetValueOrDefault(line.Id)))
+                .ToList();
+
+            var result = await Executor.ExecuteAsync(new RecordIssueBatchCommand(
+                IssueOrderId,
+                _final,
+                effectiveUtc,
+                input));
+
+            if (!result.IsSuccess)
+            {
+                _error = result.ErrorMessage;
+                return;
+            }
+
+            Dialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to record an issue batch for {IssueOrderId}", IssueOrderId);
+            _error = "تعذر تسجيل الدفعة. حاول مرة أخرى.";
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private void Cancel() => Dialog.Cancel();
+}

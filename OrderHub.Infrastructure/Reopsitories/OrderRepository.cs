@@ -49,6 +49,32 @@ internal class OrderRepository : IOrderRepository
             .SingleOrDefaultAsync(order => order.Id == orderId, cancellationToken);
     }
 
+    public Task<Order> GetForIssueOrderAsync(int orderId, CancellationToken cancellationToken = default) =>
+        _dbContext.Orders
+            .AsNoTracking()
+            .Include(order => order.Client)
+            .Include(order => order.OrderItems)
+            .Include(order => order.Allocations).ThenInclude(allocation => allocation.Warehouse)
+            .AsSplitQuery()
+            .SingleOrDefaultAsync(order => order.Id == orderId, cancellationToken);
+
+    public async Task<IReadOnlyList<Order>> GetOrdersWithOpenWarehouseAllocationsAsync(
+        int take,
+        CancellationToken cancellationToken = default) =>
+        await _dbContext.Orders
+            .AsNoTracking()
+            .Include(order => order.Client)
+            .Include(order => order.Allocations)
+            .Where(order => !order.IsArchived
+                && order.OrderStatus != OrderStatus.Delivered
+                && order.OrderStatus != OrderStatus.Cancelled
+                && order.Allocations.Any(allocation =>
+                    allocation.SourceKind == AllocationSourceKind.Warehouse &&
+                    allocation.Status == OrderAllocationStatus.Active))
+            .OrderByDescending(order => order.CreatedAt)
+            .Take(Math.Clamp(take, 1, 200))
+            .ToListAsync(cancellationToken);
+
     public Task<Order> GetForLifecycleAsync(int orderId, CancellationToken cancellationToken = default) =>
         _dbContext.Orders
             .Include(order => order.Deliveryman)

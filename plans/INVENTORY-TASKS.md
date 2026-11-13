@@ -378,7 +378,7 @@ Manual: editor — allocate an item across 2 warehouses + supplier remainder; sa
 
 ---
 
-### [ ] T06 — Issue orders, batches, numbering
+### [x] T06 — Issue orders, batches, numbering
 
 **Goal:** Manual per-warehouse issue orders with monthly numbering, batch execution by the current keeper, shortfall reasons, and cancel requests pending Manager approval.
 
@@ -423,6 +423,22 @@ Manual: sales creates an order per warehouse → storekeeper records a partial b
 - Do not create a second numbering path beside `UnitOfWork`.
 
 **Proposed commit:** `feat(inventory): add manual issue orders with batch execution`
+
+**Decisions / files (2026-11-13)**
+- Domain: `StockIssueOrder` (`IWorkRecord` implemented explicitly: `Warehouse` kind, `NumberingPartyId = WarehouseId`, explicit initial `Pending` history), `StockIssueLine` (unique allocation per order, `IssuedQty`/`RemainingQty` computed from batches), `StockIssueBatch` (actor, effective UTC, optional ≤ 300-char shortfall reason). Status machine inside the aggregate (`Pending ⇄ PartiallyExecuted → Completed`, `Pending/PartiallyExecuted → CancelRequested → Cancelled`, terminal states immutable; a final batch closes the order even when short). `OrderInventoryAllocation.Consume` registers Σ batches (Q5 cap).
+- Enums: `NumberSequenceKind.Warehouse = 5`, `WorkRecordType.StockIssueOrder = 4`, `WorkRecordStatus.PartiallyExecuted = 5`, `CancelRequested = 6`. `NumberSequenceService` monthly allow-list and both CHECK constraints include `'Warehouse'`.
+- Migration `20261113001132_AddStockIssueOrders`: D18 exception — drops/re-adds `ck_number_sequences_kind` and `ck_number_sequences_scope` (no rows touched), creates `stock_issue_orders` / `stock_issue_lines` / `stock_issue_batches` with CHECKs, FKs (`Restrict`) and indexes; `Down` removes the three tables and restores the original CHECK definitions verbatim. Scaffolded with `--startup-project OrderHub.Infrastructure`; `has-pending-model-changes` reports none.
+- Application: `CreateStockIssueOrder` (`Orders.Write`; transaction → `LockBalancesAsync` → Q4 active-requested sum + pending-cancel block → persist), `RecordIssueBatch` (`Inventory.Write`; keeper binding from `Warehouse.KeeperUserId`, D13 locks, `Version` concurrency, one `IssueOut` movement + `ConsumeAsync` per new batch in the same transaction), `RequestIssueOrderCancel` (keeper, mandatory reason). Queries: `GetIssueOrders` (one scoped list: keeper's warehouse → all for `Inventory.Approve` → own requests; actionable statuses first), `GetIssueOrderDetails` (manager/requester/keeper scope + UI capability flags), `GetOrderIssueOrders` (`Orders.Read`, all statuses with lines/batches for the order page), `GetIssueOrderContext` (open orders with active warehouse allocations + per-warehouse available-to-request).
+- Lifecycle: `OrderLifecycleHandlers` now also auto-cancels non-terminal issue orders when an order is delivered/cancelled/archived (system reason «إلغاء تلقائي: …», inside the existing release transaction).
+- Web: `/inventory/issue-orders` list (scope label, search, status/quantities/reasons), details (lines, batches, shortfall/cancel audit, keeper actions), `CreateIssueOrderDialog` (order → warehouse → quantities clamped to available), `RecordIssueBatchDialog` (per-line quantity, final toggle, per-line shortfall reason, effective local time), `RequestIssueCancelDialog`; nav item «أوامر الصرف» under المخزون; `OrderWorkflow` issue-order section with per-item issued/requested, shortfall and pending-cancel reasons plus a create link.
+- Tests: `StockIssueOrderTests` (numbering party/date, Q4 cap, batch accumulation + mandatory shortfall, keeper-binding rejection, pending-cancel blocks, lifecycle auto-cancel, terminal immutability) and `WorkRecordNumberingTests.Warehouse_kind_allocates_monthly_numbers_and_legacy_kinds_keep_working` (Warehouse + four legacy kinds, month restart/sequence independence). Full suite: 417 passed.
+
+**Deviations**
+- The plan's `GetIssueOrdersForSales` / `GetPendingForKeeper` are one `GetIssueOrders` query whose scope is resolved from the caller (keeper warehouse, `Inventory.Approve`, else requester), so keepers need no `Orders.Read`; `GetIssueOrderContext` was added for the creation dialog.
+- `PartiallyExecuted`/`CancelRequested` were added to the shared `WorkRecordStatus` enum instead of a private enum; `WorkRecordLifecycle` (trips/shipments) is untouched because the richer machine lives in the aggregate.
+- A final batch with a shortfall closes the order as `Completed` (remaining allocation stays active on the order); the shortfall reason is mandatory for every short line.
+- `StockIssueOrder` carries an explicit `Version` concurrency token (in addition to balance locks) because batches mutate an aggregate whose lines/batches are separate rows.
+- `IssueBatchHandlerTests.cs` was folded into `StockIssueOrderTests` (same harness, shorter feedback loop).
 
 ---
 

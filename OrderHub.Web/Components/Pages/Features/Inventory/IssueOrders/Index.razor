@@ -1,0 +1,168 @@
+@page "/inventory/issue-orders"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.Inventory,
+    PermissionLevel.Read)]
+
+@inject IRequestExecutor Executor
+@inject NavigationManager Navigation
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject ILogger<Index> Logger
+
+<PageTitle>أوامر الصرف</PageTitle>
+
+<div class="space-y-5">
+    <PageScaffold Title="أوامر الصرف"
+                  Description="@(_state?.ScopeLabel ?? "أوامر صرف المخزون ومتابعة تنفيذها")"
+                  Crumbs="_crumbs"
+                  Count="@_state?.Items.Count">
+        <Actions>
+            @if (_state?.CanCreate == true)
+            {
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Large"
+                           Class="oh-btn oh-btn--primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Disabled="_busy"
+                           OnClick="OpenCreateDialogAsync">
+                    أمر صرف جديد
+                </MudButton>
+            }
+        </Actions>
+    </PageScaffold>
+
+    @if (_loading)
+    {
+        <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" aria-label="تحميل أوامر الصرف" />
+            <p class="mt-2 text-sm text-slate-500">جاري تحميل أوامر الصرف...</p>
+        </div>
+    }
+    else if (_error is not null)
+    {
+        <div class="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+            <p class="text-sm font-bold text-rose-800">@_error</p>
+            <button type="button" class="oh-btn oh-btn--secondary oh-btn--sm mt-3" @onclick="LoadAsync">
+                إعادة المحاولة
+            </button>
+        </div>
+    }
+    else if (_state is not null && !FilteredItems.Any())
+    {
+        <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-teal-600">
+                <MudIcon Icon="@Icons.Material.Filled.Output" aria-hidden="true" />
+            </span>
+            <p class="text-base font-bold text-slate-900">
+                @(string.IsNullOrWhiteSpace(_searchTerm) ? "لا توجد أوامر صرف بعد." : "لا توجد أوامر تطابق البحث.")
+            </p>
+            <p class="mt-1 text-sm text-slate-500">
+                @(string.IsNullOrWhiteSpace(_searchTerm) && _state.CanCreate
+                    ? "أنشئ أمر صرف من طلب يحمل تخصيصات مخزون نشطة."
+                    : "عدّل كلمة البحث أو حدّث القائمة.")
+            </p>
+        </div>
+    }
+    else if (_state is not null)
+    {
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+                <MudTextField T="string"
+                              @bind-Value="_searchTerm"
+                              Placeholder="ابحث برقم الأمر أو الطلب أو المخزن..."
+                              aria-label="البحث في أوامر الصرف"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Immediate="true"
+                              Clearable="true"
+                              Class="w-full max-w-sm" />
+
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                               Variant="Variant.Text"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               Disabled="_busy"
+                               aria-label="تحديث القائمة"
+                               OnClick="LoadAsync"
+                               Class="oh-btn oh-btn--icon oh-btn--secondary oh-btn--sm" />
+            </div>
+
+            <MudTable T="StockIssueOrderSummary"
+                      Items="FilteredItems"
+                      Dense="true"
+                      Hover="true"
+                      Elevation="0"
+                      Square="true"
+                      Breakpoint="Breakpoint.Md"
+                      @bind-CurrentPage="_currentPage"
+                      @bind-RowsPerPage="_rowsPerPage">
+                <HeaderContent>
+                    <MudTh Class="text-xs font-bold text-slate-500">رقم الأمر</MudTh>
+                    <MudTh Class="text-xs font-bold text-slate-500">الطلب</MudTh>
+                    <MudTh Class="text-xs font-bold text-slate-500">المخزن</MudTh>
+                    <MudTh Class="text-xs font-bold text-slate-500">الحالة</MudTh>
+                    <MudTh Class="text-xs font-bold text-slate-500">الكميات</MudTh>
+                    <MudTh Class="text-xs font-bold text-slate-500">التاريخ</MudTh>
+                    <MudTh Class="w-20 text-xs font-bold text-slate-500">
+                        <span class="sr-only">الإجراءات</span>
+                    </MudTh>
+                </HeaderContent>
+
+                <RowTemplate Context="item">
+                    <MudTd DataLabel="رقم الأمر">
+                        <a href="@($"/inventory/issue-orders/{item.Id}")" class="text-sm font-bold text-brand-700 hover:underline">
+                            @IssueOrderPresentation.NumberLabel(item.Number, item.SequenceYear, item.SequenceMonth)
+                        </a>
+                    </MudTd>
+                    <MudTd DataLabel="الطلب">
+                        <span class="text-sm font-semibold text-slate-800">@item.OrderNumber</span>
+                    </MudTd>
+                    <MudTd DataLabel="المخزن">
+                        <span class="text-sm text-slate-700">@item.WarehouseName</span>
+                    </MudTd>
+                    <MudTd DataLabel="الحالة">
+                        <span class="@($"rounded-full border px-2 py-0.5 text-[11px] font-bold {IssueOrderPresentation.StatusTag(item.Status)}")">
+                            @IssueOrderPresentation.StatusLabel(item.Status)
+                        </span>
+                        @if (!string.IsNullOrWhiteSpace(item.ShortfallReason))
+                        {
+                            <p class="mt-1 text-[11px] font-semibold text-rose-700">نقص: @item.ShortfallReason</p>
+                        }
+                        @if (item.Status == WorkRecordStatus.CancelRequested && !string.IsNullOrWhiteSpace(item.CancelReason))
+                        {
+                            <p class="mt-1 text-[11px] font-semibold text-orange-700">إلغاء: @item.CancelReason</p>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="الكميات">
+                        <span class="text-sm font-bold text-slate-800">@item.IssuedTotal</span>
+                        <span class="text-xs font-medium text-slate-400"> / @item.RequestedTotal</span>
+                        <p class="text-[11px] text-slate-500">@item.LineCount بندًا</p>
+                    </MudTd>
+                    <MudTd DataLabel="التاريخ">
+                        <UserLocalTime Value="item.CreatedAtUtc" />
+                        <p class="text-[11px] text-slate-500">@item.AssignedToName</p>
+                    </MudTd>
+                    <MudTd DataLabel="الإجراءات">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                       Size="Size.Small"
+                                       aria-label="عرض أمر الصرف"
+                                       Href="@($"/inventory/issue-orders/{item.Id}")"
+                                       Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+                    </MudTd>
+                </RowTemplate>
+
+                <PagerContent>
+                    <TableFooter TotalItems="@FilteredItems.Count()"
+                                 CurrentPage="@FooterCurrentPage"
+                                 CurrentPageChanged="OnFooterPageChanged"
+                                 RowsPerPage="@_rowsPerPage"
+                                 RowsPerPageChanged="OnFooterRowsPerPageChanged" />
+                </PagerContent>
+            </MudTable>
+        </section>
+    }
+</div>

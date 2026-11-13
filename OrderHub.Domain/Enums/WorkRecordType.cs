@@ -4,5 +4,6 @@ public enum WorkRecordType
 {
     SupplierSupply = 1,
     Shipment = 2,
-    DeliveryTrip = 3
+    DeliveryTrip = 3,
+    StockIssueOrder = 4
 }

@@ -5,5 +5,7 @@ public enum WorkRecordStatus
     Pending = 1,
     Completed = 2,
     Cancelled = 3,
-    Failed = 4
+    Failed = 4,
+    PartiallyExecuted = 5,
+    CancelRequested = 6
 }

@@ -114,6 +114,23 @@ public class OrderInventoryAllocation : ModelBase
         return Result.Success();
     }
 
+    /// <summary>Registers an issued batch against this allocation (Q5).</summary>
+    public Result Consume(int quantity)
+    {
+        if (Status != OrderAllocationStatus.Active)
+            return Result.Failure("لا يمكن صرف كمية من تخصيص غير نشط.");
+
+        if (quantity <= 0)
+            return Result.Failure("كمية الصرف يجب أن تكون أكبر من صفر.");
+
+        if (IssuedQty + quantity > Qty)
+            return Result.Failure("كمية الصرف تتجاوز الكمية المخصصة لهذا المصدر.");
+
+        IssuedQty += quantity;
+        UpdateModificationDate(System.DateTime.UtcNow);
+        return Result.Success();
+    }
+
     public Result Release()
     {
         if (Status != OrderAllocationStatus.Active)

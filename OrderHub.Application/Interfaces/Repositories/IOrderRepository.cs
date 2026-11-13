@@ -13,6 +13,14 @@ public interface IOrderRepository
     Task<Order> GetById(int orderId);
     Task<Order> GetForUpdateAsync(int orderId, CancellationToken cancellationToken = default);
     Task<Order> GetForLifecycleAsync(int orderId, CancellationToken cancellationToken = default);
+
+    /// <summary>Read-only order with client, items and allocations for issue-order creation.</summary>
+    Task<Order> GetForIssueOrderAsync(int orderId, CancellationToken cancellationToken = default);
+
+    /// <summary>Recent open orders that still carry active warehouse allocations.</summary>
+    Task<IReadOnlyList<Order>> GetOrdersWithOpenWarehouseAllocationsAsync(
+        int take,
+        CancellationToken cancellationToken = default);
     Task PrepareDeliveryStepReorderingAsync(Order order, CancellationToken cancellationToken = default);
     Task TombstoneDeliveryStepAsync(OrderDeliveryStep step, CancellationToken cancellationToken = default);
     void RemoveAllocations(IEnumerable<OrderInventoryAllocation> allocations);

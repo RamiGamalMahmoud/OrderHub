@@ -4,6 +4,9 @@
 @using OrderHub.Application.Features.Orders.Lifecycle
 @using OrderHub.Application.Features.Orders.Archive
 @using OrderHub.Application.Features.Orders.Reassignment
+@using OrderHub.Application.Features.Inventory.IssueOrders.Contracts
+@using OrderHub.Application.Features.Inventory.IssueOrders.GetOrderIssueOrders
+@using OrderHub.Web.Components.Pages.Features.Inventory.IssueOrders
 @using OrderHub.Domain.Common
 @using OrderHub.Domain.Models
 @using OrderHub.Application.Interfaces
@@ -319,6 +322,98 @@
         }
 
         @* ============================================================
+           Stock issue orders
+           ============================================================ *@
+        <section class="space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-sm font-bold text-slate-900">أوامر صرف المخزون</h2>
+                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                        @_issueOrders.Count.ToString(CultureInfo.InvariantCulture) أمرًا
+                    </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5">
+                    @if (_canWrite && !_state.IsArchived &&
+                         _state.Status is not (OrderStatus.Delivered or OrderStatus.Cancelled))
+                    {
+                        <a href="@($"/inventory/issue-orders?orderId={Id}")"
+                           class="@($"oh-btn oh-btn--sm {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")">
+                            إنشاء أمر صرف
+                        </a>
+                    }
+                    <a href="/inventory/issue-orders"
+                       class="@($"oh-btn oh-btn--sm {OrderWorkflowPresentation.Action(OrderWorkflowPresentation.Neutral)}")">
+                        إدارة أوامر الصرف
+                    </a>
+                </div>
+            </div>
+
+            @if (_issueOrders.Count == 0)
+            {
+                <div class="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-[11px] text-slate-600">
+                    لم يُنشأ أمر صرف لهذا الطلب بعد. تُخصم كميات المخزون من أرصدة المخازن عبر أوامر الصرف ودفعاتها.
+                </div>
+            }
+            else
+            {
+                foreach (var issueOrder in _issueOrders)
+                {
+                    <article class="rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-xs" @key="issueOrder.Id">
+                        <header class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex min-w-0 items-center gap-2.5">
+                                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-600">
+                                    <MudIcon Icon="@Icons.Material.Filled.Output" Class="text-[16px]" />
+                                </span>
+                                <div class="min-w-0">
+                                    <a href="@($"/inventory/issue-orders/{issueOrder.Id}")"
+                                       class="text-xs font-bold text-brand-700 hover:underline">
+                                        أمر @IssueOrderPresentation.NumberLabel(issueOrder.Number, issueOrder.SequenceYear, issueOrder.SequenceMonth)
+                                    </a>
+                                    <p class="mt-0.5 text-[11px] text-slate-500">
+                                        @issueOrder.WarehouseName — المسند: @issueOrder.AssignedToName
+                                    </p>
+                                </div>
+                            </div>
+                            <span class="@($"rounded-full border px-2 py-0.5 text-[11px] font-bold {IssueOrderPresentation.StatusTag(issueOrder.Status)}")">
+                                @IssueOrderPresentation.StatusLabel(issueOrder.Status)
+                            </span>
+                        </header>
+
+                        <ul class="mt-2 flex flex-wrap gap-1.5">
+                            @foreach (var line in issueOrder.Lines)
+                            {
+                                <li class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+                                    @line.ProductName: @line.IssuedQty / @line.RequestedQty
+                                </li>
+                            }
+                        </ul>
+
+                        @foreach (var line in issueOrder.Lines)
+                        {
+                            var shortfall = line.Batches
+                                .Where(batch => !string.IsNullOrWhiteSpace(batch.ShortfallReason))
+                                .Select(batch => batch.ShortfallReason)
+                                .LastOrDefault();
+                            if (shortfall is not null)
+                            {
+                                <p class="mt-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-800">
+                                    نقص @line.ProductName: @shortfall
+                                </p>
+                            }
+                        }
+
+                        @if (issueOrder.Status == WorkRecordStatus.CancelRequested && !string.IsNullOrWhiteSpace(issueOrder.CancelReason))
+                        {
+                            <p class="mt-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2 py-1 text-[11px] font-semibold text-orange-800">
+                                طلب إلغاء معلّق: @issueOrder.CancelReason
+                            </p>
+                        }
+                    </article>
+                }
+            }
+        </section>
+
+        @* ============================================================
            Archive
            ============================================================ *@
         @if (_state.IsArchived)
@@ -337,6 +432,7 @@
 @code {
     [Parameter] public int Id { get; set; }
     private OrderWorkflowState? _state;
+    private IReadOnlyList<StockIssueOrderDetails> _issueOrders = [];
     private bool _loading, _busy, _canWrite, _disposed;
     private string? _error;
     private int _loadedId, _generation;
@@ -354,6 +450,7 @@
         var token = _load.Token;
         _loading = true;
         _state = null;
+        _issueOrders = [];
         _error = null;
         try
         {
@@ -362,6 +459,19 @@
             if (generation != _generation) return;
             _state = state;
             _canWrite = canWrite;
+            if (state is not null)
+            {
+                try
+                {
+                    var issueOrders = await Executor.ExecuteAsync(new GetOrderIssueOrdersQuery(Id), token);
+                    _issueOrders = issueOrders.IsSuccess ? issueOrders.Value : [];
+                }
+                catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+                catch (Exception exception)
+                {
+                    Logger.LogError(exception, "Failed to load stock issue orders for {OrderId}", Id);
+                }
+            }
             _crumbs = state is null
                 ? [new("الطلبات", "/orders")]
                 : [new("الطلبات", "/orders"), new(state.OrderNumber)];

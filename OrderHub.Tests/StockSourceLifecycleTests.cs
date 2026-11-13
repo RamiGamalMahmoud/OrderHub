@@ -288,7 +288,7 @@ public sealed class StockSourceLifecycleTests
     }
 
     private static OrderLifecycleHandlers Lifecycle(OrderAllocationTestDb db) =>
-        new(db.Orders, db.UnitOfWork, db.Inventory, new TestCurrentUser(db.Sales.Id), db.Clock);
+        new(db.Orders, db.UnitOfWork, db.Inventory, db.IssueOrders, new TestCurrentUser(db.Sales.Id), db.Clock);
 
     private static UpdateOrderHandler UpdateHandler(OrderAllocationTestDb db) =>
         new(db.Orders, db.UnitOfWork, db.Inventory, db.Warehouses);

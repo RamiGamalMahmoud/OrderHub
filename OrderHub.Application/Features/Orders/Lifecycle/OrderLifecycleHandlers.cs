@@ -16,7 +16,8 @@ using OrderHub.Application.Features.Orders.Archive;
 namespace OrderHub.Application.Features.Orders.Lifecycle;
 
 internal sealed class OrderLifecycleHandlers(IOrderRepository repository, IUnitOfWork unitOfWork,
-    IInventoryRepository inventory, ICurrentUser user, TimeProvider clock) :
+    IInventoryRepository inventory, IStockIssueOrderRepository issueOrders, ICurrentUser user,
+    TimeProvider clock) :
     IRequestHandler<ChangeOrderStatusCommand, Result<OrderOperationReceipt>>,
     IRequestHandler<ChangeDeliveryStepStatusCommand, Result<OrderOperationReceipt>>,
     IRequestHandler<DeliverOrderDirectlyCommand, Result<OrderOperationReceipt>>,
@@ -53,13 +54,27 @@ internal sealed class OrderLifecycleHandlers(IOrderRepository repository, IUnitO
 
         var closes = order.IsArchived || order.OrderStatus is OrderStatus.Delivered or OrderStatus.Cancelled;
         var releaseable = closes ? order.OpenAllocations() : [];
+        var activeIssueOrders = closes
+            ? await issueOrders.GetActiveForOrderAsync(order.Id, cancellationToken)
+            : [];
         var transactionActive = false;
         try
         {
-            if (releaseable.Count > 0)
+            if (releaseable.Count > 0 || activeIssueOrders.Count > 0)
             {
                 await unitOfWork.BeginTransactionAsync(cancellationToken);
                 transactionActive = true;
+
+                var reason = order.IsArchived ? "أرشفة الطلب"
+                    : order.OrderStatus == OrderStatus.Cancelled ? "إلغاء الطلب"
+                    : "إتمام التسليم";
+                var now = clock.GetUtcNow().UtcDateTime;
+                foreach (var issueOrder in activeIssueOrders)
+                {
+                    var cancelled = issueOrder.Cancel($"إلغاء تلقائي: {reason}", now);
+                    if (!cancelled.IsSuccess)
+                        return Result<OrderOperationReceipt>.Failure(cancelled.ErrorMessage, "Conflict");
+                }
 
                 var releases = releaseable
                     .Where(allocation => allocation.SourceKind == AllocationSourceKind.Warehouse &&
@@ -77,12 +92,12 @@ internal sealed class OrderLifecycleHandlers(IOrderRepository repository, IUnitO
                         return Result<OrderOperationReceipt>.Failure(released.ErrorMessage, "Conflict");
                 }
 
-                var reason = order.IsArchived ? "أرشفة الطلب"
-                    : order.OrderStatus == OrderStatus.Cancelled ? "إلغاء الطلب"
-                    : "إتمام التسليم";
-                valid = order.ReleaseOpenAllocations(operation, reason);
-                if (!valid.IsSuccess)
-                    return Result<OrderOperationReceipt>.Failure(valid.ErrorMessage, "InvalidOperation");
+                if (releaseable.Count > 0)
+                {
+                    valid = order.ReleaseOpenAllocations(operation, reason);
+                    if (!valid.IsSuccess)
+                        return Result<OrderOperationReceipt>.Failure(valid.ErrorMessage, "InvalidOperation");
+                }
             }
 
             if (order.Version != expectedVersion || transactionActive)

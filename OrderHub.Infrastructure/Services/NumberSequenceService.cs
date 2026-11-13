@@ -79,7 +79,8 @@ internal sealed class NumberSequenceService : INumberSequenceService
         if (kind is not (
             NumberSequenceKind.Supplier
             or NumberSequenceKind.Deliveryman
-            or NumberSequenceKind.ShippingCarrier))
+            or NumberSequenceKind.ShippingCarrier
+            or NumberSequenceKind.Warehouse))
         {
             throw new ArgumentOutOfRangeException(
                 nameof(kind),

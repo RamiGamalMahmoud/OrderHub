@@ -2106,6 +2106,216 @@ namespace OrderHub.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.StockIssueBatch", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("EffectiveAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("effective_at_utc");
+
+                    b.Property<int>("IssueOrderLineId")
+                        .HasColumnType("integer")
+                        .HasColumnName("issue_order_line_id");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<int>("RecordedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("recorded_by_user_id");
+
+                    b.Property<string>("ShortfallReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("shortfall_reason");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stock_issue_batches");
+
+                    b.HasIndex("RecordedByUserId")
+                        .HasDatabaseName("ix_stock_issue_batches_recorded_by_user_id");
+
+                    b.HasIndex("IssueOrderLineId", "CreatedAt")
+                        .HasDatabaseName("ix_stock_issue_batches_issue_order_line_id_created_at");
+
+                    b.ToTable("stock_issue_batches", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_stock_issue_batches_quantity", "quantity > 0");
+                        });
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.StockIssueLine", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AllocationId")
+                        .HasColumnType("integer")
+                        .HasColumnName("allocation_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("IssueOrderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("issue_order_id");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer")
+                        .HasColumnName("product_id");
+
+                    b.Property<int>("RequestedQty")
+                        .HasColumnType("integer")
+                        .HasColumnName("requested_qty");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stock_issue_lines");
+
+                    b.HasIndex("AllocationId")
+                        .HasDatabaseName("ix_stock_issue_lines_allocation_id");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("ix_stock_issue_lines_product_id");
+
+                    b.HasIndex("IssueOrderId", "AllocationId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_stock_issue_lines_issue_order_id_allocation_id");
+
+                    b.ToTable("stock_issue_lines", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_stock_issue_lines_quantity", "requested_qty > 0");
+                        });
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.StockIssueOrder", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AssignedUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("assigned_user_id");
+
+                    b.Property<string>("CancelReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("cancel_reason");
+
+                    b.Property<DateTime?>("CancelRequestedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancel_requested_at_utc");
+
+                    b.Property<int?>("CancelRequestedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("cancel_requested_by_user_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("NumberingPartyId")
+                        .HasColumnType("integer")
+                        .HasColumnName("numbering_party_id");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_id");
+
+                    b.Property<int>("RequestedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("requested_by_user_id");
+
+                    b.Property<int>("SequenceMonth")
+                        .HasColumnType("integer")
+                        .HasColumnName("sequence_month");
+
+                    b.Property<int>("SequenceYear")
+                        .HasColumnType("integer")
+                        .HasColumnName("sequence_year");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("version");
+
+                    b.Property<int>("WarehouseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("warehouse_id");
+
+                    b.Property<long>("WorkRecordNumber")
+                        .HasColumnType("bigint")
+                        .HasColumnName("work_record_number");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stock_issue_orders");
+
+                    b.HasIndex("AssignedUserId")
+                        .HasDatabaseName("ix_stock_issue_orders_assigned_user_id");
+
+                    b.HasIndex("CancelRequestedByUserId")
+                        .HasDatabaseName("ix_stock_issue_orders_cancel_requested_by_user_id");
+
+                    b.HasIndex("OrderId")
+                        .HasDatabaseName("ix_stock_issue_orders_order_id");
+
+                    b.HasIndex("RequestedByUserId")
+                        .HasDatabaseName("ix_stock_issue_orders_requested_by_user_id");
+
+                    b.HasIndex("WarehouseId", "Status")
+                        .HasDatabaseName("ix_stock_issue_orders_warehouse_id_status");
+
+                    b.HasIndex("NumberingPartyId", "SequenceYear", "SequenceMonth", "WorkRecordNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_stock_issue_orders_numbering_party_id_sequence_year_sequenc");
+
+                    b.ToTable("stock_issue_orders", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_stock_issue_orders_cancel_reason", "status <> 'CancelRequested' OR (cancel_reason IS NOT NULL AND length(trim(cancel_reason)) > 0)");
+
+                            t.HasCheckConstraint("ck_stock_issue_orders_numbering", "numbering_party_id > 0 AND work_record_number > 0 AND sequence_year > 0 AND sequence_month BETWEEN 1 AND 12");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.StockReceipt", b =>
                 {
                     b.Property<int>("Id")
@@ -2891,11 +3101,11 @@ namespace OrderHub.Infrastructure.Migrations
 
                     b.ToTable("number_sequences", null, t =>
                         {
-                            t.HasCheckConstraint("ck_number_sequences_kind", "kind IN ('Order', 'Supplier', 'Deliveryman', 'ShippingCarrier')");
+                            t.HasCheckConstraint("ck_number_sequences_kind", "kind IN ('Order', 'Supplier', 'Deliveryman', 'ShippingCarrier', 'Warehouse')");
 
                             t.HasCheckConstraint("ck_number_sequences_last_number", "last_number >= 0");
 
-                            t.HasCheckConstraint("ck_number_sequences_scope", "(\r\n    kind = 'Order'\r\n    AND party_id = 0\r\n    AND year = 0\r\n    AND month = 0\r\n)\r\nOR\r\n(\r\n    kind IN ('Supplier', 'Deliveryman', 'ShippingCarrier')\r\n    AND party_id > 0\r\n    AND year > 0\r\n    AND month BETWEEN 1 AND 12\r\n)");
+                            t.HasCheckConstraint("ck_number_sequences_scope", "(\r\n    kind = 'Order'\r\n    AND party_id = 0\r\n    AND year = 0\r\n    AND month = 0\r\n)\r\nOR\r\n(\r\n    kind IN ('Supplier', 'Deliveryman', 'ShippingCarrier', 'Warehouse')\r\n    AND party_id > 0\r\n    AND year > 0\r\n    AND month BETWEEN 1 AND 12\r\n)");
                         });
                 });
 
@@ -3767,6 +3977,104 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.StockIssueBatch", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.StockIssueLine", "IssueOrderLine")
+                        .WithMany("Batches")
+                        .HasForeignKey("IssueOrderLineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_issue_batches_stock_issue_lines_issue_order_line_id");
+
+                    b.HasOne("OrderHub.Domain.Models.User", "RecordedBy")
+                        .WithMany()
+                        .HasForeignKey("RecordedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_issue_batches_users_recorded_by_user_id");
+
+                    b.Navigation("IssueOrderLine");
+
+                    b.Navigation("RecordedBy");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.StockIssueLine", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.OrderInventoryAllocation", "Allocation")
+                        .WithMany()
+                        .HasForeignKey("AllocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_issue_lines_order_inventory_allocations_allocation_id");
+
+                    b.HasOne("OrderHub.Domain.Models.StockIssueOrder", "IssueOrder")
+                        .WithMany("Lines")
+                        .HasForeignKey("IssueOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_issue_lines_stock_issue_orders_issue_order_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_issue_lines_products_product_id");
+
+                    b.Navigation("Allocation");
+
+                    b.Navigation("IssueOrder");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.StockIssueOrder", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.User", "AssignedTo")
+                        .WithMany()
+                        .HasForeignKey("AssignedUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_issue_orders_users_assigned_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.User", "CancelRequestedBy")
+                        .WithMany()
+                        .HasForeignKey("CancelRequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_stock_issue_orders_users_cancel_requested_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_issue_orders_orders_order_id");
+
+                    b.HasOne("OrderHub.Domain.Models.User", "RequestedBy")
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_issue_orders_users_requested_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_issue_orders_warehouses_warehouse_id");
+
+                    b.Navigation("AssignedTo");
+
+                    b.Navigation("CancelRequestedBy");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("RequestedBy");
+
+                    b.Navigation("Warehouse");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.StockReceipt", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.User", "CreatedBy")
@@ -4239,6 +4547,16 @@ namespace OrderHub.Infrastructure.Migrations
             modelBuilder.Entity("OrderHub.Domain.Models.Role", b =>
                 {
                     b.Navigation("Permissions");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.StockIssueLine", b =>
+                {
+                    b.Navigation("Batches");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.StockIssueOrder", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.StockReceipt", b =>

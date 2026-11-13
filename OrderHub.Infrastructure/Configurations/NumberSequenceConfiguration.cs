@@ -15,7 +15,7 @@ internal class NumberSequenceConfiguration
             table.HasCheckConstraint(
                 "ck_number_sequences_kind",
                 """
-                kind IN ('Order', 'Supplier', 'Deliveryman', 'ShippingCarrier')
+                kind IN ('Order', 'Supplier', 'Deliveryman', 'ShippingCarrier', 'Warehouse')
                 """);
 
             table.HasCheckConstraint(
@@ -29,7 +29,7 @@ internal class NumberSequenceConfiguration
                 )
                 OR
                 (
-                    kind IN ('Supplier', 'Deliveryman', 'ShippingCarrier')
+                    kind IN ('Supplier', 'Deliveryman', 'ShippingCarrier', 'Warehouse')
                     AND party_id > 0
                     AND year > 0
                     AND month BETWEEN 1 AND 12

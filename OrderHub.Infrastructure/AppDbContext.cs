@@ -61,6 +61,9 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<StockReceipt> StockReceipts { get; set; }
     public DbSet<StockReceiptLine> StockReceiptLines { get; set; }
     public DbSet<StockReceiptAttachment> StockReceiptAttachments { get; set; }
+    public DbSet<StockIssueOrder> StockIssueOrders { get; set; }
+    public DbSet<StockIssueLine> StockIssueLines { get; set; }
+    public DbSet<StockIssueBatch> StockIssueBatches { get; set; }
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {

@@ -177,6 +177,35 @@ public sealed class WorkRecordNumberingTests
         }
     }
 
+    [Fact]
+    public async Task Warehouse_kind_allocates_monthly_numbers_and_legacy_kinds_keep_working()
+    {
+        using var connection = OpenConnection();
+        var options = Options(connection);
+        using var context = new AppDbContext(options);
+        context.Database.EnsureCreated();
+        var service = new NumberSequenceService(context, new AppDbContextFactory(options));
+        var atUtc = new DateTimeOffset(2026, 11, 13, 9, 0, 0, TimeSpan.Zero);
+
+        foreach (var kind in new[]
+                 {
+                     NumberSequenceKind.Supplier,
+                     NumberSequenceKind.Deliveryman,
+                     NumberSequenceKind.ShippingCarrier,
+                     NumberSequenceKind.Warehouse
+                 })
+        {
+            var first = await service.NextMonthlyAsync(kind, 7, atUtc);
+            var second = await service.NextMonthlyAsync(kind, 7, atUtc);
+            Assert.Equal((1L, 2026, 11), (first.Number, first.Year, first.Month));
+            Assert.Equal((2L, 2026, 11), (second.Number, second.Year, second.Month));
+        }
+
+        Assert.Equal(4, await context.NumberSequences.CountAsync());
+        Assert.Contains(await context.NumberSequences.AsNoTracking().ToListAsync(),
+            row => row.Kind == NumberSequenceKind.Warehouse && row.PartyId == 7);
+    }
+
     private static Supply NewSupply(int supplierId, DateTime createdAtUtc)
     {
         var supply = new Supply(new Order(1, $"ORD-{Guid.NewGuid():N}"), supplierId);
