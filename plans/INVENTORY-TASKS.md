@@ -749,7 +749,7 @@ Manual: approve a shrinking edit → «مرتجع مستحق» appears → recor
 
 ---
 
-### [ ] T08c — Inventory counts (D20/D21)
+### [x] T08c — Inventory counts (D20/D21)
 
 **Goal:** Keeper-led counts over sound and damaged stock with late-movement review, and manager approval that posts `Adjustment`/`DamagedAdjustment` movements.
 
@@ -787,6 +787,22 @@ Manual: open a count, enter both columns, add a backdated movement, review `Incl
 - Self-approval is allowed here and for reversals only.
 
 **Proposed commit:** `feat(inventory): add stock counts with approval and late-movement review`
+
+**Decisions / files (2026-11-13)**
+- Domain: `InventoryCount` (header, `Version` concurrency token, `SnapshotAtUtc`, `Scope`, `Status`, decision fields, check `ck_inventory_counts_decision`) and `InventoryCountLine` (book sound/damaged columns, nullable counted columns, `ReviewDecision`/`ReviewNote`, `IsActive`); enums `InventoryCountStatus` (`Open/UnderReview/Approved/Cancelled`), `InventoryCountScope` (`Full/Products`), `LateMovementDecision` (`IncludedInCount/Recounted`). Migration `AddInventoryCounts` creates the two tables and indexes only (`has-pending-model-changes` clean).
+- One open count per (warehouse, product) is enforced by a handler check plus a **filtered unique index** on `inventory_count_lines (warehouse_id, product_id) WHERE is_active = TRUE`; the line carries a denormalized `WarehouseId` because a filtered index cannot see header status. Lines are deactivated on approve/cancel, which frees the pair for the next count.
+- Book snapshot = Σ ledger rows with `EffectiveAtUtc ≤ SnapshotAtUtc`; reversal rows are classified by their original movement's type and every row is counted by signed direction, so reversals net out. Late movement = rows with `EffectiveAtUtc ≤ line.SnapshotAtUtc` created after `max(ReviewedAtUtc, SnapshotRecordedAtUtc)`.
+- Review: `IncludedInCount` recomputes the book columns up to the line snapshot; `Recounted` recomputes up to now, clears the counted columns and reopens the whole header (`Status=Open`, `CompletedAtUtc=null`) so the keeper re-enters both values and completes again. Notes are optional, max 200.
+- Approval: transaction + header row lock (PG) + `Version` CAS (`ExpectedVersion`); recalculates `Delta`/`DamagedDelta` from the count-time book columns and applies them to the **current** balance; up to two movements per line (`Adjustment`, `DamagedAdjustment`, `SourceCountId` set); blocked when sound result < `ReservedOnHand` or damaged result < 0; zero deltas post nothing. Second manager or stale version → `"Conflict"` with no side effects. Self-approval allowed (D4 exception).
+- Keeper binding: start/save/complete resolve the warehouse from `GetByKeeperAsync` (open counts follow the current keeper after transfer); view/decision authority on details comes from keeper, `Inventory.Approve`, or admin; cancel accepts keeper/admin or `Inventory.Approve` with a mandatory reason.
+- Web: `/inventory/counts` (overview + start), `/inventory/counts/{id}` (count editor with live per-keystroke sound/damaged inputs and computed deltas, save-all, complete, cancel), `/inventory/counts/{id}/review` (manager diff table, per-line late-movement actions, approve/cancel). Dialogs: `StartCountDialog`, `CancelCountDialog`, `ReviewLateMovementDialog`, `ApproveCountDialog`. Nav item «الجرد» under «المخزون» (visible with `Inventory.Read`; the start CTA appears for keepers only). The details query returns inactive lines too, so approved/cancelled counts remain readable as history.
+- Tests: `InventoryCountTests.cs` (7) + `InventoryCountApprovalTests.cs` (6): snapshot isolation, duplicate-open block, both-columns completion, products scope, cancel/release, keeper transfer, overview/details scope, dual adjustments + once-only, late pause + include recompute, recount reopen, reservation block, negative damaged block, stale version, archived details after approval. Full suite: **488 passed** (Debug + Release); Release build clean; `has-pending-model-changes` reports none.
+
+**Deviations**
+- Dialog names follow the existing `*Dialog` convention instead of inline pages; `Editor.razor` doubles as the read-only historical view after approval/cancel.
+- The editor saves on demand («حفظ العدّ») rather than on every keystroke: inputs and computed deltas update live per keystroke, but each save is one transaction per dirty line to avoid command spam.
+- `IsCounted`/`Delta` are computed on contracts (both web and application), never typed.
+- Browser pass deferred to T08e per the owner's flow (dev server intentionally not started while the owner's instance may be running).
 
 ---
 

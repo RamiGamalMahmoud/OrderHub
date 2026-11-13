@@ -1000,6 +1000,183 @@ namespace OrderHub.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryCount", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at_utc");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DecidedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at_utc");
+
+                    b.Property<int?>("DecidedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("decided_by_user_id");
+
+                    b.Property<string>("DecisionNote")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("decision_note");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("scope");
+
+                    b.Property<DateTime>("SnapshotAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("snapshot_at_utc");
+
+                    b.Property<int>("StartedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("started_by_user_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("version");
+
+                    b.Property<int>("WarehouseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inventory_counts");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_inventory_counts_created_at");
+
+                    b.HasIndex("DecidedByUserId")
+                        .HasDatabaseName("ix_inventory_counts_decided_by_user_id");
+
+                    b.HasIndex("StartedByUserId")
+                        .HasDatabaseName("ix_inventory_counts_started_by_user_id");
+
+                    b.HasIndex("WarehouseId", "Status")
+                        .HasDatabaseName("ix_inventory_counts_warehouse_id_status");
+
+                    b.ToTable("inventory_counts", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inventory_counts_decision", "status NOT IN ('Approved', 'Cancelled') OR (decided_at_utc IS NOT NULL AND decision_note IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryCountLine", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BookDamagedQty")
+                        .HasColumnType("integer")
+                        .HasColumnName("book_damaged_qty");
+
+                    b.Property<int>("BookQty")
+                        .HasColumnType("integer")
+                        .HasColumnName("book_qty");
+
+                    b.Property<int>("CountId")
+                        .HasColumnType("integer")
+                        .HasColumnName("count_id");
+
+                    b.Property<int?>("CountedDamagedQty")
+                        .HasColumnType("integer")
+                        .HasColumnName("counted_damaged_qty");
+
+                    b.Property<int?>("CountedQty")
+                        .HasColumnType("integer")
+                        .HasColumnName("counted_qty");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer")
+                        .HasColumnName("product_id");
+
+                    b.Property<string>("ReviewDecision")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("review_decision");
+
+                    b.Property<string>("ReviewNote")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("review_note");
+
+                    b.Property<DateTime?>("ReviewedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reviewed_at_utc");
+
+                    b.Property<DateTime>("SnapshotAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("snapshot_at_utc");
+
+                    b.Property<DateTime>("SnapshotRecordedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("snapshot_recorded_at_utc");
+
+                    b.Property<int>("WarehouseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inventory_count_lines");
+
+                    b.HasIndex("CountId")
+                        .HasDatabaseName("ix_inventory_count_lines_count_id");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("ix_inventory_count_lines_product_id");
+
+                    b.HasIndex("WarehouseId", "ProductId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inventory_count_lines_warehouse_id_product_id")
+                        .HasFilter("\"is_active\" = TRUE");
+
+                    b.ToTable("inventory_count_lines", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inventory_count_lines_counted", "(counted_qty IS NULL OR counted_qty >= 0) AND (counted_damaged_qty IS NULL OR counted_damaged_qty >= 0)");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.InventoryMovement", b =>
                 {
                     b.Property<int>("Id")
@@ -3856,6 +4033,65 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Navigation("Warehouse");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryCount", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.User", "DecidedBy")
+                        .WithMany()
+                        .HasForeignKey("DecidedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_inventory_counts_users_decided_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.User", "StartedBy")
+                        .WithMany()
+                        .HasForeignKey("StartedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_counts_users_started_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_counts_warehouses_warehouse_id");
+
+                    b.Navigation("DecidedBy");
+
+                    b.Navigation("StartedBy");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryCountLine", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.InventoryCount", "Count")
+                        .WithMany("Lines")
+                        .HasForeignKey("CountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_count_lines_inventory_counts_count_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_count_lines_products_product_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_count_lines_warehouses_warehouse_id");
+
+                    b.Navigation("Count");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Warehouse");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.InventoryMovement", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.User", null)
@@ -5059,6 +5295,11 @@ namespace OrderHub.Infrastructure.Migrations
             modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.Quotation", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryCount", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.InventoryReturn", b =>

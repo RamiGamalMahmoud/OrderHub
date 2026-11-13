@@ -1,0 +1,167 @@
+@page "/inventory/counts"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.Inventory,
+    PermissionLevel.Read)]
+
+@inject IRequestExecutor Executor
+@inject NavigationManager Navigation
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject PermissionAccess PermissionAccess
+@inject ILogger<Index> Logger
+
+<PageTitle>الجرد</PageTitle>
+
+<div class="space-y-5">
+    <PageScaffold Title="الجرد"
+                  Description="@(_state is null ? "جرد الأرصدة السليمة والتالفة" : _state.WarehouseName)"
+                  Crumbs="_crumbs"
+                  Count="_state?.Counts.Count">
+        <Actions>
+            <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                           Variant="Variant.Text"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           Disabled="_busy"
+                           aria-label="تحديث الجرد"
+                           OnClick="LoadAsync"
+                           Class="oh-btn oh-btn--icon oh-btn--secondary oh-btn--sm" />
+            @if (_state is { IsKeeper: true })
+            {
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Disabled="_busy || _state.Products.Count == 0"
+                           OnClick="OpenStartAsync"
+                           Class="oh-btn oh-btn--primary oh-btn--sm">
+                    بدء جرد
+                </MudButton>
+            }
+        </Actions>
+    </PageScaffold>
+
+    @if (_loading)
+    {
+        <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" aria-label="تحميل الجرد" />
+            <p class="mt-2 text-sm text-slate-500">جاري تحميل عمليات الجرد...</p>
+        </div>
+    }
+    else if (_error is not null)
+    {
+        <div class="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+            <p class="text-sm font-bold text-rose-800">@_error</p>
+            <button type="button" class="oh-btn oh-btn--secondary oh-btn--sm mt-3" @onclick="LoadAsync">
+                إعادة المحاولة
+            </button>
+        </div>
+    }
+    else if (_state is not null)
+    {
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-900">عمليات الجرد</h2>
+                    <p class="mt-0.5 text-xs text-slate-500">
+                        تُرحَّل التسويات فقط بعد اعتماد المدير؛ العدّ لا يغيّر الأرصدة.
+                    </p>
+                </div>
+                @if (_state.IsKeeper && _state.Products.Count == 0)
+                {
+                    <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-700">
+                        لا توجد أصناف قابلة للجرد حاليًا
+                    </span>
+                }
+            </div>
+
+            @if (_state.Counts.Count == 0)
+            {
+                <div class="p-8 text-center">
+                    <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-teal-600">
+                        <MudIcon Icon="@Icons.Material.Outlined.Checklist" aria-hidden="true" />
+                    </span>
+                    <p class="text-base font-bold text-slate-900">لم يُسجَّل أي جرد بعد.</p>
+                    <p class="mt-1 text-sm text-slate-500">
+                        @(_state.IsKeeper
+                            ? "ابدأ جردًا كاملًا أو حدّد أصنافًا لعدّها."
+                            : "تظهر هنا عمليات الجرد بعد أن يبدأها أمين المخزن.")
+                    </p>
+                </div>
+            }
+            else
+            {
+                <MudTable T="CountRow"
+                          Items="_state.Counts"
+                          Dense="true"
+                          Hover="true"
+                          Elevation="0"
+                          Square="true"
+                          Breakpoint="Breakpoint.Md">
+                    <HeaderContent>
+                        <MudTh Class="text-xs font-bold text-slate-500">المخزن</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">النطاق</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">الحالة</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">لقطة الأرصدة</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">البنود</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">بدأه</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">آخر قرار</MudTh>
+                        <MudTh Class="w-40 text-xs font-bold text-slate-500">
+                            <span class="sr-only">الإجراءات</span>
+                        </MudTh>
+                    </HeaderContent>
+                    <RowTemplate Context="row">
+                        <MudTd DataLabel="المخزن">
+                            <span class="text-sm font-bold text-slate-800">@row.WarehouseName</span>
+                        </MudTd>
+                        <MudTd DataLabel="النطاق">
+                            <span class="text-xs font-semibold text-slate-600">@CountPresentation.ScopeLabel(row.Scope)</span>
+                        </MudTd>
+                        <MudTd DataLabel="الحالة">
+                            <span class="@($"rounded-full border px-2 py-0.5 text-[11px] font-bold {CountPresentation.StatusTag(row.Status)}")">
+                                @CountPresentation.StatusLabel(row.Status)
+                            </span>
+                        </MudTd>
+                        <MudTd DataLabel="لقطة الأرصدة">
+                            <UserLocalTime Value="row.SnapshotAtUtc" />
+                        </MudTd>
+                        <MudTd DataLabel="البنود">
+                            <span class="text-sm font-semibold text-slate-700">
+                                @row.CountedLineCount / @row.LineCount
+                            </span>
+                        </MudTd>
+                        <MudTd DataLabel="بدأه">
+                            <span class="text-sm text-slate-700">@row.StartedByName</span>
+                        </MudTd>
+                        <MudTd DataLabel="آخر قرار">
+                            @if (row.DecidedAtUtc is null)
+                            {
+                                <span class="text-xs text-slate-400">—</span>
+                            }
+                            else
+                            {
+                                <div class="space-y-0.5">
+                                    <UserLocalTime Value="row.DecidedAtUtc.Value" />
+                                    @if (!string.IsNullOrWhiteSpace(row.DecisionNote))
+                                    {
+                                        <p class="max-w-[16rem] truncate text-[11px] text-slate-500" title="@row.DecisionNote">@row.DecisionNote</p>
+                                    }
+                                </div>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="الإجراءات">
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       Class="oh-btn oh-btn--secondary oh-btn--sm"
+                                       OnClick="@(() => OpenCountAsync(row))">
+                                @ActionLabel(row)
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </section>
+    }
+</div>
