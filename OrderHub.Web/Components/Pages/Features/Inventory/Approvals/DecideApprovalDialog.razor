@@ -1,0 +1,201 @@
+@using Microsoft.Extensions.Logging
+@using MudBlazor
+
+<MudDialog Class="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-xl"
+           TitleClass="p-0"
+           ContentClass="p-0"
+           ActionsClass="p-0"
+           Gutters="false">
+    <TitleContent>
+        <header class="flex items-start justify-between gap-3 border-b border-slate-100 p-5">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600">
+                    <MudIcon Icon="@Icons.Material.Outlined.Approval" Size="Size.Small" />
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-bold leading-tight text-slate-900">إصدار قرار</h2>
+                    <p class="mt-1 text-xs font-medium text-slate-500">
+                        @ApprovalPresentation.TypeLabel(Row.RequestType) — @ApprovalPresentation.TargetLabel(Row)
+                    </p>
+                </div>
+            </div>
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Size="Size.Small"
+                           Color="Color.Default"
+                           Disabled="_submitting"
+                           OnClick="Cancel"
+                           aria-label="إغلاق النافذة"
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+        </header>
+    </TitleContent>
+
+    <DialogContent>
+        <div class="min-h-0 flex-1 space-y-4 overflow-y-auto bg-slate-50/70 p-5">
+            <dl class="grid gap-2 rounded-xl border border-slate-200 bg-white p-4 text-sm sm:grid-cols-2">
+                <div class="sm:col-span-2">
+                    <dt class="text-[11px] font-semibold text-slate-500">الهدف</dt>
+                    <dd class="mt-0.5 font-bold text-slate-900">@ApprovalPresentation.TargetLabel(Row)</dd>
+                </div>
+                <div class="sm:col-span-2">
+                    <dt class="text-[11px] font-semibold text-slate-500">سبب الطلب</dt>
+                    <dd class="mt-0.5 text-slate-700" style="overflow-wrap:anywhere">@Row.Reason</dd>
+                </div>
+                <div>
+                    <dt class="text-[11px] font-semibold text-slate-500">الطالب</dt>
+                    <dd class="mt-0.5 text-slate-700">@Row.RequestedByName</dd>
+                </div>
+                <div>
+                    <dt class="text-[11px] font-semibold text-slate-500">تاريخ الإرسال</dt>
+                    <dd class="mt-0.5 text-slate-700"><UserLocalTime Value="Row.CreatedAtUtc" /></dd>
+                </div>
+            </dl>
+
+            <div class="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-bold leading-6 text-sky-900">
+                @ImpactHint
+            </div>
+
+            @if (Row.RequestType == InventoryApprovalRequestType.MovementReversal)
+            {
+                <div class="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold leading-6 text-violet-800">
+                    عكس الحركات هو الحالة الاستثنائية المسموح فيها للطالب اعتماد طلبه بنفسه.
+                </div>
+            }
+
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button"
+                        class="@ApproveChoiceClass"
+                        disabled="@_submitting"
+                        aria-pressed="@_approve.ToString().ToLowerInvariant()"
+                        @onclick="() => Select(true)">
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                    <span class="text-sm font-bold">اعتماد</span>
+                </button>
+                <button type="button"
+                        class="@RejectChoiceClass"
+                        disabled="@_submitting"
+                        aria-pressed="@((!_approve).ToString().ToLowerInvariant())"
+                        @onclick="() => Select(false)">
+                    <MudIcon Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" />
+                    <span class="text-sm font-bold">رفض</span>
+                </button>
+            </div>
+
+            <MudTextField T="string"
+                          @bind-Value="_note"
+                          Label="@(_approve ? "ملاحظة القرار (اختياري)" : "سبب الرفض")"
+                          Required="@(!_approve)"
+                          Immediate="true"
+                          MaxLength="200"
+                          HelperText="@NoteCounter"
+                          Lines="2"
+                          Variant="Variant.Outlined"
+                          Disabled="_submitting" />
+
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+            }
+        </div>
+    </DialogContent>
+
+    <DialogActions>
+        <footer class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 bg-white p-4">
+            <MudButton Disabled="_submitting" OnClick="Cancel" Variant="Variant.Text" Class="oh-btn oh-btn--secondary">
+                إلغاء
+            </MudButton>
+            <MudButton Class="@(_approve ? "oh-btn oh-btn--primary" : "oh-btn oh-btn--danger")"
+                       Disabled="@(!CanSubmit)"
+                       OnClick="SubmitAsync">
+                @SubmitLabel
+            </MudButton>
+        </footer>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Inject] private IRequestExecutor Executor { get; set; } = null!;
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
+    [Inject] private ILogger<DecideApprovalDialog> Logger { get; set; } = null!;
+
+    [Parameter, EditorRequired] public InventoryApprovalProjectionRow Row { get; set; } = null!;
+
+    private bool _approve = true;
+    private string? _note;
+    private string? _error;
+    private bool _submitting;
+
+    private string NoteCounter => $"{(_note?.Length ?? 0).ToString(CultureInfo.InvariantCulture)} / 200";
+
+    private bool CanSubmit => !_submitting && (_approve || !string.IsNullOrWhiteSpace(_note));
+
+    private string SubmitLabel => _submitting
+        ? "جاري التنفيذ…"
+        : _approve ? "تأكيد الاعتماد" : "تأكيد الرفض";
+
+    private string ImpactHint => Row.RequestType switch
+    {
+        InventoryApprovalRequestType.IssueOrderCancel =>
+            "عند الاعتماد تُحرَّر الكميات غير المصروفة ويُغلق أمر الصرف؛ وعند الرفض يعود أمر الصرف للحالة السابقة.",
+        InventoryApprovalRequestType.MovementReversal =>
+            "عند الاعتماد تُسجَّل حركة عكسية جديدة بالكمية نفسها ويُعاد اشتقاق الرصيد؛ وعند الرفض تبقى الحركة الأصلية كما هي.",
+        _ => "تتم معالجة الطلب مرة واحدة فقط، ولا يمكن تعديل القرار بعد تنفيذه."
+    };
+
+    private string ApproveChoiceClass => _approve
+        ? "flex items-center justify-center gap-2 rounded-xl border-2 border-emerald-500 bg-emerald-50 px-3 py-3 text-emerald-800"
+        : "flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-slate-600";
+
+    private string RejectChoiceClass => !_approve
+        ? "flex items-center justify-center gap-2 rounded-xl border-2 border-rose-500 bg-rose-50 px-3 py-3 text-rose-800"
+        : "flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-slate-600";
+
+    private void Select(bool approve)
+    {
+        if (_submitting)
+            return;
+
+        _approve = approve;
+        _error = null;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (!CanSubmit)
+            return;
+
+        _submitting = true;
+        _error = null;
+        try
+        {
+            var result = await Executor.ExecuteAsync(
+                new DecideApprovalCommand(Row.Id, _approve, _note?.Trim(), Row.Version));
+            if (!result.IsSuccess)
+            {
+                if (result.ErrorCode is "Stale" or "Conflict")
+                {
+                    Snackbar.Add(result.ErrorMessage, Severity.Warning);
+                    Dialog.Close(DialogResult.Ok(false));
+                    return;
+                }
+
+                _error = result.ErrorMessage;
+                return;
+            }
+
+            Snackbar.Add(_approve ? "تم اعتماد الطلب." : "تم رفض الطلب.", Severity.Success);
+            Dialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to decide approval {ApprovalId}", Row.Id);
+            _error = "تعذر تنفيذ القرار. حاول مرة أخرى.";
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private void Cancel() => Dialog.Cancel();
+}

@@ -9,6 +9,14 @@ public interface IStockIssueOrderRepository
 {
     void Add(StockIssueOrder order);
 
+    /// <summary>Tracked issue order that owns a batch, for an approved batch reversal.</summary>
+    Task<StockIssueOrder> GetForBatchAsync(
+        int batchId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Deletes a batch after its issuance movement was reversed (ledger stays append-only).</summary>
+    void RemoveBatch(StockIssueBatch batch);
+
     /// <summary>Tracked aggregate with lines, batches and allocations for batch/cancel mutations.</summary>
     Task<StockIssueOrder> GetForUpdateAsync(
         int issueOrderId,

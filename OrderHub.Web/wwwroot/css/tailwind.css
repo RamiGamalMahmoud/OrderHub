@@ -73,7 +73,10 @@
     --color-indigo-700: oklch(45.7% 0.24 277.023);
     --color-indigo-800: oklch(39.8% 0.195 277.366);
     --color-violet-50: oklch(96.9% 0.016 293.756);
+    --color-violet-200: oklch(89.4% 0.057 293.283);
     --color-violet-600: oklch(54.1% 0.281 293.009);
+    --color-violet-700: oklch(49.1% 0.27 292.581);
+    --color-violet-800: oklch(43.2% 0.232 292.759);
     --color-purple-50: oklch(97.7% 0.014 308.299);
     --color-purple-100: oklch(94.6% 0.033 307.174);
     --color-purple-200: oklch(90.2% 0.063 306.703);
@@ -764,6 +767,12 @@
 .min-w-8 {
   min-width: calc(var(--spacing) * 8);
 }
+.min-w-\[10rem\] {
+  min-width: 10rem;
+}
+.min-w-\[11rem\] {
+  min-width: 11rem;
+}
 .min-w-\[200px\] {
   min-width: 200px;
 }
@@ -1102,6 +1111,9 @@
 .border-emerald-200 {
   border-color: var(--color-emerald-200);
 }
+.border-emerald-500 {
+  border-color: var(--color-emerald-500);
+}
 .border-indigo-100 {
   border-color: var(--color-indigo-100);
 }
@@ -1134,6 +1146,9 @@
 }
 .border-rose-200 {
   border-color: var(--color-rose-200);
+}
+.border-rose-500 {
+  border-color: var(--color-rose-500);
 }
 .border-sky-100 {
   border-color: var(--color-sky-100);
@@ -1195,6 +1210,9 @@
 .border-transparent {
   border-color: transparent;
 }
+.border-violet-200 {
+  border-color: var(--color-violet-200);
+}
 .border-s-amber-400 {
   border-inline-start-color: var(--color-amber-400);
 }
@@ -1212,6 +1230,12 @@
 }
 .bg-amber-50 {
   background-color: var(--color-amber-50);
+}
+.bg-amber-50\/40 {
+  background-color: color-mix(in srgb, oklch(98.7% 0.022 95.277) 40%, transparent);
+  @supports (color: color-mix(in lab, red, red)) {
+    background-color: color-mix(in oklab, var(--color-amber-50) 40%, transparent);
+  }
 }
 .bg-amber-50\/60 {
   background-color: color-mix(in srgb, oklch(98.7% 0.022 95.277) 60%, transparent);
@@ -1735,6 +1759,9 @@
 .text-start {
   text-align: start;
 }
+.align-top {
+  vertical-align: top;
+}
 .font-mono {
   font-family: var(--font-mono);
 }
@@ -2056,6 +2083,12 @@
 }
 .text-violet-600 {
   color: var(--color-violet-600);
+}
+.text-violet-700 {
+  color: var(--color-violet-700);
+}
+.text-violet-800 {
+  color: var(--color-violet-800);
 }
 .text-white {
   color: var(--color-white);

@@ -240,7 +240,9 @@ else
             new("المخازن", "/warehouses", Icons.Material.Outlined.Warehouse, PermissionFeature.Warehouses, "amber",
                 "المخازن وأمناء المخزون وحالة التشغيل"),
             new("أوامر الصرف", "/inventory/issue-orders", Icons.Material.Outlined.Output, PermissionFeature.Inventory, "teal",
-                "أوامر الصرف ومتابعة دفعات التنفيذ")
+                "أوامر الصرف ومتابعة دفعات التنفيذ"),
+            new("الاعتمادات", "/inventory/approvals", Icons.Material.Outlined.Approval, PermissionFeature.Inventory, "teal",
+                "اعتماد تعديلات الطلبات وإلغاءات الصرف وعكس الحركات", PermissionLevel.Approve)
         ],
         new("تسجيل توريد", "/inventory/stock-in", Icons.Material.Filled.Add, PermissionFeature.Inventory, "teal",
             "تسجيل توريد أو رصيد افتتاحي للمخزن المرتبط بك", PermissionLevel.Write, KeeperOnly: true)),

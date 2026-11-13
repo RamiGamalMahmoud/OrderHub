@@ -47,6 +47,9 @@ public class OrderInventoryAllocation : ModelBase
 
     public int IssuedQty { get; private set; }
 
+    /// <summary>كمية مصروفة تجاوزت الطلب بعد تعديل معتمد؛ تنتظر «مرتجع مستحق» (T08).</summary>
+    public int PendingReturnQty { get; private set; }
+
     public OrderAllocationStatus Status { get; private set; }
 
     public int Remaining => Qty - IssuedQty;
@@ -127,6 +130,34 @@ public class OrderInventoryAllocation : ModelBase
             return Result.Failure("كمية الصرف تتجاوز الكمية المخصصة لهذا المصدر.");
 
         IssuedQty += quantity;
+        UpdateModificationDate(System.DateTime.UtcNow);
+        return Result.Success();
+    }
+
+    /// <summary>Rolls back an issued quantity after an approved batch reversal.</summary>
+    public Result RollBackIssue(int quantity)
+    {
+        if (Status != OrderAllocationStatus.Active)
+            return Result.Failure("لا يمكن عكس صرف لتخصيص غير نشط.");
+
+        if (quantity <= 0)
+            return Result.Failure("كمية العكس يجب أن تكون أكبر من صفر.");
+
+        if (quantity > IssuedQty)
+            return Result.Failure("كمية العكس تتجاوز الكمية المصروفة لهذا المصدر.");
+
+        IssuedQty -= quantity;
+        UpdateModificationDate(System.DateTime.UtcNow);
+        return Result.Success();
+    }
+
+    /// <summary>Sets the issued quantity that exceeds the approved demand as a pending return.</summary>
+    public Result SetPendingReturn(int quantity)
+    {
+        if (quantity < 0 || quantity > IssuedQty)
+            return Result.Failure("كمية المرتجع المستحق غير صالحة.");
+
+        PendingReturnQty = quantity;
         UpdateModificationDate(System.DateTime.UtcNow);
         return Result.Success();
     }

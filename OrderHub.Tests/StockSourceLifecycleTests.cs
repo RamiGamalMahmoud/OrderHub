@@ -291,7 +291,8 @@ public sealed class StockSourceLifecycleTests
         new(db.Orders, db.UnitOfWork, db.Inventory, db.IssueOrders, new TestCurrentUser(db.Sales.Id), db.Clock);
 
     private static UpdateOrderHandler UpdateHandler(OrderAllocationTestDb db) =>
-        new(db.Orders, db.UnitOfWork, db.Inventory, db.Warehouses);
+        new(db.Orders, db.UnitOfWork, db.Inventory, db.Warehouses, db.IssueOrders, db.Approvals,
+            new TestCurrentUser(db.Sales.Id), db.Clock);
 
     private static UpdateOrderCommand Command(
         OrderAllocationTestDb db, int orderId, int version, params OrderInput.Item[] items) =>

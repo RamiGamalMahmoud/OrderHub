@@ -76,7 +76,8 @@ public sealed record WarehouseStockResult(
     int Page,
     int PageSize,
     bool IsKeeperScoped,
-    bool CanRecordStockIn);
+    bool CanRecordStockIn,
+    bool CanRequestReversal);
 
 /// <summary>Projection returned by the repository; the handler maps it to the public contract.</summary>
 public sealed record InventoryWarehouseSummaryRow(

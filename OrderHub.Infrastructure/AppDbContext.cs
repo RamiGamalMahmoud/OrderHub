@@ -64,6 +64,7 @@ internal class AppDbContext(DbContextOptions dbContextOptions) : DbContext(dbCon
     public DbSet<StockIssueOrder> StockIssueOrders { get; set; }
     public DbSet<StockIssueLine> StockIssueLines { get; set; }
     public DbSet<StockIssueBatch> StockIssueBatches { get; set; }
+    public DbSet<InventoryApprovalRequest> InventoryApprovalRequests { get; set; }
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {

@@ -2,6 +2,9 @@
 
 @inject IRequestExecutor Executor
 @inject ILogger<LedgerDialog> Logger
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
 
 <MudDialog Class="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-xl"
            TitleClass="p-0"
@@ -86,6 +89,12 @@
                         <MudTh Class="text-xs font-bold text-slate-500">المرجع</MudTh>
                         <MudTh Class="text-xs font-bold text-slate-500">المنفذ</MudTh>
                         <MudTh Class="text-xs font-bold text-slate-500">ملاحظات</MudTh>
+                        @if (CanRequestReversal)
+                        {
+                            <MudTh Class="w-24 text-xs font-bold text-slate-500">
+                                <span class="sr-only">إجراءات</span>
+                            </MudTh>
+                        }
                     </HeaderContent>
 
                     <RowTemplate Context="row">
@@ -134,6 +143,24 @@
                                 <span class="text-xs text-slate-600">@row.Note</span>
                             }
                         </MudTd>
+                        @if (CanRequestReversal)
+                        {
+                            <MudTd DataLabel="إجراءات">
+                                @if (IsReversible(row))
+                                {
+                                    <MudButton Variant="Variant.Outlined"
+                                               Size="Size.Small"
+                                               Class="oh-btn oh-btn--secondary oh-btn--sm"
+                                               OnClick="@(() => OpenReversalAsync(row))">
+                                        طلب عكس
+                                    </MudButton>
+                                }
+                                else
+                                {
+                                    <span class="text-xs text-slate-400">—</span>
+                                }
+                            </MudTd>
+                        }
                     </RowTemplate>
 
                     <NoRecordsContent>
@@ -168,6 +195,7 @@
     [Parameter] public int ProductId { get; set; }
     [Parameter] public string ProductName { get; set; } = string.Empty;
     [Parameter] public string ProductCode { get; set; } = string.Empty;
+    [Parameter] public bool CanRequestReversal { get; set; }
 
     private MudTable<WarehouseLedgerRow>? _table;
     private readonly CancellationTokenSource _lifetime = new();
@@ -309,6 +337,58 @@
     }
 
     private void Close() => Dialog.Close();
+
+    private static bool IsReversible(WarehouseLedgerRow row) =>
+        row.Status == InventoryMovementStatus.Active &&
+        row.MovementType != InventoryMovementType.Reversal;
+
+    private async Task OpenReversalAsync(WarehouseLedgerRow row)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        try
+        {
+            DialogParameters<RequestReversalDialog> parameters = new()
+            {
+                { dialog => dialog.MovementId, row.Id },
+                { dialog => dialog.ProductName, ProductName },
+                { dialog => dialog.MovementLabel, MovementLabel(row) }
+            };
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = false,
+                CloseOnEscapeKey = false,
+                BackdropClick = false
+            };
+
+            var dialog = await Dialogs.ShowAsync<RequestReversalDialog>("طلب عكس حركة", parameters, options);
+            DialogResult? result = await dialog.Result;
+            if (result is { Canceled: false } && !_disposed)
+            {
+                Snackbar.Add("تم إرسال طلب العكس إلى المدير للاعتماد.", Severity.Success);
+            }
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Failed to open the reversal dialog for movement {MovementId}",
+                row.Id);
+            Snackbar.Add("تعذر فتح نافذة طلب العكس. يرجى المحاولة مرة أخرى.", Severity.Error);
+        }
+    }
+
+    private static string MovementLabel(WarehouseLedgerRow row) =>
+        $"{InventoryPresentation.MovementTypeLabel(row.MovementType)} · {InventoryPresentation.MovementDirectionLabel(row.Direction)} {row.Quantity.ToString(CultureInfo.InvariantCulture)}";
 
     private static string? ReferenceLabel(WarehouseLedgerRow row)
     {

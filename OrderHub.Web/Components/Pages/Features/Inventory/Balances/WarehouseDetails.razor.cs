@@ -331,7 +331,8 @@ public partial class WarehouseDetails : IDisposable
                 { dialog => dialog.WarehouseId, WarehouseId },
                 { dialog => dialog.ProductId, row.ProductId },
                 { dialog => dialog.ProductName, row.ProductName },
-                { dialog => dialog.ProductCode, row.ProductCode }
+                { dialog => dialog.ProductCode, row.ProductCode },
+                { dialog => dialog.CanRequestReversal, _stock?.CanRequestReversal == true }
             };
             DialogOptions options = new()
             {

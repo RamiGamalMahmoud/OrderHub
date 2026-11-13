@@ -1,0 +1,213 @@
+@page "/inventory/approvals"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.Inventory,
+    PermissionLevel.Approve)]
+
+@inject IRequestExecutor Executor
+@inject NavigationManager Navigation
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject ICurrentUser CurrentUser
+@inject ILogger<Index> Logger
+
+<PageTitle>الاعتمادات</PageTitle>
+
+<div class="space-y-5">
+    <PageScaffold Title="اعتمادات المخزون"
+                  Description="تعديلات الطلبات وإلغاءات أوامر الصرف وعكس الحركات التي تنتظر قرار المدير"
+                  Crumbs="_crumbs"
+                  Count="@FilteredRows.Count()">
+        <Actions>
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Primary"
+                       Size="Size.Large"
+                       Class="oh-btn oh-btn--secondary"
+                       StartIcon="@Icons.Material.Filled.Refresh"
+                       Disabled="_loading"
+                       OnClick="LoadAsync">
+                تحديث القائمة
+            </MudButton>
+        </Actions>
+    </PageScaffold>
+
+    @if (_error is not null)
+    {
+        <div class="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+            <p class="text-sm font-bold text-rose-800">@_error</p>
+            <button type="button" class="oh-btn oh-btn--secondary oh-btn--sm mt-3" @onclick="LoadAsync">
+                إعادة المحاولة
+            </button>
+        </div>
+    }
+
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 px-4 py-3">
+            <MudTextField T="string"
+                          @bind-Value="_searchTerm"
+                          Placeholder="ابحث بالطلب أو المخزن أو الطالب..."
+                          aria-label="البحث في الاعتمادات"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Immediate="true"
+                          Clearable="true"
+                          Class="w-full max-w-sm" />
+
+            <MudSelect T="InventoryApprovalStatus?"
+                       @bind-Value="_statusFilter"
+                       Label="الحالة"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Dense="true"
+                       Class="min-w-[10rem]">
+                <MudSelectItem T="InventoryApprovalStatus?" Value="null">كل الحالات</MudSelectItem>
+                <MudSelectItem T="InventoryApprovalStatus?" Value="InventoryApprovalStatus.Pending">قيد الاعتماد</MudSelectItem>
+                <MudSelectItem T="InventoryApprovalStatus?" Value="InventoryApprovalStatus.Approved">معتمد</MudSelectItem>
+                <MudSelectItem T="InventoryApprovalStatus?" Value="InventoryApprovalStatus.Rejected">مرفوض</MudSelectItem>
+                <MudSelectItem T="InventoryApprovalStatus?" Value="InventoryApprovalStatus.Stale">متقادم</MudSelectItem>
+            </MudSelect>
+
+            <MudSelect T="InventoryApprovalRequestType?"
+                       @bind-Value="_typeFilter"
+                       Label="النوع"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Dense="true"
+                       Class="min-w-[11rem]">
+                <MudSelectItem T="InventoryApprovalRequestType?" Value="null">كل الأنواع</MudSelectItem>
+                <MudSelectItem T="InventoryApprovalRequestType?" Value="InventoryApprovalRequestType.AllocationEdit">تعديل طلب</MudSelectItem>
+                <MudSelectItem T="InventoryApprovalRequestType?" Value="InventoryApprovalRequestType.IssueOrderCancel">إلغاء أمر صرف</MudSelectItem>
+                <MudSelectItem T="InventoryApprovalRequestType?" Value="InventoryApprovalRequestType.MovementReversal">عكس حركة</MudSelectItem>
+            </MudSelect>
+        </div>
+
+        @if (_loading)
+        {
+            <div class="p-8 text-center">
+                <MudProgressCircular Indeterminate="true" Color="Color.Primary" aria-label="تحميل الاعتمادات" />
+                <p class="mt-2 text-sm text-slate-500">جاري تحميل الاعتمادات...</p>
+            </div>
+        }
+        else if (!FilteredRows.Any())
+        {
+            <div class="p-8 text-center">
+                <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-teal-600">
+                    <MudIcon Icon="@Icons.Material.Outlined.Approval" aria-hidden="true" />
+                </span>
+                <p class="text-base font-bold text-slate-900">
+                    @(_rows.Count == 0 ? "لا توجد طلبات اعتماد حالياً." : "لا توجد طلبات تطابق البحث أو التصفية.")
+                </p>
+                <p class="mt-1 text-sm text-slate-500">ستظهر هنا التعديلات والإلغاءات وعكس الحركات التي تحتاج قرارك.</p>
+            </div>
+        }
+        else
+        {
+            <MudTable T="InventoryApprovalProjectionRow"
+                      Items="FilteredRows"
+                      Dense="true"
+                      Hover="true"
+                      Elevation="0"
+                      Square="true"
+                      Breakpoint="Breakpoint.Md"
+                      @bind-CurrentPage="_currentPage"
+                      @bind-RowsPerPage="_rowsPerPage">
+                <HeaderContent>
+                    <MudTh Class="text-xs font-bold text-slate-500">النوع</MudTh>
+                    <MudTh Class="text-xs font-bold text-slate-500">الهدف</MudTh>
+                    <MudTh Class="text-xs font-bold text-slate-500">السبب</MudTh>
+                    <MudTh Class="text-xs font-bold text-slate-500">الطالب</MudTh>
+                    <MudTh Class="text-xs font-bold text-slate-500">الحالة</MudTh>
+                    <MudTh Class="w-32 text-xs font-bold text-slate-500">
+                        <span class="sr-only">الإجراءات</span>
+                    </MudTh>
+                </HeaderContent>
+
+                <RowTemplate Context="row">
+                    <MudTd DataLabel="النوع">
+                        <span class="@($"rounded-full border px-2 py-0.5 text-[11px] font-bold {ApprovalPresentation.TypeTag(row.RequestType)}")">
+                            @ApprovalPresentation.TypeLabel(row.RequestType)
+                        </span>
+                    </MudTd>
+                    <MudTd DataLabel="الهدف">
+                        <span class="text-sm font-semibold text-slate-800">@ApprovalPresentation.TargetLabel(row)</span>
+                        @if (row.RequestType == InventoryApprovalRequestType.MovementReversal && row.MovementType is InventoryMovementType movementType)
+                        {
+                            <p class="mt-0.5 text-[11px] text-slate-500">@InventoryPresentation.MovementTypeLabel(movementType)</p>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="السبب" Style="overflow-wrap:anywhere">
+                        <span class="text-xs text-slate-600">@row.Reason</span>
+                    </MudTd>
+                    <MudTd DataLabel="الطالب">
+                        <span class="text-sm text-slate-700">@row.RequestedByName</span>
+                        <p class="text-[11px] text-slate-500"><UserLocalTime Value="row.CreatedAtUtc" /></p>
+                    </MudTd>
+                    <MudTd DataLabel="الحالة">
+                        <span class="@($"rounded-full border px-2 py-0.5 text-[11px] font-bold {ApprovalPresentation.StatusTag(row.Status)}")">
+                            @ApprovalPresentation.StatusLabel(row.Status)
+                        </span>
+                        @if (row.DecidedAtUtc is not null)
+                        {
+                            <p class="mt-1 text-[11px] text-slate-500">
+                                @(string.IsNullOrWhiteSpace(row.DecidedByName) ? "—" : row.DecidedByName) ·
+                                <UserLocalTime Value="row.DecidedAtUtc.Value" />
+                            </p>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="الإجراءات">
+                        @if (row.Status == InventoryApprovalStatus.Pending)
+                        {
+                            if (IsSelfRequest(row))
+                            {
+                                <MudTooltip Text="لا يمكنك اعتماد طلب أرسلته بنفسك.">
+                                    <span>
+                                        <MudButton Variant="Variant.Outlined"
+                                                   Size="Size.Small"
+                                                   Disabled="true"
+                                                   Class="oh-btn oh-btn--secondary oh-btn--sm">
+                                            قرار
+                                        </MudButton>
+                                    </span>
+                                </MudTooltip>
+                            }
+                            else if (row.RequestType == InventoryApprovalRequestType.AllocationEdit)
+                            {
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           Class="oh-btn oh-btn--secondary oh-btn--sm"
+                                           OnClick="@(() => OpenReviewAsync(row))">
+                                    مراجعة الفروقات
+                                </MudButton>
+                            }
+                            else
+                            {
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           Class="oh-btn oh-btn--primary oh-btn--sm"
+                                           OnClick="@(() => OpenDecisionAsync(row))">
+                                    إصدار قرار
+                                </MudButton>
+                            }
+                        }
+                        else if (!string.IsNullOrWhiteSpace(row.DecisionNote))
+                        {
+                            <span class="text-[11px] text-slate-500" style="overflow-wrap:anywhere">@row.DecisionNote</span>
+                        }
+                    </MudTd>
+                </RowTemplate>
+
+                <PagerContent>
+                    <TableFooter TotalItems="@FilteredRows.Count()"
+                                 CurrentPage="@FooterCurrentPage"
+                                 CurrentPageChanged="OnFooterPageChanged"
+                                 RowsPerPage="@_rowsPerPage"
+                                 RowsPerPageChanged="OnFooterRowsPerPageChanged" />
+                </PagerContent>
+            </MudTable>
+        }
+    </section>
+</div>

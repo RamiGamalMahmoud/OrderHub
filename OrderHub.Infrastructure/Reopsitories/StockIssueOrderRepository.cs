@@ -20,6 +20,19 @@ internal sealed class StockIssueOrderRepository : IStockIssueOrderRepository
 
     public void Add(StockIssueOrder order) => _dbContext.StockIssueOrders.Add(order);
 
+    public void RemoveBatch(StockIssueBatch batch) => _dbContext.StockIssueBatches.Remove(batch);
+
+    public Task<StockIssueOrder> GetForBatchAsync(
+        int batchId,
+        CancellationToken cancellationToken = default) =>
+        _dbContext.StockIssueOrders
+            .Include(order => order.Warehouse)
+            .Include(order => order.Lines).ThenInclude(line => line.Batches)
+            .Include(order => order.Lines).ThenInclude(line => line.Allocation)
+            .Where(order => order.Lines.Any(line => line.Batches.Any(batch => batch.Id == batchId)))
+            .AsSplitQuery()
+            .SingleOrDefaultAsync(cancellationToken);
+
     public Task<StockIssueOrder> GetForUpdateAsync(
         int issueOrderId,
         CancellationToken cancellationToken = default) =>

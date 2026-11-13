@@ -49,4 +49,13 @@ public sealed class StockIssueLine : ModelBase
         string shortfallReason,
         DateTime nowUtc) =>
         _batches.Add(new StockIssueBatch(quantity, recordedByUserId, effectiveAtUtc, shortfallReason, nowUtc));
+
+    /// <summary>Removes a batch after an approved reversal so the line's issued total reopens.</summary>
+    public void RemoveBatch(StockIssueBatch batch)
+    {
+        ArgumentNullException.ThrowIfNull(batch);
+        if (!_batches.Remove(batch))
+            throw new InvalidOperationException("الدفعة لا تخص هذا البند.");
+        UpdateModificationDate(DateTime.UtcNow);
+    }
 }

@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using OrderHub.Domain.ValueObjects;
@@ -144,14 +145,14 @@ public sealed class InventoryLedgerTests : IDisposable
     // ---------- immutability ----------
 
     [Fact]
-    public void MarkReversed_IsInternalOnly()
+    public void MarkReversed_IsPublicForApprovedReversals()
     {
         var method = typeof(InventoryMovement).GetMethod(
             "MarkReversed",
-            BindingFlags.Instance | BindingFlags.NonPublic);
+            BindingFlags.Instance | BindingFlags.Public);
 
         Assert.NotNull(method);
-        Assert.True(method!.IsAssembly);
+        Assert.Equal(typeof(Result), method!.ReturnType);
     }
 
     [Fact]
@@ -159,10 +160,13 @@ public sealed class InventoryLedgerTests : IDisposable
     {
         var movement = Movement();
 
-        movement.MarkReversed();
+        Assert.True(movement.MarkReversed().IsSuccess);
 
         Assert.Equal(InventoryMovementStatus.Reversed, movement.Status);
-        Assert.Throws<InvalidOperationException>(() => movement.MarkReversed());
+
+        Result second = movement.MarkReversed();
+        Assert.False(second.IsSuccess);
+        Assert.Equal("Conflict", second.ErrorCode);
     }
 
     // ---------- balance behaviors ----------

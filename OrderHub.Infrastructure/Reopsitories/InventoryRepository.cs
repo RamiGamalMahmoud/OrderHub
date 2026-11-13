@@ -114,6 +114,12 @@ internal sealed class InventoryRepository : IInventoryRepository
         _dbContext.InventoryMovements.Add(movement);
     }
 
+    public Task<InventoryMovement> GetMovementForUpdateAsync(
+        int movementId,
+        CancellationToken cancellationToken = default) =>
+        _dbContext.InventoryMovements
+            .SingleOrDefaultAsync(movement => movement.Id == movementId, cancellationToken);
+
     public async Task<bool> TryReserveAsync(
         int warehouseId,
         int productId,

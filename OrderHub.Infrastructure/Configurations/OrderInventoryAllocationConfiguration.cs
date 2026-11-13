@@ -11,9 +11,14 @@ internal sealed class OrderInventoryAllocationConfiguration : ModelConfiguration
         base.Configure(builder);
 
         builder.ToTable("order_inventory_allocations", table =>
+        {
             table.HasCheckConstraint(
                 "ck_order_inventory_allocations_quantity",
-                "qty > 0 AND issued_qty >= 0 AND issued_qty <= qty"));
+                "qty > 0 AND issued_qty >= 0 AND issued_qty <= qty");
+            table.HasCheckConstraint(
+                "ck_order_inventory_allocations_pending_return",
+                "pending_return_qty >= 0 AND pending_return_qty <= issued_qty");
+        });
 
         builder.Property(allocation => allocation.OrderId)
             .HasColumnType("integer")
@@ -48,6 +53,11 @@ internal sealed class OrderInventoryAllocationConfiguration : ModelConfiguration
             .IsRequired();
 
         builder.Property(allocation => allocation.IssuedQty)
+            .HasColumnType("integer")
+            .HasDefaultValue(0)
+            .IsRequired();
+
+        builder.Property(allocation => allocation.PendingReturnQty)
             .HasColumnType("integer")
             .HasDefaultValue(0)
             .IsRequired();

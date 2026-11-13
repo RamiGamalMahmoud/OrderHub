@@ -251,7 +251,7 @@ public sealed class StockIssueOrderTests
         new(db.IssueOrders, db.Inventory, db.UnitOfWork, new TestCurrentUser(userId), db.Clock);
 
     private static RequestIssueOrderCancelCommandHandler CancelHandler(OrderAllocationTestDb db) =>
-        new(db.IssueOrders, db.UnitOfWork, new TestCurrentUser(db.Keeper.Id), db.Clock);
+        new(db.IssueOrders, db.Approvals, db.UnitOfWork, new TestCurrentUser(db.Keeper.Id), db.Clock);
 
     internal static async Task<(int OrderId, int Version, int AllocationId)> ReserveAsync(
         OrderAllocationTestDb db,
@@ -260,7 +260,8 @@ public sealed class StockIssueOrderTests
         db.StockIn(db.MainWarehouse, db.Product, 10);
         var order = db.NewOrder("ORD-ISSUE-" + Guid.NewGuid().ToString("N"), (db.Product, quantity));
         var item = order.OrderItems.Single();
-        var handler = new UpdateOrderHandler(db.Orders, db.UnitOfWork, db.Inventory, db.Warehouses);
+        var handler = new UpdateOrderHandler(db.Orders, db.UnitOfWork, db.Inventory, db.Warehouses,
+            db.IssueOrders, db.Approvals, new TestCurrentUser(db.Sales.Id), db.Clock);
         var command = new UpdateOrderCommand(order.Id,
             new OrderInput.Order(db.Client.Id, OrderSource.Online, DeliveryMethod.Pickup, null, null,
                 [

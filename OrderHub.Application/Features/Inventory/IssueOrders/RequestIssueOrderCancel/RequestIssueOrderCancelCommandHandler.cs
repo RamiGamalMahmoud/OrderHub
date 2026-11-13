@@ -12,6 +12,7 @@ namespace OrderHub.Application.Features.Inventory.IssueOrders.RequestIssueOrderC
 
 internal sealed class RequestIssueOrderCancelCommandHandler(
     IStockIssueOrderRepository issueOrders,
+    IInventoryApprovalRepository approvals,
     IUnitOfWork unitOfWork,
     ICurrentUser currentUser,
     TimeProvider clock) : IRequestHandler<RequestIssueOrderCancelCommand, Result>
@@ -36,13 +37,12 @@ internal sealed class RequestIssueOrderCancelCommandHandler(
                 "Forbidden");
         }
 
+        DateTime now = clock.GetUtcNow().UtcDateTime;
+
         Result requested;
         try
         {
-            requested = issueOrder.RequestCancellation(
-                userId,
-                request.Reason,
-                clock.GetUtcNow().UtcDateTime);
+            requested = issueOrder.RequestCancellation(userId, request.Reason, now);
         }
         catch (ArgumentException exception)
         {
@@ -52,13 +52,38 @@ internal sealed class RequestIssueOrderCancelCommandHandler(
         if (!requested.IsSuccess)
             return requested;
 
+        Result<InventoryApprovalRequest> approval = InventoryApprovalRequest.CreateIssueOrderCancel(
+            issueOrder.Id,
+            issueOrder.Version,
+            issueOrder.CancelReason,
+            userId,
+            now);
+        if (!approval.IsSuccess)
+            return Result.Failure(approval.ErrorMessage);
+
+        approvals.Add(approval.Value);
+
+        var transactionActive = false;
         try
         {
+            await unitOfWork.BeginTransactionAsync(cancellationToken);
+            transactionActive = true;
             await unitOfWork.SaveChangesAsync(cancellationToken);
+            transactionActive = false;
+            await unitOfWork.CommitTransactionAsync(cancellationToken);
+        }
+        catch (PersistenceConflictException)
+        {
+            return Result.Failure("يوجد طلب إلغاء قيد الاعتماد لهذا الأمر.", "Conflict");
         }
         catch (PersistenceException)
         {
             return Result.Failure("تعذر حفظ طلب الإلغاء. يرجى المحاولة مرة أخرى.", "Persistence");
+        }
+        finally
+        {
+            if (transactionActive)
+                await unitOfWork.RollbackTransactionAsync(CancellationToken.None);
         }
 
         return Result.Success();

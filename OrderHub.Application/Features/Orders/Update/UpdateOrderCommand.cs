@@ -7,4 +7,8 @@ using OrderHub.Domain.Common;
 namespace OrderHub.Application.Features.Orders.Update;
 
 [RequirePermission(PermissionFeature.Orders, PermissionLevel.Write)]
-public record UpdateOrderCommand(int OrderId, OrderInput.Order Order, int ExpectedVersion) : IRequest<Result<OrderUpdateReceipt>>;
+public record UpdateOrderCommand(
+    int OrderId,
+    OrderInput.Order Order,
+    int ExpectedVersion,
+    string Reason = null) : IRequest<Result<OrderUpdateReceipt>>;

@@ -24,6 +24,11 @@ else if (IsEdit && !_state.CanEdit)
     <MudAlert Severity="Severity.Info">بيانات الطلب مقفولة ولا تقبل التعديل. يمكنك عرض دورة الطلب وسجله من صفحة التفاصيل.</MudAlert>
 }
 
+@if (_pendingApprovalSent)
+{
+    <MudAlert Severity="Severity.Info" Class="mb-3">تم إرسال التعديل إلى المدير للاعتماد، ولن يُطبَّق حتى يصدر قراره.</MudAlert>
+}
+
 @if (_loadError is null && _state.CanEdit)
 {
     <div class="mx-auto w-full max-w-7xl">

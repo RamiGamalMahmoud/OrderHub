@@ -42,6 +42,11 @@ public interface IInventoryRepository
 
     void Add(InventoryMovement movement);
 
+    /// <summary>Tracked ledger row for an approved reversal.</summary>
+    Task<InventoryMovement> GetMovementForUpdateAsync(
+        int movementId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Atomic guarded reservation; returns false when the available quantity is insufficient.</summary>
     Task<bool> TryReserveAsync(
         int warehouseId,

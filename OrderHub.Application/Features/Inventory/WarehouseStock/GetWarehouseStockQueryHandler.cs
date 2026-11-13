@@ -73,6 +73,12 @@ internal sealed class GetWarehouseStockQueryHandler(
                 PermissionLevel.Write,
                 cancellationToken);
 
+        bool canRequestReversal = await authorization.IsAllowedAsync(
+                PermissionFeature.Inventory,
+                PermissionLevel.Approve,
+                cancellationToken) ||
+            scope.IsKeeper && scope.Includes(warehouse.Id);
+
         return Result<WarehouseStockResult>.Success(new WarehouseStockResult(
             new WarehouseStockHeader(
                 warehouse.Id,
@@ -101,7 +107,8 @@ internal sealed class GetWarehouseStockQueryHandler(
             page,
             pageSize,
             scope.IsKeeper,
-            canRecordStockIn));
+            canRecordStockIn,
+            canRequestReversal));
     }
 
     private static WarehouseStockTotals ToTotals(WarehouseStockTotalsRow row) =>

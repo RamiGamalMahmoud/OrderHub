@@ -1,4 +1,5 @@
 using System;
+using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 
 namespace OrderHub.Domain.Models;
@@ -121,12 +122,13 @@ public sealed class InventoryMovement
         };
     }
 
-    internal void MarkReversed()
+    public Result MarkReversed()
     {
         if (Status != InventoryMovementStatus.Active)
-            throw new InvalidOperationException("لا يمكن عكس حركة غير نشطة.");
+            return Result.Failure("لا يمكن عكس حركة غير نشطة.", "Conflict");
 
         Status = InventoryMovementStatus.Reversed;
+        return Result.Success();
     }
 
     private static void ValidateOptionalReference(int? value, string parameterName)

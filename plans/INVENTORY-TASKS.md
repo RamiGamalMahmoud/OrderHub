@@ -570,7 +570,7 @@ Manual: `/inventory/balances` as manager vs keeper; drill into a product distrib
 
 ---
 
-### [ ] T07 — Approvals: edit payload, issue-order cancel, reversal
+### [x] T07 — Approvals: edit payload, issue-order cancel, reversal
 
 **Goal:** The Manager approval queue: pending order edits applied from a stored payload, issue-order cancellation approval, and movement reversal — with the approver≠requester rule and the reversal exception.
 
@@ -612,6 +612,26 @@ Manual: edit an allocated order as sales → approve as Manager → confirm issu
 - `DecisionNote`/`Reason` lengths: match the ≤200 work-record reason convention.
 
 **Proposed commit:** `feat(inventory): add manager approvals for edits, cancels and reversals`
+
+**Decisions / files (2026-11-13)**
+- Entity (created earlier in T05 phase): `InventoryApprovalRequest` with `RequestType` (`AllocationEdit`, `IssueOrderCancel`, `MovementReversal`, `DamagedDisposal` reserved), typed target refs, `Payload` JSON (AllocationEdit only), `Reason`, `Status`, `Version`, `TargetVersion`, requester/decider/times, `DecisionNote`; additive migration `AddInventoryApprovals` — no model changes since.
+- Application `Features/Inventory/Approvals/`: `RequestOrderEditApproval` reached from `UpdateOrderHandler` when the order has issued/partially executed allocations — stores the full proposed payload and returns `"ApprovalRequired"` with the queued request; `RequestIssueOrderCancel` (keeper, reason → `CancelRequested` + pending request); `RequestMovementReversal` (keeper, reason, `Active` non-`Reversal` movement, one pending per movement); `GetApprovals` (`Inventory.Approve`), `GetApprovalDetails` (payload diff source), `DecideApproval` (`Inventory.Approve`, `TargetVersion` + `Version` CAS).
+- Decision protocol (D21): one CAS `Status='Pending' AND Version=@v`; zero rows → `"Conflict"` with no side effects; target re-validated inside the same transaction (order version/state, no competing pending request, `CancelRequested` at `TargetVersion`, movement `Active`) and drift marks the request `Stale` with a system note instead of applying.
+- Edit approval applies the stored payload in one transaction (`OrderEditApplier`): un-issued quantity released, issued preserved with excess moved to `PendingReturnQty` («مرتجع مستحق» for T08), new allocations reserved under D13 ascending (product, warehouse); a failed reservation rolls everything back — order, allocations and reservation unchanged and the request stays `Pending`. No issue orders are auto-created.
+- Cancel approval → `Cancelled` + release un-issued only + allocation `Qty` shrunk to issued; rejection restores the prior status (`PartiallyExecuted`/`Pending`) with the decision note as the visible reason. `StockIssueOrder.Cancel` itself does not touch balances — the decision handler owns the release.
+- Reversal: reversal movement `EffectiveAtUtc = decision time`, original → `Reversed`, decider recorded as actor, pairs `ApplyIn`/`ApplyOut` inverse to re-derive the balance; `IssueOut` batch reversal restores stock + reservation, rolls back `IssuedQty` accounting and reopens the order via `ReopenAfterBatchRemoval`. Self-approval allowed only for `MovementReversal`; every other type forbids approver = requester (`"Forbidden"`).
+- Repository: `InventoryApprovalRepository` projection filters/orders on the entity before projecting (`ProjectRows(IQueryable<InventoryApprovalRequest>)`) — EF cannot translate predicates over the projected record.
+- Web: `Approvals/Index.razor` (queue, type/status filters, requested-by labels), `DecideApprovalDialog` (اعتماد/رفض + note required on reject; `Stale`/`Conflict` → warning + reload), `EditPayloadReviewDialog` (current/proposed/delta table + section chips + reject reason), `RequestReversalDialog` opened from `LedgerDialog` «إجراءات» → «طلب عكس» (only `Active` non-`Reversal` rows; `CanRequestReversal` passed from `WarehouseDetails`), `Orders/Editor/OrderEditApprovalDialog` for the editor's reason. Editor `SaveAsync` branches on `"ApprovalRequired"`, shows «تم إرسال التعديل إلى المدير للاعتماد، ولن يُطبَّق حتى يصدر قراره.» and locks saving until reload.
+- Nav: «الاعتمادات» → `/inventory/approvals` (visible with `Inventory.Approve`).
+- Tests: `ApprovalFlowTests.cs` (12) and `MovementReversalTests.cs` (9) — reason required, payload queued with order untouched, second edit conflict, approved edit (issued preserved + `PendingReturnQty` + reservation), failed reservation rollback, self-approval forbidden (edit + cancel vs reversal allowed), second decision conflict, approved/rejected cancel, drift → `Stale`, queue projection, keeper/stranger matrix, double reversal, reversal-of-reversal, batch reversal restoring reservation/accounting, wrong expected version. Full suite: **457 passed** (Debug + Release); `has-pending-model-changes` reports none.
+
+**Deviations**
+- The registry's `EditPayloadReview.razor` is `EditPayloadReviewDialog.razor` (opened from the queue row) plus `DecideApprovalDialog.razor` for cancel/reversal, matching the existing `*Dialog` naming in `Features/Inventory`.
+- Reversal-of-reversal is rejected in the backend too (`"لا يمكن طلب عكس حركة عكسية."`, `"Conflict"`), not just hidden in the ledger UI.
+- `Stale` rows cannot be applied; the UI shows the system note and the user resubmits by redoing the edit / re-requesting the cancel or reversal (no separate "resubmit" command was added).
+- A second `UpdateOrder` while an edit approval is pending returns `"Conflict"` («قيد الاعتماد») rather than replacing the payload — one pending request per order.
+- Manual line: the editor now sends the reason inline via `OrderEditApprovalDialog`; the shared `OrderReasonDialog` returns an `OrderOperationReceipt`, so it could not be reused without changing its contract.
+- Browser pass deferred: no dev server running and the app needs an authenticated PostgreSQL session, so the approvals/reversal screens are verified by build + tests only.
 
 ---
 

@@ -255,6 +255,38 @@ public sealed class StockIssueOrder : ModelBase, IWorkRecord
         return Result.Success();
     }
 
+    /// <summary>Manager rejection of a pending cancel request; the keeper may keep executing.</summary>
+    public Result RejectCancellation(string reason, DateTime nowUtc)
+    {
+        if (Status != WorkRecordStatus.CancelRequested)
+            return Result.Failure("لا يوجد طلب إلغاء معلق على أمر الصرف.", "Conflict");
+
+        WorkRecordStatus target = _lines.Any(line => line.IssuedQty > 0)
+            ? WorkRecordStatus.PartiallyExecuted
+            : WorkRecordStatus.Pending;
+        MoveTo(target, NormalizeReason(reason) ?? "رفض طلب الإلغاء", nowUtc);
+        return Result.Success();
+    }
+
+    /// <summary>Reopens execution after an approved batch reversal removed issued quantity.</summary>
+    public Result ReopenAfterBatchRemoval(DateTime nowUtc)
+    {
+        if (Status == WorkRecordStatus.CancelRequested)
+            return Result.Failure("طُلب إلغاء أمر الصرف ولا يمكن عكس دفعاته.", "Conflict");
+        if (Status == WorkRecordStatus.Cancelled)
+            return Result.Failure("أمر الصرف ملغى ولا يمكن عكس دفعاته.", "Conflict");
+
+        if (Status is WorkRecordStatus.Completed or WorkRecordStatus.PartiallyExecuted)
+        {
+            WorkRecordStatus target = _lines.Any(line => line.IssuedQty > 0)
+                ? WorkRecordStatus.PartiallyExecuted
+                : WorkRecordStatus.Pending;
+            MoveTo(target, "عكس دفعة صرف", nowUtc);
+        }
+
+        return Result.Success();
+    }
+
     /// <summary>System cancellation on order cancel/archive; also closes a pending cancel request.</summary>
     public Result Cancel(string reason, DateTime nowUtc)
     {

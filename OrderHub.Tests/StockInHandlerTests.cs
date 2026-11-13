@@ -433,5 +433,8 @@ public sealed class StockInHandlerTests
 
         public Task<System.Collections.Generic.IReadOnlyList<OrderHub.Application.Features.Inventory.ConsolidatedBalances.ProductDistributionProjectionRow>> GetProductDistributionAsync(int productId, System.Collections.Generic.IReadOnlyCollection<int> warehouseIds, CancellationToken cancellationToken = default) =>
             inner.GetProductDistributionAsync(productId, warehouseIds, cancellationToken);
+
+        public Task<InventoryMovement> GetMovementForUpdateAsync(int movementId, CancellationToken cancellationToken = default) =>
+            inner.GetMovementForUpdateAsync(movementId, cancellationToken);
     }
 }

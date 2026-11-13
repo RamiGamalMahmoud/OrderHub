@@ -864,6 +864,122 @@ namespace OrderHub.Infrastructure.Migrations
                     b.ToTable("deliverymen", (string)null);
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryApprovalRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DecidedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at_utc");
+
+                    b.Property<int?>("DecidedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("decided_by_user_id");
+
+                    b.Property<string>("DecisionNote")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("decision_note");
+
+                    b.Property<int?>("InventoryMovementId")
+                        .HasColumnType("integer")
+                        .HasColumnName("inventory_movement_id");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_id");
+
+                    b.Property<string>("Payload")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("RequestType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("request_type");
+
+                    b.Property<int>("RequestedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("requested_by_user_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<int?>("StockIssueOrderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("stock_issue_order_id");
+
+                    b.Property<int?>("TargetVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("target_version");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inventory_approval_requests");
+
+                    b.HasIndex("DecidedByUserId")
+                        .HasDatabaseName("ix_inventory_approval_requests_decided_by_user_id");
+
+                    b.HasIndex("InventoryMovementId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inventory_approval_requests_inventory_movement_id")
+                        .HasFilter("\"status\" = 'Pending' AND \"request_type\" = 'MovementReversal'");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inventory_approval_requests_order_id")
+                        .HasFilter("\"status\" = 'Pending' AND \"request_type\" = 'AllocationEdit'");
+
+                    b.HasIndex("RequestedByUserId")
+                        .HasDatabaseName("ix_inventory_approval_requests_requested_by_user_id");
+
+                    b.HasIndex("StockIssueOrderId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inventory_approval_requests_stock_issue_order_id")
+                        .HasFilter("\"status\" = 'Pending' AND \"request_type\" = 'IssueOrderCancel'");
+
+                    b.HasIndex("Status", "RequestType")
+                        .HasDatabaseName("ix_inventory_approval_requests_status_request_type");
+
+                    b.ToTable("inventory_approval_requests", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inventory_approval_requests_decision", "status NOT IN ('Approved', 'Rejected', 'Stale') OR (decided_at_utc IS NOT NULL AND decision_note IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_inventory_approval_requests_reason", "length(trim(reason)) > 0");
+
+                            t.HasCheckConstraint("ck_inventory_approval_requests_single_target", "(request_type = 'AllocationEdit' AND order_id IS NOT NULL AND stock_issue_order_id IS NULL AND inventory_movement_id IS NULL) OR (request_type = 'IssueOrderCancel' AND order_id IS NULL AND stock_issue_order_id IS NOT NULL AND inventory_movement_id IS NULL) OR (request_type = 'MovementReversal' AND order_id IS NULL AND stock_issue_order_id IS NULL AND inventory_movement_id IS NOT NULL) OR (request_type = 'DamagedDisposal' AND order_id IS NULL AND stock_issue_order_id IS NULL AND inventory_movement_id IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.InventoryMovement", b =>
                 {
                     b.Property<int>("Id")
@@ -1352,6 +1468,12 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("order_item_id");
 
+                    b.Property<int>("PendingReturnQty")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("pending_return_qty");
+
                     b.Property<int>("ProductId")
                         .HasColumnType("integer")
                         .HasColumnName("product_id");
@@ -1398,6 +1520,8 @@ namespace OrderHub.Infrastructure.Migrations
 
                     b.ToTable("order_inventory_allocations", null, t =>
                         {
+                            t.HasCheckConstraint("ck_order_inventory_allocations_pending_return", "pending_return_qty >= 0 AND pending_return_qty <= issued_qty");
+
                             t.HasCheckConstraint("ck_order_inventory_allocations_quantity", "qty > 0 AND issued_qty >= 0 AND issued_qty <= qty");
                         });
                 });
@@ -3435,6 +3559,50 @@ namespace OrderHub.Infrastructure.Migrations
 
                     b.Navigation("Name")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryApprovalRequest", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.User", "DecidedBy")
+                        .WithMany()
+                        .HasForeignKey("DecidedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_inventory_approval_requests_users_decided_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.InventoryMovement", "InventoryMovement")
+                        .WithMany()
+                        .HasForeignKey("InventoryMovementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_inventory_approval_requests_inventory_movements_inventory_m");
+
+                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_inventory_approval_requests_orders_order_id");
+
+                    b.HasOne("OrderHub.Domain.Models.User", "RequestedBy")
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_approval_requests_users_requested_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.StockIssueOrder", "StockIssueOrder")
+                        .WithMany()
+                        .HasForeignKey("StockIssueOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_inventory_approval_requests_stock_issue_orders_stock_issue_");
+
+                    b.Navigation("DecidedBy");
+
+                    b.Navigation("InventoryMovement");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("RequestedBy");
+
+                    b.Navigation("StockIssueOrder");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.InventoryMovement", b =>

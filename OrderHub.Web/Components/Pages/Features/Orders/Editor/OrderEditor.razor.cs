@@ -6,12 +6,14 @@ using OrderHub.Application.Features.OrderDrafts.Save;
 using OrderHub.Application.Features.OrderDrafts.Get;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Application.Features.Orders.Contracts;
+using OrderHub.Application.Features.Orders.Update;
 using OrderHub.Application.Features.Orders;
 using OrderHub.Application.Features.Documents.ProformaInvoices;
 using OrderHub.Application.Features.Documents.Quotations;
 using System.Globalization;
 
 using OrderHub.Application.Features.Setup.Properties.Get;
+using OrderHub.Application.Authorization;
 using OrderHub.Application.Interfaces;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Services.Pricing;
@@ -24,6 +26,7 @@ public partial class OrderEditor : IDisposable
     private bool _isDraftsOpen;
     private bool _isSavingUpdate;
     private bool _isCreatingDocument;
+    private bool _pendingApprovalSent;
     private string? _loadError;
     private string? _createdDocumentNumber;
     private DocumentType? _createdDocumentType;
@@ -32,7 +35,7 @@ public partial class OrderEditor : IDisposable
 
     private IReadOnlyList<string> ValidationErrors => GetFinalValidationErrors(_state, IsEdit);
 
-    private bool CanSave => _state.CanEdit && !_isSavingUpdate && !_draftLifecycle.IsClosed && ValidationErrors.Count == 0 &&
+    private bool CanSave => _state.CanEdit && !_isSavingUpdate && !_pendingApprovalSent && !_draftLifecycle.IsClosed && ValidationErrors.Count == 0 &&
         (IsEdit || (!_draftLifecycle.IsCompleting && !_draftLifecycle.IsCompleted));
 
     private bool CanCreateDraftDocument => !IsEdit && !_isCreatingDocument && !_draftLifecycle.IsCompleting &&
@@ -125,6 +128,12 @@ public partial class OrderEditor : IDisposable
 
     [Inject]
     private ISnackbar? Snackbar { get; set; }
+
+    [Inject]
+    private IDialogService? Dialogs { get; set; }
+
+    [Inject]
+    private NavigationManager Navigation { get; set; } = null!;
 
     [Inject]
     private ILogger<OrderEditor> Logger { get; set; } = null!;
@@ -631,6 +640,50 @@ public partial class OrderEditor : IDisposable
         return errors;
     }
 
+    private async Task<OrderUpdateReceipt?> RequestApprovalAsync(int orderId, OrderInput.Order input)
+    {
+        if (Dialogs is null)
+            return null;
+
+        try
+        {
+            DialogParameters<OrderEditApprovalDialog> parameters = new()
+            {
+                {
+                    dialog => dialog.Submit,
+                    reason => RequestExecutor!.ExecuteAsync(
+                        new Application.Features.Orders.Update.UpdateOrderCommand(orderId, input, _state.Version, reason))
+                }
+            };
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = false,
+                CloseOnEscapeKey = false,
+                BackdropClick = false
+            };
+
+            var dialog = await Dialogs.ShowAsync<OrderEditApprovalDialog>(
+                "إرسال التعديل للاعتماد",
+                parameters,
+                options);
+            DialogResult? result = await dialog.Result;
+            return result is { Canceled: false, Data: OrderUpdateReceipt receipt } ? receipt : null;
+        }
+        catch (AuthorizationDeniedException)
+        {
+            Navigation.NavigateTo("/access-denied");
+            return null;
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to queue an approval request for order {OrderId}", orderId);
+            Snackbar!.Add("تعذر فتح نافذة الاعتماد. يرجى المحاولة مرة أخرى.", Severity.Error);
+            return null;
+        }
+    }
+
     private async Task SaveAsync()
     {
         if (!CanSave)
@@ -649,32 +702,51 @@ public partial class OrderEditor : IDisposable
             try
             {
                 var updateResult = await RequestExecutor!.ExecuteAsync(new Application.Features.Orders.Update.UpdateOrderCommand(orderId, input, _state.Version));
-                if (updateResult.IsSuccess) _state.Version = updateResult.Value.Version;
-                if (updateResult.IsSuccess && updateResult.Value?.OrderItems is { } savedItems)
+
+                if (!updateResult.IsSuccess && updateResult.ErrorCode == "ApprovalRequired")
                 {
-                    for (var index = 0; index < submittedItems.Length && index < savedItems.Count; index++)
-                    {
-                        if (savedItems[index].ProductId == submittedItems[index].ProductId)
-                            submittedItems[index].ItemId = savedItems[index].Id;
-                    }
+                    OrderUpdateReceipt? queued = await RequestApprovalAsync(orderId, input);
+                    if (queued is null)
+                        return;
+
+                    if (queued.Version > 0)
+                        _state.Version = queued.Version;
+                    _pendingApprovalSent = true;
+                    Snackbar!.Add("تم إرسال التعديل إلى المدير للاعتماد.", Severity.Success);
+                    return;
                 }
-                if (updateResult.IsSuccess && input.DeliveryMethod == DeliveryMethod.DeliveryChain)
+
+                if (updateResult.IsSuccess)
                 {
-                    var saved = updateResult.Value;
-                    if (saved is not null)
+                    OrderUpdateReceipt saved = updateResult.Value;
+                    _state.Version = saved.Version;
+                    if (saved.OrderItems is { } savedItems)
+                    {
+                        for (var index = 0; index < submittedItems.Length && index < savedItems.Count; index++)
+                        {
+                            if (savedItems[index].ProductId == submittedItems[index].ProductId)
+                                submittedItems[index].ItemId = savedItems[index].Id;
+                        }
+                    }
+
+                    if (input.DeliveryMethod == DeliveryMethod.DeliveryChain)
                     {
                         for (var index = 0; index < submittedStates.Length; index++)
                             submittedStates[index].Id = saved.DeliverySteps.Single(savedStep =>
                                 savedStep.StepOrder == submittedSteps[index].StepOrder).Id;
                     }
+                    else
+                    {
+                        foreach (var step in submittedStates)
+                            step.Id = null;
+                    }
+
+                    Snackbar!.Add("تم حفظ التعديلات بنجاح.", Severity.Success);
                 }
-                else if (updateResult.IsSuccess)
+                else
                 {
-                    foreach (var step in submittedStates)
-                        step.Id = null;
+                    Snackbar!.Add(updateResult.ErrorMessage, Severity.Error);
                 }
-                Snackbar!.Add(updateResult.IsSuccess ? "تم حفظ التعديلات بنجاح." : updateResult.ErrorMessage,
-                    updateResult.IsSuccess ? Severity.Success : Severity.Error);
             }
             finally
             {
