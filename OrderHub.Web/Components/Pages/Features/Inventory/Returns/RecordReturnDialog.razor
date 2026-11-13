@@ -1,0 +1,212 @@
+@using System.Collections.Generic
+@using System.Globalization
+@using System.Linq
+@using Microsoft.Extensions.Logging
+@using MudBlazor
+
+<MudDialog Class="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-xl"
+           TitleClass="p-0"
+           ContentClass="p-0"
+           ActionsClass="p-0"
+           Gutters="false">
+    <TitleContent>
+        <header class="flex items-start justify-between gap-3 border-b border-slate-100 p-5">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600">
+                    <MudIcon Icon="@Icons.Material.Filled.AssignmentReturn" Size="Size.Small" />
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-bold leading-tight text-slate-900">تسجيل مرتجع</h2>
+                    <p class="mt-1 text-xs font-medium text-slate-500">@Context.OrderNumber — @Context.WarehouseName</p>
+                </div>
+            </div>
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Size="Size.Small"
+                           Color="Color.Default"
+                           Disabled="_submitting"
+                           OnClick="Cancel"
+                           aria-label="إغلاق النافذة"
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+        </header>
+    </TitleContent>
+
+    <DialogContent>
+        <div class="min-h-0 flex-1 space-y-4 overflow-y-auto bg-slate-50/70 p-5">
+            <div class="rounded-xl border border-slate-200 bg-white px-3 py-3 text-xs leading-6 text-slate-600">
+                <p class="font-bold text-slate-800">كيف تُحتسب الكميات؟</p>
+                <p class="mt-1">
+                    الكمية السليمة تدخل الرصيد المتاح، والتالفة تُحتجز في خانة التالف حتى اعتماد إتلافها.
+                    لا يمكن أن يتجاوز مجموع السطر الكمية المتبقية للإرجاع من هذا التخصيص.
+                </p>
+            </div>
+
+            @foreach (var row in ReturnableRows)
+            {
+                var quantity = _intact.GetValueOrDefault(row.AllocationId) + _damaged.GetValueOrDefault(row.AllocationId);
+                <div class="space-y-2 rounded-xl border border-slate-200 bg-white p-3" @key="row.AllocationId">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <p class="text-xs font-bold text-slate-800">@row.ProductName</p>
+                            <p class="mt-0.5 text-[11px] text-slate-500">
+                                المصروف: @row.IssuedQty · سُلّم سابقًا: @row.ReturnedQty · المتبقي: @row.RemainingReturnable
+                            </p>
+                        </div>
+                        <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                            المرتجع الآن: @quantity
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <MudNumericField T="int"
+                                         Value="_intact.GetValueOrDefault(row.AllocationId)"
+                                         ValueChanged="@(value => SetQuantity(row, value, damaged: false))"
+                                         Label="كمية سليمة"
+                                         Min="0"
+                                         Max="@row.RemainingReturnable"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Disabled="_submitting"
+                                         Class="w-full" />
+                        <MudNumericField T="int"
+                                         Value="_damaged.GetValueOrDefault(row.AllocationId)"
+                                         ValueChanged="@(value => SetQuantity(row, value, damaged: true))"
+                                         Label="كمية تالفة"
+                                         Min="0"
+                                         Max="@row.RemainingReturnable"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Disabled="_submitting"
+                                         Class="w-full" />
+                    </div>
+                    <p class="text-[11px] text-slate-500">المتبقي بعد هذا السطر: @Math.Max(0, row.RemainingReturnable - quantity)</p>
+                </div>
+            }
+
+            <MudTextField T="string"
+                          @bind-Value="_note"
+                          Label="ملاحظة المرتجع (اختياري)"
+                          Immediate="true"
+                          MaxLength="500"
+                          HelperText="@NoteCounter"
+                          Lines="2"
+                          Variant="Variant.Outlined"
+                          Disabled="_submitting" />
+
+            <div class="space-y-1">
+                <label class="block text-xs font-semibold text-slate-700" for="return-effective">
+                    وقت الاستلام الفعلي
+                </label>
+                <InputDate id="return-effective"
+                           TValue="DateTime"
+                           Type="InputDateType.DateTimeLocal"
+                           @bind-Value="_effectiveLocal"
+                           disabled="@_submitting"
+                           class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700" />
+            </div>
+
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+            }
+        </div>
+    </DialogContent>
+
+    <DialogActions>
+        <footer class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 bg-white p-4">
+            <MudButton Disabled="_submitting" OnClick="Cancel" Variant="Variant.Text" Class="oh-btn oh-btn--secondary">رجوع دون تغيير</MudButton>
+            <MudButton Class="oh-btn oh-btn--primary"
+                       Disabled="@(!CanSubmit)"
+                       OnClick="SubmitAsync">
+                @(_submitting ? "جاري تسجيل المرتجع…" : "تسجيل المرتجع")
+            </MudButton>
+        </footer>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Inject] private IRequestExecutor Executor { get; set; } = null!;
+    [Inject] private ILogger<RecordReturnDialog> Logger { get; set; } = null!;
+
+    [Parameter, EditorRequired] public OrderReturnContext Context { get; set; } = null!;
+
+    private readonly Dictionary<int, int> _intact = [];
+    private readonly Dictionary<int, int> _damaged = [];
+    private DateTime _effectiveLocal = DateTime.Now;
+    private string? _note;
+    private string? _error;
+    private bool _submitting;
+
+    private IReadOnlyList<ReturnableAllocationRow> ReturnableRows =>
+        Context.Rows.Where(row => row.CanReturn).ToList();
+
+    private string NoteCounter => $"{(_note?.Length ?? 0).ToString(CultureInfo.InvariantCulture)} / 500";
+
+    private bool HasAnyQuantity => ReturnableRows.Any(row =>
+        _intact.GetValueOrDefault(row.AllocationId) + _damaged.GetValueOrDefault(row.AllocationId) > 0);
+
+    private bool CanSubmit => !_submitting && HasAnyQuantity && !OverCapRows().Any();
+
+    private void SetQuantity(ReturnableAllocationRow row, int value, bool damaged)
+    {
+        int cap = row.RemainingReturnable - GetCounterpart(row, damaged);
+        int clamped = Math.Clamp(value, 0, Math.Max(0, cap));
+        if (damaged)
+            _damaged[row.AllocationId] = clamped;
+        else
+            _intact[row.AllocationId] = clamped;
+    }
+
+    private int GetCounterpart(ReturnableAllocationRow row, bool damaged) =>
+        damaged ? _intact.GetValueOrDefault(row.AllocationId) : _damaged.GetValueOrDefault(row.AllocationId);
+
+    private IEnumerable<ReturnableAllocationRow> OverCapRows() =>
+        ReturnableRows.Where(row =>
+            _intact.GetValueOrDefault(row.AllocationId) + _damaged.GetValueOrDefault(row.AllocationId)
+            > row.RemainingReturnable);
+
+    private async Task SubmitAsync()
+    {
+        if (!CanSubmit)
+            return;
+
+        _submitting = true;
+        _error = null;
+        try
+        {
+            DateTime effectiveUtc = DateTime.SpecifyKind(_effectiveLocal, DateTimeKind.Local).ToUniversalTime();
+            var lines = ReturnableRows
+                .Where(row => _intact.GetValueOrDefault(row.AllocationId) + _damaged.GetValueOrDefault(row.AllocationId) > 0)
+                .Select(row => new ReturnLineInput(
+                    row.AllocationId,
+                    _intact.GetValueOrDefault(row.AllocationId),
+                    _damaged.GetValueOrDefault(row.AllocationId)))
+                .ToList();
+
+            var result = await Executor.ExecuteAsync(new RecordReturnCommand(
+                Context.OrderId,
+                _note?.Trim() ?? string.Empty,
+                lines,
+                effectiveUtc));
+
+            if (!result.IsSuccess)
+            {
+                _error = result.ErrorMessage;
+                return;
+            }
+
+            Dialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to record a return for order {OrderId}", Context.OrderId);
+            _error = "تعذر تسجيل المرتجع. حاول مرة أخرى.";
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private void Cancel() => Dialog.Cancel();
+}

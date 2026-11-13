@@ -103,6 +103,8 @@ internal sealed class DecideApprovalCommandHandler(
                 ApproveCancelAsync(approval, userId, note, now, cancellationToken),
             InventoryApprovalRequestType.MovementReversal =>
                 ApproveReversalAsync(approval, userId, note, now, cancellationToken),
+            InventoryApprovalRequestType.DamagedDisposal =>
+                ApproveDisposalAsync(approval, userId, note, now, cancellationToken),
             _ => Task.FromResult(Result.Failure(
                 "نوع طلب الاعتماد غير مدعوم بعد.", "ApprovalRequired"))
         };
@@ -267,6 +269,47 @@ internal sealed class DecideApprovalCommandHandler(
         Result marked = movement.MarkReversed();
         if (!marked.IsSuccess)
             return marked;
+
+        return approval.Approve(userId, note, now);
+    }
+
+    private async Task<Result> ApproveDisposalAsync(
+        InventoryApprovalRequest approval,
+        int userId,
+        string note,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        if (approval.WarehouseId is not int warehouseId ||
+            approval.ProductId is not int productId ||
+            approval.DisposalQuantity is not int quantity ||
+            quantity <= 0)
+            return MarkStale(approval, "طلب الإتلاف لا يشير إلى رصيد أو كمية صالحة.", note, now);
+
+        await inventory.LockBalancesAsync([(warehouseId, productId)], cancellationToken);
+
+        StockBalance balance = await inventory.GetStockItemAsync(warehouseId, productId, cancellationToken);
+        if (balance is null)
+            return MarkStale(approval, "لا يوجد رصيد لهذا الصنف في المخزن؛ أُغلق طلب الإتلاف.", note, now);
+
+        if (approval.TargetVersion is int targetVersion && balance.Version != targetVersion)
+            return MarkStale(approval, "تغيّر رصيد المخزون بعد إرسال الطلب؛ أُغلق طلب الإتلاف وأعد الإرسال.", note, now);
+
+        if (quantity > balance.DamagedQty)
+            return MarkStale(approval, "الكمية التالفة الحالية أقل من كمية الإتلاف المطلوبة؛ أُغلق الطلب وأعد الإرسال.", note, now);
+
+        balance.DamagedDisposal(quantity);
+
+        inventory.Add(InventoryMovement.Create(
+            warehouseId,
+            productId,
+            quantity,
+            InventoryDirection.Out,
+            InventoryMovementType.DamagedDisposal,
+            now,
+            userId,
+            note: approval.Reason,
+            nowUtc: now));
 
         return approval.Approve(userId, note, now);
     }

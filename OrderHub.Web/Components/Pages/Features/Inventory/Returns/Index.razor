@@ -1,0 +1,302 @@
+@page "/inventory/returns"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.Inventory,
+    PermissionLevel.Read)]
+
+@inject IRequestExecutor Executor
+@inject NavigationManager Navigation
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject ILogger<Index> Logger
+
+<PageTitle>المرتجعات</PageTitle>
+
+<div class="space-y-5">
+    <PageScaffold Title="المرتجعات والتالف"
+                  Description="@(_state is null ? "استلام المرتجعات وإدارة التالف" : $"مخزن {_state.WarehouseName}")"
+                  Crumbs="_crumbs">
+        <Actions>
+            <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                           Variant="Variant.Text"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           Disabled="_busy"
+                           aria-label="تحديث القائمة"
+                           OnClick="LoadAsync"
+                           Class="oh-btn oh-btn--icon oh-btn--secondary oh-btn--sm" />
+        </Actions>
+    </PageScaffold>
+
+    @if (_loading)
+    {
+        <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" aria-label="تحميل المرتجعات" />
+            <p class="mt-2 text-sm text-slate-500">جاري تحميل المرتجعات...</p>
+        </div>
+    }
+    else if (_error is not null)
+    {
+        <div class="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+            <p class="text-sm font-bold text-rose-800">@_error</p>
+            <button type="button" class="oh-btn oh-btn--secondary oh-btn--sm mt-3" @onclick="LoadAsync">
+                إعادة المحاولة
+            </button>
+        </div>
+    }
+    else if (_state is not null)
+    {
+        @if (_state.Pending.Count > 0)
+        {
+            <section class="rounded-2xl border border-amber-200 bg-white shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-amber-100 bg-amber-50/60 px-4 py-3">
+                    <div>
+                        <h2 class="text-sm font-bold text-amber-900">مرتجع مستحق للاستلام</h2>
+                        <p class="mt-0.5 text-xs text-amber-800">
+                            كميات نتجت عن تعديل معتمد قلّص الطلب المصروف؛ تُضاف للأرصدة بعد استلامها فعليًا وفرزها.
+                        </p>
+                    </div>
+                    <span class="rounded-full border border-amber-200 bg-white px-2.5 py-0.5 text-[11px] font-bold text-amber-700">
+                        @_state.Pending.Count بندًا
+                    </span>
+                </div>
+
+                <MudTable T="PendingReturnRow"
+                          Items="_state.Pending"
+                          Dense="true"
+                          Hover="true"
+                          Elevation="0"
+                          Square="true"
+                          Breakpoint="Breakpoint.Md">
+                    <HeaderContent>
+                        <MudTh Class="text-xs font-bold text-slate-500">الطلب</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">الصنف</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">المصروف</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">سُلّم سابقًا</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">المستحق</MudTh>
+                        <MudTh Class="w-32 text-xs font-bold text-slate-500">
+                            <span class="sr-only">الإجراءات</span>
+                        </MudTh>
+                    </HeaderContent>
+                    <RowTemplate Context="row">
+                        <MudTd DataLabel="الطلب">
+                            <span class="text-sm font-bold text-slate-800">@row.OrderNumber</span>
+                        </MudTd>
+                        <MudTd DataLabel="الصنف">
+                            <span class="text-sm text-slate-700">@row.ProductName</span>
+                        </MudTd>
+                        <MudTd DataLabel="المصروف">
+                            <span class="text-sm text-slate-700">@row.IssuedQty</span>
+                        </MudTd>
+                        <MudTd DataLabel="سُلّم سابقًا">
+                            <span class="text-sm text-slate-700">@row.ReturnedQty</span>
+                        </MudTd>
+                        <MudTd DataLabel="المستحق">
+                            <span class="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700">
+                                @row.PendingQty
+                            </span>
+                        </MudTd>
+                        <MudTd DataLabel="الإجراءات">
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       Class="oh-btn oh-btn--secondary oh-btn--sm"
+                                       Disabled="_busy"
+                                       OnClick="@(() => OpenSettleAsync(row))">
+                                استلام
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </section>
+        }
+
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-900">طلبات قابلة للإرجاع</h2>
+                    <p class="mt-0.5 text-xs text-slate-500">طلبات صُرفت من هذا المخزن وما زال منها كميات قابلة للاستلام.</p>
+                </div>
+                <span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
+                    @_state.ReturnableOrders.Count طلبًا
+                </span>
+            </div>
+
+            @if (_state.ReturnableOrders.Count == 0)
+            {
+                <div class="p-8 text-center">
+                    <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-teal-600">
+                        <MudIcon Icon="@Icons.Material.Outlined.AssignmentReturn" aria-hidden="true" />
+                    </span>
+                    <p class="text-base font-bold text-slate-900">لا توجد كميات مصروفة قابلة للإرجاع.</p>
+                    <p class="mt-1 text-sm text-slate-500">ستظهر الطلبات هنا بعد تنفيذ أوامر صرف من هذا المخزن.</p>
+                </div>
+            }
+            else
+            {
+                <MudTable T="ReturnableOrderRow"
+                          Items="_state.ReturnableOrders"
+                          Dense="true"
+                          Hover="true"
+                          Elevation="0"
+                          Square="true"
+                          Breakpoint="Breakpoint.Md">
+                    <HeaderContent>
+                        <MudTh Class="text-xs font-bold text-slate-500">رقم الطلب</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">الأصناف</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">المتبقي للإرجاع</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">مرتجع مستحق</MudTh>
+                        <MudTh Class="w-36 text-xs font-bold text-slate-500">
+                            <span class="sr-only">الإجراءات</span>
+                        </MudTh>
+                    </HeaderContent>
+                    <RowTemplate Context="row">
+                        <MudTd DataLabel="رقم الطلب">
+                            <span class="text-sm font-bold text-slate-800">@row.OrderNumber</span>
+                        </MudTd>
+                        <MudTd DataLabel="الأصناف">
+                            <span class="text-sm text-slate-700">@row.AllocationCount بندًا</span>
+                        </MudTd>
+                        <MudTd DataLabel="المتبقي للإرجاع">
+                            <span class="text-sm font-bold text-slate-800">@row.RemainingQty</span>
+                        </MudTd>
+                        <MudTd DataLabel="مرتجع مستحق">
+                            @if (row.PendingQty > 0)
+                            {
+                                <span class="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700">@row.PendingQty</span>
+                            }
+                            else
+                            {
+                                <span class="text-xs text-slate-400">—</span>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="الإجراءات">
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       Class="oh-btn oh-btn--secondary oh-btn--sm"
+                                       Disabled="_busy"
+                                       OnClick="@(() => OpenReturnAsync(row))">
+                                تسجيل مرتجع
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-900">التالف في المخزن</h2>
+                    <p class="mt-0.5 text-xs text-slate-500">كميات تالفة محتجزة؛ إتلافها يحتاج اعتماد المدير.</p>
+                </div>
+                <span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
+                    @_state.DamagedProducts.Count صنفًا
+                </span>
+            </div>
+
+            @if (_state.DamagedProducts.Count == 0)
+            {
+                <div class="p-8 text-center">
+                    <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                        <MudIcon Icon="@Icons.Material.Outlined.VerifiedUser" aria-hidden="true" />
+                    </span>
+                    <p class="text-base font-bold text-slate-900">لا توجد كميات تالفة في المخزن.</p>
+                    <p class="mt-1 text-sm text-slate-500">تظهر هنا المرتجعات التالفة بانتظار طلب الإتلاف.</p>
+                </div>
+            }
+            else
+            {
+                <MudTable T="DamagedProductRow"
+                          Items="_state.DamagedProducts"
+                          Dense="true"
+                          Hover="true"
+                          Elevation="0"
+                          Square="true"
+                          Breakpoint="Breakpoint.Md">
+                    <HeaderContent>
+                        <MudTh Class="text-xs font-bold text-slate-500">الصنف</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">الكود</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">الكمية التالفة</MudTh>
+                        <MudTh Class="w-32 text-xs font-bold text-slate-500">
+                            <span class="sr-only">الإجراءات</span>
+                        </MudTh>
+                    </HeaderContent>
+                    <RowTemplate Context="row">
+                        <MudTd DataLabel="الصنف">
+                            <span class="text-sm font-semibold text-slate-800">@row.ProductName</span>
+                        </MudTd>
+                        <MudTd DataLabel="الكود">
+                            <span class="text-xs font-medium text-slate-500">@row.ProductCode</span>
+                        </MudTd>
+                        <MudTd DataLabel="الكمية التالفة">
+                            <span class="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700">
+                                @row.DamagedQty
+                            </span>
+                        </MudTd>
+                        <MudTd DataLabel="الإجراءات">
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Error"
+                                       Size="Size.Small"
+                                       Class="oh-btn oh-btn--danger oh-btn--sm"
+                                       Disabled="_busy"
+                                       OnClick="@(() => OpenDisposalAsync(row))">
+                                طلب إتلاف
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-100 px-4 py-3">
+                <h2 class="text-sm font-bold text-slate-900">آخر المرتجعات</h2>
+                <p class="mt-0.5 text-xs text-slate-500">أحدث @_state.History.Count عملية استلام سُجلت في هذا المخزن.</p>
+            </div>
+
+            @if (_state.History.Count == 0)
+            {
+                <p class="p-8 text-center text-sm text-slate-500">لم يُسجَّل أي مرتجع بعد.</p>
+            }
+            else
+            {
+                <div class="divide-y divide-slate-100">
+                    @foreach (var record in _state.History)
+                    {
+                        <div class="px-4 py-3" @key="record.Id">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                    <span class="text-sm font-bold text-slate-800">@record.OrderNumber</span>
+                                    <span class="text-xs text-slate-500"> · @record.RecordedByName</span>
+                                </div>
+                                <UserLocalTime Value="record.EffectiveAtUtc" />
+                            </div>
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                @foreach (var line in record.Lines)
+                                {
+                                    <span class="inline-flex flex-wrap items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] text-slate-600">
+                                        <span class="font-bold text-slate-800">@line.ProductName</span>
+                                        @if (line.IntactQty > 0)
+                                        {
+                                            <span>سليم @line.IntactQty</span>
+                                        }
+                                        @if (line.DamagedQty > 0)
+                                        {
+                                            <span class="text-rose-700">تالف @line.DamagedQty</span>
+                                        }
+                                        @if (line.PendingSettledQty > 0)
+                                        {
+                                            <span class="text-amber-700">مستحق @line.PendingSettledQty</span>
+                                        }
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+    }
+</div>

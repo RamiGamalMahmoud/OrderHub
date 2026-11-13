@@ -690,7 +690,7 @@ Manual: one stocked order delivered from a trip and one trip-less; attempt an ov
 
 ---
 
-### [ ] T08b — Returns, damaged handling and disposal (Q7/Q8)
+### [x] T08b — Returns, damaged handling and disposal (Q7/Q8)
 
 **Goal:** Keeper records returns against the originating order with caps, splits intact/damaged, settles «مرتجع مستحق» entries, and requests damaged-disposal approvals.
 
@@ -728,6 +728,24 @@ Manual: approve a shrinking edit → «مرتجع مستحق» appears → recor
 - `DamagedDisposal` is already a movement type with reversal handling — do not add a new type.
 
 **Proposed commit:** `feat(inventory): add returns, damaged handling and disposal approvals`
+
+**Decisions / files (2026-11-13)**
+- Domain `InventoryReturn` (warehouse/order/optional issue order, recorder, optional note ≤ 500, `EffectiveAtUtc` with the +5-minute future tolerance) + `InventoryReturnLine` (allocation/order item/product, `IntactQty`, `DamagedQty`, `PendingSettledQty`); line guard `intact + damaged > 0` and `0 ≤ pendingSettled ≤ intact + damaged`; one line per allocation per return. EF configs `inventory_returns` / `inventory_return_lines` (all FKs `Restrict` except the lines cascade from their header, unique `(return_id, allocation_id)`, CHECK on the line quantities) + additive migration `AddInventoryReturns` (two new tables, three nullable columns and a replacement filtered unique index on the approval table; `has-pending-model-changes` clean).
+- `RecordReturn` (`Inventory.Write`): keeper of the allocation's warehouse only, one transaction with D13 locks on every affected (warehouse, product); per line re-reads returned Σ and enforces `Intact + Damaged ≤ IssuedQty − returned` (Arabic `"Conflict"` naming the product and remaining quantity, no movement). Invalid also: anonymous, foreign order/allocation, non-warehouse source, mixed warehouses, inactive warehouse, zero total, duplicate allocation.
+- `InventoryReturnRepository.GetReturnedQuantityAsync` sums `intact + damaged` per allocation — the cap is an aggregation, never a stored counter.
+- Movements through `ReturnMovementWriter`: intact → `ReturnIn` (`In`) + `ApplyIn`; damaged → `ReturnDamagedIn` (`In`) + `DamagedIn` on the damaged column only; both carry `SourceReturnId`. Damaged never enters available.
+- `SettlePendingReturn` («مرتجع مستحق»): single allocation, keeper-bound, the requested total ≤ `PendingReturnQty`; inside the transaction the allocation must still satisfy `IssuedQty − returned`, then `OrderInventoryAllocation.SettlePendingReturn` clears the pending quantity exactly once and the line records `PendingSettledQty = total`. A second settlement has nothing to settle → `"Conflict"`, balances untouched.
+- `RequestDisposal` (`Inventory.Write`): keeper of the active warehouse, quantity `≤ DamagedQty`, mandatory reason, one `Pending` `DamagedDisposal` per (warehouse, product) (handler check + filtered unique index), storing `WarehouseId`/`ProductId`/`DisposalQuantity` and the balance `Version` as `TargetVersion`.
+- `DecideApprovalCommandHandler` `DamagedDisposal` branch: locks the balance, re-reads it, moves to `Stale` when the balance vanished, the version drifted or `quantity > DamagedQty` (system note, no side effects); otherwise `DamagedDisposal` on the balance + one `DamagedDisposal`/`Out` movement carrying the request reason, then the single CAS approval. Reject stays side-effect free; self-approval is `Forbidden` like every type except reversals.
+- `GetReturnsOverview` (`Inventory.Read`, keeper-bound): pending queue, returnable orders (remaining and pending per order, newest first), last 20 returns with lines, damaged products. `GetOrderReturnContext` (`Inventory.Write`) feeds the return dialog.
+- Web `/inventory/returns` (nav «المرتجعات», keeper-only entry): pending-return queue with «استلام», returnable orders with «تسجيل مرتجع», damaged products with «طلب إتلاف», and the recent-returns history. Dialogs: `RecordReturnDialog` (per-line intact/damaged inputs clamped to the remaining cap, optional note with counter, effective time), `SettlePendingReturnDialog` (quantities ≤ pending, optional note), `RequestDisposalDialog` (quantity ≤ damaged, mandatory reason). Approvals page gains the `إتلاف تالف` type filter, target label `منتج · مخزن · كمية`, rose type tag, search over disposal fields and an impact hint.
+- Tests: `InventoryReturnTests.cs` (9) — intact/damaged split with balances and both movements, cap, keeper binding, pending settle exactly once, disposal request validation (binding/cap/duplicate/payload), approval deducting once with double-decision guard, stale + rejection leaving balances untouched, overview rows for the keeper vs `Forbidden` for sales, foreign-order/zero-quantity rejection. Suite **475 passed** (Debug + Release).
+
+**Deviations**
+- The task listed `ReturnDialog.razor`/`DisposalDialog.razor`; the web layer uses `RecordReturnDialog`, `SettlePendingReturnDialog` (the pending queue needs its own cap/numbering) and `RequestDisposalDialog` instead.
+- `StockIssueOrderId` on the return header exists and is validated, but both handlers pass `null`: the keeper queue is order/allocation-driven, so "when known" is not yet derived from the batches. The column and FK are ready for a later refinement.
+- The returnable-orders projection was added to the overview (repository + contract) so the keeper can pick an order without an orders-permission screen; it is not a new query.
+- `EffectiveAtUtc` is accepted by both return commands and stored, but the dialogs default to "now" (same as T08a).
 
 ---
 

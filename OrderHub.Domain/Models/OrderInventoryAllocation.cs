@@ -162,6 +162,20 @@ public class OrderInventoryAllocation : ModelBase
         return Result.Success();
     }
 
+    /// <summary>Clears a physically received part of the pending return; settles each unit once.</summary>
+    public Result SettlePendingReturn(int quantity)
+    {
+        if (quantity <= 0)
+            return Result.Failure("كمية الاستلام يجب أن تكون أكبر من صفر.");
+
+        if (quantity > PendingReturnQty)
+            return Result.Failure("كمية الاستلام تتجاوز المرتجع المستحق على هذا التخصيص.");
+
+        PendingReturnQty -= quantity;
+        UpdateModificationDate(System.DateTime.UtcNow);
+        return Result.Success();
+    }
+
     public Result Release()
     {
         if (Status != OrderAllocationStatus.Active)

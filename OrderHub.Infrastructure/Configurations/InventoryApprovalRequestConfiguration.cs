@@ -14,10 +14,10 @@ internal sealed class InventoryApprovalRequestConfiguration : ModelConfiguration
         {
             table.HasCheckConstraint(
                 "ck_inventory_approval_requests_single_target",
-                "(request_type = 'AllocationEdit' AND order_id IS NOT NULL AND stock_issue_order_id IS NULL AND inventory_movement_id IS NULL) OR " +
-                "(request_type = 'IssueOrderCancel' AND order_id IS NULL AND stock_issue_order_id IS NOT NULL AND inventory_movement_id IS NULL) OR " +
-                "(request_type = 'MovementReversal' AND order_id IS NULL AND stock_issue_order_id IS NULL AND inventory_movement_id IS NOT NULL) OR " +
-                "(request_type = 'DamagedDisposal' AND order_id IS NULL AND stock_issue_order_id IS NULL AND inventory_movement_id IS NULL)");
+                "(request_type = 'AllocationEdit' AND order_id IS NOT NULL AND stock_issue_order_id IS NULL AND inventory_movement_id IS NULL AND warehouse_id IS NULL AND product_id IS NULL AND disposal_quantity IS NULL) OR " +
+                "(request_type = 'IssueOrderCancel' AND order_id IS NULL AND stock_issue_order_id IS NOT NULL AND inventory_movement_id IS NULL AND warehouse_id IS NULL AND product_id IS NULL AND disposal_quantity IS NULL) OR " +
+                "(request_type = 'MovementReversal' AND order_id IS NULL AND stock_issue_order_id IS NULL AND inventory_movement_id IS NOT NULL AND warehouse_id IS NULL AND product_id IS NULL AND disposal_quantity IS NULL) OR " +
+                "(request_type = 'DamagedDisposal' AND order_id IS NULL AND stock_issue_order_id IS NULL AND inventory_movement_id IS NULL AND warehouse_id IS NOT NULL AND product_id IS NOT NULL AND disposal_quantity > 0)");
             table.HasCheckConstraint(
                 "ck_inventory_approval_requests_reason",
                 "length(trim(reason)) > 0");
@@ -43,6 +43,15 @@ internal sealed class InventoryApprovalRequestConfiguration : ModelConfiguration
             .HasColumnType("integer");
 
         builder.Property(request => request.InventoryMovementId)
+            .HasColumnType("integer");
+
+        builder.Property(request => request.WarehouseId)
+            .HasColumnType("integer");
+
+        builder.Property(request => request.ProductId)
+            .HasColumnType("integer");
+
+        builder.Property(request => request.DisposalQuantity)
             .HasColumnType("integer");
 
         builder.Property(request => request.Payload)
@@ -92,6 +101,18 @@ internal sealed class InventoryApprovalRequestConfiguration : ModelConfiguration
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(request => request.Warehouse)
+            .WithMany()
+            .HasForeignKey(request => request.WarehouseId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(request => request.Product)
+            .WithMany()
+            .HasForeignKey(request => request.ProductId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasOne(request => request.RequestedBy)
             .WithMany()
             .HasForeignKey(request => request.RequestedByUserId)
@@ -114,5 +135,8 @@ internal sealed class InventoryApprovalRequestConfiguration : ModelConfiguration
         builder.HasIndex(request => request.InventoryMovementId)
             .IsUnique()
             .HasFilter("\"status\" = 'Pending' AND \"request_type\" = 'MovementReversal'");
+        builder.HasIndex(request => new { request.WarehouseId, request.ProductId })
+            .IsUnique()
+            .HasFilter("\"status\" = 'Pending' AND \"request_type\" = 'DamagedDisposal'");
     }
 }

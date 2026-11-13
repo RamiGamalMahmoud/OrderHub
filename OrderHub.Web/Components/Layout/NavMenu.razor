@@ -241,6 +241,8 @@ else
                 "المخازن وأمناء المخزون وحالة التشغيل"),
             new("أوامر الصرف", "/inventory/issue-orders", Icons.Material.Outlined.Output, PermissionFeature.Inventory, "teal",
                 "أوامر الصرف ومتابعة دفعات التنفيذ"),
+            new("المرتجعات", "/inventory/returns", Icons.Material.Outlined.AssignmentReturn, PermissionFeature.Inventory, "teal",
+                "استلام المرتجعات وإدارة الكميات التالفة", KeeperOnly: true),
             new("الاعتمادات", "/inventory/approvals", Icons.Material.Outlined.Approval, PermissionFeature.Inventory, "teal",
                 "اعتماد تعديلات الطلبات وإلغاءات الصرف وعكس الحركات", PermissionLevel.Approve)
         ],

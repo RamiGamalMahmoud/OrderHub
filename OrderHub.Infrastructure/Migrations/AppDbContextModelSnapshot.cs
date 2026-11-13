@@ -890,6 +890,10 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("decision_note");
 
+                    b.Property<int?>("DisposalQuantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("disposal_quantity");
+
                     b.Property<int?>("InventoryMovementId")
                         .HasColumnType("integer")
                         .HasColumnName("inventory_movement_id");
@@ -905,6 +909,10 @@ namespace OrderHub.Infrastructure.Migrations
                     b.Property<string>("Payload")
                         .HasColumnType("jsonb")
                         .HasColumnName("payload");
+
+                    b.Property<int?>("ProductId")
+                        .HasColumnType("integer")
+                        .HasColumnName("product_id");
 
                     b.Property<string>("Reason")
                         .IsRequired()
@@ -943,6 +951,10 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasDefaultValue(0)
                         .HasColumnName("version");
 
+                    b.Property<int?>("WarehouseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("warehouse_id");
+
                     b.HasKey("Id")
                         .HasName("pk_inventory_approval_requests");
 
@@ -959,6 +971,9 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasDatabaseName("ix_inventory_approval_requests_order_id")
                         .HasFilter("\"status\" = 'Pending' AND \"request_type\" = 'AllocationEdit'");
 
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("ix_inventory_approval_requests_product_id");
+
                     b.HasIndex("RequestedByUserId")
                         .HasDatabaseName("ix_inventory_approval_requests_requested_by_user_id");
 
@@ -970,13 +985,18 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasIndex("Status", "RequestType")
                         .HasDatabaseName("ix_inventory_approval_requests_status_request_type");
 
+                    b.HasIndex("WarehouseId", "ProductId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inventory_approval_requests_warehouse_id_product_id")
+                        .HasFilter("\"status\" = 'Pending' AND \"request_type\" = 'DamagedDisposal'");
+
                     b.ToTable("inventory_approval_requests", null, t =>
                         {
                             t.HasCheckConstraint("ck_inventory_approval_requests_decision", "status NOT IN ('Approved', 'Rejected', 'Stale') OR (decided_at_utc IS NOT NULL AND decision_note IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_inventory_approval_requests_reason", "length(trim(reason)) > 0");
 
-                            t.HasCheckConstraint("ck_inventory_approval_requests_single_target", "(request_type = 'AllocationEdit' AND order_id IS NOT NULL AND stock_issue_order_id IS NULL AND inventory_movement_id IS NULL) OR (request_type = 'IssueOrderCancel' AND order_id IS NULL AND stock_issue_order_id IS NOT NULL AND inventory_movement_id IS NULL) OR (request_type = 'MovementReversal' AND order_id IS NULL AND stock_issue_order_id IS NULL AND inventory_movement_id IS NOT NULL) OR (request_type = 'DamagedDisposal' AND order_id IS NULL AND stock_issue_order_id IS NULL AND inventory_movement_id IS NULL)");
+                            t.HasCheckConstraint("ck_inventory_approval_requests_single_target", "(request_type = 'AllocationEdit' AND order_id IS NOT NULL AND stock_issue_order_id IS NULL AND inventory_movement_id IS NULL AND warehouse_id IS NULL AND product_id IS NULL AND disposal_quantity IS NULL) OR (request_type = 'IssueOrderCancel' AND order_id IS NULL AND stock_issue_order_id IS NOT NULL AND inventory_movement_id IS NULL AND warehouse_id IS NULL AND product_id IS NULL AND disposal_quantity IS NULL) OR (request_type = 'MovementReversal' AND order_id IS NULL AND stock_issue_order_id IS NULL AND inventory_movement_id IS NOT NULL AND warehouse_id IS NULL AND product_id IS NULL AND disposal_quantity IS NULL) OR (request_type = 'DamagedDisposal' AND order_id IS NULL AND stock_issue_order_id IS NULL AND inventory_movement_id IS NULL AND warehouse_id IS NOT NULL AND product_id IS NOT NULL AND disposal_quantity > 0)");
                         });
                 });
 
@@ -1085,6 +1105,133 @@ namespace OrderHub.Infrastructure.Migrations
                             t.HasCheckConstraint("ck_inventory_movements_quantity", "quantity > 0");
 
                             t.HasCheckConstraint("ck_inventory_movements_reversal_reference", "(movement_type = 'Reversal' AND reversal_of_movement_id IS NOT NULL) OR (movement_type <> 'Reversal' AND reversal_of_movement_id IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryReturn", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("EffectiveAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("effective_at_utc");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("note");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_id");
+
+                    b.Property<int>("RecordedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("recorded_by_user_id");
+
+                    b.Property<int?>("StockIssueOrderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("stock_issue_order_id");
+
+                    b.Property<int>("WarehouseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inventory_returns");
+
+                    b.HasIndex("OrderId")
+                        .HasDatabaseName("ix_inventory_returns_order_id");
+
+                    b.HasIndex("RecordedByUserId")
+                        .HasDatabaseName("ix_inventory_returns_recorded_by_user_id");
+
+                    b.HasIndex("StockIssueOrderId")
+                        .HasDatabaseName("ix_inventory_returns_stock_issue_order_id");
+
+                    b.HasIndex("WarehouseId")
+                        .HasDatabaseName("ix_inventory_returns_warehouse_id");
+
+                    b.ToTable("inventory_returns", (string)null);
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryReturnLine", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AllocationId")
+                        .HasColumnType("integer")
+                        .HasColumnName("allocation_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("DamagedQty")
+                        .HasColumnType("integer")
+                        .HasColumnName("damaged_qty");
+
+                    b.Property<int>("IntactQty")
+                        .HasColumnType("integer")
+                        .HasColumnName("intact_qty");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("OrderItemId")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_item_id");
+
+                    b.Property<int>("PendingSettledQty")
+                        .HasColumnType("integer")
+                        .HasColumnName("pending_settled_qty");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer")
+                        .HasColumnName("product_id");
+
+                    b.Property<int>("ReturnId")
+                        .HasColumnType("integer")
+                        .HasColumnName("return_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inventory_return_lines");
+
+                    b.HasIndex("AllocationId")
+                        .HasDatabaseName("ix_inventory_return_lines_allocation_id");
+
+                    b.HasIndex("OrderItemId")
+                        .HasDatabaseName("ix_inventory_return_lines_order_item_id");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("ix_inventory_return_lines_product_id");
+
+                    b.HasIndex("ReturnId", "AllocationId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inventory_return_lines_return_id_allocation_id");
+
+                    b.ToTable("inventory_return_lines", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inventory_return_lines_quantities", "intact_qty >= 0 AND damaged_qty >= 0 AND intact_qty + damaged_qty > 0 AND pending_settled_qty >= 0 AND pending_settled_qty <= intact_qty + damaged_qty");
                         });
                 });
 
@@ -3669,6 +3816,12 @@ namespace OrderHub.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_inventory_approval_requests_orders_order_id");
 
+                    b.HasOne("OrderHub.Domain.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_inventory_approval_requests_products_product_id");
+
                     b.HasOne("OrderHub.Domain.Models.User", "RequestedBy")
                         .WithMany()
                         .HasForeignKey("RequestedByUserId")
@@ -3682,15 +3835,25 @@ namespace OrderHub.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_inventory_approval_requests_stock_issue_orders_stock_issue_");
 
+                    b.HasOne("OrderHub.Domain.Models.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_inventory_approval_requests_warehouses_warehouse_id");
+
                     b.Navigation("DecidedBy");
 
                     b.Navigation("InventoryMovement");
 
                     b.Navigation("Order");
 
+                    b.Navigation("Product");
+
                     b.Navigation("RequestedBy");
 
                     b.Navigation("StockIssueOrder");
+
+                    b.Navigation("Warehouse");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.InventoryMovement", b =>
@@ -3721,6 +3884,83 @@ namespace OrderHub.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_inventory_movements_warehouses_warehouse_id");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryReturn", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_returns_orders_order_id");
+
+                    b.HasOne("OrderHub.Domain.Models.User", "RecordedBy")
+                        .WithMany()
+                        .HasForeignKey("RecordedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_returns_users_recorded_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.StockIssueOrder", "StockIssueOrder")
+                        .WithMany()
+                        .HasForeignKey("StockIssueOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_inventory_returns_stock_issue_orders_stock_issue_order_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_returns_warehouses_warehouse_id");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("RecordedBy");
+
+                    b.Navigation("StockIssueOrder");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryReturnLine", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.OrderInventoryAllocation", "Allocation")
+                        .WithMany()
+                        .HasForeignKey("AllocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_return_lines_order_inventory_allocations_allocati");
+
+                    b.HasOne("OrderHub.Domain.Models.OrderItem", "OrderItem")
+                        .WithMany()
+                        .HasForeignKey("OrderItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_return_lines_order_items_order_item_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_return_lines_products_product_id");
+
+                    b.HasOne("OrderHub.Domain.Models.InventoryReturn", "Return")
+                        .WithMany("Lines")
+                        .HasForeignKey("ReturnId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_return_lines_inventory_returns_return_id");
+
+                    b.Navigation("Allocation");
+
+                    b.Navigation("OrderItem");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Return");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Order", b =>
@@ -4819,6 +5059,11 @@ namespace OrderHub.Infrastructure.Migrations
             modelBuilder.Entity("OrderHub.Domain.Models.CommercialDocuments.Quotation", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryReturn", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.Order", b =>

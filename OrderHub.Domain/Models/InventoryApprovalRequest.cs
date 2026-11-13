@@ -30,6 +30,19 @@ public sealed class InventoryApprovalRequest : ModelBase
 
     public InventoryMovement InventoryMovement { get; private set; }
 
+    /// <summary>مخزن الإتلاف المطلوب (نوع `DamagedDisposal` فقط).</summary>
+    public int? WarehouseId { get; private set; }
+
+    public Warehouse Warehouse { get; private set; }
+
+    /// <summary>الصنف المطلوب إتلافه (نوع `DamagedDisposal` فقط).</summary>
+    public int? ProductId { get; private set; }
+
+    public Product Product { get; private set; }
+
+    /// <summary>كمية الإتلاف المطلوبة من رصيد التالف (نوع `DamagedDisposal` فقط).</summary>
+    public int? DisposalQuantity { get; private set; }
+
     /// <summary>الحمولة الكاملة المقترحة للتعديل (JSON)؛ تُطبَّق ذريًا عند الاعتماد.</summary>
     public string Payload { get; private set; }
 
@@ -133,6 +146,43 @@ public sealed class InventoryApprovalRequest : ModelBase
             Status = InventoryApprovalStatus.Pending,
             InventoryMovementId = movementId,
             Reason = normalized.Value,
+            RequestedByUserId = ValidateRequester(requestedByUserId)
+        };
+        request.UpdateCreationDate(nowUtc);
+        return Result<InventoryApprovalRequest>.Success(request);
+    }
+
+    public static Result<InventoryApprovalRequest> CreateDamagedDisposal(
+        int warehouseId,
+        int productId,
+        int quantity,
+        int balanceVersion,
+        string reason,
+        int requestedByUserId,
+        DateTime nowUtc)
+    {
+        if (warehouseId <= 0 || productId <= 0)
+            return Result<InventoryApprovalRequest>.Failure("مخزن أو صنف الإتلاف غير صالح.");
+
+        if (quantity <= 0)
+            return Result<InventoryApprovalRequest>.Failure("كمية الإتلاف يجب أن تكون أكبر من صفر.");
+
+        if (balanceVersion < 0)
+            return Result<InventoryApprovalRequest>.Failure("إصدار الرصيد غير صالح.");
+
+        Result<string> normalized = NormalizeReason(reason);
+        if (!normalized.IsSuccess)
+            return Result<InventoryApprovalRequest>.Failure(normalized.ErrorMessage);
+
+        var request = new InventoryApprovalRequest
+        {
+            RequestType = InventoryApprovalRequestType.DamagedDisposal,
+            Status = InventoryApprovalStatus.Pending,
+            WarehouseId = warehouseId,
+            ProductId = productId,
+            DisposalQuantity = quantity,
+            Reason = normalized.Value,
+            TargetVersion = balanceVersion,
             RequestedByUserId = ValidateRequester(requestedByUserId)
         };
         request.UpdateCreationDate(nowUtc);

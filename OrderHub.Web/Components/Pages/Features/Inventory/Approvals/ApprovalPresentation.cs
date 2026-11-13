@@ -19,6 +19,7 @@ public static class ApprovalPresentation
         InventoryApprovalRequestType.AllocationEdit => "border-sky-200 bg-sky-50 text-sky-700",
         InventoryApprovalRequestType.IssueOrderCancel => "border-orange-200 bg-orange-50 text-orange-700",
         InventoryApprovalRequestType.MovementReversal => "border-violet-200 bg-violet-50 text-violet-700",
+        InventoryApprovalRequestType.DamagedDisposal => "border-rose-200 bg-rose-50 text-rose-700",
         _ => "border-slate-200 bg-slate-50 text-slate-600"
     };
 
@@ -47,6 +48,8 @@ public static class ApprovalPresentation
             $"أمر صرف {IssueOrderNumberLabel(row.IssueOrderNumber, row.IssueOrderSequenceYear, row.IssueOrderSequenceMonth)} — {row.IssueOrderOrderNumber}",
         InventoryApprovalRequestType.MovementReversal =>
             $"{row.MovementProductName ?? "منتج"} · {row.MovementWarehouseName} · {row.MovementQuantity.ToString(System.Globalization.CultureInfo.InvariantCulture)}",
+        InventoryApprovalRequestType.DamagedDisposal =>
+            $"{row.DisposalProductName ?? "منتج"} · {row.DisposalWarehouseName} · {(row.DisposalQuantity ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture)}",
         _ => "—"
     };
 

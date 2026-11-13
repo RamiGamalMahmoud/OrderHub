@@ -24,4 +24,9 @@ public interface IInventoryApprovalRepository
     Task<bool> HasPendingEditAsync(int orderId, CancellationToken cancellationToken = default);
 
     Task<bool> HasPendingReversalAsync(int movementId, CancellationToken cancellationToken = default);
+
+    Task<bool> HasPendingDisposalAsync(
+        int warehouseId,
+        int productId,
+        CancellationToken cancellationToken = default);
 }

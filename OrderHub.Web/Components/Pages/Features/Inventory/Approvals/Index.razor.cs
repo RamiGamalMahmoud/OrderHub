@@ -51,6 +51,8 @@ public partial class Index
                 (row.IssueOrderWarehouseName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
                 (row.MovementWarehouseName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
                 (row.MovementProductName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (row.DisposalProductName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (row.DisposalWarehouseName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
                 row.RequestedByName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
                 row.Reason.Contains(term, StringComparison.OrdinalIgnoreCase));
         }

@@ -67,6 +67,17 @@ internal sealed class InventoryApprovalRepository : IInventoryApprovalRepository
                 request.Status == InventoryApprovalStatus.Pending,
             cancellationToken);
 
+    public Task<bool> HasPendingDisposalAsync(
+        int warehouseId,
+        int productId,
+        CancellationToken cancellationToken = default) =>
+        _dbContext.InventoryApprovalRequests.AsNoTracking().AnyAsync(
+            request => request.WarehouseId == warehouseId &&
+                request.ProductId == productId &&
+                request.RequestType == InventoryApprovalRequestType.DamagedDisposal &&
+                request.Status == InventoryApprovalStatus.Pending,
+            cancellationToken);
+
     private IQueryable<InventoryApprovalProjectionRow> ProjectRows(
         IQueryable<InventoryApprovalRequest> requests) =>
         from request in requests
@@ -96,6 +107,12 @@ internal sealed class InventoryApprovalRepository : IInventoryApprovalRepository
         join movementProduct in _dbContext.Products.AsNoTracking()
             on movement.ProductId equals movementProduct.Id into movementProductGroup
         from movementProduct in movementProductGroup.DefaultIfEmpty()
+        join disposalWarehouse in _dbContext.Warehouses.AsNoTracking()
+            on request.WarehouseId equals disposalWarehouse.Id into disposalWarehouseGroup
+        from disposalWarehouse in disposalWarehouseGroup.DefaultIfEmpty()
+        join disposalProduct in _dbContext.Products.AsNoTracking()
+            on request.ProductId equals disposalProduct.Id into disposalProductGroup
+        from disposalProduct in disposalProductGroup.DefaultIfEmpty()
         select new InventoryApprovalProjectionRow(
             request.Id,
             request.RequestType,
@@ -120,6 +137,9 @@ internal sealed class InventoryApprovalRepository : IInventoryApprovalRepository
             movement == null ? (InventoryMovementType?)null : movement.MovementType,
             movement == null ? (InventoryMovementStatus?)null : movement.Status,
             movement == null ? null : movement.EffectiveAtUtc,
+            disposalWarehouse == null ? null : disposalWarehouse.Name.Value,
+            disposalProduct == null ? null : disposalProduct.Name.Value,
+            request.DisposalQuantity,
             request.DecidedByUserId,
             decidedBy == null ? null : decidedBy.DisplayName ?? decidedBy.UserName,
             request.DecidedAtUtc,

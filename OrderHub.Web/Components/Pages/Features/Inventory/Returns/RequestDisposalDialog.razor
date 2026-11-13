@@ -1,0 +1,138 @@
+@using System.Globalization
+@using Microsoft.Extensions.Logging
+@using MudBlazor
+
+<MudDialog Class="flex w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-xl"
+           TitleClass="p-0"
+           ContentClass="p-0"
+           ActionsClass="p-0"
+           Gutters="false">
+    <TitleContent>
+        <header class="flex items-start justify-between gap-3 border-b border-slate-100 p-5">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+                    <MudIcon Icon="@Icons.Material.Filled.DeleteSweep" Size="Size.Small" />
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-bold leading-tight text-slate-900">طلب إتلاف تالف</h2>
+                    <p class="mt-1 text-xs font-medium text-slate-500">@ProductName — المتاح للتالف: @DamagedQty</p>
+                </div>
+            </div>
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Size="Size.Small"
+                           Color="Color.Default"
+                           Disabled="_submitting"
+                           OnClick="Cancel"
+                           aria-label="إغلاق النافذة"
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+        </header>
+    </TitleContent>
+
+    <DialogContent>
+        <div class="space-y-4 bg-slate-50/70 p-5">
+            <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold leading-6 text-amber-800">
+                سيُرفع طلب الإتلاف إلى المدير؛ ولا تُخصم الكمية من التالف إلا بعد اعتماده.
+            </div>
+
+            <MudNumericField T="int"
+                             @bind-Value="_quantity"
+                             Label="الكمية المطلوب إتلافها"
+                             Min="1"
+                             Max="@DamagedQty"
+                             Variant="Variant.Outlined"
+                             Margin="Margin.Dense"
+                             Disabled="_submitting"
+                             Class="w-full" />
+
+            <MudTextField T="string"
+                          @bind-Value="_reason"
+                          Label="سبب الإتلاف"
+                          Required="true"
+                          Immediate="true"
+                          MaxLength="500"
+                          HelperText="@ReasonCounter"
+                          Lines="3"
+                          Variant="Variant.Outlined"
+                          Disabled="_submitting" />
+
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+            }
+        </div>
+    </DialogContent>
+
+    <DialogActions>
+        <footer class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 bg-white p-4">
+            <MudButton Disabled="_submitting" OnClick="Cancel" Variant="Variant.Text" Class="oh-btn oh-btn--secondary">رجوع دون تغيير</MudButton>
+            <MudButton Class="oh-btn oh-btn--danger"
+                       Disabled="@(!CanSubmit)"
+                       OnClick="SubmitAsync">
+                @(_submitting ? "جاري الإرسال…" : "إرسال طلب الإتلاف")
+            </MudButton>
+        </footer>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Inject] private IRequestExecutor Executor { get; set; } = null!;
+    [Inject] private ILogger<RequestDisposalDialog> Logger { get; set; } = null!;
+
+    [Parameter, EditorRequired] public int WarehouseId { get; set; }
+    [Parameter, EditorRequired] public int ProductId { get; set; }
+    [Parameter, EditorRequired] public string ProductName { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public int DamagedQty { get; set; }
+
+    private int _quantity = 1;
+    private string? _reason;
+    private string? _error;
+    private bool _submitting;
+
+    private string ReasonCounter => $"{(_reason?.Length ?? 0).ToString(CultureInfo.InvariantCulture)} / 500";
+
+    private bool CanSubmit =>
+        !_submitting
+        && _quantity > 0
+        && _quantity <= DamagedQty
+        && !string.IsNullOrWhiteSpace(_reason);
+
+    protected override void OnInitialized() =>
+        _quantity = DamagedQty > 0 ? 1 : 0;
+
+    private async Task SubmitAsync()
+    {
+        if (!CanSubmit)
+            return;
+
+        _submitting = true;
+        _error = null;
+        try
+        {
+            var result = await Executor.ExecuteAsync(new RequestDisposalCommand(
+                WarehouseId,
+                ProductId,
+                _quantity,
+                _reason!.Trim()));
+
+            if (!result.IsSuccess)
+            {
+                _error = result.ErrorMessage;
+                return;
+            }
+
+            Dialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to request damaged disposal for warehouse {WarehouseId}", WarehouseId);
+            _error = "تعذر إرسال طلب الإتلاف. حاول مرة أخرى.";
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private void Cancel() => Dialog.Cancel();
+}
