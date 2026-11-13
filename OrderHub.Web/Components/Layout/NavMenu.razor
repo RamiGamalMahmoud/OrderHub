@@ -233,6 +233,8 @@ else
             "إضافة منتج جديد للكتالوج", PermissionLevel.Write)),
         new("المخزون", Icons.Material.Filled.Warehouse, "المخازن والأرصدة وأوامر الصرف", "/warehouses",
         [
+            new("أرصدة المخزون", "/inventory", Icons.Material.Outlined.Inventory, PermissionFeature.Inventory, "teal",
+                "أرصدة المنتجات في المخازن المتاحة لك"),
             new("المخازن", "/warehouses", Icons.Material.Outlined.Warehouse, PermissionFeature.Warehouses, "amber",
                 "المخازن وأمناء المخزون وحالة التشغيل"),
             new("أوامر الصرف", "/inventory/issue-orders", Icons.Material.Outlined.Output, PermissionFeature.Inventory, "teal",

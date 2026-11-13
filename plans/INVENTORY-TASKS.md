@@ -442,6 +442,117 @@ Manual: sales creates an order per warehouse → storekeeper records a partial b
 
 ---
 
+### [x] T06b — Warehouse details: balances, filters and movement ledger
+
+**Goal:** The read side of a single warehouse: `/inventory` lists the warehouses in the caller's scope, `/inventory/warehouses/{id}` shows the header, per-product balances with server-side search/filter/sort/paging, and a per-product movement ledger dialog.
+
+**Depends on:** T06 (movements, balances, issue orders). **Delivers independently:** balances and ledger usable; no write path and no migration.
+
+**Owner decisions (2026-11-13):**
+- Split from T06c; routes `/inventory` and `/inventory/warehouses/{id}` — never merged with `/inventory/balances`.
+- Scope: Admin / `Inventory.Approve` / `Inventory.Read` → all warehouses; keeper-only → his assigned warehouse; a user who is both keeper and manager follows the manager rule. A keeper requesting another `WarehouseId` gets `"Forbidden"` — never silently ignored or replaced.
+- Statuses: «متاح» `Available > 0 && Reserved == 0` · «محجوز جزئياً» `Available > 0 && Reserved > 0` · «محجوز بالكامل» `StockOnHand > 0 && Available == 0` · «نفد» `StockOnHand == 0`. Damaged is a separate figure, never part of available.
+- `Available` is EF-ignored — every filter/sort/sum must use the SQL arithmetic `StockOnHand - ReservedOnHand`.
+- Server-side search/filter/sort/paging only, page size ≤ 100, deterministic ordering, previous request cancelled in the UI, no JavaScript.
+- Cards: scope totals ignore the text search; category/status filters produce filtered totals with a visible hint. «إخفاء الأصفار» is display-only. Show total `StockBalance` rows and rows with actual stock separately; zero rows are visible by default.
+- Ledger: all nine movement types, latest first; receipt shows `ReferenceNote` (receipts have no number); issue reference via `SourceIssueBatchId → StockIssueLine → StockIssueOrder`; no invented references.
+- Inactive warehouse: «تسجيل توريد» disabled; «أوامر الصرف» stays read-only; details/ledger available.
+- Contracts: `GetAccessibleWarehousesQuery`, `GetWarehouseStockQuery`, `GetWarehouseLedgerQuery`; `InventoryPresentation.cs`; handlers check identity themselves (tests bypass the pipeline).
+- Boundaries: no domain/business-rule changes, no permission-preset changes, no migrations, no changes to T06 issue-order behavior.
+
+**Files**
+- Modify `plans/INVENTORY-TASKS.md` (this entry)
+- Create `OrderHub.Application/Features/Inventory/Presentation/InventoryPresentation.cs` (status label/kind helper, issue-number label reuse)
+- Create `OrderHub.Application/Features/Inventory/WarehouseStock/` — `WarehouseStockContracts.cs` (status/sort enums, `GetAccessibleWarehousesQuery`, `GetWarehouseStockQuery`, result records), `InventoryScope.cs` (scope resolution helper), handlers
+- Create `OrderHub.Application/Features/Inventory/WarehouseLedger/` — `GetWarehouseLedgerQuery` + result records + handler
+- Modify `OrderHub.Application/Interfaces/Repositories/IInventoryRepository.cs` + `OrderHub.Infrastructure/Reopsitories/InventoryRepository.cs` (projection methods + counts + category options)
+- Modify `OrderHub.Application/Interfaces/Repositories/IWarehouseRepository.cs` + `OrderHub.Infrastructure/Reopsitories/WarehouseRepository.cs` (scoped summaries, inactive included)
+- Create `OrderHub.Web/Components/Pages/Features/Inventory/Balances/Index.razor` (+ `.razor.cs`), `Balances/WarehouseDetails.razor` (+ `.razor.cs`), `Balances/LedgerDialog.razor`
+- Modify `OrderHub.Web/Components/Layout/NavMenu.razor` («عرض الأرصدة»/«المخزون» → `/inventory`)
+- Modify `OrderHub.Web/Components/Pages/Features/Warehouses/Index.razor` (row action «عرض الأرصدة» with `Inventory.Read`)
+- Create `OrderHub.Tests/WarehouseBalancesTests.cs`, `WarehouseLedgerTests.cs`
+
+**Steps**
+1. Contracts: `StockStatusFilter { All, Available, PartiallyReserved, FullyReserved, OutOfStock }`, `StockSortColumn { Available (default), Physical, Reserved, Damaged, ProductName }`, `bool Descending`, page clamp `1..100`, tiebreak by `ProductId`.
+2. Scope helper: `IsAdmin` or `Inventory.Approve` → all; keeper binding → own; other authenticated `Inventory.Read` → all; unauthenticated → `"Unauthorized"`; unknown warehouse → `"NotFound"`; keeper of another warehouse → `"Forbidden"`.
+3. `GetAccessibleWarehousesQuery` → summaries (id, name, active, keeper, full totals, product count) for the scope; category options returned by the stock query (keepers lack `Categories.Read`).
+4. `GetWarehouseStockQuery` → header, full totals, filtered totals, rows (product, unit, category, on-hand, reserved, available, damaged, latest movement time), `TotalCount` + `WithStockCount`, category options, paging metadata.
+5. `GetWarehouseLedgerQuery` → product header, performed-by name, movement type/direction/status/quantity/effective+created time/note, receipt `ReferenceNote`, issue number parts; reuses `GetLedgerAsync`/`CountLedgerAsync`.
+6. UI `/inventory`: `PageScaffold` «المخزون», scope label, cards, warehouse cards/table linking to details; `/inventory/warehouses/{id}`: header + status badges + actions («تسجيل توريد» disabled when inactive, «أوامر الصرف»), totals cards, search with 400 ms debounce + cancellation, category/status selects, «إخفاء الأصفار», sortable columns, `MudTable ServerData`, `TableFooter`, ledger dialog with paging.
+7. Tests: scope matrix (admin/approve/read/keeper/keeper+manager/foreign keeper/unknown/unauth); status boundaries (0/partial/full/out); `HideZero` never changes totals; filtered vs full totals; search/sort/paging determinism and page clamp; category options without `Categories.Read`; ledger all nine types, receipt note, issue chain, ordering, paging; inactive warehouse readable but not writable.
+
+**Acceptance**
+- A keeper sees only his warehouse and cannot reach another by URL (`"Forbidden"`); a manager sees all.
+- Balances match the ledger/`StockBalance` math; `Available` never derived client-side.
+- Filters/paging are server-side; a stale response never overwrites a newer one.
+
+**Verify**
+```powershell
+dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~WarehouseBalances"
+dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~WarehouseLedger"
+dotnet build OrderHub.sln --configuration Release
+```
+Manual (browser): `/inventory` as Manager and keeper; details search/filter/sort/paging; ledger dialog; inactive warehouse actions.
+
+**Traps**
+- Never sort/filter on `StockBalance.Available` in EF (ignored property) — write the subtraction.
+- Do not gate the balances query with `Warehouses.Read` (keepers only have it, sales/purchasing have `Inventory.Read`).
+- Do not leak entity types; projection records only.
+
+**Proposed commit:** `feat(inventory): add warehouse stock details and ledger`
+
+**Decisions / files (2026-11-13)**
+- Application: `WarehouseStock/` — `StockReading.cs` (`StockStatusFilter`, `StockSortColumn`, `StockPaging.Normalize` clamp `1..100`), `InventoryPresentation.cs` (status/movement/direction/status labels, `IssueOrderNumberLabel` `{n:D5}/{m:D2}/{y}`, `BuildLocation`), `InventoryScope.cs` (approve → all; keeper binding → own; other `Inventory.Read` → all; `NotFound` checked before `Forbidden`), `GetAccessibleWarehousesQuery`, `GetWarehouseStockQuery` (header, full totals, filtered totals, `HasFilteredView`, category options, `TotalCount`/`WithStockCount`, `IsKeeperScoped`, `CanRecordStockIn`).
+- `WarehouseLedger/` — `GetWarehouseLedgerQuery` + `GetWarehouseLedgerPageAsync`/`CountLedgerAsync` reuse: newest first (`EffectiveAtUtc desc, Id desc`), receipt `ReferenceNote`, issue order via `SourceIssueBatchId → StockIssueBatch → StockIssueLine → StockIssueOrder`, reversal id; product stock null → `NotFound`.
+- Repositories: `IWarehouseRepository.GetInventoryHeaderAsync/GetInventorySummariesAsync` (inactive included, null id list = all) and eight `IInventoryRepository` projection/count methods (search/category/status/hide-zero on `StockOnHand - ReservedOnHand`, sort with `ProductId` tiebreak, correlated latest-movement subquery).
+- Web: `/inventory` (`Inventory.Read`) cards + scope label + keeper CTA; `/inventory/warehouses/{id}` `PageScaffold` header, totals, filtered-totals hint, 400 ms debounced search with cancellation, category/status selects, «إخفاء الأصفار», sortable server-side table, `TableFooter`; `LedgerDialog` paged server-side with stock summary and all nine movement types; nav «أرصدة المخزون» under المخزون; `Warehouses/Index` row action «عرض الأرصدة» gated by `Inventory.Read`.
+- Tests: `WarehouseBalancesTests.cs` (scope matrix incl. keeper+manager and foreign keeper, status boundaries, arithmetic, search/full totals, filtered totals, paging clamp/determinism/sort, category options without `Categories.Read`, inactive readable) and `WarehouseLedgerTests.cs` (receipt note + performer, issue-order reference through the real batch pipeline, paging/scope/`NotFound`/`Unauthorized`, nine labels). Full suite: 429 passed (Debug + Release); `has-pending-model-changes` reports none.
+
+**Deviations**
+- `Balances/Index.razor` keeps its `@code` inline (no `.razor.cs`); `LedgerDialog` also inline — same convention as `Products/Index` and the Warehouses screens.
+- Added `Balances/_Imports.razor` (folder-level usings) instead of repeating them per file.
+- `Inventory/IssueOrders/_Imports.razor` gained the missing `Orders.Workflow` using: the T06 pages rendered `UserLocalTime` as an unknown element (RZ10012) so movement timestamps were invisible; no logic changed.
+- Browser pass deferred: no dev server was running and the app needs an authenticated PostgreSQL session, so UI verification is still manual (see Verify).
+
+---
+
+### [ ] T06c — Consolidated balances and product distribution
+
+**Goal:** `/inventory/balances` consolidates every product across the caller's warehouse scope, with per-warehouse breakdown.
+
+**Depends on:** T06b (scope helper, status semantics, presentation helpers). **Delivers independently:** cross-warehouse read screen; no write path, no migration.
+
+**Owner decisions (2026-11-13):** same scope precedence and status table as T06b; Admin/approve/read see all warehouses, keeper sees his own; totals per the same rule (text search does not change scope totals); server-side filtering/paging; contracts `GetConsolidatedInventoryBalancesQuery` and `GetProductWarehouseDistributionQuery`.
+
+**Files**
+- Create `OrderHub.Application/Features/Inventory/ConsolidatedBalances/` (two queries + contracts + handlers, reusing `InventoryScope`)
+- Modify `IInventoryRepository` + `InventoryRepository` (consolidated projection + per-product distribution)
+- Create `OrderHub.Web/Components/Pages/Features/Inventory/Consolidated/Index.razor` (+ `.razor.cs`), `DistributionDialog.razor`
+- Modify `NavMenu.razor` (item «أرصدة المخزون» → `/inventory/balances`)
+- Create `OrderHub.Tests/ConsolidatedInventoryTests.cs`
+
+**Steps**
+1. Consolidated rows: product, unit, category, physical, reserved, available, damaged aggregated over the scope, warehouse count, latest movement; paged and sorted server-side with the T06b status semantics.
+2. Distribution query: per product → per-warehouse on-hand/reserved/available/damaged (including zero rows), deterministic ordering.
+3. UI: `PageScaffold` «أرصدة المخزون», cards, filters, «توزيع المخازن» dialog, warehouse links to T06b details when the caller has access.
+4. Tests: scope aggregation correctness across two warehouses, keeper sees only his warehouse, distribution includes zero rows, totals/filters/paging parity with T06b.
+
+**Acceptance**
+- Aggregate equals the sum of per-warehouse balances for the same scope.
+- Keeper never sees another warehouse's contribution; manager sees all.
+- No JavaScript, no client-side filtering.
+
+**Verify**
+```powershell
+dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~ConsolidatedInventory"
+dotnet build OrderHub.sln --configuration Release
+```
+Manual: `/inventory/balances` as manager vs keeper; drill into a product distribution.
+
+**Proposed commit:** `feat(inventory): add consolidated stock balances`
+
+---
+
 ### [ ] T07 — Approvals: edit payload, issue-order cancel, reversal
 
 **Goal:** The Manager approval queue: pending order edits applied from a stored payload, issue-order cancellation approval, and movement reversal — with the approver≠requester rule and the reversal exception.

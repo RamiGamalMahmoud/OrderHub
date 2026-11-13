@@ -116,9 +116,9 @@
                         الحالة
                     </MudTh>
 
-                    @if (_canWrite)
+                    @if (_canWrite || _canViewStock)
                     {
-                        <MudTh Class="w-24 text-xs font-bold text-slate-500">
+                        <MudTh Class="w-28 text-xs font-bold text-slate-500">
                             <span class="sr-only">الإجراءات</span>
                         </MudTh>
                     }
@@ -169,15 +169,31 @@
                         }
                     </MudTd>
 
-                    @if (_canWrite)
+                    @if (_canWrite || _canViewStock)
                     {
                         <MudTd DataLabel="الإجراءات">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                           Size="Size.Small"
-                                           Disabled="IsBusy"
-                                           aria-label="تعديل المخزن"
-                                           OnClick="@(() => OpenEditDialogAsync(warehouse))"
-                                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+                            <div class="flex items-center justify-end gap-1">
+                                @if (_canViewStock)
+                                {
+                                    <MudTooltip Text="عرض الأرصدة">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Inventory2"
+                                                       Size="Size.Small"
+                                                       Href="@($"/inventory/warehouses/{warehouse.Id}")"
+                                                       aria-label="عرض أرصدة المخزن"
+                                                       Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+                                    </MudTooltip>
+                                }
+
+                                @if (_canWrite)
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                   Size="Size.Small"
+                                                   Disabled="IsBusy"
+                                                   aria-label="تعديل المخزن"
+                                                   OnClick="@(() => OpenEditDialogAsync(warehouse))"
+                                                   Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+                                }
+                            </div>
                         </MudTd>
                     }
                 </RowTemplate>

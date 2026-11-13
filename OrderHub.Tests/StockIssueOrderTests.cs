@@ -253,7 +253,7 @@ public sealed class StockIssueOrderTests
     private static RequestIssueOrderCancelCommandHandler CancelHandler(OrderAllocationTestDb db) =>
         new(db.IssueOrders, db.UnitOfWork, new TestCurrentUser(db.Keeper.Id), db.Clock);
 
-    private static async Task<(int OrderId, int Version, int AllocationId)> ReserveAsync(
+    internal static async Task<(int OrderId, int Version, int AllocationId)> ReserveAsync(
         OrderAllocationTestDb db,
         int quantity)
     {

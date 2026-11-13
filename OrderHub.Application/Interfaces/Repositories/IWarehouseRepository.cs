@@ -1,3 +1,4 @@
+using OrderHub.Application.Features.Inventory.WarehouseStock;
 using OrderHub.Application.Features.Warehouses.Contracts;
 using OrderHub.Domain.Models;
 using System.Collections.Generic;
@@ -10,6 +11,16 @@ public interface IWarehouseRepository
 {
     Task<Warehouse> GetByIdAsync(
         int id,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Header projection for the inventory screens (keeper name, address, phone, activity).</summary>
+    Task<InventoryWarehouseHeaderRow> GetInventoryHeaderAsync(
+        int id,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Inventory summaries for the given warehouses; null means every warehouse (inactive included).</summary>
+    Task<IReadOnlyList<InventoryWarehouseSummaryRow>> GetInventorySummariesAsync(
+        IReadOnlyCollection<int> warehouseIds,
         CancellationToken cancellationToken = default);
 
     /// <summary>Loads the single warehouse the user keeps, or null when the user keeps none.</summary>

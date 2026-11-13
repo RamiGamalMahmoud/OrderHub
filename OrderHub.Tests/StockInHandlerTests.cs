@@ -388,5 +388,29 @@ public sealed class StockInHandlerTests
 
         public Task<bool> HasMovementsAsync(int warehouseId, CancellationToken cancellationToken = default) =>
             inner.HasMovementsAsync(warehouseId, cancellationToken);
+
+        public Task<System.Collections.Generic.IReadOnlyList<OrderHub.Application.Features.Inventory.WarehouseLedger.WarehouseLedgerProjectionRow>> GetWarehouseLedgerPageAsync(int warehouseId, int productId, int skip, int take, CancellationToken cancellationToken = default) =>
+            inner.GetWarehouseLedgerPageAsync(warehouseId, productId, skip, take, cancellationToken);
+
+        public Task<OrderHub.Application.Features.Inventory.WarehouseLedger.WarehouseProductStockRow> GetWarehouseProductStockAsync(int warehouseId, int productId, CancellationToken cancellationToken = default) =>
+            inner.GetWarehouseProductStockAsync(warehouseId, productId, cancellationToken);
+
+        public Task<OrderHub.Application.Features.Inventory.WarehouseStock.WarehouseStockTotalsRow> GetWarehouseStockTotalsAsync(int warehouseId, CancellationToken cancellationToken = default) =>
+            inner.GetWarehouseStockTotalsAsync(warehouseId, cancellationToken);
+
+        public Task<OrderHub.Application.Features.Inventory.WarehouseStock.WarehouseStockTotalsRow> GetWarehouseStockFilteredTotalsAsync(OrderHub.Application.Features.Inventory.WarehouseStock.WarehouseStockQueryFilter filter, CancellationToken cancellationToken = default) =>
+            inner.GetWarehouseStockFilteredTotalsAsync(filter, cancellationToken);
+
+        public Task<int> CountWarehouseStockAsync(OrderHub.Application.Features.Inventory.WarehouseStock.WarehouseStockQueryFilter filter, CancellationToken cancellationToken = default) =>
+            inner.CountWarehouseStockAsync(filter, cancellationToken);
+
+        public Task<int> CountWarehouseStockWithStockAsync(OrderHub.Application.Features.Inventory.WarehouseStock.WarehouseStockQueryFilter filter, CancellationToken cancellationToken = default) =>
+            inner.CountWarehouseStockWithStockAsync(filter, cancellationToken);
+
+        public Task<System.Collections.Generic.IReadOnlyList<OrderHub.Application.Features.Inventory.WarehouseStock.WarehouseStockProjectionRow>> GetWarehouseStockPageAsync(OrderHub.Application.Features.Inventory.WarehouseStock.WarehouseStockQueryFilter filter, CancellationToken cancellationToken = default) =>
+            inner.GetWarehouseStockPageAsync(filter, cancellationToken);
+
+        public Task<System.Collections.Generic.IReadOnlyList<OrderHub.Application.Features.Inventory.WarehouseStock.StockCategoryOption>> GetWarehouseStockCategoriesAsync(int warehouseId, CancellationToken cancellationToken = default) =>
+            inner.GetWarehouseStockCategoriesAsync(warehouseId, cancellationToken);
     }
 }

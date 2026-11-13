@@ -21,6 +21,7 @@ public partial class Index
     private string? _error;
     private bool _loading = true;
     private bool _canWrite;
+    private bool _canViewStock;
     private bool _dialogOpen;
 
     private static readonly PageScaffold.CrumbItem[] _scaffoldCrumbs =
@@ -65,6 +66,7 @@ public partial class Index
     {
         _loading = true;
         _canWrite = false;
+        _canViewStock = false;
         _error = null;
         _currentPage = 0;
 
@@ -74,9 +76,13 @@ public partial class Index
             bool canWrite = await PermissionAccess.IsAllowedAsync(
                 PermissionFeature.Warehouses,
                 PermissionLevel.Write);
+            bool canViewStock = await PermissionAccess.IsAllowedAsync(
+                PermissionFeature.Inventory,
+                PermissionLevel.Read);
 
             _warehouses = warehouses.ToList();
             _canWrite = canWrite;
+            _canViewStock = canViewStock;
         }
         catch (AuthorizationDeniedException)
         {

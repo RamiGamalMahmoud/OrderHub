@@ -1,4 +1,6 @@
 using OrderHub.Application.Features.Inventory.GetStockAvailability;
+using OrderHub.Application.Features.Inventory.WarehouseLedger;
+using OrderHub.Application.Features.Inventory.WarehouseStock;
 using OrderHub.Domain.Models;
 using System.Collections.Generic;
 using System.Threading;
@@ -70,6 +72,48 @@ public interface IInventoryRepository
     Task<int> CountLedgerAsync(
         int warehouseId,
         int? productId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Ledger page with performer name and the receipt/issue-order references, newest first.</summary>
+    Task<IReadOnlyList<WarehouseLedgerProjectionRow>> GetWarehouseLedgerPageAsync(
+        int warehouseId,
+        int productId,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Current balance of one product inside a warehouse, or null when no balance row exists.</summary>
+    Task<WarehouseProductStockRow> GetWarehouseProductStockAsync(
+        int warehouseId,
+        int productId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Full totals of a warehouse (ignores every filter).</summary>
+    Task<WarehouseStockTotalsRow> GetWarehouseStockTotalsAsync(
+        int warehouseId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Totals after the category/status filters only (search and hide-zero do not affect cards).</summary>
+    Task<WarehouseStockTotalsRow> GetWarehouseStockFilteredTotalsAsync(
+        WarehouseStockQueryFilter filter,
+        CancellationToken cancellationToken = default);
+
+    Task<int> CountWarehouseStockAsync(
+        WarehouseStockQueryFilter filter,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Count of the filtered rows that carry positive physical stock.</summary>
+    Task<int> CountWarehouseStockWithStockAsync(
+        WarehouseStockQueryFilter filter,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<WarehouseStockProjectionRow>> GetWarehouseStockPageAsync(
+        WarehouseStockQueryFilter filter,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Categories that actually have products in the warehouse, for the filter select.</summary>
+    Task<IReadOnlyList<StockCategoryOption>> GetWarehouseStockCategoriesAsync(
+        int warehouseId,
         CancellationToken cancellationToken = default);
 
     /// <summary>True when the warehouse already has any ledger movement (used by the opening-balance rule).</summary>
