@@ -1,0 +1,282 @@
+@page "/inventory/balances"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.Inventory,
+    PermissionLevel.Read)]
+
+@inject IRequestExecutor Executor
+@inject NavigationManager Navigation
+@inject IDialogService Dialogs
+@inject ILogger<Index> Logger
+
+<PageTitle>أرصدة المخزون</PageTitle>
+
+<div class="space-y-5">
+    <PageScaffold Title="أرصدة المخزون"
+                  Description="@(_state?.ScopeLabel ?? "أرصدة المنتجات مجمعة من المخازن المتاحة لك")"
+                  Crumbs="_crumbs"
+                  Count="@_state?.Totals.ProductCount">
+        <Actions>
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Primary"
+                       Size="Size.Large"
+                       Class="oh-btn oh-btn--secondary"
+                       StartIcon="@Icons.Material.Filled.Warehouse"
+                       Href="/inventory">
+                عرض حسب المخزن
+            </MudButton>
+        </Actions>
+    </PageScaffold>
+
+    @if (_error is not null)
+    {
+        <div class="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+            <p class="text-sm font-bold text-rose-800">@_error</p>
+            <button type="button" class="oh-btn oh-btn--secondary oh-btn--sm mt-3" @onclick="RefreshAsync">
+                إعادة المحاولة
+            </button>
+        </div>
+    }
+
+    @if (_state is not null)
+    {
+        <section class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <span class="text-xs font-semibold text-slate-500">إجمالي الكميات</span>
+                <p class="mt-1 text-2xl font-black text-slate-900">@Format(_state.Totals.StockOnHand)</p>
+            </div>
+            <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 shadow-sm">
+                <span class="text-xs font-semibold text-emerald-700">المتاح</span>
+                <p class="mt-1 text-2xl font-black text-emerald-800">@Format(_state.Totals.Available)</p>
+            </div>
+            <div class="rounded-2xl border border-sky-100 bg-sky-50 p-4 shadow-sm">
+                <span class="text-xs font-semibold text-sky-700">المحجوز</span>
+                <p class="mt-1 text-2xl font-black text-sky-800">@Format(_state.Totals.ReservedOnHand)</p>
+            </div>
+            <div class="rounded-2xl border border-amber-100 bg-amber-50 p-4 shadow-sm">
+                <span class="text-xs font-semibold text-amber-700">التالف</span>
+                <p class="mt-1 text-2xl font-black text-amber-800">@Format(_state.Totals.DamagedQty)</p>
+            </div>
+        </section>
+
+        <p class="text-xs text-slate-500">
+            المنتجات في النطاق: <strong class="text-slate-700">@Format(_state.Totals.ProductCount)</strong>
+            · منها برصيد فعلي: <strong class="text-slate-700">@Format(_state.Totals.WithStockCount)</strong>
+            @if (_state.IsKeeperScoped)
+            {
+                <span class="rounded-full bg-slate-100 px-2.5 py-1 font-bold text-slate-600">عرض مخزنك فقط</span>
+            }
+        </p>
+
+        @if (_state.HasFilteredView)
+        {
+            <div class="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-xs text-sky-900">
+                الإجماليات بعد التصفية:
+                <strong>@Format(_state.FilteredTotals.StockOnHand)</strong> كلي ·
+                <strong>@Format(_state.FilteredTotals.Available)</strong> متاح ·
+                <strong>@Format(_state.FilteredTotals.ReservedOnHand)</strong> محجوز ·
+                <strong>@Format(_state.FilteredTotals.DamagedQty)</strong> تالف ·
+                <strong>@Format(_state.FilteredTotals.ProductCount)</strong> منتج
+            </div>
+        }
+    }
+
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 px-4 py-3">
+            <MudTextField T="string"
+                          Value="_search"
+                          ValueChanged="SearchChangedAsync"
+                          Placeholder="ابحث بالاسم أو الكود..."
+                          aria-label="البحث في أرصدة المنتجات"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Margin="Margin.Dense"
+                          Immediate="true"
+                          Clearable="true"
+                          Class="w-full sm:max-w-xs" />
+
+            <MudSelect T="int?"
+                       Value="_categoryId"
+                       ValueChanged="OnCategoryChangedAsync"
+                       Label="القسم"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Dense="true"
+                       Class="w-full sm:w-44"
+                       AnchorOrigin="Origin.BottomCenter">
+                <MudSelectItem T="int?" Value="null">كل الأقسام</MudSelectItem>
+                @if (_state is not null)
+                {
+                    @foreach (var category in _state.Categories)
+                    {
+                        <MudSelectItem T="int?" Value="@((int?)category.Id)">
+                            @category.Name (@Format(category.ProductCount))
+                        </MudSelectItem>
+                    }
+                }
+            </MudSelect>
+
+            <MudSelect T="StockStatusFilter"
+                       Value="_status"
+                       ValueChanged="OnStatusChangedAsync"
+                       Label="حالة الرصيد"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Dense="true"
+                       Class="w-full sm:w-44"
+                       AnchorOrigin="Origin.BottomCenter">
+                @foreach (StockStatusFilter status in Enum.GetValues<StockStatusFilter>())
+                {
+                    <MudSelectItem T="StockStatusFilter" Value="@status">
+                        @InventoryPresentation.StockStatusLabel(status)
+                    </MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudCheckBox T="bool"
+                         Value="_hideZero"
+                         ValueChanged="OnHideZeroChangedAsync"
+                         Label="إخفاء الأصفار"
+                         Dense="true"
+                         Color="Color.Primary" />
+
+            <div class="flex-1"></div>
+
+            <MudTooltip Text="تحديث الأرصدة">
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                               OnClick="RefreshAsync"
+                               aria-label="تحديث الأرصدة"
+                               Disabled="_loading"
+                               Class="oh-btn oh-btn--icon oh-btn--secondary oh-btn--sm" />
+            </MudTooltip>
+        </div>
+
+        <MudTable T="ConsolidatedStockRow"
+                  @ref="_table"
+                  ServerData="LoadServerDataAsync"
+                  RowsPerPage="@_pageSize"
+                  Loading="_loading"
+                  Dense="true"
+                  Hover="true"
+                  Elevation="0"
+                  Square="true"
+                  Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh Class="text-xs font-bold text-slate-500">
+                    <button type="button" class="inline-flex items-center gap-1 hover:text-brand-700" @onclick="() => ToggleSortAsync(StockSortColumn.ProductName)">
+                        المنتج
+                        <MudIcon Icon="@SortIcon(StockSortColumn.ProductName)" Size="Size.Small" />
+                    </button>
+                </MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">القسم</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">
+                    <button type="button" class="inline-flex items-center gap-1 hover:text-brand-700" @onclick="() => ToggleSortAsync(StockSortColumn.Physical)">
+                        الكلي
+                        <MudIcon Icon="@SortIcon(StockSortColumn.Physical)" Size="Size.Small" />
+                    </button>
+                </MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">
+                    <button type="button" class="inline-flex items-center gap-1 hover:text-brand-700" @onclick="() => ToggleSortAsync(StockSortColumn.Reserved)">
+                        المحجوز
+                        <MudIcon Icon="@SortIcon(StockSortColumn.Reserved)" Size="Size.Small" />
+                    </button>
+                </MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">
+                    <button type="button" class="inline-flex items-center gap-1 hover:text-brand-700" @onclick="() => ToggleSortAsync(StockSortColumn.Available)">
+                        المتاح
+                        <MudIcon Icon="@SortIcon(StockSortColumn.Available)" Size="Size.Small" />
+                    </button>
+                </MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">
+                    <button type="button" class="inline-flex items-center gap-1 hover:text-brand-700" @onclick="() => ToggleSortAsync(StockSortColumn.Damaged)">
+                        التالف
+                        <MudIcon Icon="@SortIcon(StockSortColumn.Damaged)" Size="Size.Small" />
+                    </button>
+                </MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">الحالة</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">المخازن</MudTh>
+                <MudTh Class="text-xs font-bold text-slate-500">آخر حركة</MudTh>
+                <MudTh Class="w-24 text-xs font-bold text-slate-500">
+                    <span class="sr-only">التوزيع</span>
+                </MudTh>
+            </HeaderContent>
+
+            <RowTemplate Context="row">
+                <MudTd DataLabel="المنتج" Style="overflow-wrap:anywhere">
+                    <span class="block text-sm font-bold text-slate-900">@row.ProductName</span>
+                    <span class="mt-0.5 block text-xs text-slate-500" dir="ltr">@row.ProductCode</span>
+                </MudTd>
+                <MudTd DataLabel="القسم">
+                    <span class="text-sm text-slate-700">@row.CategoryName</span>
+                </MudTd>
+                <MudTd DataLabel="الكلي">
+                    <span class="text-sm font-black text-slate-900">@Format(row.StockOnHand)</span>
+                </MudTd>
+                <MudTd DataLabel="المحجوز">
+                    <span class="text-sm font-bold text-sky-700">@Format(row.ReservedOnHand)</span>
+                </MudTd>
+                <MudTd DataLabel="المتاح">
+                    <span class="text-sm font-black text-emerald-700">@Format(row.Available)</span>
+                </MudTd>
+                <MudTd DataLabel="التالف">
+                    <span class="text-sm font-bold text-amber-700">@Format(row.DamagedQty)</span>
+                </MudTd>
+                <MudTd DataLabel="الحالة">
+                    <span class="@($"rounded-full border px-2.5 py-1 text-[11px] font-bold {StatusTag(row.Status)}")">
+                        @InventoryPresentation.StockStatusLabel(row.Status)
+                    </span>
+                </MudTd>
+                <MudTd DataLabel="المخازن">
+                    <span class="text-sm font-bold text-slate-700">@Format(row.WarehouseCount)</span>
+                </MudTd>
+                <MudTd DataLabel="آخر حركة">
+                    @if (row.LastMovementAtUtc.HasValue)
+                    {
+                        <UserLocalTime Value="row.LastMovementAtUtc" />
+                    }
+                    else
+                    {
+                        <span class="text-xs text-slate-400">—</span>
+                    }
+                </MudTd>
+                <MudTd DataLabel="التوزيع">
+                    <MudButton Variant="Variant.Outlined"
+                               Size="Size.Small"
+                               Class="oh-btn oh-btn--secondary oh-btn--sm"
+                               Disabled="_loading"
+                               OnClick="@(() => OpenDistributionAsync(row))">
+                        التوزيع
+                    </MudButton>
+                </MudTd>
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <div class="px-4 py-8 text-center text-sm text-slate-500">
+                    @(_error is not null
+                        ? "تعذر تحميل الأرصدة."
+                        : _state is null
+                            ? "جاري تحميل الأرصدة..."
+                            : HasFilters
+                                ? "لا توجد أرصدة تطابق عوامل التصفية الحالية."
+                                : "لا توجد أرصدة مسجلة في المخازن المتاحة لك بعد.")
+                </div>
+            </NoRecordsContent>
+
+            <LoadingContent>
+                <div class="flex flex-col items-center gap-2 py-8">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                    <p class="text-sm text-slate-500">جاري تحميل الأرصدة...</p>
+                </div>
+            </LoadingContent>
+
+            <PagerContent>
+                <TableFooter TotalItems="@_totalCount"
+                             CurrentPage="@_pageIndex"
+                             CurrentPageChanged="OnFooterPageChanged"
+                             RowsPerPage="@_pageSize"
+                             RowsPerPageChanged="OnFooterRowsPerPageChanged" />
+            </PagerContent>
+        </MudTable>
+    </section>
+</div>

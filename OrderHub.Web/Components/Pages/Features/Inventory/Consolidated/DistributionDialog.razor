@@ -1,0 +1,233 @@
+@implements IDisposable
+
+@inject IRequestExecutor Executor
+@inject ILogger<DistributionDialog> Logger
+
+<MudDialog Class="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-xl"
+           TitleClass="p-0"
+           ContentClass="p-0"
+           ActionsClass="p-0"
+           Gutters="false">
+    <TitleContent>
+        <header class="flex items-start justify-between gap-3 border-b border-slate-100 p-5">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600">
+                    <MudIcon Icon="@Icons.Material.Filled.Warehouse" Size="Size.Small" />
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-bold leading-tight text-slate-900">@ProductName</h2>
+                    <p class="mt-1 flex flex-wrap items-center gap-x-2 text-xs font-medium text-slate-500">
+                        <span dir="ltr">@ProductCode</span>
+                        @if (_result is not null)
+                        {
+                            <span>· @_result.Product.CategoryName</span>
+                        }
+                        <span>· توزيع الرصيد على المخازن</span>
+                    </p>
+                </div>
+            </div>
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Size="Size.Small"
+                           Color="Color.Default"
+                           OnClick="Close"
+                           aria-label="إغلاق النافذة"
+                           Class="oh-btn oh-btn--icon oh-btn--sm oh-btn--ghost" />
+        </header>
+    </TitleContent>
+
+    <DialogContent>
+        <div class="min-h-0 flex-1 space-y-4 overflow-y-auto bg-slate-50/70 p-5">
+            @if (_result is not null)
+            {
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <div class="rounded-xl border border-slate-200 bg-white p-3 text-center">
+                        <span class="block text-[11px] font-semibold text-slate-500">الكلي</span>
+                        <span class="block text-base font-black text-slate-900">@Format(_result.Totals.StockOnHand)</span>
+                    </div>
+                    <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-center">
+                        <span class="block text-[11px] font-semibold text-emerald-700">المتاح</span>
+                        <span class="block text-base font-black text-emerald-800">@Format(_result.Totals.Available)</span>
+                    </div>
+                    <div class="rounded-xl border border-sky-100 bg-sky-50 p-3 text-center">
+                        <span class="block text-[11px] font-semibold text-sky-700">المحجوز</span>
+                        <span class="block text-base font-black text-sky-800">@Format(_result.Totals.ReservedOnHand)</span>
+                    </div>
+                    <div class="rounded-xl border border-amber-100 bg-amber-50 p-3 text-center">
+                        <span class="block text-[11px] font-semibold text-amber-700">التالف</span>
+                        <span class="block text-base font-black text-amber-800">@Format(_result.Totals.DamagedQty)</span>
+                    </div>
+                </div>
+            }
+
+            @if (_error is not null)
+            {
+                <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+                    <p class="text-sm font-bold text-rose-800">@_error</p>
+                    <button type="button" class="oh-btn oh-btn--secondary oh-btn--sm" @onclick="LoadAsync">
+                        إعادة المحاولة
+                    </button>
+                </div>
+            }
+
+            @if (_loading && _result is null)
+            {
+                <div class="flex flex-col items-center gap-2 py-8">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                    <p class="text-sm text-slate-500">جاري تحميل توزيع المخازن...</p>
+                </div>
+            }
+            else if (_result is not null)
+            {
+                <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    <MudTable T="ProductDistributionWarehouse"
+                              Items="_result.Warehouses"
+                              Dense="true"
+                              Hover="true"
+                              Elevation="0"
+                              Square="true"
+                              Breakpoint="Breakpoint.Sm">
+                        <HeaderContent>
+                            <MudTh Class="text-xs font-bold text-slate-500">المخزن</MudTh>
+                            <MudTh Class="text-xs font-bold text-slate-500">الكلي</MudTh>
+                            <MudTh Class="text-xs font-bold text-slate-500">المحجوز</MudTh>
+                            <MudTh Class="text-xs font-bold text-slate-500">المتاح</MudTh>
+                            <MudTh Class="text-xs font-bold text-slate-500">التالف</MudTh>
+                            <MudTh Class="w-24 text-xs font-bold text-slate-500">
+                                <span class="sr-only">تفاصيل المخزن</span>
+                            </MudTh>
+                        </HeaderContent>
+
+                        <RowTemplate Context="warehouse">
+                            <MudTd DataLabel="المخزن" Style="overflow-wrap:anywhere">
+                                <span class="block text-sm font-bold text-slate-900">@warehouse.WarehouseName</span>
+                                @if (!warehouse.IsActive)
+                                {
+                                    <span class="mt-0.5 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">متوقف</span>
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="الكلي">
+                                <span class="text-sm font-black text-slate-900">@Format(warehouse.StockOnHand)</span>
+                            </MudTd>
+                            <MudTd DataLabel="المحجوز">
+                                <span class="text-sm font-bold text-sky-700">@Format(warehouse.ReservedOnHand)</span>
+                            </MudTd>
+                            <MudTd DataLabel="المتاح">
+                                <span class="text-sm font-black text-emerald-700">@Format(warehouse.Available)</span>
+                            </MudTd>
+                            <MudTd DataLabel="التالف">
+                                <span class="text-sm font-bold text-amber-700">@Format(warehouse.DamagedQty)</span>
+                            </MudTd>
+                            <MudTd DataLabel="التفاصيل">
+                                <MudButton Variant="Variant.Outlined"
+                                           Size="Size.Small"
+                                           Class="oh-btn oh-btn--secondary oh-btn--sm"
+                                           Href="@($"/inventory/warehouses/{warehouse.WarehouseId}")"
+                                           OnClick="Close">
+                                    التفاصيل
+                                </MudButton>
+                            </MudTd>
+                        </RowTemplate>
+
+                        <NoRecordsContent>
+                            <div class="px-4 py-8 text-center text-sm text-slate-500">
+                                لا يوجد رصيد لهذا المنتج في المخازن المتاحة لك.
+                            </div>
+                        </NoRecordsContent>
+                    </MudTable>
+                </div>
+            }
+        </div>
+    </DialogContent>
+
+    <DialogActions>
+        <footer class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 bg-white p-4">
+            <MudButton OnClick="Close" Variant="Variant.Text" Class="oh-btn oh-btn--secondary">إغلاق</MudButton>
+        </footer>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+
+    [Parameter] public int ProductId { get; set; }
+    [Parameter] public string ProductName { get; set; } = string.Empty;
+    [Parameter] public string ProductCode { get; set; } = string.Empty;
+
+    private readonly CancellationTokenSource _lifetime = new();
+    private ProductWarehouseDistributionResult? _result;
+    private string? _error;
+    private bool _loading = true;
+    private bool _disposed;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _loading = true;
+        _error = null;
+        try
+        {
+            using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+            var result = await Executor.ExecuteAsync(
+                new GetProductWarehouseDistributionQuery(ProductId),
+                cancellation.Token);
+            cancellation.Token.ThrowIfCancellationRequested();
+
+            if (!result.IsSuccess)
+            {
+                _result = null;
+                _error = result.ErrorMessage;
+                return;
+            }
+
+            _result = result.Value;
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
+        {
+            // Disposed while loading.
+        }
+        catch (Exception exception)
+        {
+            if (!_disposed)
+            {
+                Logger.LogError(
+                    exception,
+                    "Failed to load warehouse distribution for product {ProductId}",
+                    ProductId);
+                _result = null;
+                _error = "تعذر تحميل توزيع المخازن. يرجى المحاولة مرة أخرى.";
+            }
+        }
+        finally
+        {
+            if (!_disposed)
+            {
+                _loading = false;
+            }
+        }
+    }
+
+    private void Close() => Dialog.Close();
+
+    private static string Format(int value) => value.ToString(CultureInfo.InvariantCulture);
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        _lifetime.Cancel();
+        _lifetime.Dispose();
+    }
+}

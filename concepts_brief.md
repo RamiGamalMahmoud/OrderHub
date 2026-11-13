@@ -143,13 +143,13 @@ The concept — replace the placeholder home page with permission-derived dashbo
 
 ## Key Decisions & Staging for Next Steps
 
-### Decisions required from the owner (blocking)
-1. **Admin/Super Admin:** collapse into one admin dashboard with permission-gated admin widgets (recommended), or define the exact predicate that separates a "Super Admin" (currently only `IsAdmin` exists — no higher tier)?
-2. **Attribution:** Option A (history-based, no migration) or Option B (nullable `Order.CreatorUserId` + stamping `CreateOrderCommandHandler`)? If B: confirm the stamping is an approved behavior change and set the "unattributed" visibility (admins only, never shown inside a sales user's own dashboard).
-3. **Semantics:** define *orders needing attention* (which statuses/transitions), *delayed* (against which date field — noting no delivery-date column exists on `OrderListItem` today), *stock shortfall* (allocated-vs-balance? reorder point — none exists).
-4. **Dispatch:** confirm the ordered predicates per variant (proposal: Admin-bypass → operational+admin widgets; `Orders/Read` → orders sections; `Warehouses/Read` + is-keeper → warehouse section; none → fallback), and approve the fallback design for `data-entry`-type and zero-permission users.
-5. **Purchasing:** include (a supplier/orders read view is cheap given `Orders/Read`) or document the exclusion rationale despite the existing preset.
-6. **House rule 7 approval:** replacing `/` for all users + removing the illustrative chart, with the fallback state as the rollback story.
+### Decisions resolved (owner, 2026-11-13)
+1. **Admin/Super Admin:** COLLAPSED — one admin dashboard; admin widgets individually permission-gated (no "Super Admin" tier exists; `IsAdmin` is the ceiling).
+2. **Attribution:** Option B — new nullable `Order.CreatorUserId` + FK + index; `CreateOrderCommandHandler` stamps it. Legacy rows stay unattributed.
+3. **Semantics:** *needs attention* = non-terminal statuses (Processing / OutForDelivery / ReadyForPickup / DeliveryFailed) + orders with no status change for X days (default 3 for Processing, 7 for out-for-delivery states — tunable constants) + stock-issue orders with `CancelRequested`; *stock shortfall* = `OrderInventoryAllocation` vs current `StockBalance`. "Delayed" has no delivery-date basis and is folded into the stall rule.
+4. **Dispatch:** in-page composition on `/` — IsAdmin → admin dashboard; else current `Warehouse.KeeperUserId` of ≥1 warehouse → warehouse sections; else `Orders/Read` → sales sections scoped to `CreatorUserId = current user`; else fallback generic dashboard (real permitted counts + existing action buttons). Sections individually `PermissionView`-gated.
+5. **Purchasing:** stays out of v1 — documented deliberate gap (preset users land on the fallback until a dedicated view ships with a purchase-order feature).
+6. **House rule 7:** owner approved the full change set — `/` replaced for all users, placeholder chart/numbers removed, create-command stamping approved (future orders only), rollback = revert to current `Home.razor`; additive column needs no data rollback.
 
 ### Proposed staging (dependency-ordered)
 1. **Phase 0 — Definition lock.** Owner answers 1–6; write the widget contract table (variant × section × query × permission × fallback) and the Arabic label list. No code.

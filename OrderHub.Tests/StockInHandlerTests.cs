@@ -412,5 +412,26 @@ public sealed class StockInHandlerTests
 
         public Task<System.Collections.Generic.IReadOnlyList<OrderHub.Application.Features.Inventory.WarehouseStock.StockCategoryOption>> GetWarehouseStockCategoriesAsync(int warehouseId, CancellationToken cancellationToken = default) =>
             inner.GetWarehouseStockCategoriesAsync(warehouseId, cancellationToken);
+
+        public Task<OrderHub.Application.Features.Inventory.WarehouseStock.WarehouseStockTotalsRow> GetConsolidatedStockTotalsAsync(System.Collections.Generic.IReadOnlyCollection<int> warehouseIds, CancellationToken cancellationToken = default) =>
+            inner.GetConsolidatedStockTotalsAsync(warehouseIds, cancellationToken);
+
+        public Task<OrderHub.Application.Features.Inventory.WarehouseStock.WarehouseStockTotalsRow> GetConsolidatedStockFilteredTotalsAsync(OrderHub.Application.Features.Inventory.ConsolidatedBalances.ConsolidatedStockQueryFilter filter, CancellationToken cancellationToken = default) =>
+            inner.GetConsolidatedStockFilteredTotalsAsync(filter, cancellationToken);
+
+        public Task<int> CountConsolidatedStockAsync(OrderHub.Application.Features.Inventory.ConsolidatedBalances.ConsolidatedStockQueryFilter filter, CancellationToken cancellationToken = default) =>
+            inner.CountConsolidatedStockAsync(filter, cancellationToken);
+
+        public Task<int> CountConsolidatedStockWithStockAsync(OrderHub.Application.Features.Inventory.ConsolidatedBalances.ConsolidatedStockQueryFilter filter, CancellationToken cancellationToken = default) =>
+            inner.CountConsolidatedStockWithStockAsync(filter, cancellationToken);
+
+        public Task<System.Collections.Generic.IReadOnlyList<OrderHub.Application.Features.Inventory.ConsolidatedBalances.ConsolidatedStockProjectionRow>> GetConsolidatedStockPageAsync(OrderHub.Application.Features.Inventory.ConsolidatedBalances.ConsolidatedStockQueryFilter filter, CancellationToken cancellationToken = default) =>
+            inner.GetConsolidatedStockPageAsync(filter, cancellationToken);
+
+        public Task<System.Collections.Generic.IReadOnlyList<OrderHub.Application.Features.Inventory.WarehouseStock.StockCategoryOption>> GetConsolidatedStockCategoriesAsync(System.Collections.Generic.IReadOnlyCollection<int> warehouseIds, CancellationToken cancellationToken = default) =>
+            inner.GetConsolidatedStockCategoriesAsync(warehouseIds, cancellationToken);
+
+        public Task<System.Collections.Generic.IReadOnlyList<OrderHub.Application.Features.Inventory.ConsolidatedBalances.ProductDistributionProjectionRow>> GetProductDistributionAsync(int productId, System.Collections.Generic.IReadOnlyCollection<int> warehouseIds, CancellationToken cancellationToken = default) =>
+            inner.GetProductDistributionAsync(productId, warehouseIds, cancellationToken);
     }
 }

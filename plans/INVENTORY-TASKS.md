@@ -516,7 +516,7 @@ Manual (browser): `/inventory` as Manager and keeper; details search/filter/sort
 
 ---
 
-### [ ] T06c — Consolidated balances and product distribution
+### [x] T06c — Consolidated balances and product distribution
 
 **Goal:** `/inventory/balances` consolidates every product across the caller's warehouse scope, with per-warehouse breakdown.
 
@@ -550,6 +550,23 @@ dotnet build OrderHub.sln --configuration Release
 Manual: `/inventory/balances` as manager vs keeper; drill into a product distribution.
 
 **Proposed commit:** `feat(inventory): add consolidated stock balances`
+
+**Decisions / files (2026-11-13)**
+- Application: `ConsolidatedBalances/` — `ConsolidatedBalancesContracts.cs` (`ConsolidatedStockRow`, `ConsolidatedBalancesResult`, `ConsolidatedStockQueryFilter`, distribution records/projections), `GetConsolidatedInventoryBalancesQuery`, `GetProductWarehouseDistributionQuery` + handlers; both reuse `InventoryScope` (approve → all, keeper binding → own, other `Inventory.Read` → all) and `StockPaging.Normalize`.
+- Aggregation is per product over the scope: SQL `GROUP BY product_id` with sums and row count; status and «إخفاء الأصفار» filter the **aggregated** values (`HAVING`), never a single warehouse row; text search/category filter before aggregation. Cards: full totals ignore search/hide-zero; category/status produce filtered totals + `HasFilteredView`. Zero rows stay visible by default.
+- `Available` is always `StockOnHand - ReservedOnHand` in SQL; `LatestMovementAtUtc` is a second grouped query over the page's product ids inside the same scope (avoids correlated subqueries in grouped projections).
+- Repositories: seven `IInventoryRepository` methods (totals, filtered totals, count, with-stock count, page, category options, per-product distribution); null warehouse list = every warehouse; page sort by aggregated column with `ProductId` tiebreak; distribution inner-joins scoped warehouses with balance rows (zero quantities included) and orders by warehouse name (ordinal) then id.
+- Web: `/inventory/balances` — `PageScaffold` «أرصدة المخزون», scope label, 4 cards + product counters, filtered hint, 400 ms debounced search with cancellation, category/status selects, «إخفاء الأصفار», sortable server-side `MudTable` + `TableFooter` («عرض حسب المخزن» secondary action); «التوزيع» opens `DistributionDialog` (stock chips, per-warehouse rows, inactive badge, link to `/inventory/warehouses/{id}`).
+- Nav: «أرصدة المنتجات» → `/inventory/balances` and «أرصدة المخازن» → `/inventory` under the المخزون group, so each screen (and `/inventory/warehouses/{id}`) highlights exactly one link.
+- Tests: `ConsolidatedInventoryTests.cs` (7): cross-warehouse sum + per-warehouse parity, statuses and latest movement, keeper isolation, distribution zero rows/order/totals, keeper `NotFound`, search/category/status/hide-zero vs scope totals, paging clamp and name sort, anonymous `Unauthorized`. Full suite: **436 passed** (Debug + Release); `has-pending-model-changes` reports none.
+
+**Deviations**
+- NavMenu got two items instead of repointing the single «أرصدة المخزون» item: a shared `/inventory` item would prefix-match `/inventory/balances` and mis-highlight.
+- No unit column: the domain has no unit field (same as T06b); rows show product + code, category and the four quantities.
+- Distribution lists only warehouses that hold a balance row for the product (zero quantities included); a warehouse with no row is omitted so a keeper asking about a product absent from his warehouse gets `NotFound` rather than a fabricated zero row.
+- The consolidated totals cards materialize one small row per product (3 ints) because EF cannot translate a second `GROUP BY` over a grouped query; grid filtering, ordering and paging remain fully SQL.
+- Tests reuse the internal `StubPermissions` helper from `WarehouseBalancesTests`; the `FailingInventoryRepository` fake in `StockInHandlerTests` delegates the seven new members.
+- Browser pass deferred (same reason as T06b): no dev server running and the app needs an authenticated PostgreSQL session.
 
 ---
 

@@ -1,3 +1,4 @@
+using OrderHub.Application.Features.Inventory.ConsolidatedBalances;
 using OrderHub.Application.Features.Inventory.GetStockAvailability;
 using OrderHub.Application.Features.Inventory.WarehouseLedger;
 using OrderHub.Application.Features.Inventory.WarehouseStock;
@@ -119,5 +120,42 @@ public interface IInventoryRepository
     /// <summary>True when the warehouse already has any ledger movement (used by the opening-balance rule).</summary>
     Task<bool> HasMovementsAsync(
         int warehouseId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Full totals of the scoped warehouses after summing every product across them (filters ignored).
+    /// A null <paramref name="warehouseIds"/> means every warehouse.
+    /// </summary>
+    Task<WarehouseStockTotalsRow> GetConsolidatedStockTotalsAsync(
+        IReadOnlyCollection<int> warehouseIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Totals after the category/status filters only (search and hide-zero do not affect cards).</summary>
+    Task<WarehouseStockTotalsRow> GetConsolidatedStockFilteredTotalsAsync(
+        ConsolidatedStockQueryFilter filter,
+        CancellationToken cancellationToken = default);
+
+    Task<int> CountConsolidatedStockAsync(
+        ConsolidatedStockQueryFilter filter,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Count of the filtered products whose aggregated physical stock is positive.</summary>
+    Task<int> CountConsolidatedStockWithStockAsync(
+        ConsolidatedStockQueryFilter filter,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ConsolidatedStockProjectionRow>> GetConsolidatedStockPageAsync(
+        ConsolidatedStockQueryFilter filter,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Categories that actually have products in the scoped warehouses, for the filter select.</summary>
+    Task<IReadOnlyList<StockCategoryOption>> GetConsolidatedStockCategoriesAsync(
+        IReadOnlyCollection<int> warehouseIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Balance of one product in every scoped warehouse that holds a row for it, regardless of quantity.</summary>
+    Task<IReadOnlyList<ProductDistributionProjectionRow>> GetProductDistributionAsync(
+        int productId,
+        IReadOnlyCollection<int> warehouseIds,
         CancellationToken cancellationToken = default);
 }
