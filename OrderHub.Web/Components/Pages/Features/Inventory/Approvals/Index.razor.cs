@@ -32,6 +32,7 @@ public partial class Index
     private int _rowsPerPage = 10;
     private bool _loading = true;
     private bool _dialogOpen;
+    private int? _currentUserId;
 
     private bool _busy => _loading || _dialogOpen;
 
@@ -67,6 +68,7 @@ public partial class Index
         _currentPage = 0;
         try
         {
+            _currentUserId = (await AuthenticatedUser.GetIdentityAsync()).Id;
             var result = await Executor.ExecuteAsync(
                 new GetApprovalsQuery(_statusFilter, _typeFilter));
             if (!result.IsSuccess)
@@ -95,7 +97,7 @@ public partial class Index
 
     private bool IsSelfRequest(InventoryApprovalProjectionRow row) =>
         row.RequestType != InventoryApprovalRequestType.MovementReversal &&
-        CurrentUser.Id is int userId &&
+        _currentUserId is int userId &&
         row.RequestedByUserId == userId;
 
     private async Task OpenDecisionAsync(InventoryApprovalProjectionRow row)

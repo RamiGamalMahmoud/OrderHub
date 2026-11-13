@@ -1,8 +1,8 @@
 # Inventory (Multi-Warehouse Stock) — Executable Task Registry
 
-- **Version:** 2.2 · 2026-11-13 (T08 split into T08a–T08e)
+- **Version:** 2.3 · 2026-11-13 (T08e evidence recorded — registry complete)
 - **Sources of truth:** `plans/INVENTORY-MANAGEMENT-SPEC.md` v2.1 · `design_draft.md` (§ قرارات المالك المحسومة + § قرارات الجولة الثانية, D1–D21) · `concepts_brief.md` · `AGENTS.md`
-- **Status:** planning complete. **No inventory production code exists** (verified by repo-wide search). Every task below is unchecked. This registry fully replaces v1.0 — wherever v1.0 conflicted with the newer documents, v2.1 encodes the newer decision.
+- **Status:** implementation complete. T01–T08e are checked; the release evidence (chain, invariant matrix, migration rehearsal, PG lock proof, four-role browser pass) is recorded under T08e and the release checklist is green except the owner's commits.
 - **Execution mode:** strictly sequential tasks T01 → T08e, one migration each (plus the standalone seed migration in T01). A task is done only when its own acceptance criteria and the global definition of done pass.
 
 ---
@@ -851,11 +851,11 @@ Manual: corrupt a balance in a test DB, rebuild as HM, inspect the audit row.
 - Audit rows are stored for changed pairs only (with header counts) instead of every inspected pair, keeping the table small while still proving each repair; the run itself is always audited by its header.
 - The higher-manager gate lives in the authorization pipeline (tested via `AuthorizationBehavior` → `AuthorizationDeniedException`, which the web middleware maps to `/access-denied`), matching the existing user/role commands; the handler does not duplicate the role check.
 - Browser pass run early on the owner's request (2026-11-13) against the already running dev instance: `/inventory/rebuild` renders, the nav item shows only under «المخزون» with its active chip, the confirm dialog switches scope → warehouse select, disables confirm until a warehouse is chosen, and blocks behind a disabled page; a `SingleWarehouse` run on «المستودع» succeeded (0 inspected / 0 changed), opened the audit dialog, and refreshed the history. The pass exposed a real defect: `Rebuild`/`Counts` `_Imports.razor` lacked `OrderHub.Web.Components.Pages.Features.Orders.Workflow`, so `<UserLocalTime>` compiled to a raw `<userlocaltime>` element (RZ10012) and every date on those screens rendered blank. The import was added to `Rebuild`, `Counts` and (same defect, found in the sweep) `Returns`; `Deliverymen` already had it. Verified on a temporary Release instance (history and detail card now render localized times, rebuild and counts pages alike); Release build has no `RZ10012` left.
-- The changed-pairs table branch was not exercised visually (the dev database had no drift); it is covered by the repair/idempotency tests and code review, and remains in scope for the T08e browser pass.
+- The changed-pairs table branch was not exercised visually (the dev database had no drift); it is covered by the repair/idempotency tests and code review; carried into T08e, where the acceptance data again had no drift (see T08e deviations).
 
 ---
 
-### [ ] T08e — Acceptance and release evidence
+### [x] T08e — Acceptance and release evidence
 
 **Goal:** Prove the whole chain and produce the release evidence; the feature is functionally complete and release-ready.
 
@@ -864,6 +864,7 @@ Manual: corrupt a balance in a test DB, rebuild as HM, inspect the audit row.
 **Files**
 - Create `plans/INVENTORY-PG-LOCK-PROOF.md` — the D13 manual lock script + observed results
 - Update `plans/INVENTORY-TASKS.md` (sign-off block in this registry)
+- Fix (found by the pass): `Inventory/Approvals/Index.razor` + `Index.razor.cs` — the queue read the circuit-scope `ICurrentUser`, whose `OperationUser` is never initialized outside `AuthenticatedRequestExecutor`; opened with any pending row it threw `InvalidOperationException: Operation identity has not been initialized.` while rendering. The page now resolves the identity once per load via `AuthenticatedUser.GetIdentityAsync()` into `_currentUserId`; `IsSelfRequest` reads that field. Web-only change, no schema or application impact.
 
 **Steps**
 1. Full chain green: `dotnet restore` → Release build → full test suite → Node test.
@@ -886,17 +887,75 @@ node OrderHub.Tests/Web/order-local-time.test.mjs
 ```
 Manual: full scenario — stock-in → allocate → issue → batch (shortfall reason) → deliver → return (intact + damaged) → count → adjustment → reversal → rebuild sanity check.
 
-**Proposed commit:** `chore(inventory): record acceptance evidence and lock proof`
+**Proposed commits**
+1. `fix(inventory): resolve approval queue identity from the authenticated user`
+2. `chore(inventory): record acceptance evidence and lock proof`
+
+**Evidence (2026-11-13)**
+
+Full chain, run on the final code (after the approvals fix):
+
+| Step | Result |
+|---|---|
+| `dotnet restore OrderHub.sln` | All projects up-to-date |
+| `dotnet build OrderHub.sln --configuration Release` | Build succeeded — 0 warnings, 0 errors |
+| `dotnet test OrderHub.sln --configuration Release --no-build` | Failed 0 / Passed **495** / Skipped 0 (23 s) |
+| `node OrderHub.Tests/Web/order-local-time.test.mjs` | Passed: browser-local formatting, invalid dates, 23/25-hour DST boundaries |
+
+*Invariant matrix Q1–Q10 → passing tests*
+
+| # | Representative tests |
+|---|---|
+| Q1 | `InventoryLedgerTests.Balance_MovesWithinInvariantsAndBumpsVersion`, `Balance_ReserveCannotExceedAvailable`; `WarehouseBalancesTests.Stock_page_uses_the_available_arithmetic_for_status_totals_and_counts` |
+| Q2 | `StockIssueOrderTests.IssueBatch_accumulates_and_a_final_short_batch_requires_a_reason`; `MovementReversalTests.Approved_reversal_of_an_issue_batch_restores_stock_and_the_reservation`; `RebuildBalancesTests.Rebuild_repairs_cached_balances_from_the_ledger_and_active_allocations` |
+| Q3 | `InventoryLedgerTests.Balance_ReserveCannotExceedAvailable`; `InventoryCountApprovalTests.Approval_is_blocked_when_the_sound_result_drops_below_reservations`; `RebuildBalancesTests.Rebuild_refuses_inconsistent_reserved_quantities_without_writing` |
+| Q4 | `StockIssueOrderTests.Create_enforces_the_active_requested_cap_per_allocation`, `Cancel_request_blocks_batches_and_new_orders_until_the_order_closes`, `Closing_the_order_auto_cancels_active_issue_orders` |
+| Q5 | `StockIssueOrderTests.IssueBatch_accumulates_and_a_final_short_batch_requires_a_reason`, `IssueBatch_accepts_a_final_shortfall_with_a_reason`; `ApprovalFlowTests.Approved_edit_preserves_issued_quantities_and_records_a_pending_return` |
+| Q6 | `DeliveryRecordTests.Record_caps_deliveries_at_the_issued_quantity_and_aggregates_them`, `Record_rejects_a_quantity_above_the_remaining_cap`, `Record_rejects_delivery_before_the_issue_batches` |
+| Q7 | `InventoryReturnTests.Record_caps_at_the_remaining_returnable_quantity`, `Record_splits_intact_and_damaged_and_updates_balances`, `Record_rejects_lines_beyond_the_order_or_without_a_quantity` |
+| Q8 | `InventoryReturnTests.Disposal_request_validates_cap_binding_and_duplicates`, `Disposal_approval_deducts_damaged_once`, `Disposal_stale_and_rejection_leave_balances_untouched` |
+| Q9 | `InventoryLedgerTests.Balance_MovesWithinInvariantsAndBumpsVersion`, `Balance_DamagedNeverTouchesStockOrAvailable`; `InventoryCountApprovalTests.Approval_posts_both_adjustments_against_the_current_balance_once`; `RebuildBalancesTests.Rebuild_nets_out_reversals_and_keeps_damaged_classification` |
+| Q10 | `InventoryLedgerTests.ProtectHistory_RejectsModificationAndDeletion`, `ProtectHistory_AllowsInternalStatusTransitionOnly`, `MarkReversed_CannotBeAppliedTwice`, `Ledger_RejectsSecondReversalOfSameMovement`; `RebuildBalancesTests.Rebuild_is_idempotent_and_still_audits_the_second_run` |
+
+*Legacy order parity* — `OrderAllocationTests.Release_hook_is_a_no_op_for_legacy_orders_without_allocations`, `Readiness_ignores_stock_allocations`; `StockSourceLifecycleTests.Legacy_orders_close_without_touching_stock`, `Legacy_order_resave_requires_a_source_for_every_item`. Browser check: order `ORD-10008` (id 10021, no allocations) renders its summary, workflow timeline, confirm-failure actions and history exactly as before; the inventory blocks appear only as zero-count empty states («لم يُنشأ أمر صرف لهذا الطلب بعد», «لا توجد كميات مصروفة قابلة للتسليم») with no allocation editor or batch actions.
+
+*Migration rehearsal (populated copy)* — `orderhub-migration-rehearsal` restored from `orderhub-dev` with `pg_dump -Fc`/`pg_restore`: orders=10022, users=103, stock_balances=2, order_inventory_allocations=3, inventory_movements=5, `__EFMigrationsHistory`=41. `dotnet ef database update 20261113001132_AddStockIssueOrders --connection <copy>` reverted `AddInventoryRebuildLog`, `AddInventoryCounts`, `AddInventoryReturns`, `AddStockDeliveryRecords`, `AddInventoryApprovals` → `Done.` with business data unchanged (orders=10022, users=103, balances=2, allocations=3) and the T06 tables still present. Forward `dotnet ef database update --connection <copy>` → `Done.`, history back to 41. Single-migration rollback `… update 20261113114617_AddInventoryCounts` reverted only `AddInventoryRebuildLog` (0 log rows at that point) and re-applying restored it. Not rehearsed: reverting below `AddStockIssueOrders` — its `Down` restores the pre-warehouse numbering CHECK, which conflicts with the warehouse-kind `number_sequences` rows the feature writes; that is a data-dependent constraint, and no rollback plan goes below T06. Copy dropped afterwards.
+
+*PostgreSQL lock proof (D13)* — recorded in `plans/INVENTORY-PG-LOCK-PROOF.md`: raw FOR UPDATE session blocking, plus the real `CreateOrderCommandHandler` path with two contexts racing for the last 4 units of a stock of 5 — exactly one success, the loser receives `Conflict` + «الكمية لم تعد متاحة … أعد التوزيع.», `pg_locks` observes the ungranted row lock, and the stored balance ends at stock=5 / reserved=4 with one order persisted.
+
+*Browser pass (four roles)* — run on a disposable restore of the dev database (`orderhub-acceptance`), temporary Release instance on port 5073, temporary four-role accounts, full scenario end to end with database evidence at every step:
+
+| Role | Action | Observed |
+|---|---|---|
+| Sales | create order, allocate 3 to a warehouse, create issue order | order `ORD-10010` (id 10023); stock 8 / reserved 3; `/inventory/rebuild` and `/admin/users` blocked (`/access-denied`) |
+| Storekeeper | record closing batch for the issue order | stock 5 / reserved 0; `IssueOut` movement 6 by the keeper |
+| Sales | «تسجيل تسليم» from the order cycle | delivery record 3 = issued 3 |
+| Storekeeper | return intact 1 + damaged 1 | stock 6, damaged 1; `ReturnIn` 7 / `ReturnDamagedIn` 8 |
+| Storekeeper | disposal request (qty 1, reason «تلف أثناء التوصيل») | queued, no balance change |
+| Manager | approve the disposal | damaged 0; `DamagedDisposal` 9; request Approved by the manager |
+| Manager | count 17=17 approve with note «تم اعتماد الجرد.» | status «معتمد», no adjustment movement |
+| Higher manager | `/inventory/rebuild` → confirm | «2 زوجًا مفحوصًا / 0 تغيّر», audited by the HM account; `/admin/users` accessible |
+
+The pass found the approvals-page crash described under **Files**; after the fix the queue listed the pending request and the decision applied. Temporary accounts and the copy were removed afterwards (instance stopped, database dropped); the dev database was never written to.
+
+*Numbers and Arabic reasons* — `Program.cs` pins the request culture to neutral `ar` with no request providers, so digits never depend on the service account, and local formatting uses `CultureInfo.InvariantCulture` (`StockIn` attachment size, approval work-record numbers) with `UserLocalTime` for dates. Every visited screen showed Latin digits (orders, balances, counts 17=17, rebuild 2/0, admin 107/97/2/11, money 3,408.73 ر.س, localized dates) while labels stayed Arabic. Persisted Arabic reasons confirmed in the copy: disposal reason, count decision note, issue shortfall reason, and the Arabic `Conflict` messages on stale quantity/decisions.
+
+**Deviations**
+- The approvals fix is the only code change in this task; it was found by the required browser pass and re-verified there before the chain was rerun.
+- The rebuild changed-pairs table branch is still not exercised visually (the acceptance data had no drift). It remains covered by the repair/idempotency tests (`Rebuild_repairs_cached_balances_from_the_ledger_and_active_allocations`, `Rebuild_is_idempotent_and_still_audits_the_second_run`) and the audit dialog was verified on an empty-change run.
+- The acceptance copy was a full restore of the dev database; because the storekeeper binding is unique per user, the pass rebound warehouse keepers inside the copy only.
 
 ---
 
 ## 4. Release checklist (after T08e)
 
-1. `dotnet restore` → Release build → full test suite → Node test, per the CI chain.
-2. Migration applied to a populated copy; rollback rehearsed; results recorded.
-3. PostgreSQL lock proof (D13) executed and recorded in `plans/INVENTORY-PG-LOCK-PROOF.md`.
-4. Browser regression across roles; legacy order parity confirmed.
-5. The owner runs all commits with the proposed Conventional Commit messages.
+Status 2026-11-13 — items 1–4 verified, see the T08e evidence block above.
+
+1. ✅ `dotnet restore` → Release build → full test suite → Node test, per the CI chain (495 passed, 0 warnings, Node test green).
+2. ✅ Migration applied to a populated copy; rollback rehearsed; results recorded (T08e evidence, `orderhub-migration-rehearsal`).
+3. ✅ PostgreSQL lock proof (D13) executed and recorded in `plans/INVENTORY-PG-LOCK-PROOF.md`.
+4. ✅ Browser regression across roles; legacy order parity confirmed (four roles + `ORD-10008`; approvals-page defect fixed).
+5. ⬜ The owner runs all commits with the proposed Conventional Commit messages (pending: the approvals fix and this evidence record).
 6. **No tags are pushed by agents** (release CI is owner-only per AGENTS.md).
 
 *Registry v2.2 complete; implementation starts at T01 only after the owner approves this file.*
