@@ -1,0 +1,148 @@
+@page "/inventory/rebuild"
+
+@attribute [PermissionAuthorize(
+    PermissionFeature.Inventory,
+    PermissionLevel.Read)]
+@attribute [HigherManagerAuthorize]
+
+@inject IRequestExecutor Executor
+@inject NavigationManager Navigation
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject ILogger<Index> Logger
+
+<PageTitle>إعادة بناء الأرصدة</PageTitle>
+
+<div class="space-y-5">
+    <PageScaffold Title="إعادة بناء الأرصدة"
+                  Description="أداة إصلاح يدوية يقودها المدير الأعلى"
+                  Crumbs="_crumbs">
+        <Actions>
+            <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                           Variant="Variant.Text"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           Disabled="_busy"
+                           aria-label="تحديث سجل إعادة البناء"
+                           OnClick="LoadAsync"
+                           Class="oh-btn oh-btn--icon oh-btn--secondary oh-btn--sm" />
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Size="Size.Small"
+                       StartIcon="@Icons.Material.Outlined.Build"
+                       Disabled="_busy"
+                       OnClick="OpenRebuildAsync"
+                       Class="oh-btn oh-btn--primary oh-btn--sm">
+                إعادة بناء الأرصدة
+            </MudButton>
+        </Actions>
+    </PageScaffold>
+
+    <section class="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 shadow-sm sm:p-5">
+        <div class="flex items-start gap-3">
+            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-amber-100 bg-amber-50 text-amber-600">
+                <MudIcon Icon="@Icons.Material.Outlined.WarningAmber" Size="Size.Small" aria-hidden="true" />
+            </span>
+            <div class="space-y-1 text-xs leading-6 text-amber-900">
+                <p class="text-sm font-bold">تعيد الأرصدة المخزنة إلى ما يشتقه دفتر الحركات</p>
+                <p>
+                    يُحتسب الرصيد السليم والتالف من حركات المخزن، ويُحتسب المحجوز من التخصيصات النشطة
+                    للطلبات. تُكتب النتيجة فوق الأرصدة المخزنة، ولا تُنشئ العملية أي حركة جديدة.
+                </p>
+                <p class="font-semibold">كل عملية تُسجَّل مع قبل/بعد لكل رصيد تغيّر، وتتطلب تأكيدًا صريحًا.</p>
+            </div>
+        </div>
+    </section>
+
+    @if (_loading)
+    {
+        <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" aria-label="تحميل سجل إعادة البناء" />
+            <p class="mt-2 text-sm text-slate-500">جاري تحميل سجل إعادة البناء...</p>
+        </div>
+    }
+    else if (_error is not null)
+    {
+        <div class="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+            <p class="text-sm font-bold text-rose-800">@_error</p>
+            <button type="button" class="oh-btn oh-btn--secondary oh-btn--sm mt-3" @onclick="LoadAsync">
+                إعادة المحاولة
+            </button>
+        </div>
+    }
+    else
+    {
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-100 px-4 py-3">
+                <h2 class="text-sm font-bold text-slate-900">سجل عمليات إعادة البناء</h2>
+                <p class="mt-0.5 text-xs text-slate-500">
+                    آخر @_runs.Count عملية؛ يظهر فقط الأرصدة التي تغيّرت قيمها في كل عملية.
+                </p>
+            </div>
+
+            @if (_runs.Count == 0)
+            {
+                <div class="p-8 text-center">
+                    <span class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                        <MudIcon Icon="@Icons.Material.Outlined.Build" aria-hidden="true" />
+                    </span>
+                    <p class="text-base font-bold text-slate-900">لم تُنفَّذ أي عملية إعادة بناء بعد.</p>
+                    <p class="mt-1 text-sm text-slate-500">
+                        استخدم الزر أعلاه لاختيار النطاق وتأكيد العملية.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <MudTable T="RebuildRunRow"
+                          Items="_runs"
+                          Dense="true"
+                          Hover="true"
+                          Elevation="0"
+                          Square="true"
+                          Breakpoint="Breakpoint.Md">
+                    <HeaderContent>
+                        <MudTh Class="text-xs font-bold text-slate-500">التاريخ</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">النطاق</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">نفّذها</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">أزواج مفحوصة</MudTh>
+                        <MudTh Class="text-xs font-bold text-slate-500">أزواج تغيّرت</MudTh>
+                        <MudTh Class="w-24 text-xs font-bold text-slate-500">
+                            <span class="sr-only">الإجراءات</span>
+                        </MudTh>
+                    </HeaderContent>
+                    <RowTemplate Context="run">
+                        <MudTd DataLabel="التاريخ">
+                            <UserLocalTime Value="run.PerformedAtUtc" />
+                        </MudTd>
+                        <MudTd DataLabel="النطاق">
+                            <span class="text-sm font-semibold text-slate-700">@ScopeLabel(run)</span>
+                        </MudTd>
+                        <MudTd DataLabel="نفّذها">
+                            <span class="text-sm text-slate-700">@run.PerformedBy</span>
+                        </MudTd>
+                        <MudTd DataLabel="أزواج مفحوصة">
+                            <span class="text-sm font-semibold text-slate-700">
+                                @run.InspectedPairs.ToString(CultureInfo.InvariantCulture)
+                            </span>
+                        </MudTd>
+                        <MudTd DataLabel="أزواج تغيّرت">
+                            <span class="@($"rounded-full border px-2 py-0.5 text-[11px] font-bold {(run.ChangedPairs > 0 ? "border-amber-200 bg-amber-50 text-amber-700" : "border-slate-200 bg-slate-50 text-slate-600")}")">
+                                @run.ChangedPairs.ToString(CultureInfo.InvariantCulture)
+                            </span>
+                        </MudTd>
+                        <MudTd DataLabel="الإجراءات">
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       Class="oh-btn oh-btn--secondary oh-btn--sm"
+                                       OnClick="@(() => OpenLogAsync(run.Id))">
+                                عرض
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </section>
+    }
+</div>

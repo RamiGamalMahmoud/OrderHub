@@ -806,7 +806,7 @@ Manual: open a count, enter both columns, add a backdated movement, review `Incl
 
 ---
 
-### [ ] T08d — Balance rebuild tool
+### [x] T08d — Balance rebuild tool
 
 **Goal:** An explicit Higher-Manager rebuild that recomputes cached balances from the ledger and active allocations, with an audit trail.
 
@@ -838,6 +838,20 @@ dotnet build OrderHub.sln --configuration Release
 Manual: corrupt a balance in a test DB, rebuild as HM, inspect the audit row.
 
 **Proposed commit:** `feat(inventory): add higher-manager balance rebuild tool`
+
+**Decisions / files (2026-11-13)**
+- Domain: `InventoryRebuildLog` (actor, scope, optional warehouse, inspected/changed pair counts) + `InventoryRebuildLogLine` (before/after `StockOnHand`, `ReservedOnHand`, `DamagedQty` per pair) + `InventoryRebuildScope` (`AllWarehouses`/`SingleWarehouse`). `StockBalance.Rebuild(stock, reserved, damaged)` writes absolute values, validates non-negative and `reserved ≤ stock`, and returns `false` without touching `Version` when the row already matches. Migration `AddInventoryRebuildLog` creates only the two new tables and their indexes (`has-pending-model-changes` clean).
+- Command `RebuildBalancesCommand(Scope, WarehouseId?)` is `[RequirePermission(Inventory, Approve)]` + `[RequireHigherManager]` — explicit only, never scheduled. `SingleWarehouse` requires an existing warehouse; `AllWarehouses` rejects a warehouse id. The run is one transaction: PG takes `FOR UPDATE` over the whole scope (ordered by pair, because the rebuild may touch every row; no-op on SQLite), then derives values, applies them, writes the audit rows and commits atomically.
+- Derivation: sound/damaged = Σ signed ledger rows by `EffectiveAtUtc`, reversals classified by their original movement's type; reserved = Σ `Qty − IssuedQty` of active warehouse allocations (Q9). Missing balance rows are created only when a derived value is non-zero. No movement rows are written (asserted). Negative derived stock/damaged or `reserved > stock` aborts with `"Conflict"` before saving and names the product; no partial writes and no audit row.
+- Audit: header stores actor, time, scope, `InspectedPairs`, `ChangedPairs`; lines store before/after only for pairs that changed. A no-op run still writes a header with `ChangedPairs = 0`, so repeat runs stay idempotent yet audited. The command result returns the first 100 changed pairs for immediate display.
+- Web: `/inventory/rebuild` (`Inventory.Read` + `[HigherManagerAuthorize]`) with the warning card, history table (last 10) and detail dialog. `RebuildBalancesDialog` = scope select + warehouse + explicit confirm (one primary CTA); `RebuildLogDialog` = header summary + before/after table. Nav item «إعادة بناء الأرصدة» under «المخزون» with `AdminOnly: true` hides it from non-HM roles.
+- Tests: `RebuildBalancesTests.cs` (7) — ledger + allocation repair, idempotency with a second-run audit, single-warehouse scope isolation, missing-row creation, reversal netting with damaged classification, inconsistent reservation conflict with no writes, non-HM denial through `AuthorizationBehavior`. Full suite: **495 passed** (Debug + Release); Release build clean; no pending model changes.
+
+**Deviations**
+- Audit rows are stored for changed pairs only (with header counts) instead of every inspected pair, keeping the table small while still proving each repair; the run itself is always audited by its header.
+- The higher-manager gate lives in the authorization pipeline (tested via `AuthorizationBehavior` → `AuthorizationDeniedException`, which the web middleware maps to `/access-denied`), matching the existing user/role commands; the handler does not duplicate the role check.
+- Browser pass run early on the owner's request (2026-11-13) against the already running dev instance: `/inventory/rebuild` renders, the nav item shows only under «المخزون» with its active chip, the confirm dialog switches scope → warehouse select, disables confirm until a warehouse is chosen, and blocks behind a disabled page; a `SingleWarehouse` run on «المستودع» succeeded (0 inspected / 0 changed), opened the audit dialog, and refreshed the history. The pass exposed a real defect: `Rebuild`/`Counts` `_Imports.razor` lacked `OrderHub.Web.Components.Pages.Features.Orders.Workflow`, so `<UserLocalTime>` compiled to a raw `<userlocaltime>` element (RZ10012) and every date on those screens rendered blank. The import was added to `Rebuild`, `Counts` and (same defect, found in the sweep) `Returns`; `Deliverymen` already had it. Verified on a temporary Release instance (history and detail card now render localized times, rebuild and counts pages alike); Release build has no `RZ10012` left.
+- The changed-pairs table branch was not exercised visually (the dev database had no drift); it is covered by the repair/idempotency tests and code review, and remains in scope for the T08e browser pass.
 
 ---
 

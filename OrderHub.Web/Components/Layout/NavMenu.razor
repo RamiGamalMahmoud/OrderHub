@@ -246,7 +246,9 @@ else
             new("الجرد", "/inventory/counts", Icons.Material.Outlined.Checklist, PermissionFeature.Inventory, "teal",
                 "جرد الأرصدة السليمة والتالفة واعتماد التسويات"),
             new("الاعتمادات", "/inventory/approvals", Icons.Material.Outlined.Approval, PermissionFeature.Inventory, "teal",
-                "اعتماد تعديلات الطلبات وإلغاءات الصرف وعكس الحركات", PermissionLevel.Approve)
+                "اعتماد تعديلات الطلبات وإلغاءات الصرف وعكس الحركات", PermissionLevel.Approve),
+            new("إعادة بناء الأرصدة", "/inventory/rebuild", Icons.Material.Outlined.Build, PermissionFeature.Inventory, "amber",
+                "أداة إصلاح يدوية للأرصدة من دفتر الحركات — للمدير الأعلى", PermissionLevel.Approve, AdminOnly: true)
         ],
         new("تسجيل توريد", "/inventory/stock-in", Icons.Material.Filled.Add, PermissionFeature.Inventory, "teal",
             "تسجيل توريد أو رصيد افتتاحي للمخزن المرتبط بك", PermissionLevel.Write, KeeperOnly: true)),

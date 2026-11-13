@@ -44,6 +44,7 @@ internal sealed class OrderAllocationTestDb : IDisposable
         IssueOrders = new StockIssueOrderRepository(Context);
         Approvals = new InventoryApprovalRepository(Context);
         Counts = new InventoryCountRepository(Context);
+        Rebuilds = new InventoryRebuildRepository(Context);
 
         Seed();
     }
@@ -69,6 +70,8 @@ internal sealed class OrderAllocationTestDb : IDisposable
     public InventoryApprovalRepository Approvals { get; }
 
     public InventoryCountRepository Counts { get; }
+
+    public InventoryRebuildRepository Rebuilds { get; }
 
     public City City { get; private set; } = null!;
 

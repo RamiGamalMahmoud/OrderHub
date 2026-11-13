@@ -117,6 +117,30 @@ public class StockBalance : ModelBase
         Touch();
     }
 
+    /// <summary>
+    /// Overwrites the cached quantities with the values derived from the ledger and active
+    /// allocations (higher-manager rebuild, Q9). Returns false and leaves the row untouched
+    /// when the values already match, so repeat runs stay idempotent.
+    /// </summary>
+    public bool Rebuild(int stockOnHand, int reservedOnHand, int damagedQty)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(stockOnHand);
+        ArgumentOutOfRangeException.ThrowIfNegative(reservedOnHand);
+        ArgumentOutOfRangeException.ThrowIfNegative(damagedQty);
+
+        if (reservedOnHand > stockOnHand)
+            throw new InvalidOperationException("الكمية المحجوزة تتجاوز الرصيد بعد إعادة البناء.");
+
+        if (StockOnHand == stockOnHand && ReservedOnHand == reservedOnHand && DamagedQty == damagedQty)
+            return false;
+
+        StockOnHand = stockOnHand;
+        ReservedOnHand = reservedOnHand;
+        DamagedQty = damagedQty;
+        Touch();
+        return true;
+    }
+
     private void Touch()
     {
         Version++;

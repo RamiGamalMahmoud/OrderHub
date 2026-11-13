@@ -1285,6 +1285,136 @@ namespace OrderHub.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryRebuildLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ChangedPairs")
+                        .HasColumnType("integer")
+                        .HasColumnName("changed_pairs");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("InspectedPairs")
+                        .HasColumnType("integer")
+                        .HasColumnName("inspected_pairs");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("PerformedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("performed_by_user_id");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("scope");
+
+                    b.Property<int?>("WarehouseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inventory_rebuild_logs");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_inventory_rebuild_logs_created_at");
+
+                    b.HasIndex("PerformedByUserId")
+                        .HasDatabaseName("ix_inventory_rebuild_logs_performed_by_user_id");
+
+                    b.HasIndex("WarehouseId")
+                        .HasDatabaseName("ix_inventory_rebuild_logs_warehouse_id");
+
+                    b.ToTable("inventory_rebuild_logs", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inventory_rebuild_logs_pairs", "inspected_pairs >= 0 AND changed_pairs >= 0 AND changed_pairs <= inspected_pairs");
+
+                            t.HasCheckConstraint("ck_inventory_rebuild_logs_scope_warehouse", "(scope = 'SingleWarehouse' AND warehouse_id IS NOT NULL) OR (scope = 'AllWarehouses' AND warehouse_id IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryRebuildLogLine", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AfterDamagedQty")
+                        .HasColumnType("integer")
+                        .HasColumnName("after_damaged_qty");
+
+                    b.Property<int>("AfterReservedOnHand")
+                        .HasColumnType("integer")
+                        .HasColumnName("after_reserved_on_hand");
+
+                    b.Property<int>("AfterStockOnHand")
+                        .HasColumnType("integer")
+                        .HasColumnName("after_stock_on_hand");
+
+                    b.Property<int>("BeforeDamagedQty")
+                        .HasColumnType("integer")
+                        .HasColumnName("before_damaged_qty");
+
+                    b.Property<int>("BeforeReservedOnHand")
+                        .HasColumnType("integer")
+                        .HasColumnName("before_reserved_on_hand");
+
+                    b.Property<int>("BeforeStockOnHand")
+                        .HasColumnType("integer")
+                        .HasColumnName("before_stock_on_hand");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer")
+                        .HasColumnName("product_id");
+
+                    b.Property<int>("RebuildLogId")
+                        .HasColumnType("integer")
+                        .HasColumnName("rebuild_log_id");
+
+                    b.Property<int>("WarehouseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inventory_rebuild_log_lines");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("ix_inventory_rebuild_log_lines_product_id");
+
+                    b.HasIndex("RebuildLogId")
+                        .HasDatabaseName("ix_inventory_rebuild_log_lines_rebuild_log_id");
+
+                    b.HasIndex("WarehouseId", "ProductId")
+                        .HasDatabaseName("ix_inventory_rebuild_log_lines_warehouse_id_product_id");
+
+                    b.ToTable("inventory_rebuild_log_lines", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inventory_rebuild_log_lines_quantities", "before_stock_on_hand >= 0 AND before_reserved_on_hand >= 0 AND before_damaged_qty >= 0 AND after_stock_on_hand >= 0 AND after_reserved_on_hand >= 0 AND after_damaged_qty >= 0");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.InventoryReturn", b =>
                 {
                     b.Property<int>("Id")
@@ -4122,6 +4252,56 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasConstraintName("fk_inventory_movements_warehouses_warehouse_id");
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryRebuildLog", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.User", "PerformedBy")
+                        .WithMany()
+                        .HasForeignKey("PerformedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_rebuild_logs_users_performed_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_inventory_rebuild_logs_warehouses_warehouse_id");
+
+                    b.Navigation("PerformedBy");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryRebuildLogLine", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_rebuild_log_lines_products_product_id");
+
+                    b.HasOne("OrderHub.Domain.Models.InventoryRebuildLog", "RebuildLog")
+                        .WithMany("Lines")
+                        .HasForeignKey("RebuildLogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_rebuild_log_lines_inventory_rebuild_logs_rebuild_");
+
+                    b.HasOne("OrderHub.Domain.Models.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_rebuild_log_lines_warehouses_warehouse_id");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("RebuildLog");
+
+                    b.Navigation("Warehouse");
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.InventoryReturn", b =>
                 {
                     b.HasOne("OrderHub.Domain.Models.Order", "Order")
@@ -5298,6 +5478,11 @@ namespace OrderHub.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.InventoryCount", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.InventoryRebuildLog", b =>
                 {
                     b.Navigation("Lines");
                 });
