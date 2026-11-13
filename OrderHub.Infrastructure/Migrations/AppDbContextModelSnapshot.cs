@@ -2230,6 +2230,94 @@ namespace OrderHub.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("OrderHub.Domain.Models.StockDeliveryRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AllocationId")
+                        .HasColumnType("integer")
+                        .HasColumnName("allocation_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("EffectiveAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("effective_at_utc");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified_at");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("note");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_id");
+
+                    b.Property<int>("OrderItemId")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_item_id");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer")
+                        .HasColumnName("product_id");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<int>("RecordedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("recorded_by_user_id");
+
+                    b.Property<int?>("ShipmentId")
+                        .HasColumnType("integer")
+                        .HasColumnName("shipment_id");
+
+                    b.Property<int?>("TripId")
+                        .HasColumnType("integer")
+                        .HasColumnName("trip_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stock_delivery_records");
+
+                    b.HasIndex("AllocationId")
+                        .HasDatabaseName("ix_stock_delivery_records_allocation_id");
+
+                    b.HasIndex("OrderId")
+                        .HasDatabaseName("ix_stock_delivery_records_order_id");
+
+                    b.HasIndex("OrderItemId")
+                        .HasDatabaseName("ix_stock_delivery_records_order_item_id");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("ix_stock_delivery_records_product_id");
+
+                    b.HasIndex("RecordedByUserId")
+                        .HasDatabaseName("ix_stock_delivery_records_recorded_by_user_id");
+
+                    b.HasIndex("ShipmentId")
+                        .HasDatabaseName("ix_stock_delivery_records_shipment_id");
+
+                    b.HasIndex("TripId")
+                        .HasDatabaseName("ix_stock_delivery_records_trip_id");
+
+                    b.ToTable("stock_delivery_records", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_stock_delivery_records_quantity", "quantity > 0");
+                        });
+                });
+
             modelBuilder.Entity("OrderHub.Domain.Models.StockIssueBatch", b =>
                 {
                     b.Property<int>("Id")
@@ -4143,6 +4231,70 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasConstraintName("fk_stock_balances_warehouses_warehouse_id");
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("OrderHub.Domain.Models.StockDeliveryRecord", b =>
+                {
+                    b.HasOne("OrderHub.Domain.Models.OrderInventoryAllocation", "Allocation")
+                        .WithMany()
+                        .HasForeignKey("AllocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_delivery_records_order_inventory_allocations_allocati");
+
+                    b.HasOne("OrderHub.Domain.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_delivery_records_orders_order_id");
+
+                    b.HasOne("OrderHub.Domain.Models.OrderItem", "OrderItem")
+                        .WithMany()
+                        .HasForeignKey("OrderItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_delivery_records_order_items_order_item_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_delivery_records_products_product_id");
+
+                    b.HasOne("OrderHub.Domain.Models.User", "RecordedBy")
+                        .WithMany()
+                        .HasForeignKey("RecordedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_delivery_records_users_recorded_by_user_id");
+
+                    b.HasOne("OrderHub.Domain.Models.Shipment", "Shipment")
+                        .WithMany()
+                        .HasForeignKey("ShipmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_stock_delivery_records_shipments_shipment_id");
+
+                    b.HasOne("OrderHub.Domain.Models.DeliveryTrip", "Trip")
+                        .WithMany()
+                        .HasForeignKey("TripId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_stock_delivery_records_delivery_trips_trip_id");
+
+                    b.Navigation("Allocation");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("OrderItem");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("RecordedBy");
+
+                    b.Navigation("Shipment");
+
+                    b.Navigation("Trip");
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.StockIssueBatch", b =>

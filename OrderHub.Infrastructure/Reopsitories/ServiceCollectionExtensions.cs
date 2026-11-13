@@ -20,6 +20,7 @@ internal static class ServiceCollectionExtensions
         services.AddScoped<IStockReceiptRepository, StockReceiptRepository>();
         services.AddScoped<IStockIssueOrderRepository, StockIssueOrderRepository>();
         services.AddScoped<IInventoryApprovalRepository, InventoryApprovalRepository>();
+        services.AddScoped<IStockDeliveryRepository, StockDeliveryRepository>();
         return services;
     }
 }

@@ -1,9 +1,9 @@
 # Inventory (Multi-Warehouse Stock) — Executable Task Registry
 
-- **Version:** 2.1 · 2026-11-12
+- **Version:** 2.2 · 2026-11-13 (T08 split into T08a–T08e)
 - **Sources of truth:** `plans/INVENTORY-MANAGEMENT-SPEC.md` v2.1 · `design_draft.md` (§ قرارات المالك المحسومة + § قرارات الجولة الثانية, D1–D21) · `concepts_brief.md` · `AGENTS.md`
 - **Status:** planning complete. **No inventory production code exists** (verified by repo-wide search). Every task below is unchecked. This registry fully replaces v1.0 — wherever v1.0 conflicted with the newer documents, v2.1 encodes the newer decision.
-- **Execution mode:** strictly sequential tasks T01 → T08, one migration each (plus the standalone seed migration in T01). A task is done only when its own acceptance criteria and the global definition of done pass.
+- **Execution mode:** strictly sequential tasks T01 → T08e, one migration each (plus the standalone seed migration in T01). A task is done only when its own acceptance criteria and the global definition of done pass.
 
 ---
 
@@ -60,10 +60,10 @@ Re-checked against the current code on 2026-11-12:
 | FR-05 | `UpdateOrderHandler` rebuilds a replacement `Order` and `ReplaceOrderItems` deletes + re-inserts all items; item ids unstable | `UpdateOrderHandler.cs`, `Order.cs` | T03 adds explicit client-sent item ids, validated same-order (pattern: `Order.SynchronizeDeliverySteps`, line 209) |
 | FR-06 | `Order.SynchronizeDeliverySteps` already proves the explicit-id sync pattern | `Order.cs:209` | T03 mirrors it for items (`SynchronizeOrderItems`) |
 | FR-07 | Create/update order handlers hard-require a supplier for every item | `CreateOrderCommandHandler`, `UpdateOrderHandler` | T03 changes the rule: supplier required only for items with a supplier-sourced remainder; stock-fully-sourced items save without one |
-| FR-08 | `Order.Lifecycle` exposes `DeliveryReadinessError()` / `CanArchive`; readiness knows nothing about stock | `Order.Lifecycle.cs` | T05 keeps readiness unchanged (no order-level stock gate, D19) and adds reservation release on close; the delivery cap lands in T08 |
+| FR-08 | `Order.Lifecycle` exposes `DeliveryReadinessError()` / `CanArchive`; readiness knows nothing about stock | `Order.Lifecycle.cs` | T05 keeps readiness unchanged (no order-level stock gate, D19) and adds reservation release on close; the delivery cap lands in T08a |
 | FR-09 | `AppDbContext.ProtectHistory` rejects Modified/Deleted on history entities | `AppDbContext.cs` | T02 adds `InventoryMovement` to it |
 | FR-10 | Repositories live in the misspelled `OrderHub.Infrastructure/Reopsitories/` (some namespaces `...Repositories`) | `AGENTS.md` | Match the folder/namespace of each file touched; never "fix" the typo |
-| FR-11 | Tests run SQLite in-memory (`EnsureCreated`, snake_case, `RbacTestDb` runs seed SQL explicitly) — **no PostgreSQL test harness exists and CI disables PG deliberately** | `AGENTS.md`, `RbacTestDb.cs` | T02/T03 prove CAS logic on SQLite; the real lock proof is the documented manual PG script (T08/D13) |
+| FR-11 | Tests run SQLite in-memory (`EnsureCreated`, snake_case, `RbacTestDb` runs seed SQL explicitly) — **no PostgreSQL test harness exists and CI disables PG deliberately** | `AGENTS.md`, `RbacTestDb.cs` | T02/T03 prove CAS logic on SQLite; the real lock proof is the documented manual PG script (T08e/D13) |
 | FR-12 | `AttachmentsController` + `LocalFileAccessService` have no ownership/size/type checks and store by raw uploaded name | `OrderHub.Web/Controllers/Files/AttachmentsController.cs` | T04 leaves them untouched; inventory attachments get a separate endpoint/folder/metadata entity (D14) |
 | FR-13 | Latest migration is `20261109124656_AddStandaloneTrips` | `Migrations/` | All inventory migrations timestamp after it |
 | FR-14 | `RoleFeatureCatalog` uses a hard-coded switch for name/description/icon/tone | `RoleFeatureCatalog.cs` | T01 adds two cases to all four methods or the roles editor renders English generic cards |
@@ -82,7 +82,11 @@ T01 Permissions + V2 seed + candidates + catalog + nav group
       │           └► T05 Order identity + allocations + atomic reservation + source rule
       │                └► T06 Issue orders + batches + numbering
       │                     └► T07 Approvals (edit payload / cancel / reversal)
-      │                          └► T08 Delivery records + returns/damaged/counts + rebuild + acceptance
+      │                          └► T08a Delivery records (D16)
+      │                               └► T08b Returns & damaged (Q7/Q8)
+      │                                    └► T08c Inventory counts (D20/D21)
+      │                                         └► T08d Rebuild tool (HM only)
+      │                                              └► T08e Acceptance & release
 ```
 
 Rules: strictly sequential; T03 may start only after T01 but its deactivation guard completes in T04; no task may create a migration other than its own.
@@ -172,7 +176,7 @@ Manual: `/admin/roles` as Higher Manager — 16 cards, «أمين مخزن» rea
 
 **Acceptance**
 - No API can produce a negative column or a zero/negative movement; movements are immutable after insert.
-- Reserve is atomic and race-safe at the SQLite level (CAS proven — FR-11); real lock proof is T08's PG script.
+- Reserve is atomic and race-safe at the SQLite level (CAS proven — FR-11); real lock proof is T08e's PG script.
 - Existing tests remain green.
 
 **Verify**
@@ -338,7 +342,7 @@ Manual: record stock-in with 2 lines + 1 PDF as storekeeper; verify `/inventory`
 3. Source rule change (FR-07, D17, owner-approved): the editor lets a product join the item list only after a source is chosen — warehouse(s), supplier, or both; supplier is required only when a supplier-sourced remainder exists; a fully stock-sourced item saves without a supplier; a legacy re-save (D10) requires **every** item to gain a source — code-level check with the Arabic message from the spec.
 4. Availability query: `Inventory.Read`-gated; per warehouse actual/reserved/available, descending by available; company-wide (D2). In the editor, a user without `Inventory.Read` gets supplier-only sourcing with the Arabic hint (D25-era behavior preserved).
 5. Final-save reservation (D13): in the create/update transaction, lock affected balance rows in ascending (product, warehouse) order, validate every allocation against live availability (Version check), then persist order + allocations; conflict → `"Conflict"` with «الكمية لم تعد متاحة في {المخزن}؛ أعد التوزيع.» Drafts allocate nothing; legacy history untouched.
-6. Lifecycle: **no order-level stock gate** (D19) — `DeliveryReadinessError` keeps its current non-stock semantics; the stock cap belongs to the delivery record and lands in T08. On `Delivered/Cancelled/Archived` the un-issued remainder releases (system actor + reason history row). Orders without allocations are untouched (tests assert legacy parity).
+6. Lifecycle: **no order-level stock gate** (D19) — `DeliveryReadinessError` keeps its current non-stock semantics; the stock cap belongs to the delivery record and lands in T08a. On `Delivered/Cancelled/Archived` the un-issued remainder releases (system actor + reason history row). Orders without allocations are untouched (tests assert legacy parity).
 7. Tests: identity sync (keep/move/add/remove incl. allocated-blocked case); reservation atomicity + race conflict; draft isolation; D10 enforcement; stock-only / supplier-only / mixed sources (D17); readiness unaffected by partial stock; release on the three close paths; allocation FK `Restrict` behavior; availability math + ordering.
 
 **Acceptance**
@@ -586,16 +590,16 @@ Manual: `/inventory/balances` as manager vs keeper; drill into a product distrib
 - Create `OrderHub.Tests/ApprovalFlowTests.cs`, `MovementReversalTests.cs`
 
 **Steps**
-1. Entity per SPEC §5.7: `RequestType` (`AllocationEdit`, `IssueOrderCancel`, `MovementReversal`, `DamagedDisposal` reserved for T08), typed references, `Payload` JSON (AllocationEdit only), `Reason`, `Status` (`Pending/Approved/Rejected/Stale`), `Version`, `TargetVersion`, requester/decider/times, `DecisionNote` mandatory on reject.
+1. Entity per SPEC §5.7: `RequestType` (`AllocationEdit`, `IssueOrderCancel`, `MovementReversal`, `DamagedDisposal` reserved for T08b), typed references, `Payload` JSON (AllocationEdit only), `Reason`, `Status` (`Pending/Approved/Rejected/Stale`), `Version`, `TargetVersion`, requester/decider/times, `DecisionNote` mandatory on reject.
 2. Decision protocol (D21): one CAS `WHERE Status='Pending' AND Version=@v` — zero rows → `"Conflict"` with no side effects; re-validate the target in the same transaction (order state/version + no other pending request; `CancelRequested` still at `TargetVersion`; movement still `Active`; damaged balance version) and move the request to `Stale` on drift. Share the helper across all four request types.
-3. Edit flow (D12): when an update touches items with allocations/pending issue orders, the handler stores the full proposed payload instead of applying; order + old allocations stay live; further edits blocked until decision/resubmit; on approval, one transaction — preserve issued (shortfall beyond new demand → «مرتجع مستحق» queue entry for T08), release un-issued, reserve new allocations under D13; failed reservation → edit stays pending, old state intact; new issue orders are **not** auto-created.
+3. Edit flow (D12): when an update touches items with allocations/pending issue orders, the handler stores the full proposed payload instead of applying; order + old allocations stay live; further edits blocked until decision/resubmit; on approval, one transaction — preserve issued (shortfall beyond new demand → «مرتجع مستحق» queue entry for T08b), release un-issued, reserve new allocations under D13; failed reservation → edit stays pending, old state intact; new issue orders are **not** auto-created.
 4. Issue-order cancel: decides `CancelRequested` → `Cancelled` + release un-issued only; rejection returns to its prior state with the recorded reason visible to the keeper.
 5. Reversal (D6/D4): keeper requests with mandatory reason on an `Active` movement; approval requires `Inventory.Approve`; **`Approver ≠ Requester` except `MovementReversal`**; the reversal movement takes `EffectiveAtUtc = decision time` (never the original's date) and the original is marked `Reversed`; on approval one transaction — paired `Reversal` movement + `MarkReversed` + balance re-derivation (`ApplyIn`/`ApplyOut` inverse per direction, or recompute from ledger for the affected pair); already-reversed movement rejected; reservation-side effects of reversing an `IssueOut` batch must restore the reservation and reopen the line's issued accounting (define and test explicitly).
 6. Approvals screen: queue by type with payload diff for edits; decide with reason; Arabic reasons everywhere; `Stale` rows show the system note and a resubmit action.
 7. Tests: matrix (type × requester × approver incl. the reversal exception and the Manager-execution rejection); payload atomicity; failed new reservation keeps old state; reversal restores reservation correctly; double reversal rejected; second approval decision → `"Conflict"` with no side effects; drifted target → `Stale` and resubmission.
 
 **Acceptance**
-- No sensitive operation applies without approval; requester can never approve himself except reversals and a self-recorded count (T08).
+- No sensitive operation applies without approval; requester can never approve himself except reversals and a self-recorded count (T08c).
 - A rejected/failed edit leaves the original order and reservation exactly as they were.
 - Reversal never deletes; the ledger stays append-only.
 
@@ -617,7 +621,7 @@ Manual: edit an allocated order as sales → approve as Manager → confirm issu
 - Entity (created earlier in T05 phase): `InventoryApprovalRequest` with `RequestType` (`AllocationEdit`, `IssueOrderCancel`, `MovementReversal`, `DamagedDisposal` reserved), typed target refs, `Payload` JSON (AllocationEdit only), `Reason`, `Status`, `Version`, `TargetVersion`, requester/decider/times, `DecisionNote`; additive migration `AddInventoryApprovals` — no model changes since.
 - Application `Features/Inventory/Approvals/`: `RequestOrderEditApproval` reached from `UpdateOrderHandler` when the order has issued/partially executed allocations — stores the full proposed payload and returns `"ApprovalRequired"` with the queued request; `RequestIssueOrderCancel` (keeper, reason → `CancelRequested` + pending request); `RequestMovementReversal` (keeper, reason, `Active` non-`Reversal` movement, one pending per movement); `GetApprovals` (`Inventory.Approve`), `GetApprovalDetails` (payload diff source), `DecideApproval` (`Inventory.Approve`, `TargetVersion` + `Version` CAS).
 - Decision protocol (D21): one CAS `Status='Pending' AND Version=@v`; zero rows → `"Conflict"` with no side effects; target re-validated inside the same transaction (order version/state, no competing pending request, `CancelRequested` at `TargetVersion`, movement `Active`) and drift marks the request `Stale` with a system note instead of applying.
-- Edit approval applies the stored payload in one transaction (`OrderEditApplier`): un-issued quantity released, issued preserved with excess moved to `PendingReturnQty` («مرتجع مستحق» for T08), new allocations reserved under D13 ascending (product, warehouse); a failed reservation rolls everything back — order, allocations and reservation unchanged and the request stays `Pending`. No issue orders are auto-created.
+- Edit approval applies the stored payload in one transaction (`OrderEditApplier`): un-issued quantity released, issued preserved with excess moved to `PendingReturnQty` («مرتجع مستحق» for T08b), new allocations reserved under D13 ascending (product, warehouse); a failed reservation rolls everything back — order, allocations and reservation unchanged and the request stays `Pending`. No issue orders are auto-created.
 - Cancel approval → `Cancelled` + release un-issued only + allocation `Qty` shrunk to issued; rejection restores the prior status (`PartiallyExecuted`/`Pending`) with the decision note as the visible reason. `StockIssueOrder.Cancel` itself does not touch balances — the decision handler owns the release.
 - Reversal: reversal movement `EffectiveAtUtc = decision time`, original → `Reversed`, decider recorded as actor, pairs `ApplyIn`/`ApplyOut` inverse to re-derive the balance; `IssueOut` batch reversal restores stock + reservation, rolls back `IssuedQty` accounting and reopens the order via `ReopenAfterBatchRemoval`. Self-approval allowed only for `MovementReversal`; every other type forbids approver = requester (`"Forbidden"`).
 - Repository: `InventoryApprovalRepository` projection filters/orders on the entity before projecting (`ProjectRows(IQueryable<InventoryApprovalRequest>)`) — EF cannot translate predicates over the projected record.
@@ -635,61 +639,216 @@ Manual: edit an allocated order as sales → approve as Manager → confirm issu
 
 ---
 
-### [ ] T08 — Delivery records, returns/damaged, counts, rebuild, acceptance
+### [x] T08a — Delivery records (D16)
 
-**Goal:** Close the quantity chain: delivered tracking (trip and trip-less), returns with intact/damaged, counts with the late-movement review, and the Higher-Manager rebuild tool; then the release checklist.
+**Goal:** Sales records delivered quantities per stocked order item — from the trip path or trip-less — capped by `Issued − Delivered`, and the order workflow shows delivered/remaining per item.
 
-**Depends on:** T07. **Delivers independently:** the feature is functionally complete and release-ready.
+**Depends on:** T07. **Delivers independently:** delivery tracking only; no returns, counts or rebuild.
 
-**Locked decisions:** D5, D7, D16, D19, D20, D21, SPEC §5.8–§5.10, §6.5, §6.7, Q6–Q12.
+**Locked decisions:** D16, D19, Q6, SPEC §5.10, §6.5.
+
+**Owner decisions (2026-11-13):** T08 is split into T08a–T08e, executed sequentially. Each of T08a–T08d owns exactly one additive migration (retiring the original single `AddDeliveryReturnsCounts`); T08e changes no schema.
 
 **Files**
-- Create `OrderHub.Domain/Models/StockDeliveryRecord.cs`, `InventoryReturn.cs`, `InventoryReturnLine.cs`, `InventoryCount.cs`, `InventoryCountLine.cs` + configurations (+ migration `..._AddDeliveryReturnsCounts`)
-- Create `OrderHub.Application/Features/Inventory/`: `Deliveries/RecordStockDelivery` (+ handler), `Returns/RecordReturn`, `Returns/RequestDisposal`, `Counts/StartCount`, `SaveCountLine`, `CompleteCount`, `ReviewLateMovement`, `ApproveCount`, `CancelCount`, `Rebuild/RebuildBalances`
-- Create `OrderHub.Web/Components/Pages/Features/Inventory/`: `Returns/Index.razor` (+ `ReturnDialog`, `DisposalDialog`), `Counts/Index.razor` + `Editor.razor` + `Review.razor`, `Rebuild` (Higher-Manager-only page or `[Authorize(Roles="Admin")]` area per the existing pattern)
-- Modify `OrderWorkflow` + `RecordStockDeliveryDialog.razor`; add «مرتجع مستحق» queue to the keeper views
-- Create `OrderHub.Tests/DeliveryRecordTests.cs`, `InventoryReturnTests.cs`, `InventoryCountTests.cs`, `InventoryCountApprovalTests.cs`, `RebuildBalancesTests.cs`
-- Create `docs/`-equivalent release artifact: `OrderHub.Tests/PostgresLockProof.md` (or `plans/INVENTORY-PG-LOCK-PROOF.md`) — the D13 manual lock script + observed results
+- Create `OrderHub.Domain/Models/StockDeliveryRecord.cs` + configuration + migration `..._AddStockDeliveryRecords`
+- Create `OrderHub.Application/Features/Inventory/Deliveries/RecordStockDelivery` (+ handler, contracts), `IStockDeliveryRepository` + implementation
+- Modify `OrderWorkflow` + `RecordStockDeliveryDialog.razor`; delivered/remaining per stocked item on the order details/workflow
+- Create `OrderHub.Tests/DeliveryRecordTests.cs`
 
 **Steps**
-1. `StockDeliveryRecord` (D16): order-linked, optional `TripId`/`ShipmentId`, `Quantity ≤ remaining issued` (validated under D13 locks), recorded by sales (`Orders.Write`); delivered/remaining computed by aggregation (Q6); dialog on the order workflow for trip-less paths too.
-2. Returns (Q7): keeper records against the originating order — caps enforced; intact → `ReturnIn` + balance; damaged → `ReturnDamagedIn` + `DamagedIn` (Q8 path); «مرتجع مستحق» entries (from T07 shrinking edits) appear in the queue and enter the balance only after sorting; disposal: keeper request + reason → `DamagedDisposal` approval type → Manager decision → movement (≤ `DamagedQty`).
-3. Counts (D20/D21): scope Full/Products; snapshot `BookQty` and `BookDamagedQty` per product from movements (`EffectiveAtUtc ≤ snapshot`); save never changes balance; one open count per (warehouse, product) (filtered unique + handler check); movements remain allowed while open; a line is approvable only when both counted values are entered; on approval, a late-dated movement pauses approval → Manager review (`IncludedInCount` → recompute both book balances/deltas, `Recounted` → line reopens); decision recorded; approval is a `Version` CAS on the count (second manager → `"Conflict"`) and creates up to two movements per line — `Adjustment` for `Delta` and `DamagedAdjustment` for `DamagedDelta`, each only if non-zero, applied to the **current** balance; blocked if the sound result would drop `StockOnHand` below `ReservedOnHand` or the damaged result would go below zero; the recorder may approve his own count; open counts follow the current keeper.
-4. Rebuild tool (Higher-Manager only): recomputes `StockOnHand`/`DamagedQty` from ledger by `EffectiveAtUtc` and `ReservedOnHand` from active allocations − batches; records actor, time, before/after per row; audited.
-5. Acceptance sweep + release checklist:
-   - Full restore/build/test chain green; migration applied to a populated copy + rollback rehearsed (documented in the proof file).
-   - **PostgreSQL lock proof (D13)**: scripted concurrent reservation attempt against a real PG instance demonstrating single-winner + `"Conflict"`; results recorded in `PostgresLockProof.md`.
-   - Browser pass for all four roles (sales / storekeeper / manager / higher manager) + a legacy order without allocations.
-   - Numbers: Latin digits everywhere (`CultureInfo.InvariantCulture`).
+1. Entity: `OrderId`, `OrderItemId`/`AllocationId`, `ProductId`, `Quantity > 0`, optional `TripId`/`ShipmentId`, `RecordedByUserId`, `EffectiveAtUtc`, note ≤ 200.
+2. Record by sales (`Orders.Write`) in one transaction: D13 locks on the affected balances/allocation rows, then re-validate `Quantity ≤ Issued − Delivered` for that allocation; over-cap → Arabic `"Conflict"` with no write.
+3. Delivered/remaining are aggregations over records (Q6) — never a stored counter, and delivery never re-deducts the balance.
+4. Dialog reachable from the workflow for trip-less orders too; non-stocked items keep today's trip path untouched (the dialog never appears for them).
+5. Legacy orders with no allocations behave exactly as today.
 
 **Acceptance**
-- The full chain holds: allocated → reserved → issued (batches) → delivered → returned → sorted; every invariant Q1–Q10 has a passing test.
-- Counts adjust only on approval; late movements route through review; rebuild is HM-only and audited.
+- No delivery exceeds `Issued − Delivered`; partial delivery leaves the un-issued remainder undelivered.
+- Every record is traceable to a trip or is explicitly trip-less; non-stocked behavior unchanged.
+
+**Verify**
+```powershell
+dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~DeliveryRecord"
+dotnet build OrderHub.sln --configuration Release
+```
+Manual: one stocked order delivered from a trip and one trip-less; attempt an over-cap delivery.
+
+**Proposed commit:** `feat(inventory): add order delivery tracking`
+
+**Decisions / files (2026-11-13)**
+- Domain `StockDeliveryRecord` (order/orderItem/allocation/product, `Quantity > 0`, optional `TripId` XOR `ShipmentId`, optional `Note` ≤ 200, recorder, `EffectiveAtUtc`) — no stored delivered counter; EF config `stock_delivery_records` (check `quantity > 0`, all FKs `Restrict`, indexes on order/allocation/item) + additive migration `AddStockDeliveryRecords` (one new table; `has-pending-model-changes` clean).
+- Delivered/remaining are aggregations over records (Q6): `IStockDeliveryRepository.GetDeliveredQuantityAsync` sums per allocation and `GetOrderDeliveryOverviewAsync` groups them onto `IssuedQty`; recording a delivery never re-deducts the balance (the stock left at issue).
+- `RecordStockDelivery` (`Orders.Write`) re-validates `Quantity ≤ Issued − Delivered` inside one transaction after `LockBalancesAsync` (D13); over-cap → Arabic `"Conflict"` with no write. Also rejected: anonymous user, `Quantity ≤ 0`, archived/cancelled order, released or foreign allocation, non-warehouse source, `IssuedQty = 0`, a trip/shipment that does not belong to the order, `Note > 200`.
+- `GetOrderDeliveries` (`Orders.Read`) returns rows for warehouse-sourced allocations with `IssuedQty > 0` plus the order's trips/shipments as optional link options; non-stocked items and legacy orders (no allocations) produce no rows, so today's trip path is untouched.
+- Web: new «تسليم المخزون» section in `OrderWorkflow` (issued/delivered/remaining chips per item, «تسجيل تسليم» only when writable, not archived/cancelled and `Remaining > 0`) opening `RecordStockDeliveryDialog` (prefilled quantity, optional mutually-exclusive trip/shipment, optional note with counter, primary «تسجيل التسليم»). A stale/conflict close (`Ok(false)`) shows a warning snackbar and reloads instead of reporting success.
+- Tests: `DeliveryRecordTests.cs` (9) — cap + aggregation, over-cap leaves no record, rejection before issue batches, foreign allocation, invalid trip/shipment link, cancelled order, anonymous user, non-positive quantity, note limit + trimming. Suite **466 passed** (Debug + Release).
+
+**Deviations**
+- `EffectiveAtUtc` is stored and validated (rejects the default and anything beyond now + 5 min) but the dialog always records "now"; the field stays on the command/entity for future reconciliation work.
+- The note column was absent from the first draft and is now part of the entity, migration, dialog and tests, matching Step 1 of this task.
+- Positive trip/shipment linking is proven by the repository's ownership check and the overview option list; the test harness has no deliveryman-bound trips seeded, so only the negative link path is asserted end-to-end.
+
+---
+
+### [ ] T08b — Returns, damaged handling and disposal (Q7/Q8)
+
+**Goal:** Keeper records returns against the originating order with caps, splits intact/damaged, settles «مرتجع مستحق» entries, and requests damaged-disposal approvals.
+
+**Depends on:** T08a (delivered/issued caps). **Delivers independently:** returns + disposal approval; counts and rebuild not included.
+
+**Locked decisions:** Q7, Q8, D4, D21, SPEC §5.9, §6.7.
+
+**Files**
+- Create `OrderHub.Domain/Models/InventoryReturn.cs`, `InventoryReturnLine.cs` + configurations + migration `..._AddInventoryReturns`
+- Create `OrderHub.Application/Features/Inventory/Returns/`: `RecordReturn`, `SettlePendingReturn` («مرتجع مستحق» queue), `RequestDisposal` + contracts/handlers; `IInventoryReturnRepository` + implementation
+- Modify `DecideApprovalCommandHandler` — implement the reserved `DamagedDisposal` branch (approve → movement + `DamagedDisposal` on the balance with the cap re-validated; reject/stale → no side effects)
+- Create `OrderHub.Web/Components/Pages/Features/Inventory/Returns/Index.razor` (+ `.razor.cs`), `ReturnDialog.razor`, `DisposalDialog.razor`; nav «المرتجعات»; keeper «مرتجع مستحق» queue
+- Create `OrderHub.Tests/InventoryReturnTests.cs` (caps, intact/damaged split, pending-return settlement, disposal approve/reject/stale/double-decision)
+
+**Steps**
+1. Return references the originating order (+ issue order/batch when known) and is recorded by the current keeper in one transaction with D13 locks.
+2. Caps: `IntactQty + DamagedQty ≤ issued − already returned` per order item; over-cap → Arabic validation message, no movement.
+3. Intact → `ReturnIn` + `ApplyIn`; damaged → `ReturnDamagedIn` + `DamagedIn` (separate column, never available); one return may split across both.
+4. «مرتجع مستحق» (the `PendingReturnQty` excess created by T07 shrinking edits) appears in the keeper queue and enters the balance only when the physical return/sorting is recorded; settling clears the pending quantity exactly once.
+5. Disposal: keeper request + mandatory reason, `≤ DamagedQty`, one pending per pair → Manager decision through `DecideApproval`; the approval queue shows it like the other types.
+
+**Acceptance**
+- Caps hold; damaged never enters available; pending returns settle exactly once.
+- Disposal applies only with approval, never drives `DamagedQty` below zero; rejected/stale leaves balances untouched.
+
+**Verify**
+```powershell
+dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~InventoryReturn"
+dotnet build OrderHub.sln --configuration Release
+```
+Manual: approve a shrinking edit → «مرتجع مستحق» appears → record intact + damaged → request disposal → approve as Manager.
+
+**Traps**
+- The pending-return quantity sits on the allocation — never deduct `DamagedQty` twice (return-damaged + sorting).
+- `DamagedDisposal` is already a movement type with reversal handling — do not add a new type.
+
+**Proposed commit:** `feat(inventory): add returns, damaged handling and disposal approvals`
+
+---
+
+### [ ] T08c — Inventory counts (D20/D21)
+
+**Goal:** Keeper-led counts over sound and damaged stock with late-movement review, and manager approval that posts `Adjustment`/`DamagedAdjustment` movements.
+
+**Depends on:** T08b. **Delivers independently:** counting; rebuild tool not included.
+
+**Locked decisions:** D4, D7, D20, D21, Q9–Q12, SPEC §5.8, §6.7.
+
+**Files**
+- Create `OrderHub.Domain/Models/InventoryCount.cs`, `InventoryCountLine.cs` + configurations + migration `..._AddInventoryCounts`
+- Create `OrderHub.Application/Features/Inventory/Counts/`: `StartCount`, `SaveCountLine`, `CompleteCount`, `ReviewLateMovement`, `ApproveCount`, `CancelCount` + contracts/handlers
+- Create `OrderHub.Web/Components/Pages/Features/Inventory/Counts/`: `Index.razor`, `Editor.razor`, `Review.razor` (+ code-behind); nav «الجرد»
+- Create `OrderHub.Tests/InventoryCountTests.cs`, `InventoryCountApprovalTests.cs`
+
+**Steps**
+1. Scope Full/Products; one open count per (warehouse, product) via a filtered unique index + handler check; start/save in one transaction.
+2. Snapshot `BookQty`/`BookDamagedQty` from movements with `EffectiveAtUtc ≤ snapshot` (D7); saving a line never changes balances; movements remain allowed while the count is open.
+3. A line is approvable only when both counted values are entered; `Delta`/`DamagedDelta` are computed, never typed.
+4. A late-dated movement pauses approval → Manager review: `IncludedInCount` recomputes both book values and deltas, `Recounted` reopens the line; the decision and note are recorded.
+5. Approval is a `Version` CAS on the count (second manager → `"Conflict"` with no side effects); per line up to two movements — `Adjustment` for a non-zero `Delta`, `DamagedAdjustment` for a non-zero `DamagedDelta` — applied to the **current** balance; blocked if the sound result drops `StockOnHand` below `ReservedOnHand` or the damaged result goes negative.
+6. The recorder may approve his own count (D4 exception); open counts follow the current keeper on keeper change; reject/cancel leaves balances untouched.
+
+**Acceptance**
+- Counts adjust only on approval; late movements always route through review; dual adjustment posts independently.
+- The count-time snapshot is never re-based silently; review is the only path that recomputes it.
+
+**Verify**
+```powershell
+dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~InventoryCount"
+dotnet build OrderHub.sln --configuration Release
+```
+Manual: open a count, enter both columns, add a backdated movement, review `IncludedInCount`, approve, verify the two movements.
+
+**Traps**
+- `Delta` is relative to the **count-time book balance** applied onto the **current** balance — test both review branches (double-counting).
+- Self-approval is allowed here and for reversals only.
+
+**Proposed commit:** `feat(inventory): add stock counts with approval and late-movement review`
+
+---
+
+### [ ] T08d — Balance rebuild tool
+
+**Goal:** An explicit Higher-Manager rebuild that recomputes cached balances from the ledger and active allocations, with an audit trail.
+
+**Depends on:** T08c (every movement source now exists). **Delivers independently:** a repair tool; no change to existing screens or flows.
+
+**Locked decisions:** Q9, SPEC §5.2.
+
+**Files**
+- Create `OrderHub.Domain/Models/InventoryRebuildLog.cs` (+ per-row lines) + configuration + migration `..._AddInventoryRebuildLog`
+- Create `OrderHub.Application/Features/Inventory/Rebuild/RebuildBalances` (+ handler, contracts)
+- Create `OrderHub.Web/Components/Pages/Features/Inventory/Rebuild/Index.razor` (+ `.razor.cs`) — Higher-Manager/Admin only per the existing pattern; nav item visible only to them
+- Create `OrderHub.Tests/RebuildBalancesTests.cs`
+
+**Steps**
+1. Guard: Higher-Manager/Admin only; never scheduled or automatic — an explicit command with a confirmation dialog and a scope choice (all warehouses or one).
+2. One transaction with locks over the affected pairs: `StockOnHand`/`DamagedQty` = Σ movements by `EffectiveAtUtc`; `ReservedOnHand` = active allocations − batches (Q9).
+3. Record actor, time and before/after per row in the audit table; the rebuild writes **no** movement (balances are derived, the ledger is truth).
+4. Tests: drift repair, reserved recomputation, idempotency (second run changes nothing, still audited), non-HM → `"Forbidden"`.
+
+**Acceptance**
+- HM-only, audited, idempotent, never automatic; no ledger rows created.
+- After the run `ReservedOnHand` equals active allocations − batches for every pair.
+
+**Verify**
+```powershell
+dotnet test OrderHub.sln --configuration Release --no-build --filter "FullyQualifiedName~RebuildBalances"
+dotnet build OrderHub.sln --configuration Release
+```
+Manual: corrupt a balance in a test DB, rebuild as HM, inspect the audit row.
+
+**Proposed commit:** `feat(inventory): add higher-manager balance rebuild tool`
+
+---
+
+### [ ] T08e — Acceptance and release evidence
+
+**Goal:** Prove the whole chain and produce the release evidence; the feature is functionally complete and release-ready.
+
+**Depends on:** T08a–T08d. **Delivers independently:** the release checklist is signed off.
+
+**Files**
+- Create `plans/INVENTORY-PG-LOCK-PROOF.md` — the D13 manual lock script + observed results
+- Update `plans/INVENTORY-TASKS.md` (sign-off block in this registry)
+
+**Steps**
+1. Full chain green: `dotnet restore` → Release build → full test suite → Node test.
+2. Invariant matrix Q1–Q10 has a passing test; a legacy order without allocations shows no behavior change.
+3. Migration applied to a populated copy + rollback rehearsed; results documented.
+4. **PostgreSQL lock proof (D13):** scripted concurrent reservation attempt against a real PG instance demonstrating single-winner + `"Conflict"`; results recorded in `INVENTORY-PG-LOCK-PROOF.md`.
+5. Browser pass for all four roles (sales / storekeeper / manager / higher manager) + a legacy order without allocations.
+6. Numbers: Latin digits everywhere (`CultureInfo.InvariantCulture`); Arabic reasons/notes present on every sensitive operation.
+
+**Acceptance**
+- The full chain holds: allocated → reserved → issued (batches) → delivered → returned → sorted; counts adjust only on approval; rebuild is HM-only and audited.
 - Release checklist documented and green.
 
 **Verify**
 ```powershell
+dotnet restore OrderHub.sln
+dotnet build OrderHub.sln --configuration Release
 dotnet test OrderHub.sln --configuration Release --no-build
 node OrderHub.Tests/Web/order-local-time.test.mjs
 ```
-Manual: full scenario — stock-in → allocate → issue → batch (shortfall reason) → deliver → return (intact+damaged) → count → adjustment → reversal → rebuild sanity check.
+Manual: full scenario — stock-in → allocate → issue → batch (shortfall reason) → deliver → return (intact + damaged) → count → adjustment → reversal → rebuild sanity check.
 
-**Traps**
-- `Adjustment` delta is relative to the **count-time book balance** applied onto the **current** balance — the late-movement review exists precisely to prevent double-counting; test both branches.
-- Do not let the delivery dialog appear for non-stocked items (they keep the current trip path untouched).
-- The rebuild tool must never run automatically — explicit HM command only.
-
-**Proposed commit:** `feat(inventory): add delivery tracking, returns, counts and rebuild tool`
+**Proposed commit:** `chore(inventory): record acceptance evidence and lock proof`
 
 ---
 
-## 4. Release checklist (after T08)
+## 4. Release checklist (after T08e)
 
 1. `dotnet restore` → Release build → full test suite → Node test, per the CI chain.
 2. Migration applied to a populated copy; rollback rehearsed; results recorded.
-3. PostgreSQL lock proof (D13) executed and recorded in `PostgresLockProof.md`.
+3. PostgreSQL lock proof (D13) executed and recorded in `plans/INVENTORY-PG-LOCK-PROOF.md`.
 4. Browser regression across roles; legacy order parity confirmed.
 5. The owner runs all commits with the proposed Conventional Commit messages.
 6. **No tags are pushed by agents** (release CI is owner-only per AGENTS.md).
 
-*Registry v2.1 complete; implementation starts at T01 only after the owner approves this file.*
+*Registry v2.2 complete; implementation starts at T01 only after the owner approves this file.*

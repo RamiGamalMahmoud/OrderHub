@@ -215,7 +215,7 @@ public sealed class StockIssueOrderTests
         Assert.Equal(WorkRecordStatus.Completed, Status(db, issueOrderId));
     }
 
-    private static int LineId(OrderAllocationTestDb db, int issueOrderId, int allocationId)
+    internal static int LineId(OrderAllocationTestDb db, int issueOrderId, int allocationId)
     {
         db.Context.ChangeTracker.Clear();
         return db.Context.StockIssueLines.AsNoTracking()
@@ -228,14 +228,14 @@ public sealed class StockIssueOrderTests
             .Single(order => order.Id == issueOrderId)
             .Status;
 
-    private static CreateStockIssueOrderCommand CreateCommand(
+    internal static CreateStockIssueOrderCommand CreateCommand(
         OrderAllocationTestDb db, int orderId, int allocationId, int quantity) =>
         new(new StockIssueOrderInput(
             orderId,
             db.MainWarehouse.Id,
             [new StockIssueOrderLineInput(allocationId, quantity)]));
 
-    private static RecordIssueBatchCommand BatchCommand(
+    internal static RecordIssueBatchCommand BatchCommand(
         int issueOrderId,
         int lineId,
         int quantity,
@@ -243,11 +243,11 @@ public sealed class StockIssueOrderTests
         string? reason) =>
         new(issueOrderId, final, default, [new IssueBatchLineInput(lineId, quantity, reason)]);
 
-    private static CreateStockIssueOrderCommandHandler CreateHandler(OrderAllocationTestDb db) =>
+    internal static CreateStockIssueOrderCommandHandler CreateHandler(OrderAllocationTestDb db) =>
         new(db.Orders, db.Warehouses, db.IssueOrders, db.Inventory, db.UnitOfWork,
             new TestCurrentUser(db.Sales.Id), db.Clock);
 
-    private static RecordIssueBatchCommandHandler BatchHandler(OrderAllocationTestDb db, int userId) =>
+    internal static RecordIssueBatchCommandHandler BatchHandler(OrderAllocationTestDb db, int userId) =>
         new(db.IssueOrders, db.Inventory, db.UnitOfWork, new TestCurrentUser(userId), db.Clock);
 
     private static RequestIssueOrderCancelCommandHandler CancelHandler(OrderAllocationTestDb db) =>
