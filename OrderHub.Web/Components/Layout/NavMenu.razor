@@ -108,7 +108,7 @@ else
                 aria-haspopup="true"
                 aria-expanded="@(_mobileOpen ? "true" : "false")"
                 @onclick="ToggleMobileAsync">
-            <MudIcon Icon="@(_mobileOpen ? Icons.Material.Filled.Close : Icons.Material.Filled.Menu)" Class="text-xl" />
+            <MudIcon Icon="@(_mobileOpen? Icons.Material.Filled.Close : Icons.Material.Filled.Menu)" Class="text-xl" />
         </button>
 
         @if (_mobileOpen)
@@ -215,6 +215,8 @@ else
         [
             new("الطلبات", "/orders", Icons.Material.Outlined.ShoppingBag, PermissionFeature.Orders, "blue",
                 "قائمة الطلبات الحالية والمؤرشفة"),
+            new("الطلبات المعلقة", "/orders/drafts", Icons.Material.Outlined.ShoppingBag, PermissionFeature.Orders, "purple",
+                "قائمة الطلبات المعلقة"),
             new("إنشاء طلب", "/orders/create", Icons.Material.Filled.Add, PermissionFeature.Orders, "emerald",
                 "بدء طلب جديد لعميل", PermissionLevel.Write)
         ],
