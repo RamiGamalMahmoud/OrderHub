@@ -54,11 +54,10 @@ internal sealed partial class OrderReader
                 var allowed = order.AllowedStepStatuses(step);
                 var blocker = allowed.Count > 0 || step.Status == DeliveryStatus.Completed ? null
                     : item.IsSuperseded || step.Status == DeliveryStatus.Cancelled ? "الخطوة ملغاة أو أُعيد توجيهها."
-                    : order.IsArchived ? "الطلب مؤرشف."
                     : order.IsFinal ? "أُغلق تنفيذ الخطوة مع الطلب."
                     : order.OrderStatus != OrderStatus.OutForDelivery ? "يجب بدء سلسلة التوصيل أولًا."
                     : "بانتظار إكمال الخطوة السابقة أو مراجعة جهة التنفيذ.";
-                var canReassign = !order.IsArchived && !order.IsFinal &&
+                var canReassign = !order.IsFinal &&
                     order.DeliveryMethod == DeliveryMethod.DeliveryChain && !item.IsSuperseded &&
                     step.Status is DeliveryStatus.Pending or DeliveryStatus.InProgress or DeliveryStatus.Failed;
                 var canCancel = canReassign && order.DeliverySteps.Any(other => other.Id != step.Id &&
@@ -85,11 +84,10 @@ internal sealed partial class OrderReader
             HandlerName: order.DeliveryMethod == DeliveryMethod.Pickup ? "استلام من المقر"
                 : order.DeliveryMethod == DeliveryMethod.DeliveryMan ? order.Deliveryman?.Name.Value
                 : order.ShippingCarrier?.Name.Value,
-            order.Version, order.CanEdit, order.CanArchive, order.IsArchived, order.DeliveryReadinessError(),
+            order.Version, order.CanEdit, order.DeliveryReadinessError(),
             order.AllowedStatuses(), steps,
             stepIsLatest ? latestStep!.ChangedAtUtc : lastOrderLike?.ChangedAtUtc ?? order.CreatedAt,
             latestReason, newest == OrderHistorySource.LegacyMigration,
-            order.ArchivedAtUtc, order.ArchivedByUserName, order.ArchiveReason,
             activeSteps.Count(step => step.Status != DeliveryStatus.Cancelled),
             activeSteps.Count(step => step.Status == DeliveryStatus.Completed),
             order.CanDeliverDirectly, CanReassignDirectly(order));
@@ -197,7 +195,7 @@ internal sealed partial class OrderReader
 
     private static bool CanReassignDirectly(OrderHub.Domain.Models.Order order)
     {
-        if (order.IsArchived || order.IsFinal) return false;
+        if (order.IsFinal) return false;
         var hasParty = order.DeliveryMethod switch
         {
             DeliveryMethod.DeliveryMan => order.DeliverymanId is > 0,

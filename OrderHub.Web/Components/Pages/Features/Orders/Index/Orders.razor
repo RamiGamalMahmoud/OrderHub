@@ -10,26 +10,16 @@
 @using OrderHub.Web.Components.Pages.Features.Orders.Workflow
 
 @page "/orders"
-@page "/orders/archived"
 
-<PageTitle>@(_archivedOnly ? "سجل الطلبات المؤرشفة" : "الطلبات")</PageTitle>
+<PageTitle>الطلبات</PageTitle>
 
 <OrderDrafts @bind-IsOpen="@_isDraftsOpen" />
 
 <div class="space-y-5">
-    <PageScaffold Title="@(_archivedOnly ? "سجل الطلبات المؤرشفة" : "الطلبات")"
-                  Description="@(_archivedOnly ? "البيانات والتاريخ محفوظان للقراءة فقط؛ لا توجد استعادة." : "متابعة وإدارة طلبات العملاء")"
+    <PageScaffold Title="الطلبات"
+                  Description="متابعة وإدارة طلبات العملاء"
                   Crumbs="_crumbs"
-                  Count="@_totalItems">
-        <Actions>
-            <MudButton Href="@(_archivedOnly ? "/orders" : "/orders/archived")"
-                       Variant="Variant.Text"
-                       StartIcon="@(_archivedOnly ? Icons.Material.Filled.ListAlt : Icons.Material.Filled.Inventory2)"
-                       Class="oh-btn oh-btn--secondary oh-btn--sm">
-                @(_archivedOnly ? "الطلبات الحالية" : "سجل المؤرشف")
-            </MudButton>
-        </Actions>
-    </PageScaffold>
+                  Count="@_totalItems" />
 
     <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         @* ============================================================
@@ -76,12 +66,9 @@
                 الطلبات المعلقة
             </MudButton>
 
-            @if (!_archivedOnly)
-            {
-                <CreateOrderButton
+            <CreateOrderButton
 
-                Class="oh-btn oh-btn--primary oh-btn--sm" />
-            }
+            Class="oh-btn oh-btn--primary oh-btn--sm" />
 
             <MudTooltip Text="تحديث القائمة">
                 <MudIconButton Icon="@Icons.Material.Filled.Refresh"
@@ -170,13 +157,7 @@
                 </MudTd>
 
                 <MudTd DataLabel="الحالة">
-                    <div class="flex flex-wrap gap-1.5">
-                        <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(context.OrderStatus)}")">@context.EnumItem.DisplayName</span>
-                        @if (context.IsArchived)
-                        {
-                            <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(OrderWorkflowPresentation.Neutral)}")">مؤرشف</span>
-                        }
-                    </div>
+                    <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(context.OrderStatus)}")">@context.EnumItem.DisplayName</span>
                 </MudTd>
 
                 <MudTd DataLabel="التوصيل" Class="text-sm text-slate-700">
@@ -205,7 +186,7 @@
                                            aria-label="دورة الطلب" />
                         </MudTooltip>
 
-                        @if (!context.IsArchived && context.OrderStatus == OrderStatus.Processing)
+                        @if (context.OrderStatus == OrderStatus.Processing)
                         {
                             <PermissionView Feature="PermissionFeature.Orders" Level="PermissionLevel.Write">
                                 <MudTooltip Text="تعديل الطلب">
@@ -227,11 +208,10 @@
                         <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" aria-hidden="true" />
                     </span>
                     <p class="text-base font-bold text-slate-900">
-                        @(HasFilters ? "لا توجد نتائج مطابقة" : _archivedOnly ? "لا توجد طلبات مؤرشفة." : "لا توجد طلبات.")
+                        @(HasFilters ? "لا توجد نتائج مطابقة" : "لا توجد طلبات.")
                     </p>
                     <p class="mt-1 text-sm text-slate-500">
                         @(HasFilters ? "جرّب تعديل البحث أو التصفية للحصول على نتائج."
-                            : _archivedOnly ? "ستظهر الطلبات هنا بعد أرشفتها."
                             : "أنشئ طلبًا جديدًا ليظهر في القائمة.")
                     </p>
                 </div>

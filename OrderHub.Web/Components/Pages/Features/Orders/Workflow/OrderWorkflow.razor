@@ -2,7 +2,6 @@
 @attribute [PermissionAuthorize(PermissionFeature.Orders, PermissionLevel.Read)]
 @using System.Globalization
 @using OrderHub.Application.Features.Orders.Lifecycle
-@using OrderHub.Application.Features.Orders.Archive
 @using OrderHub.Application.Features.Orders.Reassignment
 @using OrderHub.Application.Features.Inventory.IssueOrders.Contracts
 @using OrderHub.Application.Features.Inventory.IssueOrders.GetOrderIssueOrders
@@ -82,10 +81,6 @@
                     <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(OrderWorkflowPresentation.Neutral)}")">
                         @(_state.Method.HasValue ? _state.Method.Value.GetDescription() : "طريقة التوصيل غير محددة")
                     </span>
-                    @if (_state.IsArchived)
-                    {
-                        <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(OrderWorkflowPresentation.Neutral)}")">مؤرشف — للقراءة فقط</span>
-                    }
                 </div>
             </header>
 
@@ -154,13 +149,13 @@
             </header>
 
             <p class="text-xs leading-6 text-slate-600">
-                @(_state.IsArchived ? "الطلب مؤرشف؛ بياناته وسجله محفوظان، ولا يمكن تعديله أو تشغيله أو استعادته." : OrderWorkflowPresentation.Instruction(_state.Status, _state.Method))
+                @OrderWorkflowPresentation.Instruction(_state.Status, _state.Method)
             </p>
             @if (_state.CanEdit && _state.ReadinessError is not null)
             {
                 <div class="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-bold text-amber-800">لا يمكن بدء التوصيل: @_state.ReadinessError</div>
             }
-            @if (!_state.CanEdit && !_state.IsArchived && _state.Status is not (OrderStatus.Delivered or OrderStatus.Cancelled))
+            @if (!_state.CanEdit && _state.Status is not (OrderStatus.Delivered or OrderStatus.Cancelled))
             {
                 <p class="mt-1.5 text-[11px] text-slate-500">بيانات الطلب مقفولة لأن التنفيذ بدأ. العمليات المتاحة أدناه تظل مسموحة.</p>
             }
@@ -169,7 +164,7 @@
                 <div class="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-bold text-amber-800">سبب التعذر: @_state.LatestReason</div>
             }
 
-            @if (_canWrite && !_state.IsArchived)
+            @if (_canWrite)
             {
                 <div class="mt-3 flex flex-wrap items-center gap-1.5">
                     @if (_state.CanEdit)
@@ -183,13 +178,19 @@
                                    Class="@($"oh-btn oh-btn--sm {OrderWorkflowPresentation.Action(target)}")"
                                    OnClick="@(() => ChangeStatusAsync(target))">@OrderWorkflowPresentation.ActionLabel(target, _state.Status)</MudButton>
                     }
+                    @if (_state.AllowedStatuses.Contains(OrderStatus.Cancelled))
+                    {
+                        <MudButton Size="Size.Small" Disabled="_busy"
+                                   Class="@($"oh-btn oh-btn--sm {OrderWorkflowPresentation.Action(OrderStatus.Cancelled)}")"
+                                   OnClick="@(() => ChangeStatusAsync(OrderStatus.Cancelled))">@OrderWorkflowPresentation.ActionLabel(OrderStatus.Cancelled)</MudButton>
+                    }
                     @if (_state.CanDeliverDirectly)
                     {
                         <MudButton Size="Size.Small" Disabled="_busy"
                                    Class="@($"oh-btn oh-btn--sm {OrderWorkflowPresentation.Action("completed")}")"
                                    OnClick="DeliverDirectlyAsync">تأكيد التسليم المباشر</MudButton>
                     }
-                    @if (_state.AllowedStatuses.Contains(OrderStatus.Cancelled) || _state.CanArchive || _state.CanReassignDirectly)
+                    @if (_state.CanReassignDirectly)
                     {
                         <MudMenu AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
                             <ActivatorContent>
@@ -202,22 +203,7 @@
                                 </button>
                             </ActivatorContent>
                             <ChildContent>
-                                @if (_state.CanReassignDirectly)
-                                {
-                                    <MudMenuItem OnClick="ReassignDirectlyAsync">إلغاء التكليف وإعادة التوجيه</MudMenuItem>
-                                }
-                                @if (_state.AllowedStatuses.Contains(OrderStatus.Cancelled))
-                                {
-                                    <MudMenuItem OnClick="@(() => ChangeStatusAsync(OrderStatus.Cancelled))">إلغاء الطلب</MudMenuItem>
-                                }
-                                @if (_state.CanArchive)
-                                {
-                                    <MudMenuItem OnClick="ArchiveAsync">أرشفة الطلب</MudMenuItem>
-                                }
-                                else
-                                {
-                                    <MudMenuItem Disabled="true">يجب إلغاء الطلب النشط قبل أرشفته</MudMenuItem>
-                                }
+                                <MudMenuItem OnClick="ReassignDirectlyAsync">إلغاء التكليف وإعادة التوجيه</MudMenuItem>
                             </ChildContent>
                         </MudMenu>
                     }
@@ -335,7 +321,7 @@
                     </span>
                 </div>
                 <div class="flex flex-wrap items-center gap-1.5">
-                    @if (_canWrite && !_state.IsArchived &&
+                    @if (_canWrite &&
                          _state.Status is not (OrderStatus.Delivered or OrderStatus.Cancelled))
                     {
                         <a href="@($"/inventory/issue-orders?orderId={Id}")"
@@ -462,7 +448,7 @@
                             </div>
                         </div>
 
-                        @if (_canWrite && !_state.IsArchived && _state.Status != OrderStatus.Cancelled && deliveryRow.CanDeliver)
+                        @if (_canWrite && _state.Status != OrderStatus.Cancelled && deliveryRow.CanDeliver)
                         {
                             <div class="mt-2.5 flex flex-wrap gap-1.5">
                                 <MudButton Size="Size.Small" Disabled="_busy"
@@ -474,18 +460,6 @@
                 }
             }
         </section>
-
-        @* ============================================================
-           Archive
-           ============================================================ *@
-        @if (_state.IsArchived)
-        {
-            <section class="rounded-xl border border-slate-300 bg-slate-50 p-4 shadow-xs sm:p-5">
-                <h2 class="text-sm font-bold text-slate-800">بيانات الأرشفة — لا توجد استعادة</h2>
-                <p class="mt-1.5 text-xs text-slate-700">السبب: @_state.ArchiveReason</p>
-                <p class="mt-1 text-[11px] text-slate-500"><UserLocalTime Value="_state.ArchivedAtUtc" /> — بواسطة @_state.ArchivedByUserName</p>
-            </section>
-        }
 
         <OrderHistoryPanel OrderId="Id" Version="_state.Version" AutoLoad="true" />
     }
@@ -625,20 +599,6 @@
         var result = await submit();
         if (result.IsSuccess || result.ErrorCode == "Conflict") await CompleteAsync(result);
         return result;
-    }
-
-    private async Task ArchiveAsync()
-    {
-        if (_busy || !_canWrite || _state is null || !_state.CanArchive) return;
-        _busy = true;
-        var snapshot = _state;
-        try
-        {
-            await AskAndSubmitAsync("أرشفة الطلب", "سيختفي الطلب من قائمة التشغيل، وستظل بياناته وخطواته وتاريخه ومستنداته محفوظة في الأرشيف. لا يمكن استعادته أو تعديله أو تشغيله.",
-                reason => SubmitSnapshotAsync(snapshot, () => Executor.ExecuteAsync(new ArchiveOrderCommand(snapshot.Id, snapshot.Version, reason))));
-        }
-        catch (Exception exception) { ShowFailure(exception); }
-        finally { _busy = false; }
     }
 
     private async Task DeliverDirectlyAsync()

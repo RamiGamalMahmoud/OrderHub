@@ -18,5 +18,4 @@ public record OrderListItem(
     EnumItem<OrderStatus> EnumItem,
     OrderPaymentMethodItem PaymentMethod,
     DateTime CreatedAt,
-    DeliveryMethod? DeliveryMethod = null,
-    bool IsArchived = false);
+    DeliveryMethod? DeliveryMethod = null);

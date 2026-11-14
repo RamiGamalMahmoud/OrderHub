@@ -65,8 +65,7 @@ internal class OrderRepository : IOrderRepository
             .AsNoTracking()
             .Include(order => order.Client)
             .Include(order => order.Allocations)
-            .Where(order => !order.IsArchived
-                && order.OrderStatus != OrderStatus.Delivered
+            .Where(order => order.OrderStatus != OrderStatus.Delivered
                 && order.OrderStatus != OrderStatus.Cancelled
                 && order.Allocations.Any(allocation =>
                     allocation.SourceKind == AllocationSourceKind.Warehouse &&

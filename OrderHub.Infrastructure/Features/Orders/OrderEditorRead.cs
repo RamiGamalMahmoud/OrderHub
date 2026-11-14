@@ -27,7 +27,6 @@ internal sealed partial class OrderReader
                 order.OrderSource,
                 order.Version,
                 order.OrderStatus,
-                order.IsArchived,
                 order.DeliveryCost,
                 order.DiscountType,
                 order.DiscountValue,
@@ -97,7 +96,7 @@ internal sealed partial class OrderReader
                     .Select(allocation => new OrderEditorAllocation(allocation.SourceKind, allocation.Qty,
                         allocation.WarehouseId, allocation.WarehouseName, allocation.SupplierId, allocation.SupplierName))
                     .ToList())).ToList(),
-            snapshot.DeliverySteps, snapshot.OrderSource, snapshot.Version, snapshot.OrderStatus, snapshot.IsArchived,
+            snapshot.DeliverySteps, snapshot.OrderSource, snapshot.Version, snapshot.OrderStatus,
             snapshot.DeliveryCost, snapshot.DiscountType, snapshot.DiscountValue, snapshot.DiscountAmount,
             snapshot.OrderNumber, snapshot.ModifiedAt);
     }

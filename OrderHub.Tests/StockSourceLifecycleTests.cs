@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Features.Orders.Allocations;
-using OrderHub.Application.Features.Orders.Archive;
 using OrderHub.Application.Features.Orders.Contracts;
 using OrderHub.Application.Features.Orders.Lifecycle;
 using OrderHub.Application.Features.Orders.Update;
@@ -236,22 +235,6 @@ public sealed class StockSourceLifecycleTests
         Assert.Equal(OrderAllocationStatus.Released,
             db.Context.OrderInventoryAllocations.AsNoTracking().Single().Status);
         Assert.Equal("إلغاء الطلب", db.Context.OrderStatusHistories.AsNoTracking()
-            .Single(row => row.Source == OrderHistorySource.StockRelease).Reason);
-    }
-
-    [Fact]
-    public async Task Archived_order_releases_the_un_issued_remainder()
-    {
-        using var db = new OrderAllocationTestDb();
-        var (orderId, version) = await ReserveOrderAsync(db, quantity: 3);
-
-        var archived = await Lifecycle(db).Handle(new ArchiveOrderCommand(orderId, version, "تنظيف الطلبات"), default);
-
-        Assert.True(archived.IsSuccess);
-        db.Context.ChangeTracker.Clear();
-        Assert.Equal(0, db.ReloadBalance(db.MainWarehouse, db.Product).ReservedOnHand);
-        Assert.Equal(10, db.ReloadBalance(db.MainWarehouse, db.Product).StockOnHand);
-        Assert.Equal("أرشفة الطلب", db.Context.OrderStatusHistories.AsNoTracking()
             .Single(row => row.Source == OrderHistorySource.StockRelease).Reason);
     }
 

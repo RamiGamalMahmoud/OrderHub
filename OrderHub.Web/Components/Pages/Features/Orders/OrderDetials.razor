@@ -111,10 +111,6 @@
                             @StatusLabel
                         </span>
                         <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(OrderWorkflowPresentation.Neutral)}")">@DeliveryMethodLabel</span>
-                        @if (_workflow?.IsArchived == true)
-                        {
-                            <span class="@($"{OrderWorkflowPresentation.TagBase} {OrderWorkflowPresentation.Tag(OrderWorkflowPresentation.Neutral)}")">مؤرشف — للقراءة فقط</span>
-                        }
                         <span class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-700" dir="ltr">
                             @_order.Header.OrderNumber
                             <button type="button"

@@ -1,6 +1,5 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Routing;
 using MudBlazor;
 using OrderHub.Application.Common.Lookups;
 using OrderHub.Application.Features.Setup.PaymentMethods.Contracts;
@@ -12,7 +11,7 @@ using Order = OrderHub.Application.Features.Orders.GetPage.OrderListItem;
 
 namespace OrderHub.Web.Components.Pages.Features.Orders.Index;
 
-public partial class Orders : IDisposable
+public partial class Orders
 {
     [Inject] private NavigationManager Navigation { get; set; } = null!;
 
@@ -24,7 +23,6 @@ public partial class Orders : IDisposable
     public int? Page { get; set; }
 
     private MudTable<Order>? _table;
-    private bool _archivedOnly;
     private int _pageIndex = 1;
     private int _pageSize = 10;
     private int? _totalItems;
@@ -39,58 +37,20 @@ public partial class Orders : IDisposable
     private bool HasFilters =>
         !string.IsNullOrWhiteSpace(_searchTerm) || _selectedStatus.HasValue || _selectedPaymentMethodId.HasValue;
 
-    private PageScaffold.CrumbItem[] _crumbs => _archivedOnly
-        ? [new("الطلبات", "/orders"), new("سجل المؤرشف")]
-        : [new("الطلبات")];
-
-    protected override void OnInitialized()
-    {
-        _archivedOnly = IsArchivedRoute(Navigation.Uri);
-        Navigation.LocationChanged += OnLocationChanged;
-    }
+    private PageScaffold.CrumbItem[] _crumbs => [new("الطلبات")];
 
     protected override async Task OnParametersSetAsync()
     {
-        var archived = IsArchivedRoute(Navigation.Uri);
         var requestedPage = Math.Max(1, Page ?? 1);
 
-        if (_archivedOnly == archived && _pageIndex == requestedPage)
+        if (_pageIndex == requestedPage)
             return;
 
-        _archivedOnly = archived;
         _pageIndex = requestedPage;
 
         if (_table is not null)
             await _table.ReloadServerData();
     }
-
-    /// <summary>Both routes reuse this component, so OnParametersSetAsync is not enough to repaint on a route switch.</summary>
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs args)
-    {
-        var archived = IsArchivedRoute(args.Location);
-
-        _ = InvokeAsync(async () =>
-        {
-            if (_archivedOnly == archived)
-                return;
-
-            _archivedOnly = archived;
-            _pageIndex = 1;
-            _totalItems = null;
-            StateHasChanged();
-
-            if (_table is not null)
-                await _table.ReloadServerData();
-        });
-    }
-
-    public void Dispose()
-    {
-        Navigation.LocationChanged -= OnLocationChanged;
-    }
-
-    private static bool IsArchivedRoute(string uri) =>
-        new Uri(uri).AbsolutePath.TrimEnd('/').EndsWith("/archived", StringComparison.OrdinalIgnoreCase);
 
     private async Task<TableData<Order>> LoadOrdersAsync(TableState state, CancellationToken cancellationToken)
     {
@@ -103,8 +63,7 @@ public partial class Orders : IDisposable
             PageSize: _pageSize,
             SearchTerm: _searchTerm,
             PaymentMethodId: _selectedPaymentMethodId,
-            OrderStatus: _selectedStatus,
-            ArchivedOnly: _archivedOnly);
+            OrderStatus: _selectedStatus);
 
         var result = await RequestExecutor.ExecuteAsync(query, cancellationToken);
         _totalItems = result.TotalCount;

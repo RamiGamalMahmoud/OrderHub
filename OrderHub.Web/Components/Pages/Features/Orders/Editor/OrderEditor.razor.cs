@@ -359,14 +359,13 @@ public partial class OrderEditor : IDisposable
         if (order is null)
         {
             _loadError = "الطلب غير موجود.";
-            return new OrderEditorState { IsArchived = true };
+            return new OrderEditorState();
         }
 
         OrderEditorState state = new OrderEditorState()
         {
             Version = order.Version,
             Status = order.Status,
-            IsArchived = order.IsArchived,
             OrderNumber = order.OrderNumber,
             ModifiedAt = order.ModifiedAt,
             DeliveryCost = order.DeliveryCost,

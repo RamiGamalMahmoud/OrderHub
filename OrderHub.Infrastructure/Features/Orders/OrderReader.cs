@@ -46,13 +46,12 @@ internal sealed partial class OrderReader(AppDbContextFactory contextFactory) : 
                 order.DiscountAmount, order.Total.Value, pricing.TotalAmount, order.DiscountType, order.DiscountValue));
     }
 
-    public async Task<PagedResult<OrderListItem>> GetPageAsync(int pageNumber, int pageSize, string searchTerm, DateTime? fromDate, DateTime? toDate, int? paymentMethodId, OrderStatus? orderStatus, CancellationToken cancellationToken, bool archivedOnly = false)
+    public async Task<PagedResult<OrderListItem>> GetPageAsync(int pageNumber, int pageSize, string searchTerm, DateTime? fromDate, DateTime? toDate, int? paymentMethodId, OrderStatus? orderStatus, CancellationToken cancellationToken)
     {
         using AppDbContext dbContext = contextFactory.CreateDbContext();
 
         var query = dbContext.Orders
             .AsNoTracking()
-            .Where(order => order.IsArchived == archivedOnly)
             .ApplyFilter(searchTerm, fromDate, toDate, paymentMethodId, orderStatus)
             .OrderByDescending(o => o.CreatedAt)
             .ThenByDescending(o => o.Id)
@@ -77,8 +76,7 @@ internal sealed partial class OrderReader(AppDbContextFactory contextFactory) : 
                     order.PaymentMethod.IsActive),
 
                 order.CreatedAt,
-                order.DeliveryMethod,
-                order.IsArchived
+                order.DeliveryMethod
             ));
 
         return await query.ToPagedResultAsync(pageNumber, pageSize, cancellationToken);

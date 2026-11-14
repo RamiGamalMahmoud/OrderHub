@@ -11,7 +11,6 @@ using OrderHub.Application.Interfaces.Repositories;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
-using OrderHub.Application.Features.Orders.Archive;
 
 namespace OrderHub.Application.Features.Orders.Lifecycle;
 
@@ -20,13 +19,8 @@ internal sealed class OrderLifecycleHandlers(IOrderRepository repository, IUnitO
     TimeProvider clock) :
     IRequestHandler<ChangeOrderStatusCommand, Result<OrderOperationReceipt>>,
     IRequestHandler<ChangeDeliveryStepStatusCommand, Result<OrderOperationReceipt>>,
-    IRequestHandler<DeliverOrderDirectlyCommand, Result<OrderOperationReceipt>>,
-    IRequestHandler<ArchiveOrderCommand, Result<OrderOperationReceipt>>
+    IRequestHandler<DeliverOrderDirectlyCommand, Result<OrderOperationReceipt>>
 {
-    public Task<Result<OrderOperationReceipt>> Handle(ArchiveOrderCommand request, CancellationToken cancellationToken) =>
-        Execute(request.OrderId, request.ExpectedVersion,
-            (order, operation) => order.Archive(operation, request.Reason), cancellationToken);
-
     public Task<Result<OrderOperationReceipt>> Handle(ChangeOrderStatusCommand request, CancellationToken cancellationToken) =>
         Execute(request.OrderId, request.ExpectedVersion,
             (order, operation) => order.TransitionTo(request.Target, operation, request.Reason), cancellationToken);
@@ -52,7 +46,7 @@ internal sealed class OrderLifecycleHandlers(IOrderRepository repository, IUnitO
         valid = change(order, operation);
         if (!valid.IsSuccess) return Result<OrderOperationReceipt>.Failure(valid.ErrorMessage, "InvalidOperation");
 
-        var closes = order.IsArchived || order.OrderStatus is OrderStatus.Delivered or OrderStatus.Cancelled;
+        var closes = order.OrderStatus is OrderStatus.Delivered or OrderStatus.Cancelled;
         var releaseable = closes ? order.OpenAllocations() : [];
         var activeIssueOrders = closes
             ? await issueOrders.GetActiveForOrderAsync(order.Id, cancellationToken)
@@ -65,8 +59,7 @@ internal sealed class OrderLifecycleHandlers(IOrderRepository repository, IUnitO
                 await unitOfWork.BeginTransactionAsync(cancellationToken);
                 transactionActive = true;
 
-                var reason = order.IsArchived ? "أرشفة الطلب"
-                    : order.OrderStatus == OrderStatus.Cancelled ? "إلغاء الطلب"
+                var reason = order.OrderStatus == OrderStatus.Cancelled ? "إلغاء الطلب"
                     : "إتمام التسليم";
                 var now = clock.GetUtcNow().UtcDateTime;
                 foreach (var issueOrder in activeIssueOrders)

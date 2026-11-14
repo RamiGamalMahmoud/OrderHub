@@ -35,9 +35,6 @@ internal sealed class RecordStockDeliveryCommandHandler(
         if (order is null)
             return Result.Failure("الطلب غير موجود.", "NotFound");
 
-        if (order.IsArchived)
-            return Result.Failure("الطلب مؤرشف ولا يقبل تسليمات جديدة.", "Conflict");
-
         if (order.OrderStatus == OrderStatus.Cancelled)
             return Result.Failure("الطلب ملغى ولا يقبل تسليمات جديدة.", "Conflict");
 

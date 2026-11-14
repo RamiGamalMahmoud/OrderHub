@@ -40,7 +40,7 @@ internal sealed class CreateStockIssueOrderCommandHandler(
         Order order = await orders.GetForUpdateAsync(input.OrderId, cancellationToken);
         if (order is null)
             return Result<int>.Failure("الطلب غير موجود.", "NotFound");
-        if (order.IsArchived || order.OrderStatus is OrderStatus.Delivered or OrderStatus.Cancelled)
+        if (order.OrderStatus is OrderStatus.Delivered or OrderStatus.Cancelled)
             return Result<int>.Failure("لا يمكن إنشاء أمر صرف لطلب مغلق.", "InvalidOperation");
 
         Warehouse warehouse = await warehouses.GetByIdAsync(input.WarehouseId, cancellationToken);

@@ -5,10 +5,9 @@ using OrderHub.Domain.Enums;
 namespace OrderHub.Application.Features.Orders.Lifecycle;
 
 public sealed record OrderWorkflowState(int Id, string OrderNumber, DateTime CreatedAt, OrderStatus Status,
-    DeliveryMethod? Method, string HandlerName, int Version, bool CanEdit, bool CanArchive, bool IsArchived,
+    DeliveryMethod? Method, string HandlerName, int Version, bool CanEdit,
     string ReadinessError, IReadOnlyList<OrderStatus> AllowedStatuses, IReadOnlyList<DeliveryStepWorkflowState> Steps,
-    DateTime LastChangedAtUtc, string LatestReason, bool IsLegacy, DateTime? ArchivedAtUtc,
-    string ArchivedByUserName, string ArchiveReason, int ActiveStepCount, int CompletedActiveStepCount,
+    DateTime LastChangedAtUtc, string LatestReason, bool IsLegacy, int ActiveStepCount, int CompletedActiveStepCount,
     bool CanDeliverDirectly = false, bool CanReassignDirectly = false);
 
 public sealed record DeliveryStepWorkflowState(int Id, int StepOrder, DeliveryMethod Method, string HandlerName,

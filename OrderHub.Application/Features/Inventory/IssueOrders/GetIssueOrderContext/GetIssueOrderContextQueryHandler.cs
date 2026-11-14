@@ -53,7 +53,7 @@ internal sealed class GetIssueOrderContextQueryHandler(
                 ? openOrders.First(option => option.Id == orderId)
                 : await orders.GetForIssueOrderAsync(orderId, cancellationToken);
 
-            if (order is null || order.IsArchived ||
+            if (order is null ||
                 order.OrderStatus is OrderStatus.Delivered or OrderStatus.Cancelled)
                 return Result<IssueOrderContext>.Failure("الطلب غير متاح لأوامر الصرف.", "NotFound");
 

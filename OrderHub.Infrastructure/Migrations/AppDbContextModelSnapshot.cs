@@ -1551,24 +1551,6 @@ namespace OrderHub.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ArchiveReason")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("archive_reason");
-
-                    b.Property<DateTime?>("ArchivedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("archived_at_utc");
-
-                    b.Property<int?>("ArchivedByUserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("archived_by_user_id");
-
-                    b.Property<string>("ArchivedByUserName")
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)")
-                        .HasColumnName("archived_by_user_name");
-
                     b.Property<int>("ClientId")
                         .HasColumnType("integer")
                         .HasColumnName("client_id");
@@ -1615,10 +1597,6 @@ namespace OrderHub.Infrastructure.Migrations
                         .HasDefaultValue(0m)
                         .HasColumnName("discount_value");
 
-                    b.Property<bool>("IsArchived")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_archived");
-
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("modified_at");
@@ -1659,9 +1637,6 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_orders");
 
-                    b.HasIndex("ArchivedByUserId")
-                        .HasDatabaseName("ix_orders_archived_by_user_id");
-
                     b.HasIndex("ClientId")
                         .HasDatabaseName("ix_orders_client_id");
 
@@ -1682,13 +1657,7 @@ namespace OrderHub.Infrastructure.Migrations
                     b.HasIndex("ShippingCarrierId")
                         .HasDatabaseName("ix_orders_shipping_carrier_id");
 
-                    b.HasIndex("IsArchived", "CreatedAt")
-                        .HasDatabaseName("ix_orders_is_archived_created_at");
-
-                    b.ToTable("orders", null, t =>
-                        {
-                            t.HasCheckConstraint("ck_orders_archive_metadata", "NOT is_archived OR (archived_at_utc IS NOT NULL AND archived_by_user_id IS NOT NULL AND archive_reason IS NOT NULL AND length(trim(archive_reason)) BETWEEN 1 AND 200)");
-                        });
+                    b.ToTable("orders", (string)null);
                 });
 
             modelBuilder.Entity("OrderHub.Domain.Models.OrderDeliveryMovement", b =>
@@ -4381,12 +4350,6 @@ namespace OrderHub.Infrastructure.Migrations
 
             modelBuilder.Entity("OrderHub.Domain.Models.Order", b =>
                 {
-                    b.HasOne("OrderHub.Domain.Models.User", null)
-                        .WithMany()
-                        .HasForeignKey("ArchivedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_orders_users_archived_by_user_id");
-
                     b.HasOne("OrderHub.Domain.Models.Client", "Client")
                         .WithMany("Orders")
                         .HasForeignKey("ClientId")

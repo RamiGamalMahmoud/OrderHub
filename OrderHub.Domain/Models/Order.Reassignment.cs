@@ -23,7 +23,6 @@ public partial class Order
         if (!valid.IsSuccess) return Result<DeliveryStepReassignment>.Failure(valid.ErrorMessage);
         valid = ValidateReason(reason, true);
         if (!valid.IsSuccess) return Result<DeliveryStepReassignment>.Failure(valid.ErrorMessage);
-        if (IsArchived) return Result<DeliveryStepReassignment>.Failure("الطلب مؤرشف ولا يقبل التشغيل.");
         if (IsFinal) return Result<DeliveryStepReassignment>.Failure("الطلب مغلق ولا يقبل إعادة التوجيه.");
         if (DeliveryMethod != Enums.DeliveryMethod.DeliveryChain)
             return Result<DeliveryStepReassignment>.Failure("إعادة توجيه الخطوات متاحة لسلسلة التوصيل فقط.");
@@ -89,7 +88,6 @@ public partial class Order
         if (!valid.IsSuccess) return Result<OrderDeliveryStep>.Failure(valid.ErrorMessage);
         valid = ValidateReason(reason, true);
         if (!valid.IsSuccess) return Result<OrderDeliveryStep>.Failure(valid.ErrorMessage);
-        if (IsArchived) return Result<OrderDeliveryStep>.Failure("الطلب مؤرشف ولا يقبل التشغيل.");
         if (IsFinal) return Result<OrderDeliveryStep>.Failure("الطلب مغلق ولا يقبل إلغاء الخطوات.");
         if (DeliveryMethod != Enums.DeliveryMethod.DeliveryChain)
             return Result<OrderDeliveryStep>.Failure("إلغاء الخطوات متاح لسلسلة التوصيل فقط.");
@@ -129,7 +127,6 @@ public partial class Order
         if (!valid.IsSuccess) return valid;
         valid = ValidateReason(reason, true);
         if (!valid.IsSuccess) return valid;
-        if (IsArchived) return Result.Failure("الطلب مؤرشف ولا يقبل التشغيل.");
         if (IsFinal) return Result.Failure("الطلب مغلق ولا يقبل إعادة التوجيه.");
         if (DeliveryMethod is not (Enums.DeliveryMethod.DeliveryMan or Enums.DeliveryMethod.ShippingCompany))
             return Result.Failure("إعادة التوجيه المباشر غير متاحة لهذا الطلب.");

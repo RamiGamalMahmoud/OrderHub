@@ -15,5 +15,4 @@ public record GetOrdersPageQuery(
         DateTime? FromDate = null,
         DateTime? ToDate = null,
         int? PaymentMethodId = null,
-        OrderStatus? OrderStatus = null,
-        bool ArchivedOnly = false) : IRequest<PagedResult<OrderListItem>>;
+        OrderStatus? OrderStatus = null) : IRequest<PagedResult<OrderListItem>>;

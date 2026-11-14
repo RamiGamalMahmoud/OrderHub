@@ -6,10 +6,9 @@ public sealed class OrderEditorState
 {
     public int Version { get; set; } = 1;
     public OrderStatus Status { get; set; } = OrderStatus.Processing;
-    public bool IsArchived { get; set; }
     public string? OrderNumber { get; set; }
     public DateTime? ModifiedAt { get; set; }
-    public bool CanEdit => !IsArchived && Status == OrderStatus.Processing;
+    public bool CanEdit => Status == OrderStatus.Processing;
     public int? ClientId { get; set; }
 
     public string? ClientName { get; set; }

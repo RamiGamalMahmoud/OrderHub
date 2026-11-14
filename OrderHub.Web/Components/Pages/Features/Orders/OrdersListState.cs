@@ -10,6 +10,4 @@ public sealed class OrdersListState
     public string? SearchTerm { get; set; }
     public OrderStatus? SelectedStatus { get; set; }
     public int? SelectedPaymentMethodId { get; set; }
-
-    public bool ArchivedOnly { get; set; }
 }

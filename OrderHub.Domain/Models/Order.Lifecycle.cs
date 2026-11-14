@@ -12,15 +12,9 @@ public partial class Order
     private readonly List<DeliveryStepStatusHistory> _stepHistory = [];
 
     public int Version { get; private set; } = 1;
-    public bool IsArchived { get; private set; }
-    public DateTime? ArchivedAtUtc { get; private set; }
-    public int? ArchivedByUserId { get; private set; }
-    public string ArchivedByUserName { get; private set; }
-    public string ArchiveReason { get; private set; }
-    public bool CanEdit => !IsArchived && OrderStatus == OrderStatus.Processing;
+    public bool CanEdit => OrderStatus == OrderStatus.Processing;
     public bool IsFinal => OrderStatus is OrderStatus.Delivered or OrderStatus.Cancelled;
-    public bool CanArchive => !IsArchived && (CanEdit || IsFinal);
-    public bool CanDeliverDirectly => !IsArchived && OrderStatus == OrderStatus.OutForDelivery &&
+    public bool CanDeliverDirectly => OrderStatus == OrderStatus.OutForDelivery &&
         DeliveryMethod == Enums.DeliveryMethod.DeliveryChain && DeliveryReadinessError() is null;
     public IReadOnlyCollection<OrderStatusHistory> StatusHistory => _statusHistory.AsReadOnly();
     public IReadOnlyCollection<DeliveryStepStatusHistory> StepHistory => _stepHistory.AsReadOnly();
@@ -60,7 +54,7 @@ public partial class Order
 
     public IReadOnlyList<OrderStatus> AllowedStatuses()
     {
-        if (IsArchived || IsFinal) return [];
+        if (IsFinal) return [];
         var statuses = new List<OrderStatus>();
         switch (OrderStatus)
         {
@@ -94,7 +88,6 @@ public partial class Order
     {
         var valid = ValidateOperation(operation);
         if (!valid.IsSuccess) return valid;
-        if (IsArchived) return Result.Failure("الطلب مؤرشف ولا يقبل التشغيل.");
         if (target == OrderStatus) return Result.Success();
         if (!AllowedStatuses().Contains(target)) return Result.Failure("الانتقال المطلوب غير مسموح لطريقة التوصيل والحالة الحالية.");
         valid = ValidateReason(reason, target is OrderStatus.Cancelled or OrderStatus.DeliveryFailed);
@@ -143,7 +136,7 @@ public partial class Order
 
     public IReadOnlyList<DeliveryStatus> AllowedStepStatuses(OrderDeliveryStep step)
     {
-        if (IsArchived || OrderStatus != OrderStatus.OutForDelivery || DeliveryMethod != Enums.DeliveryMethod.DeliveryChain ||
+        if (OrderStatus != OrderStatus.OutForDelivery || DeliveryMethod != Enums.DeliveryMethod.DeliveryChain ||
             !_deliverySteps.Any(existing => ReferenceEquals(existing, step)) || step.StepOrder <= 0 ||
             !ValidStepHandler(step)) return [];
         var predecessor = ActiveSteps.Where(previous => previous.StepOrder < step.StepOrder)
@@ -164,7 +157,7 @@ public partial class Order
         var step = _deliverySteps.SingleOrDefault(step => step.Id == stepId);
         if (step is null) return Result.Failure("خطوة التوصيل غير موجودة في الطلب.");
         if (step.StepOrder <= 0) return Result.Failure("الخطوة ملغاة أو مستبدلة.");
-        if (IsArchived || IsFinal) return Result.Failure("الطلب مغلق ولا يقبل تشغيل الخطوات.");
+        if (IsFinal) return Result.Failure("الطلب مغلق ولا يقبل تشغيل الخطوات.");
         if (step.Status == target) return Result.Success();
         if (!AllowedStepStatuses(step).Contains(target)) return Result.Failure("لا يمكن تنفيذ الخطوة قبل اكتمال السابقة أو من حالتها الحالية.");
         valid = ValidateReason(reason, target == DeliveryStatus.Failed);
@@ -237,22 +230,6 @@ public partial class Order
         }
         RecordOrder(OrderStatus.Delivered, operation, reason, OrderHistorySource.DirectDelivery);
         CloseDirectWorkRecord(WorkRecordStatus.Completed, reason, operation.AtUtc);
-        return Result.Success();
-    }
-
-    public Result Archive(OrderOperation operation, string reason)
-    {
-        var valid = ValidateOperation(operation);
-        if (!valid.IsSuccess) return valid;
-        valid = ValidateReason(reason, true);
-        if (!valid.IsSuccess) return valid;
-        if (!CanArchive) return Result.Failure("يجب إلغاء الطلب النشط قبل أرشفته، ولا يمكن استعادة المؤرشف.");
-        IsArchived = true;
-        ArchivedAtUtc = operation.AtUtc;
-        ArchivedByUserId = operation.UserId;
-        ArchivedByUserName = operation.UserName.Trim();
-        ArchiveReason = reason.Trim();
-        Version++;
         return Result.Success();
     }
 
