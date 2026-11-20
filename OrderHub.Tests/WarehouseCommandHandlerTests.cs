@@ -1,4 +1,3 @@
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Authorization;
 using OrderHub.Application.Features.Warehouses;
@@ -537,20 +536,13 @@ internal sealed class WarehouseTestDb : IDisposable
 {
     private const string Street = "شارع الملك فهد";
 
-    private readonly SqliteConnection _connection;
-
     public WarehouseTestDb()
     {
-        _connection = new SqliteConnection("Data Source=:memory:");
-        _connection.Open();
+        PostgresTestDatabase.Reset();
 
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(_connection)
-            .UseSnakeCaseNamingConvention()
-            .Options;
+        var options = PostgresTestDatabase.Options;
 
         Context = new AppDbContext(options);
-        Context.Database.EnsureCreated();
 
         UnitOfWork = new UnitOfWork(
             Context,
@@ -662,6 +654,5 @@ internal sealed class WarehouseTestDb : IDisposable
     public void Dispose()
     {
         Context.Dispose();
-        _connection.Dispose();
     }
 }

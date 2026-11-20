@@ -1,4 +1,3 @@
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Infrastructure;
 using OrderHub.Infrastructure.Migrations;
@@ -10,20 +9,13 @@ namespace OrderHub.Tests;
 
 internal sealed class RbacTestDb : IDisposable
 {
-    private readonly SqliteConnection _connection;
-
     public RbacTestDb()
     {
-        _connection = new SqliteConnection("Data Source=:memory:");
-        _connection.Open();
+        PostgresTestDatabase.Reset();
 
-        Options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(_connection)
-            .UseSnakeCaseNamingConvention()
-            .Options;
+        Options = PostgresTestDatabase.Options;
 
         Context = new AppDbContext(Options);
-        Context.Database.EnsureCreated();
 
         UnitOfWork = new UnitOfWork(
             Context,
@@ -47,6 +39,5 @@ internal sealed class RbacTestDb : IDisposable
     public void Dispose()
     {
         Context.Dispose();
-        _connection.Dispose();
     }
 }

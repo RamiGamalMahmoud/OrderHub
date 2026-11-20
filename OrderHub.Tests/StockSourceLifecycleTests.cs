@@ -260,7 +260,7 @@ public sealed class StockSourceLifecycleTests
     private static async Task<(int OrderId, int Version)> ReserveOrderAsync(OrderAllocationTestDb db, int quantity)
     {
         db.StockIn(db.MainWarehouse, db.Product, 10);
-        var order = db.NewOrder("ORD-LIFE-" + Guid.NewGuid().ToString("N"), (db.Product, quantity));
+        var order = db.NewOrder("ORD-LIF-" + Guid.NewGuid().ToString("N")[..8], (db.Product, quantity));
         var item = order.OrderItems.Single();
         var result = await UpdateHandler(db).Handle(Command(db, order.Id, 1,
             Item(db, db.Product, quantity, item.Id, [Warehouse(db.MainWarehouse, quantity)])), default);

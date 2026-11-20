@@ -1,5 +1,4 @@
 using System.Data.Common;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using OrderHub.Domain.Enums;
@@ -13,12 +12,12 @@ public sealed class WorkRecordPersistenceTests
     [Fact]
     public void Saving_a_new_work_record_persists_its_pending_history_atomically()
     {
-        using var connection = OpenConnection();
-        var options = Options(connection);
+        PostgresTestDatabase.Reset();
+        var options = PostgresTestDatabase.Options;
         using var context = new AppDbContext(options);
-        context.Database.EnsureCreated();
+        var (client, supplier) = SeedParents(context);
 
-        var supply = NewNumberedSupply("ORD-PERSIST");
+        var supply = NewNumberedSupply(client, supplier, "ORD-PERSIST");
         context.Supplies.Add(supply);
         context.SaveChanges();
 
@@ -33,13 +32,23 @@ public sealed class WorkRecordPersistenceTests
     [Fact]
     public void Failed_history_insert_rolls_back_the_current_status_update()
     {
-        using var connection = OpenConnection();
+        PostgresTestDatabase.Reset();
         var interceptor = new FailHistoryInsertInterceptor();
-        var options = Options(connection, interceptor);
+        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>()
+            .UseNpgsql(PostgresTestDatabase.ConnectionString)
+            .UseSnakeCaseNamingConvention()
+            .AddInterceptors(interceptor);
+        var options = optionsBuilder.Options;
+        Client client;
+        Supplier supplier;
+        using (var seedContext = new AppDbContext(options))
+        {
+            (client, supplier) = SeedParents(seedContext);
+        }
+
         using (var context = new AppDbContext(options))
         {
-            context.Database.EnsureCreated();
-            var supply = NewNumberedSupply("ORD-ROLLBACK");
+            var supply = NewNumberedSupply(client, supplier, "ORD-ROLLBACK");
             context.Supplies.Add(supply);
             context.SaveChanges();
 
@@ -55,30 +64,23 @@ public sealed class WorkRecordPersistenceTests
         Assert.Equal(WorkRecordStatus.Pending, history.Status);
     }
 
-    private static SqliteConnection OpenConnection()
+    private static (Client Client, Supplier Supplier) SeedParents(AppDbContext context)
     {
-        var connection = new SqliteConnection("Data Source=:memory:");
-        connection.Open();
-        using var command = connection.CreateCommand();
-        command.CommandText = "PRAGMA foreign_keys = OFF";
-        command.ExecuteNonQuery();
-        return connection;
+        var city = new City("الرياض");
+        var client = new Client("عميل", "شارع الملك", city, "0501111111", "+966");
+        var supplier = new Supplier("مورد");
+        context.Cities.Add(city);
+        context.Clients.Add(client);
+        context.Suppliers.Add(supplier);
+        context.SaveChanges();
+        return (client, supplier);
     }
 
-    private static Supply NewNumberedSupply(string orderNumber)
+    private static Supply NewNumberedSupply(Client client, Supplier supplier, string orderNumber)
     {
-        var supply = new Supply(new Order(10, orderNumber), 20);
-        ((IWorkRecord)supply).AssignWorkRecordNumber(20, 1, 2026, 10);
+        var supply = new Supply(new Order(client.Id, orderNumber), supplier.Id);
+        ((IWorkRecord)supply).AssignWorkRecordNumber(supplier.Id, 1, 2026, 10);
         return supply;
-    }
-
-    private static DbContextOptions<AppDbContext> Options(SqliteConnection connection, DbCommandInterceptor? interceptor = null)
-    {
-        var builder = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(connection)
-            .UseSnakeCaseNamingConvention();
-        if (interceptor is not null) builder.AddInterceptors(interceptor);
-        return builder.Options;
     }
 
     private sealed class FailHistoryInsertInterceptor : DbCommandInterceptor
@@ -101,7 +103,7 @@ public sealed class WorkRecordPersistenceTests
 
         private void ThrowIfHistoryInsert(DbCommand command)
         {
-            if (Enabled && command.CommandText.Contains("INSERT INTO \"work_record_status_histories\"", StringComparison.OrdinalIgnoreCase))
+            if (Enabled && command.CommandText.Contains("work_record_status_histories", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("Injected status history database failure.");
         }
     }

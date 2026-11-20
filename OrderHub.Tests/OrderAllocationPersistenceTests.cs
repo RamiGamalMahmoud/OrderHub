@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using System;
@@ -49,10 +50,10 @@ public sealed class OrderAllocationPersistenceTests
         var allocation = await SeedAllocatedOrderAsync(db);
         var itemId = allocation.OrderItemId;
 
-        var error = await Assert.ThrowsAsync<Microsoft.Data.Sqlite.SqliteException>(() =>
+        var error = await Assert.ThrowsAsync<PostgresException>(() =>
             db.Context.Database.ExecuteSqlRawAsync($"DELETE FROM order_items WHERE id = {itemId}"));
 
-        Assert.Contains("FOREIGN KEY", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(PostgresErrorCodes.RestrictViolation, error.SqlState);
 
         await db.Context.Database.ExecuteSqlRawAsync(
             $"DELETE FROM order_inventory_allocations WHERE id = {allocation.Id}");
@@ -67,7 +68,7 @@ public sealed class OrderAllocationPersistenceTests
         using var db = new OrderAllocationTestDb();
         var allocation = await SeedAllocatedOrderAsync(db);
 
-        var error = await Assert.ThrowsAsync<Microsoft.Data.Sqlite.SqliteException>(() =>
+        var error = await Assert.ThrowsAsync<PostgresException>(() =>
             db.Context.Database.ExecuteSqlRawAsync($"""
                 INSERT INTO order_inventory_allocations
                     (order_id, order_item_id, product_id, source_kind, warehouse_id, supplier_id,
@@ -77,7 +78,7 @@ public sealed class OrderAllocationPersistenceTests
                      {allocation.WarehouseId}, NULL, 1, 0, 'Active', CURRENT_TIMESTAMP)
                 """));
 
-        Assert.Contains("UNIQUE", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(PostgresErrorCodes.UniqueViolation, error.SqlState);
     }
 
     [Fact]
@@ -86,7 +87,7 @@ public sealed class OrderAllocationPersistenceTests
         using var db = new OrderAllocationTestDb();
         var allocation = await SeedAllocatedOrderAsync(db);
 
-        await Assert.ThrowsAsync<Microsoft.Data.Sqlite.SqliteException>(() =>
+        var error = await Assert.ThrowsAsync<PostgresException>(() =>
             db.Context.Database.ExecuteSqlRawAsync($"""
                 INSERT INTO order_inventory_allocations
                     (order_id, order_item_id, product_id, source_kind, warehouse_id, supplier_id,
@@ -95,6 +96,8 @@ public sealed class OrderAllocationPersistenceTests
                     ({allocation.OrderId}, {allocation.OrderItemId}, {allocation.ProductId}, 'Warehouse',
                      {allocation.WarehouseId}, NULL, 0, 0, 'Active', CURRENT_TIMESTAMP)
                 """));
+
+        Assert.Equal(PostgresErrorCodes.CheckViolation, error.SqlState);
     }
 
     [Fact]

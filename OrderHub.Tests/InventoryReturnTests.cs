@@ -301,7 +301,7 @@ public sealed class InventoryReturnTests
         using var db = new OrderAllocationTestDb();
         var (orderId, _, allocationId) = await StockIssueOrderTests.ReserveAsync(db, quantity: 2);
         await IssueAllAsync(db, orderId, allocationId, quantity: 2);
-        var other = db.NewOrder("ORD-RETURN-OTHER-" + Guid.NewGuid().ToString("N"), (db.Product, 1));
+        var other = db.NewOrder("ORD-RET-" + Guid.NewGuid().ToString("N")[..8], (db.Product, 1));
 
         var foreign = await ReturnHandler(db, db.Keeper.Id).Handle(
             new RecordReturnCommand(other.Id, string.Empty, [new ReturnLineInput(allocationId, 1, 0)]),

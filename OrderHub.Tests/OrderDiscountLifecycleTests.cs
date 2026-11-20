@@ -1,4 +1,3 @@
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Features.OrderDrafts.Contracts;
 using OrderHub.Domain.Enums;
@@ -49,23 +48,24 @@ public sealed class OrderDiscountLifecycleTests
     public async Task Draft_persists_restores_financial_inputs_and_recalculates_after_product_changes(
         DiscountType type, decimal value, decimal expectedTotal)
     {
-        await using var connection = new SqliteConnection("Data Source=:memory:");
-        await connection.OpenAsync();
-        await DisableForeignKeys(connection);
-        await using var context = new AppDbContext(CreateOptions(connection));
-        await context.Database.EnsureCreatedAsync();
+        PostgresTestDatabase.Reset();
+        var options = PostgresTestDatabase.Options;
+        await using var context = new AppDbContext(options);
+        var user = User.Create("draft-owner", "hash", "صاحب المسودة");
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
 
         var draftId = Guid.NewGuid();
         var data = new OrderDraftData(
             5, "Client", OrderSource.Online, null, DeliveryMethod.DeliveryMan, 1, null,
             [new OrderDraftItem(1, "Product", "Category", 400m, 1, 5m, null, "", [])],
             [], 15m, type, value);
-        var draft = new Draft(draftId, 7, DateTime.UtcNow, data);
+        var draft = new Draft(draftId, user.Id, DateTime.UtcNow, data);
         await new DraftRepository(context).StageSaveAsync(draft);
         await context.SaveChangesAsync();
 
-        var readService = new DraftReadService(new AppDbContextFactory(CreateOptions(connection)));
-        var restored = await readService.GetOwnedAsync(draftId, 7);
+        var readService = new DraftReadService(new AppDbContextFactory(options));
+        var restored = await readService.GetOwnedAsync(draftId, user.Id);
 
         Assert.NotNull(restored);
         Assert.Equal(type, restored.Data.DiscountType);
@@ -86,13 +86,5 @@ public sealed class OrderDiscountLifecycleTests
         Assert.Equal(type == DiscountType.Percentage ? 775m : 825m, order.Total.Value);
     }
 
-    private static DbContextOptions<AppDbContext> CreateOptions(SqliteConnection connection)
-        => new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).UseSnakeCaseNamingConvention().Options;
 
-    private static async Task DisableForeignKeys(SqliteConnection connection)
-    {
-        await using var command = connection.CreateCommand();
-        command.CommandText = "PRAGMA foreign_keys = OFF";
-        await command.ExecuteNonQueryAsync();
-    }
 }

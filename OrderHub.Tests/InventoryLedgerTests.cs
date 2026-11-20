@@ -1,8 +1,8 @@
 using System;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Domain.Common;
 using OrderHub.Domain.Enums;
@@ -18,7 +18,6 @@ public sealed class InventoryLedgerTests : IDisposable
 {
     private static readonly DateTime Now = new(2026, 11, 12, 10, 0, 0, DateTimeKind.Utc);
 
-    private readonly SqliteConnection _connection;
     private readonly AppDbContext _context;
     private readonly InventoryRepository _repository;
     private readonly Product _product;
@@ -26,16 +25,11 @@ public sealed class InventoryLedgerTests : IDisposable
 
     public InventoryLedgerTests()
     {
-        _connection = new SqliteConnection("Data Source=:memory:");
-        _connection.Open();
+        PostgresTestDatabase.Reset();
 
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(_connection)
-            .UseSnakeCaseNamingConvention()
-            .Options;
+        var options = PostgresTestDatabase.Options;
 
         _context = new AppDbContext(options);
-        _context.Database.EnsureCreated();
         _repository = new InventoryRepository(_context);
 
         var category = new Category("مستلزمات");
@@ -314,9 +308,12 @@ public sealed class InventoryLedgerTests : IDisposable
         Assert.Equal(InventoryMovementStatus.Active, stored.Status);
         Assert.Null(stored.ReversalOfMovementId);
 
-        using var command = _connection.CreateCommand();
+        var connection = _context.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+            await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
         command.CommandText = "SELECT direction, movement_type, status FROM inventory_movements";
-        using var reader = command.ExecuteReader();
+        await using var reader = await command.ExecuteReaderAsync();
         Assert.True(reader.Read());
         Assert.Equal(("In", "StockIn", "Active"), (reader.GetString(0), reader.GetString(1), reader.GetString(2)));
     }
@@ -451,6 +448,5 @@ public sealed class InventoryLedgerTests : IDisposable
     public void Dispose()
     {
         _context.Dispose();
-        _connection.Dispose();
     }
 }

@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using OrderHub.Application.Context;
@@ -23,9 +22,8 @@ public sealed class OrderReassignmentHandlerTests
     [Fact]
     public async Task Step_reassignment_requires_an_authenticated_actor()
     {
-        using var connection = OpenConnection();
-        await using var context = new AppDbContext(Options(connection));
-        context.Database.EnsureCreated();
+        PostgresTestDatabase.Reset();
+        await using var context = new AppDbContext(PostgresTestDatabase.Options);
         var (order, stepId, _, nextPartyId) = await SeedChainAsync(context);
 
         var result = await NewHandler(context, authenticated: false).Handle(
@@ -39,9 +37,8 @@ public sealed class OrderReassignmentHandlerTests
     [Fact]
     public async Task Step_reassignment_rejects_a_stale_expected_version()
     {
-        using var connection = OpenConnection();
-        await using var context = new AppDbContext(Options(connection));
-        context.Database.EnsureCreated();
+        PostgresTestDatabase.Reset();
+        await using var context = new AppDbContext(PostgresTestDatabase.Options);
         var (order, stepId, _, nextPartyId) = await SeedChainAsync(context);
         var version = order.Version;
 
@@ -57,9 +54,8 @@ public sealed class OrderReassignmentHandlerTests
     [Fact]
     public async Task Step_reassignment_rejects_an_unknown_party_without_writing()
     {
-        using var connection = OpenConnection();
-        await using var context = new AppDbContext(Options(connection));
-        context.Database.EnsureCreated();
+        PostgresTestDatabase.Reset();
+        await using var context = new AppDbContext(PostgresTestDatabase.Options);
         var (order, stepId, _, _) = await SeedChainAsync(context);
         var version = order.Version;
 
@@ -76,9 +72,8 @@ public sealed class OrderReassignmentHandlerTests
     [Fact]
     public async Task Step_reassignment_rejects_the_current_party_without_writing()
     {
-        using var connection = OpenConnection();
-        await using var context = new AppDbContext(Options(connection));
-        context.Database.EnsureCreated();
+        PostgresTestDatabase.Reset();
+        await using var context = new AppDbContext(PostgresTestDatabase.Options);
         var (order, stepId, firstPartyId, _) = await SeedChainAsync(context);
         var version = order.Version;
 
@@ -97,9 +92,8 @@ public sealed class OrderReassignmentHandlerTests
     [Fact]
     public async Task Step_reassignment_saves_the_replacement_and_the_movement()
     {
-        using var connection = OpenConnection();
-        await using var context = new AppDbContext(Options(connection));
-        context.Database.EnsureCreated();
+        PostgresTestDatabase.Reset();
+        await using var context = new AppDbContext(PostgresTestDatabase.Options);
         var (order, stepId, firstPartyId, nextPartyId) = await SeedChainAsync(context);
         var version = order.Version;
 
@@ -129,9 +123,8 @@ public sealed class OrderReassignmentHandlerTests
     [Fact]
     public async Task Cancelling_a_step_saves_the_tombstone_without_a_replacement()
     {
-        using var connection = OpenConnection();
-        await using var context = new AppDbContext(Options(connection));
-        context.Database.EnsureCreated();
+        PostgresTestDatabase.Reset();
+        await using var context = new AppDbContext(PostgresTestDatabase.Options);
         var (order, stepId, firstPartyId, _) = await SeedChainAsync(context);
         var version = order.Version;
 
@@ -164,9 +157,8 @@ public sealed class OrderReassignmentHandlerTests
     [Fact]
     public async Task Direct_reassignment_creates_a_record_for_the_new_party()
     {
-        using var connection = OpenConnection();
-        await using var context = new AppDbContext(Options(connection));
-        context.Database.EnsureCreated();
+        PostgresTestDatabase.Reset();
+        await using var context = new AppDbContext(PostgresTestDatabase.Options);
         var (order, firstPartyId, nextPartyId) = await SeedDirectAsync(context);
         var version = order.Version;
 
@@ -195,9 +187,8 @@ public sealed class OrderReassignmentHandlerTests
     [Fact]
     public async Task Direct_reassignment_to_pickup_moves_the_order_without_a_new_record()
     {
-        using var connection = OpenConnection();
-        await using var context = new AppDbContext(Options(connection));
-        context.Database.EnsureCreated();
+        PostgresTestDatabase.Reset();
+        await using var context = new AppDbContext(PostgresTestDatabase.Options);
         var (order, firstPartyId, _) = await SeedDirectAsync(context);
         var version = order.Version;
         var tripsBefore = await context.DeliveryTrips.CountAsync();
@@ -232,9 +223,9 @@ public sealed class OrderReassignmentHandlerTests
     private static async Task<(Order Order, int StepId, int FirstPartyId, int NextPartyId)> SeedChainAsync(
         AppDbContext context)
     {
-        var (first, second, next) = await SeedPartiesAsync(context);
-        var order = new Order(10, "ORD-REASSIGN");
-        order.UpdateHeader(10, OrderSource.Online, DeliveryMethod.DeliveryChain, null, null, null);
+        var (client, user, first, second, next) = await SeedMasterAndPartiesAsync(context);
+        var order = new Order(client.Id, "ORD-REASSIGN");
+        order.UpdateHeader(client.Id, OrderSource.Online, DeliveryMethod.DeliveryChain, null, null, null);
         order.AddDeliveryStep(new OrderDeliveryStep
         {
             StepOrder = 1,
@@ -250,7 +241,7 @@ public sealed class OrderReassignmentHandlerTests
         context.Orders.Add(order);
         await context.SaveChangesAsync();
         var step = order.DeliverySteps.OrderBy(item => item.StepOrder).First();
-        var seed = new OrderOperation(1, "Seed", AtUtc);
+        var seed = new OrderOperation(user.Id, "Seed", AtUtc);
         Assert.True(order.TransitionTo(OrderStatus.OutForDelivery, seed).IsSuccess);
         Assert.True(order.TransitionStep(step.Id, DeliveryStatus.InProgress, seed).IsSuccess);
         ((IWorkRecord)step.DeliveryTrips.Single()).AssignWorkRecordNumber(first.Id, 1, 2026, 11);
@@ -260,46 +251,34 @@ public sealed class OrderReassignmentHandlerTests
 
     private static async Task<(Order Order, int FirstPartyId, int NextPartyId)> SeedDirectAsync(AppDbContext context)
     {
-        var (first, _, next) = await SeedPartiesAsync(context);
-        var order = new Order(10, "ORD-DIRECT");
-        order.UpdateHeader(10, OrderSource.Online, DeliveryMethod.DeliveryMan, first.Id, null, null);
+        var (client, user, first, _, next) = await SeedMasterAndPartiesAsync(context);
+        var order = new Order(client.Id, "ORD-DIRECT");
+        order.UpdateHeader(client.Id, OrderSource.Online, DeliveryMethod.DeliveryMan, first.Id, null, null);
         context.Orders.Add(order);
         await context.SaveChangesAsync();
-        var seed = new OrderOperation(1, "Seed", AtUtc);
+        var seed = new OrderOperation(user.Id, "Seed", AtUtc);
         Assert.True(order.TransitionTo(OrderStatus.OutForDelivery, seed).IsSuccess);
         ((IWorkRecord)order.DeliveryTrips.Single()).AssignWorkRecordNumber(first.Id, 1, 2026, 11);
         await context.SaveChangesAsync();
         return (order, first.Id, next.Id);
     }
 
-    private static async Task<(Deliveryman First, Deliveryman Second, Deliveryman Next)> SeedPartiesAsync(
-        AppDbContext context)
+    private static async Task<(Client Client, User User, Deliveryman First, Deliveryman Second, Deliveryman Next)>
+        SeedMasterAndPartiesAsync(AppDbContext context)
     {
         var city = new City("Riyadh");
+        var client = new Client("Client", "Street", city, "0501111111", "+966");
+        var user = User.Create("tester", "hash", "Tester");
         var first = new Deliveryman("First", city, "0500000001");
         var second = new Deliveryman("Second", city, "0500000002");
         var next = new Deliveryman("Third", city, "0500000003");
         context.Cities.Add(city);
+        context.Clients.Add(client);
+        context.Users.Add(user);
         context.Deliverymen.AddRange(first, second, next);
         await context.SaveChangesAsync();
-        return (first, second, next);
+        return (client, user, first, second, next);
     }
-
-    private static SqliteConnection OpenConnection()
-    {
-        var connection = new SqliteConnection("Data Source=:memory:");
-        connection.Open();
-        using var command = connection.CreateCommand();
-        command.CommandText = "PRAGMA foreign_keys = OFF";
-        command.ExecuteNonQuery();
-        return connection;
-    }
-
-    private static DbContextOptions<AppDbContext> Options(SqliteConnection connection) =>
-        new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(connection)
-            .UseSnakeCaseNamingConvention()
-            .Options;
 
     private sealed class TestUser(bool authenticated) : ICurrentUser
     {

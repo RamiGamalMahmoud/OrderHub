@@ -18,8 +18,70 @@ env:
   RELEASE_TAG: ${{ github.ref_name }}
 
 jobs:
+  test:
+    name: Database-backed tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: orderhub_test
+          POSTGRES_USER: orderhub_test
+          POSTGRES_PASSWORD: orderhub_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U orderhub_test -d orderhub_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+          --health-start-period 5s
+
+    env:
+      # Dedicated, disposable database. The harness refuses any database whose
+      # name is not `orderhub_test`.
+      ORDERHUB_TEST_POSTGRES: >-
+        Host=localhost;Port=5433;Database=orderhub_test;Username=orderhub_test;Password=orderhub_test
+
+    steps:
+      - name: Check out the pushed commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up .NET 9
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Set up Node.js for browser time tests
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Restore tools
+        run: dotnet tool restore
+
+      - name: Restore solution dependencies
+        run: dotnet restore OrderHub.sln
+
+      - name: Build the Release solution
+        run: dotnet build OrderHub.sln --configuration Release --no-restore
+
+      # PostgresTestDatabase applies every EF Core migration before the first
+      # database-backed test, so this run also validates the migration chain.
+      - name: Run .NET tests
+        run: dotnet test OrderHub.sln --configuration Release --no-build --no-restore
+
+      - name: Run browser-local time tests
+        run: node OrderHub.Tests/Web/order-local-time.test.mjs
+
   build:
-    name: Validate, test, and package
+    name: Validate and package
+    needs: test
     runs-on: windows-latest
     timeout-minutes: 30
     defaults:
@@ -59,25 +121,11 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Set up Node.js for browser time tests
-        uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-          package-manager-cache: false
-
       - name: Restore solution dependencies
         run: dotnet restore OrderHub.sln
 
       - name: Build the Release solution
         run: dotnet build OrderHub.sln --configuration Release --no-restore
-
-      # PostgreSQL/rehearsal tests are opt-in and stay disabled: no database
-      # connection variables, production access, or migrations in this workflow.
-      - name: Run applicable .NET tests
-        run: dotnet test OrderHub.sln --configuration Release --no-build --no-restore
-
-      - name: Run browser-local time tests
-        run: node OrderHub.Tests/Web/order-local-time.test.mjs
 
       - name: Publish the self-contained Windows application
         env:

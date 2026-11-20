@@ -1,9 +1,9 @@
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.DTOs.Documents;
 using OrderHub.Domain.Enums;
 using OrderHub.Domain.Models;
 using OrderHub.Domain.Models.CommercialDocuments;
+using OrderHub.Domain.ValueObjects;
 using OrderHub.Infrastructure;
 using OrderHub.Infrastructure.Features.Documents;
 using System.Text;
@@ -16,15 +16,12 @@ public sealed class CommercialDocumentDiscountTests
     [Fact]
     public async Task Persisted_invoice_financial_snapshot_does_not_change_when_order_is_edited()
     {
-        await using var connection = new SqliteConnection("Data Source=:memory:");
-        await connection.OpenAsync();
-        await DisableForeignKeys(connection);
-        await using var context = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(connection).UseSnakeCaseNamingConvention().Options);
-        await context.Database.EnsureCreatedAsync();
+        PostgresTestDatabase.Reset();
+        await using var context = new AppDbContext(PostgresTestDatabase.Options);
+        var (client, product) = await SeedOrderParentsAsync(context);
 
-        var order = new Order(5, "ORD-SNAPSHOT");
-        Assert.True(order.AddOrderItem(1, "Product", 400m, 1, 5m, "", null, []).IsSuccess);
+        var order = new Order(client.Id, "ORD-SNAPSHOT");
+        Assert.True(order.AddOrderItem(product.Id, "Product", 400m, 1, 5m, "", null, []).IsSuccess);
         Assert.True(order.SetFinancialAdjustments(15m, DiscountType.Percentage, 10m).IsSuccess);
         context.Orders.Add(order);
         await context.SaveChangesAsync();
@@ -58,12 +55,9 @@ public sealed class CommercialDocumentDiscountTests
     [Fact]
     public async Task Order_financial_columns_have_required_defaults_and_preserve_existing_totals()
     {
-        await using var connection = new SqliteConnection("Data Source=:memory:");
-        await connection.OpenAsync();
-        await DisableForeignKeys(connection);
-        await using var context = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(connection).UseSnakeCaseNamingConvention().Options);
-        await context.Database.EnsureCreatedAsync();
+        PostgresTestDatabase.Reset();
+        await using var context = new AppDbContext(PostgresTestDatabase.Options);
+        var (client, product) = await SeedOrderParentsAsync(context);
 
         var entity = context.Model.FindEntityType(typeof(Order))!;
         foreach (var name in new[] { nameof(Order.DeliveryCost), nameof(Order.DiscountValue), nameof(Order.DiscountAmount) })
@@ -78,8 +72,8 @@ public sealed class CommercialDocumentDiscountTests
         Assert.Equal(DiscountType.FixedAmount, Assert.IsType<DiscountType>(type.GetDefaultValue()));
         Assert.Equal("varchar(30)", type.GetColumnType());
 
-        var historical = new Order(5, "ORD-DEFAULT");
-        Assert.True(historical.AddOrderItem(1, "Product", 400m, 1, 5m, "", null, []).IsSuccess);
+        var historical = new Order(client.Id, "ORD-DEFAULT");
+        Assert.True(historical.AddOrderItem(product.Id, "Product", 400m, 1, 5m, "", null, []).IsSuccess);
         context.Orders.Add(historical);
         await context.SaveChangesAsync();
         Assert.Equal(420m, historical.Total.Value);
@@ -128,11 +122,18 @@ public sealed class CommercialDocumentDiscountTests
         Assert.StartsWith("%PDF", Encoding.ASCII.GetString(pdf, 0, 4));
     }
 
-    private static async Task DisableForeignKeys(SqliteConnection connection)
+    private static async Task<(Client Client, Product Product)> SeedOrderParentsAsync(AppDbContext context)
     {
-        await using var command = connection.CreateCommand();
-        command.CommandText = "PRAGMA foreign_keys = OFF";
-        await command.ExecuteNonQueryAsync();
+        var city = new City("الرياض");
+        var client = new Client("عميل", "شارع الملك", city, "0501111111", "+966");
+        var category = new Category("مستلزمات");
+        var product = new Product("منتج", "PRD-001", category, new Money(400m));
+        context.Cities.Add(city);
+        context.Clients.Add(client);
+        context.Categories.Add(category);
+        context.Products.Add(product);
+        await context.SaveChangesAsync();
+        return (client, product);
     }
 
     private static void AssertFinancialSnapshot<TItem>(CommercialDocument<TItem> snapshot)

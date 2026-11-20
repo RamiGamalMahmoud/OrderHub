@@ -258,7 +258,7 @@ public sealed class StockIssueOrderTests
         int quantity)
     {
         db.StockIn(db.MainWarehouse, db.Product, 10);
-        var order = db.NewOrder("ORD-ISSUE-" + Guid.NewGuid().ToString("N"), (db.Product, quantity));
+        var order = db.NewOrder("ORD-ISS-" + Guid.NewGuid().ToString("N")[..8], (db.Product, quantity));
         var item = order.OrderItems.Single();
         var handler = new UpdateOrderHandler(db.Orders, db.UnitOfWork, db.Inventory, db.Warehouses,
             db.IssueOrders, db.Approvals, new TestCurrentUser(db.Sales.Id), db.Clock);

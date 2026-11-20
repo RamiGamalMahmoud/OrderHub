@@ -235,7 +235,7 @@ public sealed class RebuildBalancesTests
         Product product,
         int quantity)
     {
-        Order order = db.NewOrder($"ORD-REBUILD-{Guid.NewGuid():N}", (product, quantity));
+        Order order = db.NewOrder($"ORD-RBLD-{Guid.NewGuid():N}"[..16], (product, quantity));
         Order loaded = await db.Orders.GetForUpdateAsync(order.Id);
         OrderItem item = loaded.OrderItems.Single();
         OrderInventoryAllocation allocation = OrderInventoryAllocation.Create(

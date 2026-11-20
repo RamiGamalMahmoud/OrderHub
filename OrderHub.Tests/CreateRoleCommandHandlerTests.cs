@@ -1,4 +1,3 @@
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Features.Administration.Roles;
 using OrderHub.Application.Features.Administration.Roles.Create;
@@ -14,16 +13,11 @@ public sealed class CreateRoleCommandHandlerTests
     [Fact]
     public async Task CreateRoleCommandHandler_ReturnsNewRoleIdAfterSave()
     {
-        using var connection = new SqliteConnection("Data Source=:memory:");
-        connection.Open();
+        PostgresTestDatabase.Reset();
 
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(connection)
-            .UseSnakeCaseNamingConvention()
-            .Options;
+        var options = PostgresTestDatabase.Options;
 
         using var context = new AppDbContext(options);
-        context.Database.EnsureCreated();
 
         var unitOfWork = new UnitOfWork(
             context,

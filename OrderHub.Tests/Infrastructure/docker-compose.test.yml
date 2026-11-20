@@ -1,0 +1,31 @@
+# Dedicated PostgreSQL instance for database-backed tests.
+#
+# Start it with:
+#   $env:TEST_DB_PASSWORD = "<local test password>"
+#   docker compose -f OrderHub.Tests/Infrastructure/docker-compose.test.yml up -d
+#
+# The test runner never starts, stops, or clears this container. Stop it with
+# plain `docker compose ... down` (never `down -v`) when you are finished.
+services:
+  postgres:
+    image: postgres:18
+    container_name: orderhub-test-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: orderhub_test
+      POSTGRES_USER: orderhub_test
+      # Required. Set TEST_DB_PASSWORD before running docker compose.
+      POSTGRES_PASSWORD: ${TEST_DB_PASSWORD:?TEST_DB_PASSWORD must be set}
+    ports:
+      - "5433:5432"
+    volumes:
+      - orderhub-test-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orderhub_test -d orderhub_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+volumes:
+  orderhub-test-data:

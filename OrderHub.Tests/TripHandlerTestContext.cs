@@ -23,7 +23,8 @@ namespace OrderHub.Tests;
 
 /// <summary>
 /// Monthly numbering fake that mirrors the production Riyadh period calculation
-/// (the real implementation runs PostgreSQL-only SQL and cannot work on SQLite).
+/// (the real implementation executes PostgreSQL-specific SQL, so handler tests
+/// fake numbering to keep allocation deterministic).
 /// </summary>
 internal sealed class FakeNumberSequenceService : INumberSequenceService
 {
@@ -68,8 +69,8 @@ internal sealed class FakeNumberSequenceService : INumberSequenceService
 }
 
 /// <summary>
-/// Wires the real repositories and unit of work against the seeded SQLite database,
-/// faking only numbering, identity, and the clock.
+/// Wires the real repositories and unit of work against the seeded PostgreSQL test
+/// database, faking only numbering, identity, and the clock.
 /// </summary>
 internal sealed class TripHandlerTestContext
 {

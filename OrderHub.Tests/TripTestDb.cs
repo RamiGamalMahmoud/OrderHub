@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Context;
 using OrderHub.Domain.Enums;
@@ -11,7 +10,7 @@ using OrderHub.Infrastructure;
 namespace OrderHub.Tests;
 
 /// <summary>
-/// In-memory SQLite database seeded with the master data every trips test needs:
+/// PostgreSQL test database seeded with the master data every trips test needs:
 /// one city, two deliverymen, two clients, a supplier, a shipping carrier, and a user.
 /// </summary>
 internal sealed class TripTestDb : IDisposable
@@ -20,20 +19,13 @@ internal sealed class TripTestDb : IDisposable
     public const int SequenceYear = 2026;
     public const int SequenceMonth = 11;
 
-    private readonly SqliteConnection _connection;
-
     public TripTestDb()
     {
-        _connection = new SqliteConnection("Data Source=:memory:");
-        _connection.Open();
+        PostgresTestDatabase.Reset();
 
-        Options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(_connection)
-            .UseSnakeCaseNamingConvention()
-            .Options;
+        Options = PostgresTestDatabase.Options;
 
         Context = new AppDbContext(Options);
-        Context.Database.EnsureCreated();
         Factory = new AppDbContextFactory(Options);
 
         Seed();
@@ -198,7 +190,6 @@ internal sealed class TripTestDb : IDisposable
     public void Dispose()
     {
         Context.Dispose();
-        _connection.Dispose();
     }
 }
 

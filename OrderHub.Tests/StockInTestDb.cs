@@ -1,4 +1,3 @@
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using OrderHub.Application.Authorization;
@@ -19,25 +18,18 @@ using System.IO;
 namespace OrderHub.Tests;
 
 /// <summary>
-/// In-memory SQLite database seeded with a keeper, warehouses, products (one with a
+/// PostgreSQL test database seeded with a keeper, warehouses, products (one with a
 /// supplier link, one without), and the temp stock-attachments folder used by D14.
 /// </summary>
 internal sealed class StockInTestDb : IDisposable
 {
-    private readonly SqliteConnection _connection;
-
     public StockInTestDb()
     {
-        _connection = new SqliteConnection("Data Source=:memory:");
-        _connection.Open();
+        PostgresTestDatabase.Reset();
 
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(_connection)
-            .UseSnakeCaseNamingConvention()
-            .Options;
+        var options = PostgresTestDatabase.Options;
 
         Context = new AppDbContext(options);
-        Context.Database.EnsureCreated();
         Factory = new AppDbContextFactory(options);
 
         UnitOfWork = new UnitOfWork(
@@ -205,7 +197,6 @@ internal sealed class StockInTestDb : IDisposable
     public void Dispose()
     {
         Context.Dispose();
-        _connection.Dispose();
 
         try
         {

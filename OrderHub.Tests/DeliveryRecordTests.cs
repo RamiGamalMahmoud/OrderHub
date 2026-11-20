@@ -104,7 +104,7 @@ public sealed class DeliveryRecordTests
         using var db = new OrderAllocationTestDb();
         var (orderId, _, allocationId) = await StockIssueOrderTests.ReserveAsync(db, quantity: 2);
         await IssueAllAsync(db, orderId, allocationId, quantity: 2);
-        var other = db.NewOrder("ORD-DELIVERY-OTHER-" + Guid.NewGuid().ToString("N"), (db.Product, 1));
+        var other = db.NewOrder("ORD-DLV-" + Guid.NewGuid().ToString("N")[..8], (db.Product, 1));
 
         var result = await Handler(db, db.Keeper.Id).Handle(
             Delivery(other.Id, allocationId, 1), default);

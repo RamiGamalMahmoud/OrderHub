@@ -1,4 +1,3 @@
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Application.Context;
 using OrderHub.Domain.Enums;
@@ -13,27 +12,20 @@ using System.Threading.Tasks;
 namespace OrderHub.Tests;
 
 /// <summary>
-/// In-memory SQLite context with a client, two warehouses, stock, a supplier,
+/// PostgreSQL test context with a client, two warehouses, stock, a supplier,
 /// products and the order/inventory repositories used by allocation tests.
 /// </summary>
 internal sealed class OrderAllocationTestDb : IDisposable
 {
     private static readonly DateTime Now = new(2026, 11, 12, 9, 0, 0, DateTimeKind.Utc);
 
-    private readonly SqliteConnection _connection;
-
     public OrderAllocationTestDb()
     {
-        _connection = new SqliteConnection("Data Source=:memory:");
-        _connection.Open();
+        PostgresTestDatabase.Reset();
 
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(_connection)
-            .UseSnakeCaseNamingConvention()
-            .Options;
+        var options = PostgresTestDatabase.Options;
 
         Context = new AppDbContext(options);
-        Context.Database.EnsureCreated();
         Factory = new AppDbContextFactory(options);
         Clock = new FixedClock(Now);
         Numbering = new FakeNumberSequenceService();
@@ -170,6 +162,5 @@ internal sealed class OrderAllocationTestDb : IDisposable
     public void Dispose()
     {
         Context.Dispose();
-        _connection.Dispose();
     }
 }

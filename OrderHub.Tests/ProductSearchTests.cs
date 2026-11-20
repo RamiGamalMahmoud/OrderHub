@@ -1,4 +1,3 @@
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using OrderHub.Domain.Models;
 using OrderHub.Domain.ValueObjects;
@@ -13,22 +12,16 @@ namespace OrderHub.Tests;
 
 public sealed class ProductSearchTests : IDisposable
 {
-    private readonly SqliteConnection _connection;
     private readonly AppDbContext _context;
     private readonly ProductReader _reader;
 
     public ProductSearchTests()
     {
-        _connection = new SqliteConnection("Data Source=:memory:");
-        _connection.Open();
+        PostgresTestDatabase.Reset();
 
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(_connection)
-            .UseSnakeCaseNamingConvention()
-            .Options;
+        var options = PostgresTestDatabase.Options;
 
         _context = new AppDbContext(options);
-        _context.Database.EnsureCreated();
         _reader = new ProductReader(new AppDbContextFactory(options));
 
         Seed();
@@ -135,6 +128,5 @@ public sealed class ProductSearchTests : IDisposable
     public void Dispose()
     {
         _context.Dispose();
-        _connection.Dispose();
     }
 }
